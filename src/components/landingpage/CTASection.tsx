@@ -32,8 +32,8 @@ const CTASection = () => {
         <ScrollReveal animation="reveal" delay="0.08s">
         <p className="text-base sm:text-lg md:text-xl lg:text-xl text-slate-600 font-medium mb-10 md:mb-12 max-w-3xl mx-auto leading-relaxed">
           Whether you are starting fresh or migrating from a manual system - Result Management,
-          Assessment Tracking, Grade Compilation, and Student Progress Reporting, we support
-          your school growth.
+          CBT Assessments, Attendance Tracking, AI Lesson Notes, and Student Progress Reporting,
+          we support your school growth.
         </p>
         </ScrollReveal>
         

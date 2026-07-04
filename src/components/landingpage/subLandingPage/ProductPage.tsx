@@ -11,7 +11,11 @@ import {
   MessageSquare,
   Lock,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Upload,
+  Users,
+  CalendarCheck,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -32,6 +36,21 @@ const ProductPage = () => {
       icon: Shield,
       title: "Audit-Ready Security",
       description: "Every score change, every approval, and every login is logged. Protect your institution reputation with a system that ensures the grades on the report card match the grades in the exam hall."
+    },
+    {
+      icon: Upload,
+      title: "Bulk Onboarding",
+      description: "Upload your entire student and teacher lists from a spreadsheet. Records are validated, processed in the background, and you receive an email the moment accounts are ready."
+    },
+    {
+      icon: Users,
+      title: "Enrollment Management",
+      description: "Assign students to classes for each academic session and see exactly who belongs where. Class lists stay accurate from the first day of term to the last."
+    },
+    {
+      icon: CalendarCheck,
+      title: "Attendance Oversight",
+      description: "Teachers mark attendance from their devices; you see the daily record for any class instantly and can correct entries in bulk when the register needs a fix."
     }
   ];
 
@@ -50,6 +69,11 @@ const ProductPage = () => {
       icon: MessageSquare,
       title: "Focus on Feedback",
       description: "Spend less time calculating averages and more time writing meaningful behavioral comments."
+    },
+    {
+      icon: Sparkles,
+      title: "AI Lesson Notes",
+      description: "Generate structured, NERDC curriculum-aligned lesson notes in seconds with SabiNote AI."
     }
   ];
 
@@ -198,7 +222,7 @@ const ProductPage = () => {
                 <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 text-center">
                   For Teachers: Grading on the Go
                 </h3>
-                <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+                <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
                   {teacherFeatures.map((feature, index) => {
                     const Icon = feature.icon;
                     return (

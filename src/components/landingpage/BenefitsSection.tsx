@@ -32,6 +32,20 @@ const BenefitsSection = () => {
       icon: "📱",
       gradient: "from-pink-500 via-purple-600 to-indigo-700",
     },
+    {
+      title: "A Register That Never Goes Missing",
+      category: "Attendance Tracking",
+      description: "Teachers mark attendance in seconds, with one tap to mark a whole class present. Every record is stored by class and date, visible to administrators the moment it is taken.",
+      icon: "📋",
+      gradient: "from-cyan-500 via-sky-600 to-blue-700",
+    },
+    {
+      title: "Lesson Notes Drafted in Seconds",
+      category: "AI Lesson Planning",
+      description: "SabiNote AI generates structured, NERDC curriculum-aligned lesson notes on demand. Teachers reclaim the hours spent planning and walk into class prepared.",
+      icon: "📝",
+      gradient: "from-violet-500 via-purple-600 to-fuchsia-700",
+    },
   ];
 
   return (

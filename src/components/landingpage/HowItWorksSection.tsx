@@ -18,7 +18,7 @@ const HowItWorksSection = () => {
     {
       number: "3",
       title: "Onboard Your Team",
-      description: "Invite teachers and upload student lists. They receive credentials instantly.",
+      description: "Bulk-upload your student and teacher lists from a spreadsheet. Accounts are created and credentials delivered automatically.",
     },
   ];
 
