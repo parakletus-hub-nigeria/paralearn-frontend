@@ -1,148 +1,123 @@
 "use client";
 
+import { Check, X } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
+
+const oldWay = [
+  {
+    title: "Weeks of compilation",
+    description:
+      "Teachers rushing to calculate scores manually while you wait for the master broadsheet.",
+  },
+  {
+    title: "Error-prone records",
+    description:
+      "Missing scripts, calculation errors, and grade disputes that damage parent trust.",
+  },
+  {
+    title: "Compromised exams",
+    description:
+      "Malpractice and students sharing answers during assessments.",
+  },
+];
+
+const newWay = [
+  {
+    title: "Instant compilation",
+    description:
+      "Scores move from teachers' devices to the master broadsheet in real time.",
+  },
+  {
+    title: "Verified accuracy",
+    description:
+      "Automated calculations eliminate human error. What is recorded is exactly what is reported.",
+  },
+  {
+    title: "Integrity first",
+    description:
+      "Secure Computer-Based Testing flags tab-switching, so grades are earned, not shared.",
+  },
+];
 
 const ComparisonSection = () => {
   return (
-    <section className="w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-24 py-16 md:py-24 lg:py-12 relative overflow-hidden"
-      style={{ transform: 'translateZ(0)' }}
-    >
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        {/* Header */}
-        <ScrollReveal animation="reveal" delay="0s">
-          <div className="text-center mb-12 md:mb-16 lg:mb-20">
-            <div className="inline-block px-4 py-1.5 mb-4 rounded-full bg-gradient-to-r from-primary/10 via-purple-500/10 to-indigo-600/10 border border-primary/20">
-              <span className="text-xs sm:text-sm font-bold text-primary uppercase tracking-widest">
-                The Transformation
-              </span>
-            </div>
-            
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-4xl font-black text-slate-900 mb-4 md:mb-5 tracking-tight">
-              The Shift
+    <section className="w-full px-6 md:px-8 lg:px-12 py-16 md:py-24">
+      <div className="max-w-6xl mx-auto">
+        <ScrollReveal animation="reveal">
+          <div className="mb-10 md:mb-14 max-w-2xl">
+            <h2 className="font-headline font-extrabold tracking-tight text-3xl md:text-4xl text-[#0f172a]">
+              The end of term, before and after
             </h2>
-            
-            <p className="text-base sm:text-lg md:text-xl text-slate-600 max-w-3xl mx-auto font-medium">
-              The Old Way vs. The ParaLearn Way
+            <p className="mt-3 text-base md:text-lg text-slate-600">
+              The same three weeks, run two different ways.
             </p>
           </div>
         </ScrollReveal>
 
-        <div className="grid md:grid-cols-2 gap-8 md:gap-12">
-          {/* The Reality You Know */}
-          <ScrollReveal animation="reveal-left" delay="0.1s">
-          <div>
-            <div className="bg-white/90 rounded-3xl p-8 shadow-md border-2 border-red-200 group relative overflow-hidden touch-manipulation">
-              {/* Gradient border on hover/active */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-400 via-orange-500 to-red-500 opacity-0 group-hover:opacity-10 group-active:opacity-10 transition-opacity duration-500" />
-              
-              <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="relative flex-shrink-0">
-                    <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 via-orange-600 to-red-600 flex items-center justify-center text-4xl shadow-lg shadow-red-500/30">
-                      😓
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-900 transition-colors duration-500 group-hover:text-red-600 group-active:text-red-600">
-                    The Reality You Know
-                  </h3>
-                </div>
-                
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-lg text-slate-900">
-                      Weeks of Compilation
-                    </h4>
-                    <p className="text-slate-600">
-                      Teachers rushing to calculate scores manually while you wait for the master broadsheet.
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-lg text-slate-900">
-                      Error-Prone Records
-                    </h4>
-                    <p className="text-slate-600">
-                      Missing scripts, calculation errors, and grade disputes that damage parent trust.
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-lg text-slate-900">
-                      Compromised Exams
-                    </h4>
-                    <p className="text-slate-600">
-                      Dealing with malpractice and students sharing answers during assessments.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Bottom accent line */}
-                <div className="mt-6 pt-6 border-t border-slate-200/60 transition-colors duration-500 relative group-hover:border-transparent group-active:border-transparent">
-                  <div className="absolute top-0 left-0 h-0.5 w-0 bg-gradient-to-r from-red-400 via-orange-500 to-red-500 transition-all duration-500 rounded-full group-hover:w-full group-active:w-full" />
-                </div>
+        <ScrollReveal animation="reveal" delay="0.1s">
+          <div className="grid md:grid-cols-2 rounded-2xl border border-[#e2e8f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)] overflow-hidden divide-y md:divide-y-0 md:divide-x divide-[#e2e8f0]">
+            {/* The old way */}
+            <div>
+              <div className="px-7 md:px-9 py-5 bg-[#f8fafc] border-b border-[#e2e8f0]">
+                <h3 className="font-headline font-bold text-lg text-slate-500">
+                  The old way
+                </h3>
               </div>
+              <ul className="divide-y divide-[#e2e8f0]">
+                {oldWay.map((item) => (
+                  <li
+                    key={item.title}
+                    className="flex items-start gap-4 px-7 md:px-9 py-6 transition-colors duration-150 hover:bg-[#f8fafc]"
+                  >
+                    <span className="mt-0.5 w-7 h-7 rounded-full bg-[#fddada] flex items-center justify-center shrink-0">
+                      <X className="w-4 h-4 text-[#e60023]" strokeWidth={2.5} />
+                    </span>
+                    <div>
+                      <h4 className="font-bold text-[15px] text-[#0f172a]">
+                        {item.title}
+                      </h4>
+                      <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* With ParaLearn */}
+            <div>
+              <div className="px-7 md:px-9 py-5 bg-[#f0e5ff]/50 border-b border-[#e2e8f0]">
+                <h3 className="font-headline font-bold text-lg text-[#641bc4]">
+                  With ParaLearn
+                </h3>
+              </div>
+              <ul className="divide-y divide-[#e2e8f0]">
+                {newWay.map((item) => (
+                  <li
+                    key={item.title}
+                    className="flex items-start gap-4 px-7 md:px-9 py-6 transition-colors duration-150 hover:bg-[#f8fafc]"
+                  >
+                    <span className="mt-0.5 w-7 h-7 rounded-full bg-[#dff9d8] flex items-center justify-center shrink-0">
+                      <Check
+                        className="w-4 h-4 text-[#10b981]"
+                        strokeWidth={2.5}
+                      />
+                    </span>
+                    <div>
+                      <h4 className="font-bold text-[15px] text-[#0f172a]">
+                        {item.title}
+                      </h4>
+                      <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-          </ScrollReveal>
-
-          {/* The ParaLearn Standard */}
-          <ScrollReveal animation="reveal-right" delay="0.1s">
-          <div>
-            <div className="bg-white/90 rounded-3xl p-8 shadow-md border-2 border-primary/30 group relative overflow-hidden touch-manipulation">
-              {/* Gradient border on hover/active */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary via-purple-500 to-indigo-600 opacity-0 group-hover:opacity-10 group-active:opacity-10 transition-opacity duration-500" />
-              
-              <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="relative flex-shrink-0">
-                    <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-purple-700 to-indigo-700 flex items-center justify-center text-4xl shadow-lg shadow-primary/30">
-                      ✨
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-900 transition-colors duration-500 group-hover:text-primary group-active:text-primary">
-                    The ParaLearn Standard
-                  </h3>
-                </div>
-                
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-lg text-slate-900">
-                      Instant Compilation
-                    </h4>
-                    <p className="text-slate-600">
-                      Scores move from teachers' phones to the master broadsheet in real-time.
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-lg text-slate-900">
-                      Verified Accuracy
-                    </h4>
-                    <p className="text-slate-600">
-                      Automated calculations eliminate human error. What is recorded is exactly what is reported.
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-lg text-slate-900">
-                      Integrity First
-                    </h4>
-                    <p className="text-slate-600">
-                      Secure Computer-Based Testing (CBT) ensures the grades students get are the grades they earned.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Bottom accent line */}
-                <div className="mt-6 pt-6 border-t border-slate-200/60 transition-colors duration-500 relative group-hover:border-transparent group-active:border-transparent">
-                  <div className="absolute top-0 left-0 h-0.5 w-0 bg-gradient-to-r from-primary via-purple-500 to-indigo-600 transition-all duration-500 rounded-full group-hover:w-full group-active:w-full" />
-                </div>
-              </div>
-            </div>
-          </div>
-          </ScrollReveal>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

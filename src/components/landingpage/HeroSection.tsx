@@ -3,97 +3,129 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  ArrowRight,
+  CheckCircle2,
+  FileSpreadsheet,
+  ShieldCheck,
+  WifiOff,
+} from "lucide-react";
+
+const proofPoints = [
+  { icon: FileSpreadsheet, label: "Broadsheets compiled in real time" },
+  { icon: ShieldCheck, label: "CBT exams with malpractice flags" },
+  { icon: WifiOff, label: "Score entry that works offline" },
+];
 
 const HeroSection = () => {
-  const fullText = "Restore Calm to Your School Administration";
   return (
-    <section className="w-full relative overflow-hidden min-h-screen lg:min-h-[70vh] pt-24 md:pt-32 lg:pt-32 xl:pt-36 2xl:pt-40 pb-2 md:pb-4 lg:pb-6 xl:pb-8 2xl:pb-10" style={{ transform: 'translateZ(0)' }}>
-      
-      {/* Two Column Layout: Text Left, Image Right */}
-      <div className="flex flex-col lg:flex-row h-full min-h-screen lg:min-h-[70vh] items-start md:items-center justify-start md:justify-center lg:items-center pt-8 md:pt-0 lg:pt-4 xl:pt-6 relative z-10">
-        {/* Left Column: Hero Text Content */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-start md:justify-center items-start space-y-8 md:space-y-10 lg:space-y-12 xl:space-y-14 py-4 md:py-6 lg:py-0 pb-1 md:pb-2 lg:pb-4 xl:pb-6 2xl:pb-8 px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-24">
-          {/* Headline - Mobile: text-[2.75rem], Tablet: text-5xl, Desktop: text-6xl, Large: text-7xl */}
-          <h1 className="text-[2.75rem] sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-7xl font-black leading-[1.15] tracking-tight text-left max-w-2xl hero-headline animate-in fade-in slide-in-from-bottom-4 duration-700 break-words text-slate-900 font-coolvetica">
-            <span className="bg-gradient-to-r from-primary via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-              {/* Mobile and Tablet - Line Break Structure */}
-              <span className="block lg:hidden">
-                Restore Calm<br />
-                to Your<br />
-                School<br />
-                Administration
-              </span>
-              {/* Desktop - Full Text */}
-              <span className="hidden lg:inline">
-                {fullText}
-              </span>
+    <section className="w-full relative overflow-hidden pt-28 md:pt-32 lg:pt-36 pb-12 md:pb-16 lg:pb-20">
+      <div className="max-w-7xl mx-auto px-6 md:px-8 lg:px-12 flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
+        {/* Left: text */}
+        <div className="w-full lg:w-[52%] flex flex-col items-start">
+          {/* Eyebrow */}
+          <div
+            className="animate-load-fade-in-up inline-flex items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-3.5 py-1.5 mb-7"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
+            <span className="text-xs font-semibold tracking-wide text-slate-600">
+              Built for Nigerian schools
             </span>
+          </div>
+
+          <h1
+            className="animate-load-fade-in-up text-hero text-[2.6rem] sm:text-5xl lg:text-6xl xl:text-[4.25rem] max-w-xl"
+            style={{ animationDelay: "60ms" }}
+          >
+            Restore <span className="text-[#641bc4]">calm</span> to your school
+            administration
           </h1>
 
-          {/* Subheadline - Mobile: text-base, Tablet: text-lg, Desktop: text-xl, Large: text-2xl */}
-          <p className="animate-load-fade-in-up text-base md:text-base lg:text-lg xl:text-xl 2xl:text-2xl text-slate-700 leading-relaxed font-medium text-left max-w-xl" style={{ animationDelay: "100ms" }}>
-            Move from chaotic paper trails and compilation bottlenecks to a unified, digital system. ParaLearn simplifies result management so you can focus on education, not paperwork.
+          <p
+            className="animate-load-fade-in-up mt-6 text-base md:text-lg text-slate-600 leading-relaxed max-w-lg"
+            style={{ animationDelay: "120ms" }}
+          >
+            Move from chaotic paper trails and compilation bottlenecks to a
+            unified, digital system. ParaLearn simplifies result management so
+            you can focus on education, not paperwork.
           </p>
 
-          {/* Hero Image - Mobile & Tablet Only (between text and buttons) */}
-          <div className="animate-load-fade-in-up flex items-start justify-start pt-6 md:pt-8 pb-3 md:pb-4 lg:hidden w-full" style={{ animationDelay: "180ms" }}>
-            <div className="relative w-auto h-auto max-w-[90%] md:max-w-[70%] scale-105 md:scale-75 origin-left">
-              <div className="relative">
-                <Image
-                  src="/herosection.png"
-                  alt="Split screen showing stressed administrator with paperwork on left, and clean ParaLearn RMS dashboard on laptop on right"
-                  width={600}
-                  height={400}
-                  className="w-full h-auto object-contain rounded-xl shadow-md"
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* CTAs - Consistent sizing with clear hierarchy and interaction feedback */}
-          <div className="animate-load-fade-in-up flex flex-row flex-wrap items-center justify-start gap-4 md:gap-5 lg:gap-6 xl:gap-6 pt-6 md:pt-8 lg:pt-12 pb-1 md:pb-2 lg:pb-4 xl:pb-5 2xl:pb-6 w-full" style={{ animationDelay: "260ms" }}>
+          {/* CTAs */}
+          <div
+            className="animate-load-fade-in-up flex flex-wrap items-center gap-4 mt-9"
+            style={{ animationDelay: "180ms" }}
+          >
             <Link href="/auth/signup" className="group/btn">
-              <Button
-                className="font-black bg-gradient-to-r from-primary via-purple-600 to-indigo-600 hover:from-purple-600 hover:via-indigo-600 hover:to-primary text-white px-6 py-3 md:px-7 md:py-3.5 lg:px-10 lg:py-4 xl:px-12 xl:py-5 text-sm md:text-base lg:text-lg xl:text-xl font-semibold rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 border-0 whitespace-nowrap flex-shrink-0 h-[42px] md:h-[44px] lg:h-[52px] xl:h-[56px] flex items-center justify-center transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  Register Your School
-                  <svg className="w-4 h-4 md:w-5 md:h-5 transition-transform duration-200 group-hover/btn:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </span>
+              <Button className="h-12 px-7 rounded-lg text-[15px] font-bold bg-[#641bc4] hover:bg-[#7b22e8] text-white border-0 shadow-none transition-all duration-150 ease-out hover:-translate-y-px active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#641bc4] focus-visible:ring-offset-2">
+                Register Your School
+                <ArrowRight className="w-4 h-4 ml-1 transition-transform duration-150 group-hover/btn:translate-x-0.5" />
               </Button>
             </Link>
             <Link
               href="/auth/signin"
-              className="text-sm md:text-base lg:text-lg xl:text-xl font-bold text-slate-900 px-7 py-3 md:px-8 md:py-3.5 lg:px-10 lg:py-4 xl:px-12 xl:py-5 bg-white hover:bg-slate-50 hover:border-primary/40 hover:text-primary rounded-2xl border-2 border-slate-200 shadow-md hover:shadow-lg whitespace-nowrap flex-shrink-0 h-[42px] md:h-[44px] lg:h-[52px] xl:h-[56px] flex items-center justify-center transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="h-12 px-7 inline-flex items-center rounded-lg text-[15px] font-bold text-[#0f172a] bg-white border border-[#e2e8f0] hover:bg-[#f1f5f9] transition-all duration-150 ease-out hover:-translate-y-px active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641bc4] focus-visible:ring-offset-2"
               onClick={(e) => {
                 e.preventDefault();
-                const event = new CustomEvent("openLoginModal");
-                window.dispatchEvent(event);
+                window.dispatchEvent(new CustomEvent("openLoginModal"));
               }}
             >
               Log In
             </Link>
           </div>
+
+          {/* Proof points */}
+          <ul
+            className="animate-load-fade-in-up flex flex-col sm:flex-row sm:flex-wrap gap-x-6 gap-y-2.5 mt-9 pt-7 border-t border-[#e2e8f0] w-full max-w-lg"
+            style={{ animationDelay: "240ms" }}
+          >
+            {proofPoints.map(({ icon: Icon, label }) => (
+              <li key={label} className="flex items-center gap-2">
+                <Icon className="w-4 h-4 text-[#641bc4] shrink-0" />
+                <span className="text-[13px] font-medium text-slate-600">
+                  {label}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Right Column: Hero Image - Desktop/Laptop Only */}
-        <div className="animate-load-fade-in-up hidden lg:flex w-full lg:w-1/2 items-center justify-center p-8 lg:p-12 xl:p-16 2xl:p-20" style={{ animationDelay: "180ms" }}>
-          <div className="relative w-full h-full max-w-[90%] xl:max-w-full">
-            <div className="relative">
-              <Image
-                src="/herosection.png"
-                alt="Split screen showing stressed administrator with paperwork on left, and clean ParaLearn RMS dashboard on laptop on right"
-                width={800}
-                height={600}
-                className="w-full h-auto object-contain rounded-2xl shadow-md"
-                priority
-                sizes="(min-width: 1024px) 50vw, 100vw"
-              />
-            </div>
+        {/* Right: framed product image */}
+        <div
+          className="animate-load-fade-in-up w-full lg:w-[48%] relative"
+          style={{ animationDelay: "200ms" }}
+        >
+          <div className="relative rounded-2xl border border-[#e2e8f0] bg-white p-2 shadow-[0_8px_32px_rgba(15,23,42,0.10)]">
+            <Image
+              src="/herosection.png"
+              alt="ParaLearn dashboard replacing a stressed administrator's paperwork"
+              width={800}
+              height={600}
+              className="w-full h-auto object-contain rounded-xl"
+              priority
+              sizes="(min-width: 1024px) 48vw, 100vw"
+            />
+          </div>
+
+          {/* Floating chips */}
+          <div
+            className="animate-load-fade-in-up absolute -top-4 right-4 sm:right-8 inline-flex items-center gap-2 rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 shadow-[0_4px_16px_rgba(15,23,42,0.08)]"
+            style={{ animationDelay: "420ms" }}
+          >
+            <span className="text-xs font-medium text-slate-500">
+              yourschool
+            </span>
+            <span className="text-xs font-semibold text-[#641bc4] [font-family:var(--font-geist-mono),monospace]">
+              .pln.ng
+            </span>
+          </div>
+          <div
+            className="animate-load-fade-in-up absolute -bottom-4 left-4 sm:left-8 inline-flex items-center gap-2 rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 shadow-[0_4px_16px_rgba(15,23,42,0.08)]"
+            style={{ animationDelay: "520ms" }}
+          >
+            <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
+            <span className="text-xs font-semibold text-[#0f172a]">
+              Broadsheet approved
+            </span>
           </div>
         </div>
       </div>

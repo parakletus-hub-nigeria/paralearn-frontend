@@ -101,21 +101,21 @@ const Footer = () => {
         {/* Newsletter Section */}
         <ScrollReveal animation="reveal" delay="0s">
         <div className="mb-16 md:mb-20">
-          <div className="bg-gradient-to-br from-primary/10 via-purple-500/10 to-indigo-500/10 rounded-3xl p-8 md:p-12 border border-primary/20 shadow-xl">
+          <div className="bg-white rounded-2xl p-8 md:p-12 border border-[#e2e8f0] shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
               <div className="flex-1 text-center lg:text-left">
                 <div className="flex items-center gap-3 mb-4 justify-center lg:justify-start">
-                  <Mail className="w-6 h-6 text-primary" />
-                  <h3 className="text-2xl md:text-3xl font-black text-slate-900">
-                    Stay in the <span className="text-primary italic">loop</span>
+                  <Mail className="w-6 h-6 text-[#641bc4]" />
+                  <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[#0f172a]">
+                    Stay in the <span className="text-[#641bc4]">loop</span>
                   </h3>
                 </div>
                 <p className="text-slate-600 text-base md:text-lg">
                   Get the latest updates, tips, and exclusive content delivered to your inbox.
                 </p>
               </div>
-              <form 
-                onSubmit={handleSubmit} 
+              <form
+                onSubmit={handleSubmit}
                 className="flex-1 w-full lg:max-w-md flex gap-3"
               >
                 <Input
@@ -123,12 +123,12 @@ const Footer = () => {
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 h-12 md:h-14 bg-white border-2 border-slate-200 focus:border-primary rounded-full px-6 text-base font-medium"
+                  className="flex-1 h-12 bg-white border border-[#e2e8f0] focus:border-[#641bc4] rounded-lg px-4 text-base font-medium"
                 />
                 <Button
                   type="submit"
                   size="lg"
-                  className="h-12 md:h-14 px-6 md:px-8 rounded-full bg-gradient-to-r from-primary via-purple-600 to-indigo-600 hover:from-primary/90 hover:via-purple-500/90 hover:to-indigo-500/90 font-black shadow-lg shadow-primary/30"
+                  className="h-12 px-6 md:px-8 rounded-lg bg-[#641bc4] hover:bg-[#7b22e8] text-white font-bold shadow-none transition-all duration-150 ease-out hover:-translate-y-px active:scale-[0.97]"
                 >
                   <span className="hidden sm:inline">Subscribe</span>
                   <ArrowRight className="w-5 h-5 sm:hidden" />
@@ -192,7 +192,7 @@ const Footer = () => {
                     aria-label={social.label}
                     target={isExternal ? "_blank" : undefined}
                     rel={isExternal ? "noopener noreferrer" : undefined}
-                    className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-primary hover:text-white transition-all duration-300 hover:scale-110 hover:-translate-y-1 border border-slate-200 text-slate-600"
+                    className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center hover:bg-[#641bc4] hover:text-white transition-all duration-150 hover:-translate-y-0.5 border border-[#e2e8f0] text-slate-600"
                   >
                     <Icon className="w-4 h-4 md:w-5 md:h-5" />
                   </a>

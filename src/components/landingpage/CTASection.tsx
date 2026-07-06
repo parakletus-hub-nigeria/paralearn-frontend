@@ -6,63 +6,56 @@ import { ArrowRight } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 
 const CTASection = () => {
-  const fullText = "Ready to modernize your school result management?";
   return (
-    <section className="w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-24 py-20 md:py-32 lg:py-16 overflow-hidden relative" style={{ transform: 'translateZ(0)' }}>
-      
-      <div className="max-w-5xl mx-auto relative z-10 text-center">
-        {/* Headline */}
-        <ScrollReveal animation="reveal" delay="0s">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-4xl font-black leading-tight bg-gradient-to-r from-slate-900 via-primary to-indigo-700 bg-clip-text text-transparent mb-6 md:mb-8 tracking-tight">
-          <span>
-            {fullText.includes("your ") ? (
-              <>
-                {fullText.substring(0, fullText.indexOf("your ") + 5)}
-                <br className="hidden sm:block" />
-                {fullText.substring(fullText.indexOf("your ") + 5)}
-              </>
-            ) : (
-              fullText
-            )}
-          </span>
-        </h1>
-        </ScrollReveal>
-        
-        {/* Subheadline */}
-        <ScrollReveal animation="reveal" delay="0.08s">
-        <p className="text-base sm:text-lg md:text-xl lg:text-xl text-slate-600 font-medium mb-10 md:mb-12 max-w-3xl mx-auto leading-relaxed">
-          Whether you are starting fresh or migrating from a manual system - Result Management,
-          CBT Assessments, Attendance Tracking, AI Lesson Notes, and Student Progress Reporting,
-          we support your school growth.
-        </p>
-        </ScrollReveal>
-        
-        {/* CTA Buttons */}
-        <ScrollReveal animation="reveal" delay="0.16s">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6">
-            <Link href="/auth/signup">
-              <Button 
-                size="lg"
-                className="h-12 sm:h-14 px-8 sm:px-10 rounded-2xl text-base sm:text-lg font-black bg-gradient-to-r from-primary via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-indigo-700 hover:to-primary text-white border-0 shadow-md shadow-primary/30 w-full sm:w-auto touch-manipulation"
-              >
-                <span className="flex items-center justify-center gap-2">
+    <section className="w-full px-6 md:px-8 lg:px-12 py-16 md:py-24">
+      <ScrollReveal animation="reveal">
+        <div className="max-w-6xl mx-auto relative overflow-hidden rounded-2xl bg-[#641bc4] px-6 py-16 md:px-16 md:py-20 text-center">
+          {/* Ambient corner glows, landing page only */}
+          <div
+            className="absolute -top-1/3 -left-1/4 w-2/3 h-2/3 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(ellipse at center, rgba(151,71,255,0.5), transparent 70%)",
+            }}
+          />
+          <div
+            className="absolute -bottom-1/3 -right-1/4 w-2/3 h-2/3 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(ellipse at center, rgba(151,71,255,0.35), transparent 70%)",
+            }}
+          />
+
+          <div className="relative z-10 max-w-3xl mx-auto">
+            <h2 className="font-headline font-extrabold tracking-tight text-3xl md:text-4xl lg:text-[2.75rem] text-white leading-tight">
+              Ready to modernize your school&apos;s result management?
+            </h2>
+            <p className="mt-5 text-base md:text-lg text-[#e6d8ff] leading-relaxed">
+              Whether you are starting fresh or migrating from a manual system:
+              result management, CBT assessments, attendance tracking, AI
+              lesson notes, and student progress reporting, we support your
+              school&apos;s growth.
+            </p>
+
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/auth/signup" className="w-full sm:w-auto group/btn">
+                <Button className="w-full sm:w-auto h-12 px-8 rounded-lg text-[15px] font-bold bg-white text-[#641bc4] hover:bg-[#f0e5ff] border-0 shadow-none transition-all duration-150 ease-out hover:-translate-y-px active:scale-[0.97]">
                   Start Registration
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 group-active:translate-x-1 transition-transform duration-300" />
-                </span>
-              </Button>
-            </Link>
-            <Link href="/about">
-              <Button
-                size="lg"
-                variant="ghost"
-                className="h-12 sm:h-14 px-8 sm:px-10 rounded-2xl text-base sm:text-lg font-bold text-slate-900 border-2 border-slate-300 hover:border-primary hover:bg-gradient-to-r hover:from-primary/10 hover:via-purple-600/10 hover:to-indigo-700/10 hover:text-primary transition-all duration-300 w-full sm:w-auto touch-manipulation active:scale-95"
-              >
-                Learn More
-              </Button>
-            </Link>
+                  <ArrowRight className="w-4 h-4 ml-1 transition-transform duration-150 group-hover/btn:translate-x-0.5" />
+                </Button>
+              </Link>
+              <Link href="/about" className="w-full sm:w-auto">
+                <Button
+                  variant="ghost"
+                  className="w-full sm:w-auto h-12 px-8 rounded-lg text-[15px] font-bold text-white border border-white/40 bg-transparent hover:bg-white/10 hover:text-white transition-all duration-150 ease-out hover:-translate-y-px active:scale-[0.97]"
+                >
+                  Learn More
+                </Button>
+              </Link>
+            </div>
           </div>
-        </ScrollReveal>
-      </div>
+        </div>
+      </ScrollReveal>
     </section>
   );
 };

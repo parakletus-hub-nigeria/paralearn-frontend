@@ -71,16 +71,13 @@
         }`}
       >
         <nav className="max-w-7xl mx-auto h-14 sm:h-14 md:h-16 pl-0 sm:pl-1 md:pl-2 pr-4 sm:pr-6 md:pr-8 bg-white rounded-full flex items-center justify-between border border-gray-200/50 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow duration-300">
-          {/* Enhanced Scroll Progress Bar */}
-          <div className="absolute bottom-0 left-0 h-[2px] sm:h-[3px] bg-slate-200/50 transition-all duration-150 ease-out z-50 overflow-hidden w-full rounded-full">
-            <div 
-              className="h-full bg-gradient-to-r from-primary via-purple-500 to-indigo-600 shadow-lg shadow-primary/50 transition-all duration-300 ease-out" 
+          {/* Scroll Progress Bar */}
+          <div className="absolute bottom-0 left-0 h-[2px] bg-transparent z-50 overflow-hidden w-full rounded-full">
+            <div
+              className="h-full bg-[#641bc4] transition-all duration-300 ease-out"
               style={{ width: `${scrolled}%` }}
             />
           </div>
-
-          {/* Animated background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full" />
 
           <div className="flex items-center gap-1 sm:gap-2 group cursor-pointer relative z-10 shrink-0">
             <Link href="/" className="relative block h-10 sm:h-12 md:h-14 lg:h-16 aspect-[930/479] bg-transparent">
@@ -107,25 +104,25 @@
                     <a
                       key={index}
                       href={link.href}
-                      className={`header-nav-link text-sm font-bold transition-all uppercase tracking-widest relative focus:outline-none px-4 py-2 rounded-lg ${
-                        isActive 
-                          ? 'text-primary bg-primary/10' 
-                          : 'text-slate-600 hover:text-primary hover:bg-slate-100'
+                      className={`header-nav-link text-sm font-semibold transition-colors relative focus:outline-none px-4 py-2 rounded-lg ${
+                        isActive
+                          ? 'text-[#641bc4] bg-[#f0e5ff]'
+                          : 'text-slate-600 hover:text-[#0f172a] hover:bg-[#f1f5f9]'
                       }`}
                     >
                       {link.label}
                     </a>
                   );
                 }
-                
+
                 return (
                   <Link
                     key={index}
                     href={link.href}
-                    className={`header-nav-link text-sm font-bold transition-all uppercase tracking-widest relative focus:outline-none px-4 py-2 rounded-lg ${
-                      isActive 
-                        ? 'text-primary bg-primary/10' 
-                        : 'text-slate-600 hover:text-primary hover:bg-slate-100'
+                    className={`header-nav-link text-sm font-semibold transition-colors relative focus:outline-none px-4 py-2 rounded-lg ${
+                      isActive
+                        ? 'text-[#641bc4] bg-[#f0e5ff]'
+                        : 'text-slate-600 hover:text-[#0f172a] hover:bg-[#f1f5f9]'
                     }`}
                   >
                     {link.label}
@@ -136,14 +133,14 @@
             
             <div className="flex items-center gap-4">
               <Link href="/auth/signin">
-                <button 
-                  className="text-sm font-bold text-slate-900 px-4 md:px-6 py-2 sm:py-2.5 hover:bg-gradient-to-r hover:from-slate-100 hover:to-slate-50 rounded-xl transition-all duration-300 border border-transparent hover:border-slate-200 hover:shadow-md"
+                <button
+                  className="text-sm font-semibold text-[#0f172a] px-4 md:px-6 py-2 sm:py-2.5 hover:bg-[#f1f5f9] rounded-lg transition-colors duration-150 border border-transparent hover:border-[#e2e8f0]"
                 >
                     Sign In
                 </button>
               </Link>
               <Link href="/auth/signup">
-                <Button className="rounded-full px-6 md:px-10 h-10 sm:h-11 md:h-12 font-black shadow-md shadow-primary/30 bg-gradient-to-r from-primary via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-indigo-700 hover:to-primary text-xs sm:text-sm">
+                <Button className="rounded-lg px-6 md:px-8 h-10 sm:h-11 font-bold shadow-none bg-[#641bc4] hover:bg-[#7b22e8] text-white text-sm transition-all duration-150 ease-out hover:-translate-y-px active:scale-[0.97]">
                   Enroll Now
                 </Button>
               </Link>
@@ -179,10 +176,10 @@
                           <a
                             href={link.href}
                             onClick={() => setIsMenuOpen(false)}
-                            className={`px-4 py-2.5 text-xs font-extrabold cursor-pointer uppercase tracking-wider rounded-md ${
-                              isActive 
-                                ? 'text-primary bg-primary/10' 
-                                : 'text-slate-600 hover:text-primary hover:bg-purple-50'
+                            className={`px-4 py-2.5 text-sm font-semibold cursor-pointer rounded-md ${
+                              isActive
+                                ? 'text-[#641bc4] bg-[#f0e5ff]'
+                                : 'text-slate-600 hover:text-[#0f172a] hover:bg-[#f1f5f9]'
                             }`}
                           >
                             {link.label}
@@ -196,10 +193,10 @@
                         <Link
                           href={link.href}
                           onClick={() => setIsMenuOpen(false)}
-className={`px-4 py-2.5 text-xs font-extrabold cursor-pointer uppercase tracking-wider rounded-md ${
-                              isActive 
-                                ? 'text-primary bg-primary/10' 
-                                : 'text-slate-600 hover:text-primary hover:bg-purple-50'
+className={`px-4 py-2.5 text-sm font-semibold cursor-pointer rounded-md ${
+                              isActive
+                                ? 'text-[#641bc4] bg-[#f0e5ff]'
+                                : 'text-slate-600 hover:text-[#0f172a] hover:bg-[#f1f5f9]'
                             }`}
                         >
                           {link.label}
@@ -215,7 +212,7 @@ className={`px-4 py-2.5 text-xs font-extrabold cursor-pointer uppercase tracking
                     <Link 
                       href="/auth/signin"
                       onClick={() => setIsMenuOpen(false)}
-                      className="w-full flex justify-center items-center text-xs font-extrabold text-slate-900 px-4 py-2.5 hover:bg-gradient-to-r hover:from-slate-100 hover:to-slate-50 rounded-md transition-all duration-300 border border-slate-200"
+                      className="w-full flex justify-center items-center text-sm font-semibold text-[#0f172a] px-4 py-2.5 hover:bg-[#f1f5f9] rounded-md transition-colors duration-150 border border-[#e2e8f0]"
                     >
                       Sign In
                     </Link>
@@ -226,11 +223,10 @@ className={`px-4 py-2.5 text-xs font-extrabold cursor-pointer uppercase tracking
                       onClick={() => setIsMenuOpen(false)}
                       className="block w-full mt-2"
                     >
-                      <Button 
-                        className="w-full rounded-full h-10 font-black shadow-lg shadow-primary/40 bg-gradient-to-r from-primary via-purple-600 to-indigo-600 hover:from-primary/90 hover:via-purple-500/90 hover:to-indigo-500/90 relative overflow-hidden group text-xs"
+                      <Button
+                        className="w-full rounded-lg h-10 font-bold shadow-none bg-[#641bc4] hover:bg-[#7b22e8] text-white text-sm"
                       >
-                        <span className="relative z-10">Enroll Now</span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                        Enroll Now
                       </Button>
                     </Link>
                   </DropdownMenuItem>
