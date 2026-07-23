@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "start": "next start"
+    "start": "next start",
+    "seo:gate": "node scripts/seo-gate.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

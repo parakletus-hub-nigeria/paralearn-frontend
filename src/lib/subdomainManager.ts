@@ -5,24 +5,24 @@
 const SUBDOMAIN_KEY = "adminSubdomain";
 
 /**
- * Extract subdomain from URL
- * Splits the hostname by '.' and gets the first part
+ * Pure hostname -> subdomain parser, usable both in the browser
+ * (extractSubdomainFromURL below) and on the server (e.g. reading the `Host`
+ * header in a Server Component via next/headers). Keeping the parsing rules
+ * in one function means client and server can never silently disagree about
+ * which host is a tenant, which is SabiNote, and which is the root site.
+ *
+ * Splits the hostname by '.' and gets the first part.
  * Example: 'subdomain.pln.ng' -> 'subdomain'
  * Example: 'subdomain.localhost' -> 'subdomain'
  */
-export const extractSubdomainFromURL = (): string | null => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
+export const parseSubdomainFromHostname = (hostname: string | null | undefined): string | null => {
   try {
-    const hostname = window.location.hostname;
     if (!hostname) {
       return null;
     }
 
     const lower = hostname.toLowerCase();
-    
+
     // 1. Handle localhost and IP addresses
     if (lower === "localhost" || lower === "127.0.0.1" || lower === "0.0.0.0") {
       return null;
@@ -85,6 +85,19 @@ export const extractSubdomainFromURL = (): string | null => {
     console.error("[Subdomain] Error extracting from URL:", error);
     return null;
   }
+};
+
+/**
+ * Browser-only convenience wrapper around parseSubdomainFromHostname, reading
+ * the hostname from window.location. Server code (Server Components, route
+ * handlers) should call parseSubdomainFromHostname directly with the `Host`
+ * header instead — window is never available there.
+ */
+export const extractSubdomainFromURL = (): string | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return parseSubdomainFromHostname(window.location.hostname);
 };
 
 /**
