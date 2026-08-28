@@ -25,6 +25,10 @@ export const routespath = {
   LESSON_GENERATOR_NEW: "/RMS/lesson-generator/new",
   LESSON_GENERATOR_DETAILS: "/RMS/lesson-generator/:id",
   LESSON_GENERATOR_WALLET: "/RMS/lesson-generator/wallet",
+  // Finance / Bursary module
+  FINANCE: "/RMS/finance",
+  FEE_STRUCTURES: "/RMS/finance/fee-structures",
+  INVOICES: "/RMS/finance/invoices",
   // SabiNote Standalone routes
   SABINOTE_LOGIN: "/sabinote/auth/login",
   SABINOTE_REGISTER: "/sabinote/auth/register",
@@ -34,6 +38,8 @@ export const routespath = {
   STUDENT_DASHBOARD: "/student/dashboard",
   STUDENT_EXAM: "/student/exam",
   STUDENT_LOBBY: "/student/lobby",
+  STUDENT_FEES: "/student/fees",
+  STUDENT_FEES_CALLBACK: "/student/fees/callback",
   // Teacher routes
   TEACHER_DASHBOARD: "/teacher/dashboard",
   TEACHER_CLASSES: "/teacher/classes",
