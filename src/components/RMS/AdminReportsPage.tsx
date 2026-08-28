@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -29,10 +29,12 @@ import {
 import {
   Download, FileText, ChevronLeft, ChevronRight,
   Loader2, ExternalLink, Users, LayoutTemplate, CheckCircle2, ImageOff,
-  CheckCircle, XCircle, Clock, Trash,
+  CheckCircle, XCircle, Clock, Trash, Share2, ShieldCheck,
 } from "lucide-react";
 import apiClient from "@/lib/api";
 import { ProductTour } from "@/components/common/ProductTour";
+import { ShareReportModal } from "@/components/Report/ShareReportModal";
+import { SignReportModal } from "@/components/Report/SignReportModal";
 
 const reportTourSteps = [
   { target: ".reports-filter-card", content: "Select Class, Session, Term and a template to get started.", disableBeacon: true },
@@ -261,6 +263,23 @@ export function AdminReportsPage() {
   const [classJob, setClassJob] = useState<ClassJobStatus | null>(null);
   const [classJobHistory, setClassJobHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const [shareModal, setShareModal] = useState<{
+    open: boolean;
+    reportId: string;
+    studentName: string;
+    defaultPhone?: string;
+    defaultEmail?: string;
+  }>({ open: false, reportId: "", studentName: "" });
+
+  const [signModal, setSignModal] = useState<{
+    open: boolean;
+    reportId: string;
+    studentName: string;
+    signatures: any[];
+    checksum: string;
+    isVerified: boolean;
+  }>({ open: false, reportId: "", studentName: "", signatures: [], checksum: "", isVerified: false });
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -858,6 +877,39 @@ export function AdminReportsPage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  className="gap-1 text-purple-700 hover:text-purple-800"
+                                  onClick={() => setSignModal({
+                                    open: true,
+                                    reportId: r.id,
+                                    studentName: r.studentName || "Student",
+                                    signatures: r.signatures || [],
+                                    checksum: r.checksum || r.hash || "",
+                                    isVerified: !!r.isVerified,
+                                  })}
+                                  title="Digital Sign-off"
+                                >
+                                  <ShieldCheck className="w-4 h-4" />
+                                  <span className="hidden sm:inline text-xs">Sign</span>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-1 text-green-700 hover:text-green-800"
+                                  onClick={() => setShareModal({
+                                    open: true,
+                                    reportId: r.id,
+                                    studentName: r.studentName || "Student",
+                                    defaultPhone: r.parentPhone || r.phone || "",
+                                    defaultEmail: r.parentEmail || r.email || "",
+                                  })}
+                                  title="Share via WhatsApp or Email"
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                  <span className="hidden sm:inline text-xs">Share</span>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                   style={{ borderColor: "color-mix(in oklch, var(--crimson-signal) 30%, transparent)", color: "var(--crimson-signal)" }}
                                   onClick={() => handleDeleteReport(r.id)}
                                   disabled={deletingReports.has(r.id)}
@@ -877,6 +929,28 @@ export function AdminReportsPage() {
           </div>
         )}
       </main>
+
+      {/* Share Modal */}
+      <ShareReportModal
+        open={shareModal.open}
+        onOpenChange={(o) => setShareModal((prev) => ({ ...prev, open: o }))}
+        reportCardId={shareModal.reportId}
+        studentName={shareModal.studentName}
+        defaultPhone={shareModal.defaultPhone}
+        defaultEmail={shareModal.defaultEmail}
+      />
+
+      {/* Sign Modal */}
+      <SignReportModal
+        open={signModal.open}
+        onOpenChange={(o) => setSignModal((prev) => ({ ...prev, open: o }))}
+        reportCardId={signModal.reportId}
+        studentName={signModal.studentName}
+        currentSignatures={signModal.signatures}
+        checksum={signModal.checksum}
+        isVerified={signModal.isVerified}
+        onSignedSuccess={fetchReports}
+      />
     </div>
   );
 }

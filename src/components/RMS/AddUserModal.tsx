@@ -9,11 +9,13 @@ import { toast } from "sonner";
 
 type Step = "profile";
 
+export type UserType = "student" | "teacher" | "vp" | "accountant";
+
 type AddUserModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  type: "student" | "teacher";
-  onTypeChange: (type: "student" | "teacher") => void;
+  type: UserType;
+  onTypeChange: (type: UserType) => void;
   primaryColor: string;
   onSuccess: () => void;
 };
@@ -123,7 +125,7 @@ export function AddUserModal({
         dateOfBirth: dateTime,
         gender: gender || undefined,
         address: address.trim() || undefined,
-        roles: type === "teacher" ? ["teacher"] : ["student"],
+        roles: [type],
         guardianName: type === "student" ? guardianName.trim() || undefined : undefined,
         guardianPhone: type === "student" ? guardianPhone.trim() || undefined : undefined,
       };
@@ -134,7 +136,13 @@ export function AddUserModal({
         body: JSON.stringify(payload),
       });
 
-      toast.success(`${type === "teacher" ? "Teacher" : "Student"} added successfully!`);
+      const roleLabels: Record<string, string> = {
+        student: "Student",
+        teacher: "Teacher",
+        vp: "Vice Principal",
+        accountant: "Accountant",
+      };
+      toast.success(`${roleLabels[type] || type} added successfully!`);
       
       onSuccess();
       handleClose();
@@ -152,6 +160,13 @@ export function AddUserModal({
 
   if (!open) return null;
 
+  const roleTitleMap: Record<string, string> = {
+    student: "Student",
+    teacher: "Teacher",
+    vp: "Vice Principal",
+    accountant: "Accountant / Bursar",
+  };
+
   return typeof document !== "undefined" ? createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
@@ -164,7 +179,7 @@ export function AddUserModal({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-slate-900">
-                Add New {type === "teacher" ? "Teacher" : "Student"}
+                Add New {roleTitleMap[type] || "User"}
               </h2>
               <p className="text-sm text-slate-500 mt-0.5">
                 Fill in the information below to create a new {type} profile.
@@ -178,31 +193,29 @@ export function AddUserModal({
             </button>
           </div>
 
-          {/* Type Toggle (only show before starting) */}
+          {/* Type Toggle */}
           {step === "profile" && (
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => onTypeChange("student")}
-                className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-all ${
-                  type === "student"
-                    ? "text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-                style={type === "student" ? { backgroundColor: primaryColor } : {}}
-              >
-                Student
-              </button>
-              <button
-                onClick={() => onTypeChange("teacher")}
-                className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-all ${
-                  type === "teacher"
-                    ? "text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-                style={type === "teacher" ? { backgroundColor: primaryColor } : {}}
-              >
-                Teacher
-              </button>
+            <div className="grid grid-cols-4 gap-1.5 mt-4">
+              {[
+                { id: "student", label: "Student" },
+                { id: "teacher", label: "Teacher" },
+                { id: "vp", label: "Vice Principal" },
+                { id: "accountant", label: "Accountant" },
+              ].map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => onTypeChange(r.id as UserType)}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all text-center ${
+                    type === r.id
+                      ? "text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                  style={type === r.id ? { backgroundColor: primaryColor } : {}}
+                >
+                  {r.label}
+                </button>
+              ))}
             </div>
           )}
 

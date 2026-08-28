@@ -12,7 +12,7 @@ import { Header } from "@/components/RMS/header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AddUserModal } from "@/components/RMS/AddUserModal";
+import { AddUserModal, UserType } from "@/components/RMS/AddUserModal";
 import { EditUserModal } from "@/components/RMS/EditUserModal";
 import {
   Select,
@@ -79,7 +79,7 @@ type UserRow = {
   firstName: string;
   lastName: string;
   email: string;
-  role: "teacher" | "student";
+  role: "teacher" | "student" | "vp" | "accountant";
   classId?: string;
   className?: string;
   status: "active" | "inactive";
@@ -96,11 +96,11 @@ export const UsersPage = () => {
   const { classes } = useSelector((s: RootState) => s.admin);
 
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"all" | "teacher" | "student">("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | "teacher" | "student" | "vp" | "accountant">("all");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [addModalType, setAddModalType] = useState<"student" | "teacher">("student");
+  const [addModalType, setAddModalType] = useState<UserType>("student");
   
   // Action menu state
   const [viewUserModal, setViewUserModal] = useState<UserRow | null>(null);
@@ -360,6 +360,8 @@ export const UsersPage = () => {
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="teacher">Teachers</SelectItem>
                 <SelectItem value="student">Students</SelectItem>
+                <SelectItem value="vp">Vice Principals</SelectItem>
+                <SelectItem value="accountant">Accountants</SelectItem>
               </SelectContent>
             </Select>
             <Select value={classFilter} onValueChange={setClassFilter}>
