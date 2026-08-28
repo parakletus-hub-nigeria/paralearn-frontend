@@ -8,7 +8,7 @@ import type { NextRequest } from "next/server";
  * Production subdomain redirects are also handled at the nginx/CDN level
  * as the primary mechanism; this is a Next.js-layer fallback.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Skip entirely in development — avoid redirect loops with Turbopack
   if (process.env.NODE_ENV !== "production") return NextResponse.next();
 
