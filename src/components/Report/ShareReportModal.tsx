@@ -1,14 +1,22 @@
-﻿"use client";
+"use client";
+
 import { useState } from "react";
 import { toast } from "sonner";
-import apiClient from "@/lib/api";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MessageCircle, Mail, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  useShareReportCardWhatsappMutation,
+  useShareReportCardEmailMutation,
+} from "@/reduxToolKit/api/endpoints/reports";
 
 interface Props {
   open: boolean;
@@ -30,28 +38,35 @@ export function ShareReportModal({
   const [channel, setChannel] = useState<"whatsapp" | "email">("whatsapp");
   const [phone, setPhone] = useState(defaultPhone);
   const [email, setEmail] = useState(defaultEmail);
-  const [sending, setSending] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
+  const [shareWhatsapp, { isLoading: isSendingWhatsapp }] = useShareReportCardWhatsappMutation();
+  const [shareEmail, { isLoading: isSendingEmail }] = useShareReportCardEmailMutation();
+
+  const sending = isSendingWhatsapp || isSendingEmail;
+
   const handleSend = async () => {
-    setSending(true);
     setSuccessMsg("");
     try {
       if (channel === "whatsapp") {
         if (!phone.trim()) return toast.error("Please enter a WhatsApp phone number");
-        await apiClient.post(`/reports/report-cards/${reportCardId}/share/whatsapp`, { phone: phone.trim() });
-        setSuccessMsg(`Report card link sent via WhatsApp to ${phone}`);
+        await shareWhatsapp({
+          reportCardId,
+          phone: phone.trim(),
+        }).unwrap();
+        setSuccessMsg(`Report card link dispatched via WhatsApp to ${phone}`);
         toast.success("Dispatched via WhatsApp");
       } else {
         if (!email.trim()) return toast.error("Please enter an email address");
-        await apiClient.post(`/reports/report-cards/${reportCardId}/share/email`, { email: email.trim() });
-        setSuccessMsg(`Report card PDF sent via email to ${email}`);
+        await shareEmail({
+          reportCardId,
+          email: email.trim(),
+        }).unwrap();
+        setSuccessMsg(`Report card PDF dispatched via email to ${email}`);
         toast.success("Dispatched via Email");
       }
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || `Failed to send via ${channel}`);
-    } finally {
-      setSending(false);
+      toast.error(e?.data?.message || e?.message || `Failed to send via ${channel}`);
     }
   };
 
@@ -72,12 +87,14 @@ export function ShareReportModal({
 
         {successMsg ? (
           <div className="py-6 text-center space-y-3">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+              <CheckCircle2 className="h-8 w-8 text-emerald-600" />
             </div>
-            <p className="font-semibold text-lg text-green-800">Successfully Sent!</p>
+            <p className="font-semibold text-lg text-emerald-800">Successfully Sent!</p>
             <p className="text-sm text-muted-foreground">{successMsg}</p>
-            <Button className="w-full mt-2" onClick={handleClose}>Close</Button>
+            <Button className="w-full mt-2" onClick={handleClose}>
+              Close
+            </Button>
           </div>
         ) : (
           <div className="space-y-4 py-2">
@@ -88,11 +105,11 @@ export function ShareReportModal({
                 onClick={() => setChannel("whatsapp")}
                 className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border text-sm font-medium transition-all ${
                   channel === "whatsapp"
-                    ? "border-green-600 bg-green-50 text-green-800 font-semibold"
+                    ? "border-emerald-600 bg-emerald-50 text-emerald-800 font-semibold"
                     : "border-border text-muted-foreground hover:bg-muted"
                 }`}
               >
-                <MessageCircle className="h-4 w-4 text-green-600" /> WhatsApp
+                <MessageCircle className="h-4 w-4 text-emerald-600" /> WhatsApp
               </button>
               <button
                 type="button"
@@ -138,8 +155,10 @@ export function ShareReportModal({
 
         {!successMsg && (
           <DialogFooter>
-            <Button variant="outline" onClick={handleClose}>Cancel</Button>
-            <Button onClick={handleSend} disabled={sending} className="gap-2">
+            <Button variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleSend} disabled={sending} className="gap-2 bg-primary text-primary-foreground font-semibold">
               {sending && <Loader2 className="h-4 w-4 animate-spin" />}
               Send Report Card
             </Button>

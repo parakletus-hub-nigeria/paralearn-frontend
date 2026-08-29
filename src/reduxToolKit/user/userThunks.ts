@@ -917,7 +917,7 @@ export const getTenantInfo = createAsyncThunk(
   },
 );
 
-// Update school branding
+// Update school branding (v1.5)
 export const updateSchoolBranding = createAsyncThunk(
   "user/updateSchoolBranding",
   async (
@@ -927,6 +927,7 @@ export const updateSchoolBranding = createAsyncThunk(
       secondaryColor?: string;
       accentColor?: string;
       motto?: string;
+      domain?: string;
       schoolName?: string;
       address?: string;
       phoneNumber?: string;
@@ -935,8 +936,9 @@ export const updateSchoolBranding = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
+      // First attempt v1.5 endpoint /school-settings/branding
       const response = await apiClient.patch(
-        "/api/proxy/tenant/branding",
+        "/school-settings/branding",
         data,
       );
 

@@ -52,6 +52,9 @@ export const normalizeRoles = (roles: any): string[] => {
   // Check explicit role field (handles both K12 and University role names)
   const mainRole = String(roles.role || "").toLowerCase();
   if (mainRole === "admin" || mainRole === "school_admin") extractedRoles.add("admin");
+  if (mainRole === "principal") extractedRoles.add("principal");
+  if (mainRole === "vp" || mainRole === "vice_principal") extractedRoles.add("vp");
+  if (mainRole === "accountant" || mainRole === "bursar") extractedRoles.add("accountant");
   if (mainRole === "teacher") extractedRoles.add("teacher");
   if (mainRole === "lecturer") extractedRoles.add("lecturer");
   if (mainRole === "student") extractedRoles.add("student");
@@ -60,6 +63,12 @@ export const normalizeRoles = (roles: any): string[] => {
   // Check boolean/string flags
   if (isTrue(roles.isAdmin) || isTrue(roles.isadmin))
     extractedRoles.add("admin");
+  if (isTrue(roles.isPrincipal) || isTrue(roles.isprincipal))
+    extractedRoles.add("principal");
+  if (isTrue(roles.isVp) || isTrue(roles.isvp))
+    extractedRoles.add("vp");
+  if (isTrue(roles.isAccountant) || isTrue(roles.isaccountant))
+    extractedRoles.add("accountant");
   if (isTrue(roles.isTeacher) || isTrue(roles.isteacher))
     extractedRoles.add("teacher");
   if (isTrue(roles.isStudent) || isTrue(roles.isstudent))
@@ -99,7 +108,11 @@ export const pickRedirectPath = (
     return "/uni-admin/dashboard";
   }
 
-  if (roles.includes("teacher")) {
+  if (roles.includes("accountant") && !roles.includes("admin") && !roles.includes("principal")) {
+    return routespath.FINANCE;
+  }
+
+  if (roles.includes("teacher") && !roles.includes("admin") && !roles.includes("principal") && !roles.includes("vp")) {
     return routespath.TEACHER_DASHBOARD;
   }
 
@@ -107,7 +120,7 @@ export const pickRedirectPath = (
     return routespath.STUDENT_DASHBOARD;
   }
 
-  if (roles.includes("admin") || roles.includes("editor")) {
+  if (roles.includes("admin") || roles.includes("principal") || roles.includes("vp") || roles.includes("editor")) {
     return routespath.DASHBOARD;
   }
 

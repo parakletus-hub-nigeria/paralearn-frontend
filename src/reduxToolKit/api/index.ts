@@ -92,6 +92,13 @@ export {
   useApproveReportsMutation,
   useSubmitForApprovalMutation,
   useGenerateAndNotifyMutation,
+  useVerifyReportSignatureQuery,
+  useLazyVerifyReportSignatureQuery,
+  useGetReportAuditTrailQuery,
+  useSignReportCardMutation,
+  useBulkShareReportsMutation,
+  useShareReportCardWhatsappMutation,
+  useShareReportCardEmailMutation,
 } from "./endpoints/reports";
 
 // Attendance
@@ -100,7 +107,7 @@ export {
   useRecordAttendanceMutation,
 } from "./endpoints/attendance";
 
-// Settings
+// Settings & Branding
 export {
   useGetSchoolSettingsQuery,
   useUpdateSchoolSettingsMutation,
@@ -110,3 +117,34 @@ export {
   useGetTenantInfoQuery,
   useUpdateBrandingMutation,
 } from "./endpoints/settings";
+
+// Tenant Resolution & Visual Identity (v1.5)
+export {
+  useResolveTenantQuery,
+  useLazyResolveTenantQuery,
+  useGetSchoolBrandingQuery,
+  useUpdateSchoolBrandingMutation,
+} from "./endpoints/tenant";
+
+// Finance & Bursary (v1.5)
+export {
+  useGetBursaryDashboardQuery,
+  useGetFeeStructuresQuery,
+  useCreateFeeStructureMutation,
+  useGenerateInvoicesMutation,
+  useGetInvoicesQuery,
+  useRecordManualPaymentMutation,
+  useGetMyInvoicesQuery,
+  useInitializePaystackPaymentMutation,
+  useVerifyPaymentQuery,
+  useLazyVerifyPaymentQuery,
+  useApplyFeeOverrideMutation,
+  useRevokeFeeOverrideMutation,
+} from "./endpoints/finance";
+
+// Psychomotor & Affective Domain (v1.5)
+export {
+  useSavePsychomotorRatingsMutation,
+  useGetPsychomotorRatingsQuery,
+  useLazyGetPsychomotorRatingsQuery,
+} from "./endpoints/psychomotor";

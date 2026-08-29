@@ -1,7 +1,50 @@
-﻿"use client";
+"use client";
+
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Star, Heart, Activity } from "lucide-react";
+
+export const TRAIT_LABELS: Record<string, string> = {
+  // Affective Domain
+  punctuality: "Punctuality",
+  neatness: "Neatness",
+  politeness: "Politeness",
+  honesty: "Honesty",
+  attentiveness: "Attentiveness",
+  peerRelationship: "Peer Relationship",
+  // Psychomotor Domain
+  handwriting: "Handwriting",
+  sportsAndGames: "Sports & Games",
+  crafts: "Crafts & Creative Skills",
+  musicalSkills: "Musical & Performing Skills",
+  leadership: "Leadership & Initiative",
+};
+
+export const RUBRIC_LABELS: Record<number, string> = {
+  1: "Poor / Unsatisfactory",
+  2: "Fair / Below Average",
+  3: "Good / Average",
+  4: "Very Good / Commendable",
+  5: "Excellent / Outstanding",
+};
+
+export const DEFAULT_AFFECTIVE_KEYS = [
+  "punctuality",
+  "neatness",
+  "politeness",
+  "honesty",
+  "attentiveness",
+  "peerRelationship",
+];
+
+export const DEFAULT_PSYCHOMOTOR_KEYS = [
+  "handwriting",
+  "sportsAndGames",
+  "crafts",
+  "musicalSkills",
+  "leadership",
+];
 
 /* ─── Single-trait star rating ─── */
 interface StarRatingProps {
@@ -11,36 +54,38 @@ interface StarRatingProps {
   readonly?: boolean;
 }
 
-export function StarRating({ label, value, onChange, readonly }: StarRatingProps) {
+export function StarRating({ label, value = 0, onChange, readonly }: StarRatingProps) {
   const [hovered, setHovered] = useState(0);
+  const activeScore = hovered || value;
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-4 text-right text-xs font-mono text-muted-foreground">
-        {value}/5
-      </span>
-      <div className="flex gap-0.5" onMouseLeave={() => setHovered(0)}>
+    <div className="flex items-center gap-2.5">
+      <div className="flex gap-1" onMouseLeave={() => setHovered(0)}>
         {[1, 2, 3, 4, 5].map((star) => {
-          const filled = star <= (hovered || value);
+          const filled = star <= activeScore;
           return (
             <button
               key={star}
               type="button"
               disabled={readonly}
-              aria-label={`${label}: ${star} star${star !== 1 ? "s" : ""}`}
+              aria-label={`${label}: ${star} star${star !== 1 ? "s" : ""} - ${RUBRIC_LABELS[star]}`}
+              title={`${star} Star - ${RUBRIC_LABELS[star]}`}
               onMouseEnter={() => !readonly && setHovered(star)}
               onClick={() => !readonly && onChange?.(star)}
               className={cn(
-                "text-xl leading-none transition-colors focus:outline-none",
-                readonly ? "cursor-default" : "cursor-pointer",
-                filled ? "text-yellow-400" : "text-gray-300 hover:text-yellow-200"
+                "p-0.5 rounded transition-all focus:outline-none",
+                readonly ? "cursor-default" : "cursor-pointer hover:scale-110",
+                filled ? "text-amber-400 fill-amber-400" : "text-slate-200 fill-slate-100"
               )}
             >
-              &#9733;
+              <Star className={cn("h-4 w-4", filled ? "fill-amber-400" : "fill-slate-100")} />
             </button>
           );
         })}
       </div>
+      <span className="w-16 text-right font-mono text-2xs font-bold text-slate-700">
+        {value > 0 ? `${value}/5` : "Unrated"}
+      </span>
     </div>
   );
 }
@@ -53,52 +98,91 @@ export interface TraitRating {
 }
 
 interface PsychomotorRatingFormProps {
-  traits: TraitRating[];
+  ratings: Record<string, number>;
   onChange: (key: string, value: number) => void;
-  onSave: (ratings: Record<string, number>) => void;
+  onSave?: (ratings: Record<string, number>) => void;
   saving?: boolean;
   readonly?: boolean;
+  className?: string;
 }
 
 export function PsychomotorRatingForm({
-  traits,
+  ratings = {},
   onChange,
   onSave,
   saving,
   readonly,
+  className,
 }: PsychomotorRatingFormProps) {
   const handleSave = () => {
-    const map: Record<string, number> = {};
-    traits.forEach((t) => { map[t.traitKey] = t.score; });
-    onSave(map);
+    onSave?.(ratings);
   };
 
   return (
-    <div className="rounded-lg border bg-card p-4 space-y-3">
-      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-        Psychomotor &amp; Affective Ratings
-      </p>
-      <div className="divide-y">
-        {traits.map((t) => (
-          <div key={t.traitKey} className="flex items-center justify-between py-2">
-            <span className="text-sm">{t.traitLabel}</span>
-            <StarRating
-              label={t.traitLabel}
-              value={t.score}
-              onChange={(v) => onChange(t.traitKey, v)}
-              readonly={readonly}
-            />
-          </div>
-        ))}
+    <div className={cn("space-y-6", className)}>
+      {/* 1. Affective Domain */}
+      <div className="rounded-2xl border bg-card p-4 space-y-3 shadow-2xs">
+        <div className="flex items-center gap-2 pb-1 border-b">
+          <Heart className="h-4 w-4 text-rose-500" />
+          <p className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+            Affective Domain Development
+          </p>
+        </div>
+        <div className="divide-y divide-slate-100 text-xs">
+          {DEFAULT_AFFECTIVE_KEYS.map((key) => (
+            <div key={key} className="flex items-center justify-between py-2 gap-4">
+              <div>
+                <span className="font-semibold text-slate-800">{TRAIT_LABELS[key] || key}</span>
+                {ratings[key] ? (
+                  <p className="text-2xs text-muted-foreground">{RUBRIC_LABELS[ratings[key]]}</p>
+                ) : null}
+              </div>
+              <StarRating
+                label={TRAIT_LABELS[key] || key}
+                value={ratings[key] || 0}
+                onChange={(v) => onChange(key, v)}
+                readonly={readonly}
+              />
+            </div>
+          ))}
+        </div>
       </div>
-      {!readonly && (
-        <Button className="w-full mt-2" onClick={handleSave} disabled={saving}>
-          {saving ? "Saving…" : "Save Ratings"}
+
+      {/* 2. Psychomotor Domain */}
+      <div className="rounded-2xl border bg-card p-4 space-y-3 shadow-2xs">
+        <div className="flex items-center gap-2 pb-1 border-b">
+          <Activity className="h-4 w-4 text-blue-500" />
+          <p className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+            Psychomotor &amp; Applied Skills
+          </p>
+        </div>
+        <div className="divide-y divide-slate-100 text-xs">
+          {DEFAULT_PSYCHOMOTOR_KEYS.map((key) => (
+            <div key={key} className="flex items-center justify-between py-2 gap-4">
+              <div>
+                <span className="font-semibold text-slate-800">{TRAIT_LABELS[key] || key}</span>
+                {ratings[key] ? (
+                  <p className="text-2xs text-muted-foreground">{RUBRIC_LABELS[ratings[key]]}</p>
+                ) : null}
+              </div>
+              <StarRating
+                label={TRAIT_LABELS[key] || key}
+                value={ratings[key] || 0}
+                onChange={(v) => onChange(key, v)}
+                readonly={readonly}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {!readonly && onSave && (
+        <Button className="w-full bg-primary font-semibold text-xs h-10" onClick={handleSave} disabled={saving}>
+          {saving ? "Saving Ratings…" : "Save Domain Ratings"}
         </Button>
       )}
     </div>
   );
 }
 
-/* Default export for convenience */
 export default StarRating;

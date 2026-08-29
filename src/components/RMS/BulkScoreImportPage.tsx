@@ -42,6 +42,7 @@ import {
 import { useCreateSubjectMutation } from "@/reduxToolKit/api/endpoints/subjects";
 
 // Token: use var(--violet-ink) everywhere instead of a hardcoded primary color
+const DEFAULT_PRIMARY = "#1e3a8a";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

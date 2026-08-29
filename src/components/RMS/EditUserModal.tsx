@@ -16,7 +16,7 @@ type UserRow = {
   firstName: string;
   lastName: string;
   email: string;
-  role: "teacher" | "student";
+  role: "teacher" | "student" | "vp" | "accountant";
   phoneNumber?: string;
   dateOfBirth?: string;
   address?: string;
@@ -51,7 +51,7 @@ export function EditUserModal({
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState("");
   const [address, setAddress] = useState("");
-  const [role, setRole] = useState<"teacher" | "student">("student");
+  const [role, setRole] = useState<"teacher" | "student" | "vp" | "accountant">("student");
   const [classId, setClassId] = useState("");
 
   // Populate form when user changes

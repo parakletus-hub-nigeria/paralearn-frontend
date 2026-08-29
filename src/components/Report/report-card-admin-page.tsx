@@ -5,8 +5,9 @@ import { Sidebar } from "./sidebar";
 import { ReportCardTable } from "./report-card-table";
 import { ReportCardDetailView } from "./report-card-detail-view";
 import { ReportCardTemplatePicker } from "./report-card-template-picker";
+import { BulkShareReportModal } from "./BulkShareReportModal";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Send } from "lucide-react";
 import { useLazyQueueReportCardPdfQuery } from "@/reduxToolKit/api/endpoints/reports";
 import { toast } from "sonner";
 
@@ -14,6 +15,7 @@ export function ReportCardAdminPage() {
   const [view, setView] = useState<"list" | "detail">("list");
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [bulkShareOpen, setBulkShareOpen] = useState(false);
   // The selected report card row that triggered generation (studentId + classId)
   const [pendingGeneration, setPendingGeneration] = useState<{
     studentId: string;
@@ -82,13 +84,23 @@ export function ReportCardAdminPage() {
                   Generate, preview, and publish student report cards
                 </p>
               </div>
-              <Button
-                onClick={() => handleGenerateReport()}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Generate New Report
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setBulkShareOpen(true)}
+                  className="gap-1.5"
+                >
+                  <Send className="w-4 h-4 text-emerald-600" />
+                  Bulk Dispatch (WhatsApp &amp; Email)
+                </Button>
+                <Button
+                  onClick={() => handleGenerateReport()}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Generate New Report
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -108,6 +120,11 @@ export function ReportCardAdminPage() {
         open={templatePickerOpen}
         onOpenChange={setTemplatePickerOpen}
         onConfirm={handleTemplateConfirmed}
+      />
+
+      <BulkShareReportModal
+        open={bulkShareOpen}
+        onOpenChange={setBulkShareOpen}
       />
     </div>
   );

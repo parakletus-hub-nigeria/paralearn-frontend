@@ -94,6 +94,15 @@ export const paraApi = createApi({
     "ReportCardTemplate",
     "SchoolReportCardTemplate",
     "K12Schools",
+    "FeeStructure",
+    "FeeStructureList",
+    "Invoice",
+    "InvoiceList",
+    "FeePayment",
+    "BursaryDashboard",
+    "PsychomotorRating",
+    "SignatureAudit",
+    "DigitalSignature",
   ] as const,
   endpoints: () => ({}), // injected by domain files
 });

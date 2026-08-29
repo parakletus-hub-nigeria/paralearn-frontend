@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreVertical, Trash2, Eye, FileText } from "lucide-react";
+import { MoreVertical, Trash2, Eye, FileText, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -28,6 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { DeleteReportDialog } from "./delete-report-dialog";
 import { PublishReportDialog } from "./publish-report-dialog";
+import { PsychomotorEvaluationModal } from "./PsychomotorEvaluationModal";
 
 interface ReportCard {
   id: string;
@@ -115,6 +116,7 @@ export function ReportCardTable({ onViewReport }: ReportCardTableProps) {
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [psychomotorDialogOpen, setPsychomotorDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportCard | null>(null);
 
   const filteredCards = mockReportCards.filter((card) => {
@@ -137,6 +139,11 @@ export function ReportCardTable({ onViewReport }: ReportCardTableProps) {
   const handlePublish = (report: ReportCard) => {
     setSelectedReport(report);
     setPublishDialogOpen(true);
+  };
+
+  const handleEvaluatePsychomotor = (report: ReportCard) => {
+    setSelectedReport(report);
+    setPsychomotorDialogOpen(true);
   };
 
   const classes = [
@@ -241,6 +248,10 @@ export function ReportCardTable({ onViewReport }: ReportCardTableProps) {
                         <Eye className="w-4 h-4 mr-2" />
                         View Report
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEvaluatePsychomotor(card)}>
+                        <Sparkles className="w-4 h-4 mr-2 text-amber-500" />
+                        Evaluate Psychomotor
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handlePublish(card)}>
                         <FileText className="w-4 h-4 mr-2" />
                         Publish
@@ -272,6 +283,13 @@ export function ReportCardTable({ onViewReport }: ReportCardTableProps) {
             open={publishDialogOpen}
             onOpenChange={setPublishDialogOpen}
             report={selectedReport}
+          />
+          <PsychomotorEvaluationModal
+            open={psychomotorDialogOpen}
+            onOpenChange={setPsychomotorDialogOpen}
+            reportCardId={selectedReport.id}
+            studentId={selectedReport.studentId}
+            studentName={selectedReport.name}
           />
         </>
       )}

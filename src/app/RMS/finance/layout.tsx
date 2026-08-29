@@ -1,14 +1,15 @@
-﻿"use client";
+"use client";
 import { useSelector } from "react-redux";
 import { RootState } from "@/reduxToolKit/store";
 import { useRouter, usePathname } from "next/navigation";
 import { routespath } from "@/lib/routepath";
-import { Banknote, FileText } from "lucide-react";
+import { LayoutDashboard, Banknote, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { label: "Fee Structures", href: routespath.FEE_STRUCTURES, icon: Banknote },
-  { label: "Invoices",       href: routespath.INVOICES,       icon: FileText  },
+  { label: "Bursary Overview", href: routespath.FINANCE,        icon: LayoutDashboard, exact: true },
+  { label: "Fee Structures",   href: routespath.FEE_STRUCTURES, icon: Banknote },
+  { label: "Invoices & Billing", href: routespath.INVOICES,       icon: FileText  },
 ];
 
 export default function FinanceLayout({ children }: { children: React.ReactNode }) {
@@ -16,12 +17,12 @@ export default function FinanceLayout({ children }: { children: React.ReactNode 
   const router = useRouter();
   const user = useSelector((s: RootState) => s.user.user);
   const roles: string[] = (user as any)?.roles ?? [];
-  const allowed = roles.some((r) => ["admin", "accountant"].includes(r));
+  const allowed = roles.some((r) => ["admin", "accountant", "principal"].includes(r));
 
   if (!allowed) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        You do not have permission to view this page.
+        You do not have permission to view this page. Only Administrators, Bursars, and Principals have access.
       </div>
     );
   }
@@ -31,7 +32,9 @@ export default function FinanceLayout({ children }: { children: React.ReactNode 
       <div className="border-b bg-background px-6 pt-4">
         <div className="flex gap-1">
           {tabs.map((tab) => {
-            const active = pathname === tab.href || pathname.startsWith(tab.href + "/");
+            const active = tab.exact
+              ? pathname === tab.href
+              : pathname === tab.href || pathname.startsWith(tab.href + "/");
             return (
               <button
                 key={tab.href}

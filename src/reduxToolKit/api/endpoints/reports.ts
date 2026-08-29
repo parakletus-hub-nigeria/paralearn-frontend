@@ -161,7 +161,113 @@ const reportsApi = paraApi.injectEndpoints({
         url: `/api/proxy/reports/class-jobs/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: [{ type: "ReportCard", id: "LIST" }], // Or another suitable tag if you refactor
+      invalidatesTags: [{ type: "ReportCard", id: "LIST" }],
+    }),
+
+    // GET /api/proxy/reports/verify/:signatureProof (Public Verification Portal)
+    verifyReportSignature: builder.query<
+      {
+        verified: boolean;
+        student: {
+          name: string;
+          id: string;
+          class: string;
+          term: string;
+          session: string;
+        };
+        academicSummary: {
+          totalScore: number;
+          average: number;
+          position?: string;
+          decision?: string;
+        };
+        signatures: Array<{
+          role: string;
+          signerName: string;
+          signedAt: string;
+        }>;
+        verificationProof: string;
+        verifiedAt: string;
+      },
+      string
+    >({
+      query: (signatureProof) => ({
+        url: `/api/proxy/reports/verify/${encodeURIComponent(signatureProof)}`,
+      }),
+      transformResponse: (res: any) => res?.data ?? res,
+    }),
+
+    // GET /api/proxy/reports/:id/audit-trail (Digital Signature Audit Log)
+    getReportAuditTrail: builder.query<any[], string>({
+      query: (id) => ({
+        url: `/api/proxy/reports/${id}/audit-trail`,
+      }),
+      transformResponse: (res: any) => {
+        const data = res?.data ?? res;
+        return Array.isArray(data) ? data : [];
+      },
+      providesTags: (_r, _e, id) => [{ type: "SignatureAudit", id }],
+    }),
+
+    // POST /api/proxy/reports/report-cards/:id/sign (Teacher/Principal Signature)
+    signReportCard: builder.mutation<
+      any,
+      { reportCardId: string; role: string; remarks?: string }
+    >({
+      query: ({ reportCardId, ...body }) => ({
+        url: `/api/proxy/reports/report-cards/${reportCardId}/sign`,
+        method: "POST",
+        data: body,
+      }),
+      transformResponse: (res: any) => res?.data ?? res,
+      invalidatesTags: (_r, _e, { reportCardId }) => [
+        { type: "ReportCard" },
+        { type: "SignatureAudit", id: reportCardId },
+        { type: "ApprovalQueue" },
+      ],
+    }),
+
+    // POST /api/proxy/reports/share/bulk (Bulk Dispatch via BullMQ Queue)
+    bulkShareReports: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        data?: { queued: number; skipped: number; jobIds: string[] };
+      },
+      { studentIds: string[]; term: string; session: string }
+    >({
+      query: (body) => ({
+        url: "/api/proxy/reports/share/bulk",
+        method: "POST",
+        data: body,
+      }),
+      transformResponse: (res: any) => res?.data ?? res,
+    }),
+
+    // POST /api/proxy/reports/report-cards/:id/share/whatsapp
+    shareReportCardWhatsapp: builder.mutation<
+      any,
+      { reportCardId: string; phone: string }
+    >({
+      query: ({ reportCardId, phone }) => ({
+        url: `/api/proxy/reports/report-cards/${reportCardId}/share/whatsapp`,
+        method: "POST",
+        data: { phone },
+      }),
+      transformResponse: (res: any) => res?.data ?? res,
+    }),
+
+    // POST /api/proxy/reports/report-cards/:id/share/email
+    shareReportCardEmail: builder.mutation<
+      any,
+      { reportCardId: string; email: string }
+    >({
+      query: ({ reportCardId, email }) => ({
+        url: `/api/proxy/reports/report-cards/${reportCardId}/share/email`,
+        method: "POST",
+        data: { email },
+      }),
+      transformResponse: (res: any) => res?.data ?? res,
     }),
   }),
   overrideExisting: false,
@@ -180,4 +286,11 @@ export const {
   useDeleteReportCardMutation,
   useDeleteClassReportCardsMutation,
   useDeleteClassReportCardJobMutation,
+  useVerifyReportSignatureQuery,
+  useLazyVerifyReportSignatureQuery,
+  useGetReportAuditTrailQuery,
+  useSignReportCardMutation,
+  useBulkShareReportsMutation,
+  useShareReportCardWhatsappMutation,
+  useShareReportCardEmailMutation,
 } = reportsApi;

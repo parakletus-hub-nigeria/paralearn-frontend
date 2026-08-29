@@ -88,34 +88,34 @@ const SideBar = ({ children }: { children: ReactNode }) => {
           ? routespath.SABINOTE_DASHBOARD
           : routespath.DASHBOARD,
         icon: Home,
-        roles: ["admin", "teacher", "vp", "accountant"],
+        roles: ["admin", "principal", "teacher", "vp", "accountant"],
       },
       ...(!isStandalone
         ? [
-            { label: "Users",         path: routespath.USERS,          icon: UserCircle,      roles: ["admin"] },
-            { label: "Enrollments",   path: routespath.ENROLLMENTS,    icon: UserPlus,        roles: ["admin"] },
-            { label: "Classes",       path: routespath.CLASSES,        icon: BookOpenCheck,   roles: ["admin", "teacher", "vp"] },
-            { label: "Subjects",      path: routespath.SUBJECTS,       icon: BookOpen,        roles: ["admin", "teacher", "vp"] },
-            { label: "Assessments",   path: routespath.ASSESSMENTS,    icon: ClipboardList,   roles: ["admin", "teacher", "vp"] },
-            { label: "CBT",           path: routespath.CBT,            icon: MonitorCheck,    roles: ["admin", "vp"] },
-            { label: "Report Cards",  path: routespath.REPORT,         icon: BookOpen,        roles: ["admin", "teacher", "vp"] },
-            { label: "Comments",      path: routespath.COMMENTS,       icon: MessageSquareText, roles: ["admin", "teacher", "vp"] },
-            { label: "Attendance",    path: routespath.ATTENDANCE,     icon: Calendar,        roles: ["admin", "teacher", "vp"] },
-            { label: "Finance",       path: routespath.FINANCE,        icon: Banknote,        roles: ["admin", "accountant"] },
-            { label: "Bulk Upload",   path: routespath.BULK_UPLOAD,    icon: DownloadIcon,    roles: ["admin", "vp"] },
-            { label: "Academic",      path: routespath.ACADEMIC,       icon: Calendar,        roles: ["admin", "vp"] },
-            { label: "School Settings", path: routespath.SCHOOL_SETTINGS, icon: Settings,    roles: ["admin"] },
-            { label: "Branding",      path: routespath.BRANDING,       icon: Palette,         roles: ["admin"] },
+            { label: "Users",         path: routespath.USERS,          icon: UserCircle,      roles: ["admin", "principal"] },
+            { label: "Enrollments",   path: routespath.ENROLLMENTS,    icon: UserPlus,        roles: ["admin", "principal", "vp"] },
+            { label: "Classes",       path: routespath.CLASSES,        icon: BookOpenCheck,   roles: ["admin", "principal", "teacher", "vp"] },
+            { label: "Subjects",      path: routespath.SUBJECTS,       icon: BookOpen,        roles: ["admin", "principal", "teacher", "vp"] },
+            { label: "Assessments",   path: routespath.ASSESSMENTS,    icon: ClipboardList,   roles: ["admin", "principal", "teacher", "vp"] },
+            { label: "CBT",           path: routespath.CBT,            icon: MonitorCheck,    roles: ["admin", "principal", "vp"] },
+            { label: "Report Cards",  path: routespath.REPORT,         icon: BookOpen,        roles: ["admin", "principal", "teacher", "vp"] },
+            { label: "Comments",      path: routespath.COMMENTS,       icon: MessageSquareText, roles: ["admin", "principal", "teacher", "vp"] },
+            { label: "Attendance",    path: routespath.ATTENDANCE,     icon: Calendar,        roles: ["admin", "principal", "teacher", "vp"] },
+            { label: "Finance",       path: routespath.FINANCE,        icon: Banknote,        roles: ["admin", "principal", "accountant"] },
+            { label: "Bulk Upload",   path: routespath.BULK_UPLOAD,    icon: DownloadIcon,    roles: ["admin", "principal", "vp"] },
+            { label: "Academic",      path: routespath.ACADEMIC,       icon: Calendar,        roles: ["admin", "principal", "vp"] },
+            { label: "School Settings", path: routespath.SCHOOL_SETTINGS, icon: Settings,    roles: ["admin", "principal"] },
+            { label: "Branding",      path: routespath.BRANDING,       icon: Palette,         roles: ["admin", "principal"] },
           ]
         : []),
       {
         label: "Profile",
         path: isStandalone ? routespath.SABINOTE_PROFILE : "/profile",
         icon: User,
-        roles: ["admin", "teacher", "vp", "accountant"],
+        roles: ["admin", "principal", "teacher", "vp", "accountant"],
       },
       ...(!isStandalone
-        ? [{ label: "Settings", path: routespath.SETTINGS, icon: Settings, roles: ["admin", "teacher", "vp", "accountant"] }]
+        ? [{ label: "Settings", path: routespath.SETTINGS, icon: Settings, roles: ["admin", "principal", "teacher", "vp", "accountant"] }]
         : []),
     ],
     [isStandalone]

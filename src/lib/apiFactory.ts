@@ -81,13 +81,25 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
         const isSuperAdminRoute = (config.url || "").includes("/super-admin/");
         const effectiveSubdomain = isSuperAdminRoute && k12Subdomain ? k12Subdomain : subdomain;
 
+        // Normalize relative URLs to use the Next.js proxy route if not already prefixed
+        if (
+          config.url &&
+          !baseURL &&
+          !config.url.startsWith("/api/") &&
+          !config.url.startsWith("http://") &&
+          !config.url.startsWith("https://")
+        ) {
+          config.url = `/api/proxy${config.url.startsWith("/") ? "" : "/"}${config.url}`;
+        }
+
         // Attach tenant header for all requests where subdomain is found.
-        // Do not overwrite if the caller already set it explicitly.
-        const alreadySet = config.headers["X-Tenant-Subdomain"];
-        if (!alreadySet && effectiveSubdomain) {
+        // Set both standard x-tenant-subdomain and X-Tenant-Subdomain for robust multi-tenancy compatibility.
+        if (effectiveSubdomain) {
           if (typeof config.headers.set === "function") {
+            config.headers.set("x-tenant-subdomain", effectiveSubdomain);
             config.headers.set("X-Tenant-Subdomain", effectiveSubdomain);
           } else {
+            config.headers["x-tenant-subdomain"] = effectiveSubdomain;
             config.headers["X-Tenant-Subdomain"] = effectiveSubdomain;
           }
         }
@@ -120,13 +132,33 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
     },
   );
 
-  // Handle responses and global errors (like 401s)
+  // Handle responses, dynamic branding headers, and global errors (401, 402, 403, 500)
   apiClient.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      // Ingest backend diagnostic and branding headers if present
+      if (typeof window !== "undefined" && response.headers) {
+        const primaryColor =
+          response.headers["x-school-primary-color"] ||
+          (response.headers as any)["X-School-Primary-Color"];
+        if (primaryColor && typeof primaryColor === "string") {
+          document.documentElement.style.setProperty("--school-primary-color", primaryColor);
+        }
+      }
+      return response;
+    },
     async (error: AxiosError) => {
       const config = error.config as InternalAxiosRequestConfig & {
         _retry?: boolean;
       };
+
+      // Handle 402 Payment Required (Report card locked behind fee paywall)
+      if (error.response?.status === 402) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[API 402] Report card locked pending fee clearance:", error.response.data);
+        }
+        // Reject cleanly with the full error envelope so Paywall Guard can extract balance & payment URL
+        return Promise.reject(error);
+      }
 
       // Handle 401 Unauthorized with token refresh
       if (error.response?.status === 401) {

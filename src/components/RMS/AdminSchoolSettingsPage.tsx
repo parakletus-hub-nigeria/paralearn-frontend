@@ -41,6 +41,7 @@ export const AdminSchoolSettingsPage = () => {
     secondaryColor: "#9747FF",
     accentColor: "#AD8ED6",
     motto: "",
+    domain: "",
   });
 
   const [infoData, setInfoData] = useState({
@@ -65,6 +66,7 @@ export const AdminSchoolSettingsPage = () => {
         secondaryColor: tenantInfo.secondaryColor || "#9747FF",
         accentColor: tenantInfo.accentColor || "#AD8ED6",
         motto: tenantInfo.motto || "",
+        domain: tenantInfo.domain || "",
       });
       setInfoData({
         schoolName: tenantInfo.name || "",
@@ -311,12 +313,22 @@ export const AdminSchoolSettingsPage = () => {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="motto" className="text-sm font-semibold text-slate-700">Motto</Label>
-                <Input id="motto" value={brandingData.motto}
-                  onChange={(e) => setBrandingData({ ...brandingData, motto: e.target.value })}
-                  placeholder="Your school motto"
-                  className="h-11 rounded-xl border-slate-200" />
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="motto" className="text-sm font-semibold text-slate-700">Motto</Label>
+                  <Input id="motto" value={brandingData.motto}
+                    onChange={(e) => setBrandingData({ ...brandingData, motto: e.target.value })}
+                    placeholder="Your school motto"
+                    className="h-11 rounded-xl border-slate-200" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="domain" className="text-sm font-semibold text-slate-700">Custom Domain (Optional)</Label>
+                  <Input id="domain" value={brandingData.domain}
+                    onChange={(e) => setBrandingData({ ...brandingData, domain: e.target.value })}
+                    placeholder="e.g. portal.kingscollege.edu.ng"
+                    className="h-11 rounded-xl border-slate-200" />
+                </div>
               </div>
             </div>
 
