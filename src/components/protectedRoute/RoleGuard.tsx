@@ -17,7 +17,15 @@ import { Button } from "@/components/ui/button";
 
 type RoleGuardProps = {
   children: ReactNode;
-  allow: Array<"admin" | "teacher" | "student" | "lecturer">;
+  allow: Array<
+    | "admin"
+    | "teacher"
+    | "student"
+    | "lecturer"
+    | "accountant"
+    | "principal"
+    | "vp"
+  >;
   mode?: "block" | "redirect";
   redirectTo?: string; // only used in redirect mode
 };
@@ -107,15 +115,17 @@ export default function RoleGuard({
     const normalizedRoles = roles.map((r: any) => String(r).toLowerCase());
     const fallback =
       redirectTo ||
-      (normalizedRoles.includes("teacher")
+      (normalizedRoles.includes("accountant")
+        ? routespath.FINANCE
+        : normalizedRoles.includes("teacher")
         ? routespath.TEACHER_DASHBOARD
         : normalizedRoles.includes("lecturer")
-          ? "/lecturer/dashboard"
-          : normalizedRoles.includes("admin")
-            ? routespath.DASHBOARD
-            : normalizedRoles.includes("student")
-              ? "/student/dashboard"
-              : "/unauthorized"); // FIX #7: catch-all for unrecognized roles
+        ? "/lecturer/dashboard"
+        : normalizedRoles.includes("admin") || normalizedRoles.includes("principal") || normalizedRoles.includes("vp")
+        ? routespath.DASHBOARD
+        : normalizedRoles.includes("student")
+        ? "/student/dashboard"
+        : "/unauthorized");
     if (pathname !== fallback) router.replace(fallback);
   }, [ok, router, redirectTo, roles, pathname, mode, hasToken, mounted]);
 

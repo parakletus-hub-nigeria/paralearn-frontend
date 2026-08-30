@@ -34,6 +34,7 @@ import {
   BookOpen,
   Download,
   Trophy,
+  Banknote,
 } from "lucide-react";
 import { ProductTour } from "@/components/common/ProductTour";
 import Link from "next/link";
@@ -249,7 +250,7 @@ export default function StudentDashboardPage() {
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10">
             {/* Stats Grid */}
-            <div className="student-stats-grid grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="student-stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
               <div className="p-5 flex items-center gap-4 cursor-default" style={{ background: "rgba(255,255,255,0.92)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
                 <div className="w-12 h-12 flex items-center justify-center" style={{ borderRadius: "var(--radius-lg)", background: "var(--violet-tint)", color: "var(--violet-ink)" }}>
                   <ClipboardList className="w-6 h-6" />
@@ -291,6 +292,27 @@ export default function StudentDashboardPage() {
                   </p>
                 </div>
               </div>
+
+              <Link
+                href="/student/fees"
+                className="p-5 flex items-center justify-between gap-3 group transition-transform hover:scale-105"
+                style={{ background: "rgba(255,255,255,0.95)", borderRadius: "var(--radius-xl)", border: "1px solid #10b981", boxShadow: "0 4px 12px rgba(16,185,129,0.15)" }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                    <Banknote className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-emerald-800 uppercase tracking-wide">
+                      School Fees
+                    </p>
+                    <p className="text-xs font-semibold text-slate-600">
+                      Invoices &amp; Paystack
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform" />
+              </Link>
             </div>
 
             {/* Tab Switcher */}
@@ -365,6 +387,14 @@ export default function StudentDashboardPage() {
                   <BookOpen className="w-4 h-4 relative z-10" style={{ color: activeTab === "reports" ? "var(--emerald-signal)" : "rgba(255,255,255,0.5)" }} />
                   <span className="relative z-10">Report Cards</span>
                 </button>
+
+                <Link
+                  href="/student/fees"
+                  className="relative px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 sm:gap-2 rounded-lg text-emerald-200 hover:text-white hover:bg-emerald-700/30"
+                >
+                  <Banknote className="w-4 h-4 text-emerald-300" />
+                  <span>Pay Fees</span>
+                </Link>
               </div>
             </div>
 

@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import Link from "next/link";
 import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import { getTenantInfo, updateSchoolBranding } from "@/reduxToolKit/user/userThunks";
 import { Header } from "@/components/RMS/header";
@@ -243,14 +244,23 @@ export const AdminSchoolSettingsPage = () => {
 
         {/* ── Branding ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ background: "var(--violet-tint)", borderColor: "var(--border-fine)" }}>
-            <div className="w-9 h-9 rounded-xl bg-[#641BC4] flex items-center justify-center">
-              <Palette className="w-4 h-4 text-white" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b" style={{ background: "var(--violet-tint)", borderColor: "var(--border-fine)" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[#641BC4] flex items-center justify-center">
+                <Palette className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-900">School Branding</p>
+                <p className="text-xs text-slate-500">Upload logo, set colors, and motto</p>
+              </div>
             </div>
-            <div>
-              <p className="font-bold text-slate-900">School Branding</p>
-              <p className="text-xs text-slate-500">Upload logo, set colors, and motto</p>
-            </div>
+            <Link
+              href="/RMS/branding"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#641BC4] hover:bg-[#5214a3] transition-colors shadow-sm self-start sm:self-auto"
+            >
+              <Palette className="w-3.5 h-3.5" />
+              Open Visual Identity Studio
+            </Link>
           </div>
           <form onSubmit={handleSave} className="p-6 space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

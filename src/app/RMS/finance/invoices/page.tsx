@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
-import { RootState } from "@/reduxToolKit/store";
+import { RootState, AppDispatch } from "@/reduxToolKit/store";
+import { fetchClasses } from "@/reduxToolKit/admin/adminThunks";
+import { fetchAllSessions } from "@/reduxToolKit/setUp/setUpThunk";
+import { fetchCurrentSession } from "@/reduxToolKit/setUp/setUpSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +26,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Table,
   TableBody,
   TableCell,
@@ -38,11 +47,15 @@ import {
   Receipt,
   Plus,
   RefreshCw,
+  Clock,
+  ShieldCheck,
+  ShieldX,
+  ShieldAlert,
   CreditCard,
   AlertTriangle,
-  ShieldCheck,
-  ShieldAlert,
-  ShieldX,
+  MoreVertical,
+  Banknote,
+  Percent,
 } from "lucide-react";
 import {
   useGetInvoicesQuery,
@@ -67,6 +80,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function InvoicesPage() {
+  const dispatch = useDispatch<AppDispatch>();
   const { classes } = useSelector((s: RootState) => s.admin);
   const currentUser = useSelector((s: RootState) => s.user.user);
   const currentSession = useSelector((s: RootState) => s.setUp.currentSession);
@@ -84,6 +98,12 @@ export default function InvoicesPage() {
   };
 
   const { data: invoices = [], isLoading, isFetching, refetch } = useGetInvoicesQuery(queryParams);
+
+  useEffect(() => {
+    dispatch(fetchClasses(undefined));
+    dispatch(fetchAllSessions());
+    dispatch(fetchCurrentSession());
+  }, [dispatch]);
 
   // Generate modal
   const [genOpen, setGenOpen] = useState(false);
@@ -429,15 +449,20 @@ export default function InvoicesPage() {
                   <SelectValue placeholder="Current Active Term" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sessions?.flatMap((s: any) =>
-                    s.terms?.map((t: any) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {s.session} — {t.term}
-                      </SelectItem>
-                    ))
-                  )}
-                  {(!sessions || sessions.length === 0) && activeTermId && (
-                    <SelectItem value={activeTermId}>Current Active Term</SelectItem>
+                  {sessions && sessions.length > 0 ? (
+                    sessions.flatMap((s: any) =>
+                      (s.terms || []).map((t: any) => (
+                        <SelectItem key={t.id || t.name} value={t.id || t.name}>
+                          {s.session} — {t.name || t.term || "Term"}
+                        </SelectItem>
+                      ))
+                    )
+                  ) : activeTermId ? (
+                    <SelectItem value={activeTermId}>
+                      Current Active Term ({currentSession?.session || "Active Session"})
+                    </SelectItem>
+                  ) : (
+                    <SelectItem value="active_term">Current Active Term</SelectItem>
                   )}
                 </SelectContent>
               </Select>

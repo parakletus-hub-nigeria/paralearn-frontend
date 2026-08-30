@@ -13,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import Link from "next/link";
+import { StudentHeader } from "@/components/Student/StudentHeader";
 import {
   Lock,
   Loader2,
@@ -25,6 +27,7 @@ import {
   ChevronDown,
   ChevronUp,
   ShieldCheck,
+  ArrowLeft,
 } from "lucide-react";
 import {
   useGetMyInvoicesQuery,
@@ -45,8 +48,13 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function StudentFeesPage() {
-  const { data: invoices = [], isLoading, isFetching, refetch } = useGetMyInvoicesQuery();
+  const { data: rawData, isLoading, isFetching, refetch } = useGetMyInvoicesQuery();
   const [initPaystack, { isLoading: isInitializing }] = useInitializePaystackPaymentMutation();
+  const invoices: InvoiceRecord[] = Array.isArray(rawData)
+    ? rawData
+    : Array.isArray((rawData as any)?.data)
+      ? (rawData as any).data
+      : [];
 
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
@@ -80,34 +88,46 @@ export default function StudentFeesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-slate-50">
+        <StudentHeader />
+        <div className="flex h-96 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 p-4 sm:p-6 pb-16">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">My School Fees &amp; Billing</h1>
-          <p className="text-sm text-muted-foreground">
-            View term invoices, itemized fee breakdowns, payment records, and pay online securely.
-          </p>
-        </div>
+    <div className="min-h-screen bg-slate-50">
+      <StudentHeader />
+      <div className="max-w-4xl mx-auto space-y-6 p-4 sm:p-6 pb-16">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Button variant="ghost" size="sm" asChild className="gap-1 h-7 px-2 text-xs text-muted-foreground hover:text-foreground -ml-2">
+                <Link href="/student/dashboard">
+                  <ArrowLeft className="h-3.5 w-3.5" /> Back to Dashboard
+                </Link>
+              </Button>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">My School Fees &amp; Billing</h1>
+            <p className="text-sm text-muted-foreground">
+              View term invoices, itemized fee breakdowns, payment records, and pay online securely.
+            </p>
+          </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="gap-1.5 h-9 text-xs self-start sm:self-auto"
-        >
-          <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
-          Refresh
-        </Button>
-      </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="gap-1.5 h-9 text-xs self-start sm:self-auto"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
+            Refresh
+          </Button>
+        </div>
 
       {/* Paywall Alert or Exemption Banner */}
       {hasUnpaid ? (
@@ -325,6 +345,7 @@ export default function StudentFeesPage() {
             );
           })
         )}
+        </div>
       </div>
     </div>
   );

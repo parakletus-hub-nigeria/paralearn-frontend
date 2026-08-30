@@ -29,12 +29,15 @@ import {
 import {
   Download, FileText, ChevronLeft, ChevronRight,
   Loader2, ExternalLink, Users, LayoutTemplate, CheckCircle2, ImageOff,
-  CheckCircle, XCircle, Clock, Trash, Share2, ShieldCheck,
+  CheckCircle, XCircle, Clock, Trash, Share2, ShieldCheck, Send, Star, Sparkles,
 } from "lucide-react";
 import apiClient from "@/lib/api";
 import { ProductTour } from "@/components/common/ProductTour";
 import { ShareReportModal } from "@/components/Report/ShareReportModal";
 import { SignReportModal } from "@/components/Report/SignReportModal";
+import { BulkShareReportModal } from "@/components/Report/BulkShareReportModal";
+import { PsychomotorEvaluationModal } from "@/components/Report/PsychomotorEvaluationModal";
+import { ReportAuditTrailModal } from "@/components/Report/ReportAuditTrailModal";
 
 const reportTourSteps = [
   { target: ".reports-filter-card", content: "Select Class, Session, Term and a template to get started.", disableBeacon: true },
@@ -280,6 +283,20 @@ export function AdminReportsPage() {
     checksum: string;
     isVerified: boolean;
   }>({ open: false, reportId: "", studentName: "", signatures: [], checksum: "", isVerified: false });
+
+  const [bulkShareOpen, setBulkShareOpen] = useState(false);
+  const [psychomotorModal, setPsychomotorModal] = useState<{
+    open: boolean;
+    reportCardId: string;
+    studentId?: string;
+    studentName?: string;
+  }>({ open: false, reportCardId: "", studentId: "", studentName: "" });
+
+  const [auditModal, setAuditModal] = useState<{
+    open: boolean;
+    reportCardId: string;
+    studentName?: string;
+  }>({ open: false, reportCardId: "", studentName: "" });
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -567,9 +584,20 @@ export function AdminReportsPage() {
       <Header schoolLogo={tenantInfo?.logoUrl} schoolName={tenantInfo?.name || "ParaLearn School"} />
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>Report Cards</h1>
-          <p className="mt-1" style={{ color: "var(--foreground-muted)" }}>Manage student report card generation and downloads</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>Report Cards</h1>
+            <p className="mt-1" style={{ color: "var(--foreground-muted)" }}>Generate report cards, evaluate psychomotor & affective domains, and dispatch via WhatsApp / Email</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => setBulkShareOpen(true)}
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md rounded-xl font-semibold"
+            >
+              <Send className="w-4 h-4" />
+              Bulk Dispatch (WhatsApp & Email)
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -678,9 +706,26 @@ export function AdminReportsPage() {
                             <TableCell className="font-mono text-sm">{s.studentId || "N/A"}</TableCell>
                             <TableCell className="font-medium">{s.firstName} {s.lastName}</TableCell>
                             <TableCell>
-                              <Button size="sm" variant="outline" onClick={() => generateOne(s.id)} disabled={generatingStudents.has(s.id) || bulkGenerating}>
-                                {generatingStudents.has(s.id) ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</> : <><FileText className="w-4 h-4 mr-2" />Generate</>}
-                              </Button>
+                              <div className="flex items-center gap-2">
+                                <Button size="sm" variant="outline" onClick={() => generateOne(s.id)} disabled={generatingStudents.has(s.id) || bulkGenerating}>
+                                  {generatingStudents.has(s.id) ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</> : <><FileText className="w-4 h-4 mr-2" />Generate</>}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-1 text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 border-amber-200"
+                                  onClick={() => setPsychomotorModal({
+                                    open: true,
+                                    reportCardId: `student_${s.id}_${session}_${term}`,
+                                    studentId: s.id,
+                                    studentName: `${s.firstName || ""} ${s.lastName || ""}`.trim() || "Student",
+                                  })}
+                                  title="Evaluate Affective & Psychomotor Domain"
+                                >
+                                  <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+                                  <span className="hidden sm:inline text-xs font-semibold">Psychomotor</span>
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -877,6 +922,21 @@ export function AdminReportsPage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  className="gap-1 text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 border-amber-200"
+                                  onClick={() => setPsychomotorModal({
+                                    open: true,
+                                    reportCardId: r.id,
+                                    studentId: r.studentId || "",
+                                    studentName: r.studentName || "Student",
+                                  })}
+                                  title="Evaluate Affective & Psychomotor Domain"
+                                >
+                                  <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+                                  <span className="hidden sm:inline text-xs font-semibold">Psychomotor</span>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                   className="gap-1 text-purple-700 hover:text-purple-800"
                                   onClick={() => setSignModal({
                                     open: true,
@@ -940,6 +1000,24 @@ export function AdminReportsPage() {
         defaultEmail={shareModal.defaultEmail}
       />
 
+      {/* Bulk Share Multi-Channel Dispatch Modal */}
+      <BulkShareReportModal
+        open={bulkShareOpen}
+        onOpenChange={setBulkShareOpen}
+        classId={classId}
+        className={selectedClass?.name}
+      />
+
+      {/* Psychomotor & Affective Domain Evaluation Modal */}
+      <PsychomotorEvaluationModal
+        open={psychomotorModal.open}
+        onOpenChange={(o) => setPsychomotorModal((prev) => ({ ...prev, open: o }))}
+        reportCardId={psychomotorModal.reportCardId}
+        studentId={psychomotorModal.studentId}
+        studentName={psychomotorModal.studentName}
+        onSavedSuccess={fetchReports}
+      />
+
       {/* Sign Modal */}
       <SignReportModal
         open={signModal.open}
@@ -950,6 +1028,14 @@ export function AdminReportsPage() {
         checksum={signModal.checksum}
         isVerified={signModal.isVerified}
         onSignedSuccess={fetchReports}
+      />
+
+      {/* Digital Signature Audit Trail Modal */}
+      <ReportAuditTrailModal
+        open={auditModal.open}
+        onOpenChange={(o) => setAuditModal((prev) => ({ ...prev, open: o }))}
+        reportCardId={auditModal.reportCardId}
+        studentName={auditModal.studentName}
       />
     </div>
   );

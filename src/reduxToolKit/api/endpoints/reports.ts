@@ -270,7 +270,7 @@ const reportsApi = paraApi.injectEndpoints({
       transformResponse: (res: any) => res?.data ?? res,
     }),
   }),
-  overrideExisting: false,
+  overrideExisting: true,
 });
 
 export const {

@@ -52,7 +52,7 @@ const psychomotorApi = paraApi.injectEndpoints({
       ],
     }),
   }),
-  overrideExisting: false,
+  overrideExisting: true,
 });
 
 export const {

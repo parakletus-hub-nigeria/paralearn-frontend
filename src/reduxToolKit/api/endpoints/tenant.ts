@@ -93,7 +93,7 @@ const tenantApi = paraApi.injectEndpoints({
       providesTags: [{ type: "Tenant" }],
     }),
   }),
-  overrideExisting: false,
+  overrideExisting: true,
 });
 
 export const {

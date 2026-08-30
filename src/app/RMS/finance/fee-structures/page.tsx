@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
-import { RootState } from "@/reduxToolKit/store";
+import { RootState, AppDispatch } from "@/reduxToolKit/store";
+import { fetchClasses } from "@/reduxToolKit/admin/adminThunks";
+import { fetchAllSessions } from "@/reduxToolKit/setUp/setUpThunk";
+import { fetchCurrentSession } from "@/reduxToolKit/setUp/setUpSlice";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -58,6 +61,7 @@ const fmtKobo = (kobo: number) =>
   "\u20a6" + (kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 });
 
 export default function FeeStructuresPage() {
+  const dispatch = useDispatch<AppDispatch>();
   const { classes } = useSelector((s: RootState) => s.admin);
   const currentSession = useSelector((s: RootState) => s.setUp.currentSession);
   const sessions = useSelector((s: RootState) => s.setUp.sessions);
@@ -74,6 +78,12 @@ export default function FeeStructuresPage() {
     classLevel: "all",
     termId: activeTermId,
   });
+
+  useEffect(() => {
+    dispatch(fetchClasses(undefined));
+    dispatch(fetchAllSessions());
+    dispatch(fetchCurrentSession());
+  }, [dispatch]);
 
   useEffect(() => {
     if (activeTermId && !form.termId) {

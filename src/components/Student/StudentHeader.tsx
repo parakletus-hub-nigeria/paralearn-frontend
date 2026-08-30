@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useState } from "react";
 import { RootState, AppDispatch } from "@/reduxToolKit/store";
 import { logoutUser } from "@/reduxToolKit/user/userThunks";
-import { LogOut, LayoutDashboard, Bell } from "lucide-react";
+import { LogOut, LayoutDashboard, Bell, Banknote } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogoutConfirmModal } from "@/components/auth/LogoutConfirmModal";
@@ -60,7 +60,7 @@ export function StudentHeader({ transparent = false }: StudentHeaderProps) {
         <nav className="hidden md:flex items-center gap-2">
           <Link
             href="/student/dashboard"
-            className="px-5 py-2.5 font-medium text-sm flex items-center gap-2 transition-all"
+            className="px-4 py-2 font-medium text-sm flex items-center gap-2 transition-all"
             style={{
               borderRadius: "var(--radius-lg)",
               background: transparent ? "rgba(255,255,255,0.1)" : "var(--violet-tint)",
@@ -72,14 +72,17 @@ export function StudentHeader({ transparent = false }: StudentHeaderProps) {
             Dashboard
           </Link>
           <Link
-            href="/student/results"
-            className="px-5 py-2.5 font-medium text-sm flex items-center gap-2 transition-all cursor-not-allowed"
-            style={{ borderRadius: "var(--radius-lg)", color: transparent ? "rgba(255,255,255,0.4)" : "var(--foreground-muted)" }}
-            onMouseEnter={e => { if (transparent) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; else e.currentTarget.style.background = "var(--surface-muted)"; }}
-            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+            href="/student/fees"
+            className="px-4 py-2 font-semibold text-sm flex items-center gap-2 transition-all"
+            style={{
+              borderRadius: "var(--radius-lg)",
+              background: transparent ? "rgba(16,185,129,0.2)" : "#ecfdf5",
+              color: transparent ? "#6ee7b7" : "#047857",
+              border: transparent ? "1px solid rgba(16,185,129,0.3)" : "1px solid #a7f3d0",
+            }}
           >
-            <Bell className="w-4 h-4" />
-            Results
+            <Banknote className="w-4 h-4 text-emerald-600" />
+            School Fees &amp; Payments
           </Link>
         </nav>
       </div>
@@ -107,16 +110,26 @@ export function StudentHeader({ transparent = false }: StudentHeaderProps) {
           </button>
 
           {/* Dropdown */}
-          <div className="absolute right-0 top-12 w-48 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50" style={{ background: "white", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-dialog)", border: "1px solid var(--border-fine)" }}>
-            <button
-              onClick={() => setIsLogoutModalOpen(true)}
-              className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 font-medium transition-colors"
-              style={{ color: "var(--crimson-signal)", background: "transparent", border: "none" }}
-              onMouseEnter={e => (e.currentTarget.style.background = "var(--crimson-tint)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-            >
-              <LogOut className="w-4 h-4" /> Sign Out
-            </button>
+          <div className="absolute right-0 top-12 w-48 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 divide-y divide-slate-100" style={{ background: "white", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-dialog)", border: "1px solid var(--border-fine)" }}>
+            <div className="py-1">
+              <Link
+                href="/student/fees"
+                className="w-full text-left px-4 py-2 text-xs flex items-center gap-2 font-semibold text-emerald-800 hover:bg-emerald-50 transition-colors"
+              >
+                <Banknote className="w-3.5 h-3.5 text-emerald-600" /> Pay School Fees
+              </Link>
+            </div>
+            <div className="py-1">
+              <button
+                onClick={() => setIsLogoutModalOpen(true)}
+                className="w-full text-left px-4 py-2 text-xs flex items-center gap-2 font-medium transition-colors"
+                style={{ color: "var(--crimson-signal)", background: "transparent", border: "none" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--crimson-tint)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
+                <LogOut className="w-3.5 h-3.5" /> Sign Out
+              </button>
+            </div>
           </div>
         </div>
 

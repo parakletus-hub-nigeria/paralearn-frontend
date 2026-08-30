@@ -127,7 +127,14 @@ export default function BursaryDashboardPage() {
             Refresh
           </Button>
 
-          <Button size="sm" asChild className="gap-1.5 h-9 text-xs">
+          <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 text-xs">
+            <Link href={routespath.FEE_STRUCTURES}>
+              <Banknote className="h-3.5 w-3.5" />
+              Fee Structures
+            </Link>
+          </Button>
+
+          <Button size="sm" asChild className="gap-1.5 h-9 text-xs bg-emerald-700 hover:bg-emerald-800 text-white">
             <Link href={routespath.INVOICES}>
               <Plus className="h-3.5 w-3.5" />
               Manage Invoices

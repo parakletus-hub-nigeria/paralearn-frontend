@@ -15,9 +15,9 @@ import { pickRedirectPath } from "@/reduxToolKit/user/userUtils";
 const Signin = () => {
   const [data, setData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [loginMode, setLoginMode] = useState<"admin" | "teacher" | "student">(
-    "admin",
-  );
+  const [loginMode, setLoginMode] = useState<
+    "admin" | "accountant" | "vp" | "teacher" | "student"
+  >("admin");
   const [institutionType, setInstitutionType] = useState<"k12" | "university">(
     "k12",
   );
@@ -31,11 +31,11 @@ const Signin = () => {
   };
 
   const isValid = () => {
-    if (loginMode === "admin") {
+    if (loginMode === "admin" || loginMode === "accountant" || loginMode === "vp") {
       const emailRe = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      return emailRe.test(data.email) && data.password.length >= 8;
+      return (emailRe.test(data.email) || data.email.trim().length >= 3) && data.password.length >= 4;
     }
-    // Teacher / Student: username (subdomain) + user code
+    // Teacher / Student: username / student code / email
     return data.email.trim().length >= 2 && data.password.trim().length >= 4;
   };
 
@@ -69,48 +69,64 @@ const Signin = () => {
   return (
     <div className="flex flex-col items-center w-[100%] min-h-[100vh] bg-[#F8F7FC]">
       <AuthHeader />
-      <div className="border-[1px] border-[#641BC4] rounded-[6px] w-[95%] sm:w-[45%] flex flex-col items-center justify-between py-[40px] bg-[#EDEAFB] mt-[50px]">
-        <div className="flex flex-col items-center mb-6">
+      <div className="border-[1px] border-[#641BC4] rounded-2xl w-[95%] sm:w-[500px] flex flex-col items-center justify-between py-[36px] bg-[#EDEAFB] mt-[30px] mb-12 shadow-md">
+        <div className="flex flex-col items-center mb-5 text-center px-4">
           <p className="text-[20px] font-bold flex flex-row items-center space-x-2">
             <BiEnvelope className="text-[#641BC4]" />{" "}
             <span>
               {loginMode === "admin"
-                ? "Admin Login"
-                : loginMode === "teacher"
-                  ? "Teacher Login"
-                  : "Student Login"}
+                ? "Admin & Principal Login"
+                : loginMode === "accountant"
+                  ? "Bursar / Finance Login"
+                  : loginMode === "vp"
+                    ? "Vice Principal (VP) Login"
+                    : loginMode === "teacher"
+                      ? "Teacher Login"
+                      : "Student Login"}
             </span>
           </p>
-          <p className="text-sm text-center px-4" style={{ color: "var(--foreground-muted)" }}>
+          <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--foreground-muted)" }}>
             {loginMode === "admin"
-              ? "Login to your administrator's account to continue"
-              : "Login with your username and password"}
+              ? "Login to your administrator or principal account"
+              : loginMode === "accountant"
+                ? "Manage school finances, invoices, and fees"
+                : loginMode === "vp"
+                  ? "Review grades, assessments, and approvals"
+                  : loginMode === "teacher"
+                    ? "Login with your email or teacher code"
+                    : "Login with your student code (e.g. BFA-S-26-0001)"}
           </p>
         </div>
 
         {/* Role tabs */}
-        <div className="w-full px-4 mb-6">
-          <div className="grid grid-cols-3 gap-2 bg-white/60 p-1 rounded-xl border border-[#641BC4]/30">
-            {(["admin", "teacher", "student"] as const).map((mode) => (
+        <div className="w-full px-4 mb-4">
+          <div className="grid grid-cols-5 gap-1 bg-white/70 p-1 rounded-xl border border-[#641BC4]/30 text-center">
+            {[
+              { key: "admin", label: "Admin" },
+              { key: "accountant", label: "Bursar" },
+              { key: "vp", label: "VP" },
+              { key: "teacher", label: "Teacher" },
+              { key: "student", label: "Student" },
+            ].map((tab) => (
               <button
-                key={mode}
+                key={tab.key}
                 type="button"
-                onClick={() => setLoginMode(mode)}
-                className={`h-11 rounded-lg font-semibold text-xs sm:text-sm transition-all capitalize ${
-                  loginMode === mode
+                onClick={() => setLoginMode(tab.key as any)}
+                className={`py-2 rounded-lg font-bold text-2xs sm:text-xs transition-all ${
+                  loginMode === tab.key
                     ? "bg-[#641BC4] text-white shadow-sm"
-                    : "hover:bg-white"
+                    : "text-slate-700 hover:bg-white/80"
                 }`}
               >
-                {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                {tab.label}
               </button>
             ))}
           </div>
         </div>
 
         {/* Institution type */}
-        <div className="w-full px-4 mb-4">
-          <div className="flex gap-4 p-1 pb-3">
+        <div className="w-full px-4 mb-3">
+          <div className="flex justify-center gap-6 p-1 pb-2">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="radio"
@@ -120,7 +136,7 @@ const Signin = () => {
                 onChange={() => setInstitutionType("k12")}
                 className="w-4 h-4 text-[#641BC4]"
               />
-              <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
+              <span className="text-xs sm:text-sm font-medium" style={{ color: "var(--foreground)" }}>
                 K-12 School
               </span>
             </label>
@@ -133,7 +149,7 @@ const Signin = () => {
                 onChange={() => setInstitutionType("university")}
                 className="w-4 h-4 text-[#641BC4]"
               />
-              <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
+              <span className="text-xs sm:text-sm font-medium" style={{ color: "var(--foreground)" }}>
                 University / College
               </span>
             </label>
@@ -141,14 +157,18 @@ const Signin = () => {
         </div>
 
         {/* Credentials */}
-        <div className="w-full space-y-4 px-4">
+        <div className="w-full space-y-3.5 px-4">
           <div className="flex flex-col w-full">
-            <label htmlFor="email" className="mb-2 text-sm font-medium">
+            <label htmlFor="email" className="mb-1 text-xs sm:text-sm font-semibold text-slate-800">
               {loginMode === "admin"
-                ? "Admin Email"
-                : loginMode === "teacher"
-                  ? "Email or Teacher Code"
-                  : "Email or Student Code"}
+                ? "Admin / Principal Email"
+                : loginMode === "accountant"
+                  ? "Bursar / Accountant Email"
+                  : loginMode === "vp"
+                    ? "Vice Principal Email"
+                    : loginMode === "teacher"
+                      ? "Email or Teacher Code"
+                      : "Student Code or Email"}
             </label>
             <input
               id="email"
@@ -156,13 +176,17 @@ const Signin = () => {
               type="text"
               value={data.email}
               onChange={handleChange}
-              className="border border-[#641BC4] focus:border-2 focus:outline-none h-11 w-full px-3 rounded-md text-base"
+              className="border border-[#641BC4]/50 focus:border-[#641BC4] bg-white focus:border-2 focus:outline-none h-11 w-full px-3 rounded-lg text-sm"
               placeholder={
                 loginMode === "admin"
-                  ? "Enter your email"
-                  : loginMode === "teacher"
-                    ? "e.g. TCH-26-00001 or your email"
-                    : "e.g. STU-S-26-00001 or your email"
+                  ? "admin@brightfuture.ng"
+                  : loginMode === "accountant"
+                    ? "bursar@brightfuture.ng"
+                    : loginMode === "vp"
+                      ? "vp@brightfuture.ng"
+                      : loginMode === "teacher"
+                        ? "e.g. TCH-26-00001 or teacher@school.ng"
+                        : "e.g. BFA-S-26-0001"
               }
             />
           </div>

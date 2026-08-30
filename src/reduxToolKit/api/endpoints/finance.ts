@@ -304,7 +304,7 @@ const financeApi = paraApi.injectEndpoints({
       ],
     }),
   }),
-  overrideExisting: false,
+  overrideExisting: true,
 });
 
 export const {

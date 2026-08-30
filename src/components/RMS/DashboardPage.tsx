@@ -2,7 +2,7 @@
 
 import { Header } from "@/components/RMS/header";
 import { apiFetch } from "@/lib/interceptor";
-import { Plus, Clock, ArrowRight, GraduationCap, Users, BookOpen, FileText, Calendar, ChevronRight } from "lucide-react";
+import { Plus, Clock, ArrowRight, GraduationCap, Users, BookOpen, FileText, Calendar, ChevronRight, Wallet, Palette, Send, Layers } from "lucide-react";
 import { AddStudentDialog, AddTeacherDialog } from "@/components/RMS/dialogs";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -229,6 +229,84 @@ export const DashboardPage = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Quick Action Hub ── */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3.5">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+              Essential Management Hub
+            </h2>
+            <p className="text-xs text-slate-500">Direct shortcuts to core school operations</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link
+            href="/RMS/finance"
+            className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group"
+          >
+            <div className="flex items-start justify-between">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+            </div>
+            <div className="mt-4">
+              <p className="text-sm font-bold text-slate-900">Bursary &amp; Finance</p>
+              <p className="text-xs text-slate-500 mt-0.5">Fees, invoices &amp; debt tracking</p>
+            </div>
+          </Link>
+
+          <Link
+            href="/RMS/branding"
+            className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md hover:border-purple-300 transition-all flex flex-col justify-between group"
+          >
+            <div className="flex items-start justify-between">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+                <Palette className="w-5 h-5" />
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
+            </div>
+            <div className="mt-4">
+              <p className="text-sm font-bold text-slate-900">Visual Identity Studio</p>
+              <p className="text-xs text-slate-500 mt-0.5">Custom colors, logo &amp; live preview</p>
+            </div>
+          </Link>
+
+          <Link
+            href="/RMS/reports"
+            className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between group"
+          >
+            <div className="flex items-start justify-between">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                <Send className="w-5 h-5" />
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+            </div>
+            <div className="mt-4">
+              <p className="text-sm font-bold text-slate-900">Report Cards &amp; Dispatch</p>
+              <p className="text-xs text-slate-500 mt-0.5">Bulk WhatsApp/Email &amp; signatures</p>
+            </div>
+          </Link>
+
+          <Link
+            href={routespath.ACADEMIC}
+            className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md hover:border-amber-300 transition-all flex flex-col justify-between group"
+          >
+            <div className="flex items-start justify-between">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                <Layers className="w-5 h-5" />
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-1 transition-all" />
+            </div>
+            <div className="mt-4">
+              <p className="text-sm font-bold text-slate-900">Academic Sessions</p>
+              <p className="text-xs text-slate-500 mt-0.5">Terms, classes &amp; grading setup</p>
+            </div>
+          </Link>
+        </div>
       </div>
 
       {/* ── Main 2-col grid ─────────────────────────────────────────── */}

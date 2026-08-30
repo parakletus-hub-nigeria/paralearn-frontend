@@ -9,7 +9,12 @@ interface ProductTourProps {
 }
 
 export function ProductTour({ tourKey, steps }: ProductTourProps) {
+  const [mounted, setMounted] = useState(false);
   const [run, setRun] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     // Check if the user has already seen this specific tour
@@ -43,7 +48,7 @@ export function ProductTour({ tourKey, steps }: ProductTourProps) {
     }
   };
 
-  if (!run) return null;
+  if (!mounted || !run) return null;
 
   return (
     <Joyride

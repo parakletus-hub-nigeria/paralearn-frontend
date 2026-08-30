@@ -4,7 +4,8 @@ import ProtectedRoute from "@/components/protectedRoute/protectedRoute";
 import SideBar from "@/components/RMS/sideBar";
 import RoleGuard from "@/components/protectedRoute/RoleGuard";
 import { AdminReportsPage } from "@/components/RMS/AdminReportsPage";
-const ReportCardRender = () => {
+
+const ReportsPage = () => {
   return (
     <ProtectedRoute>
       <RoleGuard allow={["admin", "principal", "vp", "teacher"]}>
@@ -16,4 +17,4 @@ const ReportCardRender = () => {
   );
 };
 
-export default ReportCardRender;
+export default ReportsPage;

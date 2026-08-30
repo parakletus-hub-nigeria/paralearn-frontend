@@ -73,7 +73,7 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
         ref={ref}
         data-slot="popover-content"
         className={cn(
-          'bg-popover text-popover-foreground z-50 w-72 rounded-md border p-4 shadow-md outline-hidden fixed',
+          'bg-popover text-popover-foreground z-[99999] w-72 rounded-md border p-4 shadow-md outline-hidden fixed',
           className,
         )}
         style={{ marginTop: `${sideOffset}px` }}
