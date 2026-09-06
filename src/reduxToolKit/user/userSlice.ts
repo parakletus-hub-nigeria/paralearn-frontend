@@ -45,6 +45,8 @@ interface UserState {
   users: any[];
   students: any[];
   teachers: any[];
+  vps: any[];
+  accountants: any[];
   studentCount: number;
   teacherCount: number;
   // Selected user detail
@@ -181,6 +183,8 @@ const initialState: UserState = {
   users: [],
   students: [],
   teachers: [],
+  vps: [],
+  accountants: [],
   studentCount: 0,
   teacherCount: 0,
   selectedUser: null,
@@ -417,6 +421,9 @@ const userSlice = createSlice({
         state.users = action.payload.users;
         state.students = action.payload.students;
         state.teachers = action.payload.teachers;
+        state.vps = action.payload.vps || [];
+        state.accountants = action.payload.accountants || [];
+        state.users = action.payload.users || [];
         state.studentCount = action.payload.studentCount;
         state.teacherCount = action.payload.teacherCount;
         state.error = null;

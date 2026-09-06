@@ -1,3 +1,35 @@
+
+export interface SettlementConfigResponse {
+  configured: boolean;
+  canAcceptPayments: boolean;
+  accountNumberMasked?: string;
+  accountName?: string;
+  bankCode?: string;
+  bankName?: string;
+  platformPercentage?: number;
+  chargeBearer?: string;
+  isActive?: boolean;
+  updatedAt?: string;
+  message?: string;
+}
+
+export interface BankItem {
+  name: string;
+  code: string;
+}
+
+export interface VerifyBankAccountResponse {
+  accountName: string;
+  accountNumber: string;
+}
+
+export interface SetupPaymentConfigPayload {
+  accountNumber: string;
+  bankCode: string;
+  bankName?: string;
+  chargeBearer?: "subaccount" | "account";
+}
+
 import { paraApi } from "../baseApi";
 
 export interface BursarySummary {
@@ -85,6 +117,7 @@ export interface GenerateInvoicesPayload {
 export interface GenerateInvoicesResponse {
   generated: number;
   skipped: number;
+  updated?: number;
   invoices?: any[];
 }
 
@@ -151,6 +184,70 @@ export interface RecordManualPaymentResponse {
 // ---------------------------------------------------------------------------
 const financeApi = paraApi.injectEndpoints({
   endpoints: (builder) => ({
+    
+    // GET /fees/settlement/config
+    getSettlementConfig: builder.query<SettlementConfigResponse, void>({
+      query: () => ({
+        url: "/fees/settlement/config",
+      }),
+      transformResponse: (res: any) => res?.data ?? res,
+      providesTags: [{ type: "SettlementConfig" as any }],
+    }),
+
+    // GET /fees/settlement/banks
+    getBanks: builder.query<BankItem[], void>({
+      query: () => ({
+        url: "/fees/settlement/banks",
+      }),
+      transformResponse: (res: any) => {
+        const data = res?.data ?? res;
+        return Array.isArray(data) ? data : [];
+      },
+    }),
+
+    // GET /fees/settlement/verify-account
+    verifyBankAccount: builder.query<
+      VerifyBankAccountResponse,
+      { accountNumber: string; bankCode: string }
+    >({
+      query: ({ accountNumber, bankCode }) => ({
+        url: "/fees/settlement/verify-account",
+        params: { accountNumber, bankCode },
+      }),
+      transformResponse: (res: any) => res?.data ?? res,
+    }),
+
+    // POST /fees/settlement/config
+    setupSettlementConfig: builder.mutation<
+      SettlementConfigResponse,
+      SetupPaymentConfigPayload
+    >({
+      query: (body) => ({
+        url: "/fees/settlement/config",
+        method: "POST",
+        data: body,
+      }),
+      transformResponse: (res: any) => res?.data ?? res,
+      invalidatesTags: [
+        { type: "SettlementConfig" as any },
+        { type: "BursaryDashboard" },
+      ],
+    }),
+
+    // PATCH /fees/settlement/config/active
+    toggleSettlementActive: builder.mutation<
+      SettlementConfigResponse,
+      { isActive: boolean }
+    >({
+      query: (body) => ({
+        url: "/fees/settlement/config/active",
+        method: "PATCH",
+        data: body,
+      }),
+      transformResponse: (res: any) => res?.data ?? res,
+      invalidatesTags: [{ type: "SettlementConfig" as any }],
+    }),
+
     // GET /fees/bursary/dashboard
     getBursaryDashboard: builder.query<
       BursaryDashboardResponse,
@@ -308,6 +405,11 @@ const financeApi = paraApi.injectEndpoints({
 });
 
 export const {
+  useGetSettlementConfigQuery,
+  useGetBanksQuery,
+  useLazyVerifyBankAccountQuery,
+  useSetupSettlementConfigMutation,
+  useToggleSettlementActiveMutation,
   useGetBursaryDashboardQuery,
   useGetFeeStructuresQuery,
   useCreateFeeStructureMutation,

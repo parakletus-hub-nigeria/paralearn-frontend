@@ -99,6 +99,7 @@ export const paraApi = createApi({
     "Invoice",
     "InvoiceList",
     "FeePayment",
+    "SettlementConfig",
     "BursaryDashboard",
     "PsychomotorRating",
     "SignatureAudit",

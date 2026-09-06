@@ -6,7 +6,7 @@ import { CBTResultsPage } from "@/components/RMS/CBT/CBTResultsPage";
 export default function CBTResultsRoutePage() {
   return (
     <ProtectedRoute>
-      <RoleGuard allow={["admin"]}>
+      <RoleGuard allow={["admin", "principal", "vp"]}>
         <SideBar>
           <CBTResultsPage />
         </SideBar>

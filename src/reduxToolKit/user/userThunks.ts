@@ -605,12 +605,48 @@ export const fetchAllUsers = createAsyncThunk(
         );
       });
 
+            const vps = users.filter((item: any) => {
+        const roles = item.roles || [];
+        return (
+          Array.isArray(roles) &&
+          roles.some(
+            (r: any) =>
+              r.role?.name === "vp" ||
+              r.name === "vp" ||
+              r === "vp" ||
+              r.role?.name === "vice_principal" ||
+              r.name === "vice_principal" ||
+              r === "vice_principal",
+          )
+        );
+      });
+
+      const accountants = users.filter((item: any) => {
+        const roles = item.roles || [];
+        return (
+          Array.isArray(roles) &&
+          roles.some(
+            (r: any) =>
+              r.role?.name === "accountant" ||
+              r.name === "accountant" ||
+              r === "accountant" ||
+              r.role?.name === "bursar" ||
+              r.name === "bursar" ||
+              r === "bursar",
+          )
+        );
+      });
+
       return {
         users,
         students,
         teachers,
+        vps,
+        accountants,
         studentCount: students.length,
         teacherCount: teachers.length,
+        vpCount: vps.length,
+        accountantCount: accountants.length,
       };
     } catch (error: any) {
       const errorMessage =

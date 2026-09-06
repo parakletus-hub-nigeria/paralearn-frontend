@@ -27,6 +27,7 @@ export const routespath = {
   LESSON_GENERATOR_WALLET: "/RMS/lesson-generator/wallet",
   // Finance / Bursary module
   FINANCE: "/RMS/finance",
+  FINANCE_SETTINGS: "/RMS/finance/settings",
   FEE_STRUCTURES: "/RMS/finance/fee-structures",
   INVOICES: "/RMS/finance/invoices",
   // SabiNote Standalone routes

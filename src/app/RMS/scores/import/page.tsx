@@ -6,7 +6,7 @@ import RoleGuard from "@/components/protectedRoute/RoleGuard";
 export default function BulkScoreImport() {
   return (
     <ProtectedRoute>
-      <RoleGuard allow={["admin"]}>
+      <RoleGuard allow={["admin", "principal", "vp", "teacher"]}>
         <SideBar>
           <BulkScoreImportPage />
         </SideBar>

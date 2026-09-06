@@ -6,7 +6,7 @@ import { CBTDashboardPage } from "@/components/RMS/CBT/CBTDashboardPage";
 export default function CBTPage() {
   return (
     <ProtectedRoute>
-      <RoleGuard allow={["admin"]}>
+      <RoleGuard allow={["admin", "principal", "vp"]}>
         <SideBar>
           <CBTDashboardPage />
         </SideBar>

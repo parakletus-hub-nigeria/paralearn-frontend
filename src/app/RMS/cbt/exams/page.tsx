@@ -6,7 +6,7 @@ import { CBTExamsPage } from "@/components/RMS/CBT/CBTExamsPage";
 export default function CBTExamsRoutePage() {
   return (
     <ProtectedRoute>
-      <RoleGuard allow={["admin"]}>
+      <RoleGuard allow={["admin", "principal", "vp"]}>
         <SideBar>
           <CBTExamsPage />
         </SideBar>

@@ -37,7 +37,10 @@ import {
   ArrowUpRight,
   Receipt,
 } from "lucide-react";
-import { useGetBursaryDashboardQuery } from "@/reduxToolKit/api/endpoints/finance";
+import {
+  useGetBursaryDashboardQuery,
+  useGetSettlementConfigQuery,
+} from "@/reduxToolKit/api/endpoints/finance";
 import { routespath } from "@/lib/routepath";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +68,7 @@ export default function BursaryDashboardPage() {
   };
 
   const { data, isLoading, isFetching, refetch } = useGetBursaryDashboardQuery(queryParams);
+  const { data: settlementConfig } = useGetSettlementConfigQuery();
 
   const summary = data?.summary || {
     totalExpectedKobo: 0,

@@ -6,7 +6,7 @@ import { AdminEnrollmentsPage } from "@/components/RMS/AdminEnrollmentsPage";
 export default function EnrollmentsPage() {
   return (
     <ProtectedRoute>
-      <RoleGuard allow={["admin"]}>
+      <RoleGuard allow={["admin", "principal", "vp"]}>
         <SideBar>
           <AdminEnrollmentsPage />
         </SideBar>

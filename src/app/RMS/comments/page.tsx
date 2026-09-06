@@ -6,7 +6,7 @@ import { AdminCommentsPage } from "@/components/RMS/AdminCommentsPage";
 export default function CommentsPage() {
   return (
     <ProtectedRoute>
-      <RoleGuard allow={["admin", "teacher"]}>
+      <RoleGuard allow={["admin", "principal", "vp", "teacher"]}>
         <SideBar>
           <AdminCommentsPage />
         </SideBar>

@@ -44,6 +44,9 @@ import {
   Phone,
   MapPin,
   Calendar,
+  ShieldCheck,
+  Briefcase,
+  GraduationCap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ProductTour } from "@/components/common/ProductTour";
@@ -52,7 +55,7 @@ const usersTourSteps = [
   {
     target: '.users-directory-header',
     title: "School Directory",
-    content: "Welcome to your school's directory! This is where you manage all students and teachers, track their status, and handle enrollments.",
+    content: "Welcome to your school's directory! This is where you manage all students, teachers, administrators, bursars, and vice principals.",
     disableBeacon: true,
   },
   {
@@ -63,7 +66,7 @@ const usersTourSteps = [
   {
     target: '.users-add-button',
     title: "Enroll New Users",
-    content: "Ready to expand? Click here to manually add a single student or teacher and get them started immediately.",
+    content: "Ready to expand? Click here to manually add a student, teacher, vice principal, or bursar.",
   },
   {
     target: '.users-action-menu',
@@ -72,14 +75,13 @@ const usersTourSteps = [
   },
 ];
 
-
 type UserRow = {
   id: string;
   dbId: string;
   firstName: string;
   lastName: string;
   email: string;
-  role: "teacher" | "student" | "vp" | "accountant";
+  role: "teacher" | "student" | "vp" | "accountant" | "admin" | "principal";
   classId?: string;
   className?: string;
   status: "active" | "inactive";
@@ -92,11 +94,11 @@ type UserRow = {
 export const UsersPage = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { students, teachers, loading, tenantInfo } = useSelector((s: RootState) => s.user);
+  const { users, students, teachers, vps, accountants, loading, tenantInfo } = useSelector((s: RootState) => s.user);
   const { classes } = useSelector((s: RootState) => s.admin);
 
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"all" | "teacher" | "student" | "vp" | "accountant">("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | "teacher" | "student" | "vp" | "accountant" | "admin">("all");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -128,61 +130,65 @@ export const UsersPage = () => {
 
   // Build unified user list
   const allUsers = useMemo<UserRow[]>(() => {
-    const studentRows: UserRow[] = (students || []).map((s: any) => {
-      // Get classId from various possible locations in the response
-      // Check enrollments array first (might be most recent structure)
-      const firstEnrollment = s.enrollments?.[0] || s.enrollment || {};
-      const classId = s.classId || firstEnrollment.classId || s.class?.id || firstEnrollment.class?.id || "";
-      // Look up class name from our classes map, or use the one from the response
-      const className = classNameById.get(classId) || s.className || s.class?.name || firstEnrollment.class?.name || "";
-      
-      // Also check if student profile has studentProfile with class info
-      const profile = s.studentProfile || s.profile || {};
-      const profileClassId = profile.classId || "";
-      const profileClassName = classNameById.get(profileClassId) || profile.class?.name || "";
-      
-      return {
-        id: s.studentId || profile.studentId || s.id || "",
-        dbId: s.id || "",
-        firstName: s.firstName || "",
-        lastName: s.lastName || "",
-        email: s.email || "",
-        role: "student" as const,
-        classId: classId || profileClassId,
-        className: className || profileClassName,
-        status: s.isActive === false ? "inactive" : "active",
-        avatar: s.avatar || "",
-        phoneNumber: s.phoneNumber || "",
-        dateOfBirth: s.dateOfBirth,
-        address: s.address || "",
-      };
-    });
+    const rawList = (users && users.length > 0)
+      ? users
+      : [
+          ...(students || []),
+          ...(teachers || []),
+          ...(vps || []),
+          ...(accountants || []),
+        ];
 
-    const teacherRows: UserRow[] = (teachers || []).map((t: any) => {
-      const src = t?.user ?? t?.profile ?? t ?? {};
-      // Teachers may have multiple classes, but we'll show their primary/first class
-      const classId = t.classId || t.primaryClassId || src.classId || "";
-      const className = classNameById.get(classId) || t.className || src.className || "";
-      
-      return {
-        id: t?.teacherId || t?.teacherCode || t?.staffId || t?.code || src?.teacherId || t?.id || "",
-        dbId: t.id ?? src.id ?? "",
-        firstName: src.firstName ?? t?.firstName ?? "",
-        lastName: src.lastName ?? t?.lastName ?? "",
-        email: src.email ?? t?.email ?? "",
-        role: "teacher" as const,
+    const seen = new Set<string>();
+    const rows: UserRow[] = [];
+
+    for (const u of rawList) {
+      const dbId = u.id || "";
+      if (seen.has(dbId)) continue;
+      seen.add(dbId);
+
+      const roles = Array.isArray(u.roles)
+        ? u.roles.map((r: any) => (r.role?.name || r.name || r || "").toLowerCase())
+        : [String(u.role || "").toLowerCase()];
+
+      let primaryRole: UserRow["role"] = "student";
+      if (roles.includes("admin")) primaryRole = "admin";
+      else if (roles.includes("principal")) primaryRole = "principal";
+      else if (roles.includes("vp") || roles.includes("vice_principal")) primaryRole = "vp";
+      else if (roles.includes("accountant") || roles.includes("bursar")) primaryRole = "accountant";
+      else if (roles.includes("teacher")) primaryRole = "teacher";
+      else if (roles.includes("student")) primaryRole = "student";
+
+      const firstEnrollment = u.enrollments?.[0] || u.enrollment || {};
+      const classId = u.classId || firstEnrollment.classId || u.class?.id || firstEnrollment.class?.id || "";
+      const className = classNameById.get(classId) || u.className || u.class?.name || firstEnrollment.class?.name || "";
+
+      const displayId =
+        u.studentId ||
+        u.teacherId ||
+        u.staffId ||
+        u.code ||
+        "";
+
+      rows.push({
+        id: displayId,
+        dbId,
+        firstName: u.firstName || "",
+        lastName: u.lastName || "",
+        email: u.email || "",
+        role: primaryRole,
         classId,
         className,
-        status: t.isActive === false || src.isActive === false ? "inactive" : "active",
-        avatar: src.avatar || t?.avatar || "",
-        phoneNumber: src.phoneNumber ?? t?.phoneNumber ?? "",
-        dateOfBirth: src.dateOfBirth ?? t?.dateOfBirth,
-        address: src.address ?? t?.address ?? "",
-      };
-    });
+        status: u.isActive === false ? "inactive" : "active",
+        avatar: u.profilePicture || u.avatar || "",
+        phoneNumber: u.phoneNumber || "",
+        dateOfBirth: u.dateOfBirth,
+        address: u.address || "",
+      });
+    }
 
-    return [...studentRows, ...teacherRows];
-  }, [students, teachers, classNameById]);
+    return rows;
+  }, [users, students, teachers, vps, accountants, classNameById]);
 
   // Filter and search
   const filteredUsers = useMemo(() => {
@@ -217,79 +223,7 @@ export const UsersPage = () => {
     return filteredUsers.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredUsers, page]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [search, roleFilter, classFilter]);
-
-  const handleExport = () => {
-    let exported = false;
-    
-    if (roleFilter === "teacher" || (roleFilter === "all" && teachers.length > 0)) {
-      const teacherData = teachers.map((item: any) => {
-        const src = item?.user ?? item?.profile ?? item ?? {};
-        return {
-          id: item?.teacherId || item?.teacherCode || item?.staffId || item?.id || "N/A",
-          name: `${src.firstName ?? item?.firstName ?? ""} ${src.lastName ?? item?.lastName ?? ""}`.trim() || "N/A",
-          email: src.email ?? item?.email ?? "N/A",
-          dateOfBirth: src.dateOfBirth ? new Date(src.dateOfBirth).toLocaleDateString() : "N/A",
-          phoneNumber: src.phoneNumber ?? item?.phoneNumber ?? "N/A",
-          address: src.address ?? item?.address ?? "N/A",
-        };
-      });
-      exportTeachersToPDF(teacherData);
-      exported = true;
-    }
-    
-    if (roleFilter === "student" || (roleFilter === "all" && students.length > 0)) {
-      const studentData = students.map((item: any) => ({
-        id: item.studentId || "N/A",
-        name: `${item.firstName} ${item.lastName}`,
-        email: item.email || "N/A",
-        dateOfBirth: item.dateOfBirth ? new Date(item.dateOfBirth).toLocaleDateString() : "N/A",
-        address: item.address || "N/A",
-        phoneNumber: item.phoneNumber || "N/A",
-        guardianName: item.guardianName || "N/A",
-        guardianPhone: item.guardianPhone || "N/A",
-      }));
-      exportStudentsToPDF(studentData);
-      exported = true;
-    }
-
-    if (exported) {
-      toast.success(
-        roleFilter === "all" 
-          ? "Users directory exported successfully!" 
-          : `${roleFilter.charAt(0).toUpperCase() + roleFilter.slice(1)}s exported successfully!`
-      );
-    }
-  };
-
-  // Action handlers
-  const handleViewUser = (user: UserRow) => {
-    setViewUserModal(user);
-  };
-
-  const handleEditUser = (user: UserRow) => {
-    setEditUserModal(user);
-  };
-
-  const handleHardDeleteUser = async (user: UserRow) => {
-    if (confirm(`WARNING: This is a permanent action.\nAre you sure you want to permanently delete ${user.firstName} ${user.lastName}?`)) {
-      try {
-        await dispatch(hardDeleteUser(user.dbId)).unwrap();
-        toast.success(`User ${user.firstName} permanently deleted`);
-        dispatch(fetchAllUsers());
-      } catch (error: any) {
-        toast.error(error || "Failed to permanently delete user");
-      }
-    }
-  };
-
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "??";
-  };
-
+  // Handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedIds(paginatedUsers.map((u) => u.dbId));
@@ -298,12 +232,40 @@ export const UsersPage = () => {
     }
   };
 
-  const toggleSelectUser = (id: string, checked: boolean) => {
+  const handleSelectOne = (id: string, checked: boolean) => {
     if (checked) {
       setSelectedIds((prev) => [...prev, id]);
     } else {
-      setSelectedIds((prev) => prev.filter((i) => i !== id));
+      setSelectedIds((prev) => prev.filter((item) => item !== id));
     }
+  };
+
+  const handleDeleteUser = async (user: UserRow) => {
+    if (!confirm(`Are you sure you want to delete ${user.firstName} ${user.lastName}?`)) {
+      return;
+    }
+
+    try {
+      await dispatch(deleteUser(user.dbId)).unwrap();
+      toast.success("User deleted successfully");
+      dispatch(fetchAllUsers());
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete user");
+    }
+  };
+
+  const handleEditUser = (user: UserRow) => {
+    setEditUserModal(user);
+  };
+
+  const getInitials = (first?: string, last?: string, fallbackEmail?: string) => {
+    const f = (first || "").trim();
+    const l = (last || "").trim();
+    if (f && l) return `${f[0]}${l[0]}`.toUpperCase();
+    if (f) return f.slice(0, 2).toUpperCase();
+    if (l) return l.slice(0, 2).toUpperCase();
+    if (fallbackEmail) return fallbackEmail.slice(0, 2).toUpperCase();
+    return "PL";
   };
 
   const getAvatarAccent = (name: string) => {
@@ -312,161 +274,505 @@ export const UsersPage = () => {
       { bg: "var(--cobalt-tint)", color: "var(--cobalt-signal)" },
       { bg: "var(--emerald-tint)", color: "var(--emerald-signal)" },
       { bg: "var(--amber-tint)", color: "var(--amber-signal)" },
-      { bg: "var(--crimson-tint)", color: "var(--crimson-signal)" },
     ];
-    const index = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % accents.length;
-    return accents[index];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return accents[Math.abs(hash) % accents.length];
+  };
+
+  const renderRoleBadge = (role: UserRow["role"]) => {
+    switch (role) {
+      case "teacher":
+        return (
+          <span className="badge badge-active" style={{ fontSize: 11 }}>
+            Teacher
+          </span>
+        );
+      case "vp":
+        return (
+          <span
+            className="badge"
+            style={{
+              fontSize: 11,
+              background: "#EDE9FE",
+              color: "#6D28D9",
+              border: "1px solid rgba(109, 40, 217, 0.2)",
+              fontWeight: 700,
+            }}
+          >
+            Vice Principal
+          </span>
+        );
+      case "accountant":
+        return (
+          <span
+            className="badge"
+            style={{
+              fontSize: 11,
+              background: "#ECFDF5",
+              color: "#047857",
+              border: "1px solid rgba(4, 120, 87, 0.2)",
+              fontWeight: 700,
+            }}
+          >
+            Bursar / Finance
+          </span>
+        );
+      case "admin":
+      case "principal":
+        return (
+          <span
+            className="badge"
+            style={{
+              fontSize: 11,
+              background: "#EFF6FF",
+              color: "#1D4ED8",
+              border: "1px solid rgba(29, 78, 216, 0.2)",
+              fontWeight: 700,
+            }}
+          >
+            {role === "principal" ? "Principal" : "Administrator"}
+          </span>
+        );
+      case "student":
+      default:
+        return (
+          <span className="badge badge-info" style={{ fontSize: 11 }}>
+            Student
+          </span>
+        );
+    }
+  };
+
+  const roleLabels: Record<string, string> = {
+    student: "Student",
+    teacher: "Teacher",
+    vp: "Vice Principal",
+    accountant: "Bursar / Accountant",
+    admin: "Administrator",
+    principal: "Principal",
   };
 
   return (
-    <div className="w-full">
-      <ProductTour tourKey="admin_users_page" steps={usersTourSteps} />
-      <Header 
-        schoolLogo={tenantInfo?.logoUrl} 
-        schoolName={tenantInfo?.name || "ParaLearn School"}
-      />
+    <div className="users-page-container" style={{ padding: "0 0 40px 0" }}>
+      <ProductTour steps={usersTourSteps} tourKey="users_directory_tour_v1" />
+      <div className="users-directory-header" style={{ marginBottom: 24 }}>
+        <Header schoolLogo={tenantInfo?.logoUrl} schoolName={tenantInfo?.name || "ParaLearn School"} />
+      </div>
 
-      {/* Page Header */}
-      <div>
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
-          <div>
-            <h1 className="users-directory-header" style={{ fontFamily: "var(--font-manrope), system-ui, sans-serif", fontSize: "clamp(1.25rem, 2vw, 1.5rem)", fontWeight: 800, letterSpacing: "-0.025em", color: "var(--foreground)", margin: 0 }}>Directory</h1>
-            <p style={{ fontFamily: "var(--font-manrope), system-ui, sans-serif", fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>
-              Manage student and teacher access, roles, and class enrollments.
+      {/* Filter and Action Bar */}
+      <div
+        className="users-filter-bar panel-card"
+        style={{
+          padding: "16px 20px",
+          marginBottom: 20,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", flex: 1 }}>
+          <div style={{ position: "relative", minWidth: 220, flex: "1 1 220px", maxWidth: 360 }}>
+            <Search
+              style={{
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 15,
+                height: 15,
+                color: "var(--text-tertiary)",
+              }}
+            />
+            <Input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Search by name, email, or ID..."
+              style={{
+                paddingLeft: 32,
+                height: 36,
+                fontSize: 13,
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-fine)",
+                background: "var(--surface-muted)",
+              }}
+            />
+          </div>
+
+          {/* Role Filter */}
+          <Select
+            value={roleFilter}
+            onValueChange={(val: any) => {
+              setRoleFilter(val);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger
+              style={{
+                height: 36,
+                width: 170,
+                fontSize: 13,
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-fine)",
+                background: "var(--surface-muted)",
+              }}
+            >
+              <SelectValue placeholder="All Roles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="student">Students</SelectItem>
+              <SelectItem value="teacher">Teachers</SelectItem>
+              <SelectItem value="vp">Vice Principals (VP)</SelectItem>
+              <SelectItem value="accountant">Bursars / Finance</SelectItem>
+              <SelectItem value="admin">Administrators</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Class Filter */}
+          <Select
+            value={classFilter}
+            onValueChange={(val) => {
+              setClassFilter(val);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger
+              style={{
+                height: 36,
+                width: 160,
+                fontSize: 13,
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-fine)",
+                background: "var(--surface-muted)",
+              }}
+            >
+              <SelectValue placeholder="All Classes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Classes</SelectItem>
+              {classes.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                style={{
+                  height: 36,
+                  padding: "0 14px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-fine)",
+                  background: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <Download style={{ width: 14, height: 14 }} />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                const data = (students || []).map((s: any) => ({
+                  id: s.code || s.id || "",
+                  name: [s.firstName, s.lastName].filter(Boolean).join(" ") || s.name || "",
+                  email: s.user?.email || s.email || "",
+                  dateOfBirth: s.dateOfBirth || "",
+                  address: s.address || "",
+                  phoneNumber: s.phoneNumber || "",
+                  guardianName: s.guardianName || "",
+                  guardianPhone: s.guardianPhone || "",
+                }));
+                exportStudentsToPDF(data);
+              }}
+                className="text-xs cursor-pointer"
+              >
+                Export Students (PDF)
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                const data = (teachers || []).map((t: any) => ({
+                  id: t.code || t.id || "",
+                  name: [t.firstName, t.lastName].filter(Boolean).join(" ") || t.name || "",
+                  email: t.user?.email || t.email || "",
+                  dateOfBirth: t.dateOfBirth || "",
+                  phoneNumber: t.phoneNumber || "",
+                  address: t.address || "",
+                }));
+                exportTeachersToPDF(data);
+              }}
+                className="text-xs cursor-pointer"
+              >
+                Export Teachers (PDF)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Add User Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                className="users-add-button btn-primary"
+                style={{
+                  height: 36,
+                  padding: "0 16px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  borderRadius: "var(--radius-md)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <Plus style={{ width: 15, height: 15 }} />
+                Add User
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem
+                onClick={() => {
+                  setAddModalType("student");
+                  setAddModalOpen(true);
+                }}
+                className="text-xs cursor-pointer flex items-center gap-2"
+              >
+                <GraduationCap className="w-4 h-4 text-blue-600" />
+                Add Student
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setAddModalType("teacher");
+                  setAddModalOpen(true);
+                }}
+                className="text-xs cursor-pointer flex items-center gap-2"
+              >
+                <Briefcase className="w-4 h-4 text-emerald-600" />
+                Add Teacher
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setAddModalType("vp");
+                  setAddModalOpen(true);
+                }}
+                className="text-xs cursor-pointer flex items-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4 text-purple-600" />
+                Add Vice Principal
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setAddModalType("accountant");
+                  setAddModalOpen(true);
+                }}
+                className="text-xs cursor-pointer flex items-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4 text-teal-600" />
+                Add Bursar / Finance
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Directory Table */}
+      <div className="panel-card" style={{ padding: "20px 24px" }}>
+        {loading ? (
+          <div style={{ padding: "48px 0", textAlign: "center", color: "var(--text-secondary)" }}>
+            <p style={{ fontSize: 14 }}>Loading directory...</p>
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div style={{ padding: "48px 0", textAlign: "center", color: "var(--text-secondary)" }}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--foreground)", marginBottom: 4 }}>
+              No users found
             </p>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Button variant="outline" onClick={handleExport} className="h-10 gap-2" style={{ borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }}>
-              <Download className="w-4 h-4" />Export
-            </Button>
-            <Button onClick={() => { setAddModalType("student"); setAddModalOpen(true); }} className="users-add-button h-10 gap-2 text-white" style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)", fontSize: 13, fontWeight: 600 }}>
-              <Plus className="w-4 h-4" />Add User
-            </Button>
-          </div>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="users-filter-bar" style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-          <div style={{ position: "relative", flex: "1 1 240px", minWidth: 0 }}>
-            <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--text-secondary)", pointerEvents: "none" }} />
-            <Input placeholder="Search by name, email, or ID..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ paddingLeft: 36, height: 40, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }} />
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Select value={roleFilter} onValueChange={(v: any) => setRoleFilter(v)}>
-              <SelectTrigger style={{ height: 40, width: 140, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }}>
-                <SelectValue placeholder="All Roles" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="teacher">Teachers</SelectItem>
-                <SelectItem value="student">Students</SelectItem>
-                <SelectItem value="vp">Vice Principals</SelectItem>
-                <SelectItem value="accountant">Accountants</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={classFilter} onValueChange={setClassFilter}>
-              <SelectTrigger style={{ height: 40, width: 160, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }}>
-                <SelectValue placeholder="All Classes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Classes</SelectItem>
-                {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Table */}
-        {loading && allUsers.length === 0 ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 0" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid var(--border-fine)", borderTopColor: "var(--violet-ink)", animation: "spin 0.6s linear infinite", margin: "0 auto 12px" }} />
-              <p style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 500 }}>Loading users...</p>
-            </div>
+            <p style={{ fontSize: 13 }}>
+              {search || roleFilter !== "all" || classFilter !== "all"
+                ? "Try adjusting your search query or filters."
+                : "Get started by adding students, teachers, or administrators."}
+            </p>
           </div>
         ) : (
           <>
-            <div style={{ background: "#ffffff", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)", overflow: "hidden" }}>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--border-fine)" }}>
-                      <th style={{ padding: "12px 16px", width: 40 }}>
-                        <input type="checkbox" checked={paginatedUsers.length > 0 && selectedIds.length === paginatedUsers.length} onChange={(e) => handleSelectAll(e.target.checked)} style={{ accentColor: "var(--violet-ink)" }} />
-                      </th>
-                      {["User Name", "Role", "Class", "Status", "Actions"].map((h, i) => (
-                        <th key={h} style={{ textAlign: i === 4 ? "center" : "left", fontFamily: "var(--font-manrope), system-ui, sans-serif", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-secondary)", padding: "12px 12px" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedUsers.map((user, idx) => {
-                      const accent = getAvatarAccent(`${user.firstName}${user.lastName}`);
-                      return (
-                        <tr key={user.dbId || idx} style={{ borderBottom: "1px solid var(--border-fine)", background: "#ffffff", transition: "background var(--dur-fast)" }} onMouseEnter={(e) => (e.currentTarget.style.background = "var(--violet-tint)")} onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}>
-                          <td style={{ padding: "12px 16px" }}>
-                            <input type="checkbox" checked={selectedIds.includes(user.dbId)} onChange={(e) => toggleSelectUser(user.dbId, e.target.checked)} style={{ accentColor: "var(--violet-ink)" }} />
-                          </td>
-                          <td style={{ padding: "12px 12px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <div style={{ width: 36, height: 36, borderRadius: "50%", background: accent.bg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: accent.color, flexShrink: 0 }}>
-                                {getInitials(user.firstName, user.lastName)}
-                              </div>
-                              <div>
-                                <p style={{ fontWeight: 600, fontSize: 13, color: "var(--foreground)", margin: 0 }}>{user.firstName} {user.lastName}</p>
-                                <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: 0 }}>{user.email}</p>
-                              </div>
+            <div style={{ overflowX: "auto" }}>
+              <table className="data-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: 40, padding: "10px 12px", textAlign: "left" }}>
+                      <input
+                        type="checkbox"
+                        checked={
+                          paginatedUsers.length > 0 &&
+                          selectedIds.length === paginatedUsers.length
+                        }
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        style={{ cursor: "pointer", borderRadius: 3 }}
+                      />
+                    </th>
+                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>User</th>
+                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Role</th>
+                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Contact</th>
+                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Class</th>
+                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</th>
+                    <th style={{ width: 60, padding: "10px 12px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedUsers.map((user) => {
+                    const accent = getAvatarAccent(`${user.firstName}${user.lastName}`);
+                    const isSelected = selectedIds.includes(user.dbId);
+
+                    return (
+                      <tr
+                        key={user.dbId || user.id}
+                        style={{
+                          borderBottom: "1px solid var(--border-fine)",
+                          background: isSelected ? "var(--violet-tint)" : "transparent",
+                          transition: "background 0.15s ease",
+                        }}
+                      >
+                        <td style={{ padding: "12px 12px" }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => handleSelectOne(user.dbId, e.target.checked)}
+                            style={{ cursor: "pointer", borderRadius: 3 }}
+                          />
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div
+                              style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: "50%",
+                                background: accent.bg,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontWeight: 700,
+                                fontSize: 12,
+                                color: accent.color,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {getInitials(user.firstName, user.lastName, user.email)}
                             </div>
-                          </td>
-                          <td style={{ padding: "12px 12px" }}>
-                            <span className={user.role === "teacher" ? "badge badge-active" : "badge badge-info"} style={{ fontSize: 11 }}>
-                              {user.role === "teacher" ? "Teacher" : "Student"}
+                            <div>
+                              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--foreground)", margin: 0, lineHeight: 1.3 }}>
+                                {[user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "School Staff"}
+                              </p>
+                              <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: 0, fontFamily: "'Geist Mono', ui-monospace, monospace" }}>
+                                {user.id || "—"}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          {renderRoleBadge(user.role)}
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <p style={{ fontSize: 12, color: "var(--foreground)", margin: 0, fontWeight: 500 }}>
+                            {user.email || "—"}
+                          </p>
+                          {user.phoneNumber && (
+                            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: 0 }}>
+                              {user.phoneNumber}
+                            </p>
+                          )}
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          {user.className ? (
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)" }}>
+                              {user.className}
                             </span>
-                          </td>
-                          <td style={{ padding: "12px 12px" }}>
-                            {user.className ? (
-                              <div>
-                                <p style={{ fontWeight: 600, fontSize: 13, color: "var(--foreground)", margin: 0 }}>{user.className}</p>
-                                <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: 0 }}>Enrolled</p>
-                              </div>
-                            ) : (
-                              <span style={{ fontSize: 12, color: "var(--text-secondary)", fontStyle: "italic" }}>{user.role === "student" ? "Not enrolled" : "—"}</span>
-                            )}
-                          </td>
-                          <td style={{ padding: "12px 12px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <span style={{ width: 7, height: 7, borderRadius: "50%", background: user.status === "active" ? "var(--emerald-signal)" : "var(--border-medium)", flexShrink: 0, display: "inline-block" }} />
-                              <span style={{ fontSize: 13, color: "var(--foreground)", textTransform: "capitalize" }}>{user.status}</span>
-                            </div>
-                          </td>
-                          <td style={{ padding: "12px 12px", textAlign: "center" }}>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button className="users-action-menu" style={{ padding: 6, borderRadius: "var(--radius-sm)", border: "none", background: "transparent", cursor: "pointer", color: "var(--text-secondary)" }}>
-                                  <MoreVertical style={{ width: 15, height: 15 }} />
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" style={{ minWidth: 160 }}>
-                                <DropdownMenuItem onClick={() => handleViewUser(user)} className="cursor-pointer gap-2 py-2"><Eye className="w-4 h-4" style={{ color: "var(--foreground-muted)" }} />View Details</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditUser(user)} className="cursor-pointer gap-2 py-2"><Pencil className="w-4 h-4" style={{ color: "var(--foreground-muted)" }} />Edit User</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleHardDeleteUser(user)} className="cursor-pointer gap-2 py-2" style={{ color: "var(--crimson-signal)" }}><Trash2 className="w-4 h-4" />Delete Permanently</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {paginatedUsers.length === 0 && (
-                      <tr><td colSpan={6} style={{ padding: "64px 0", textAlign: "center", color: "var(--text-secondary)", fontSize: 13 }}>No users found matching your criteria.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                          ) : (
+                            <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>—</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span
+                            className={user.status === "active" ? "badge badge-active" : "badge badge-inactive"}
+                            style={{ fontSize: 11 }}
+                          >
+                            {user.status === "active" ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 12px", textAlign: "center" }}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                className="users-action-menu"
+                                style={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: "var(--radius-sm)",
+                                  border: "none",
+                                  background: "transparent",
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  color: "var(--text-secondary)",
+                                }}
+                              >
+                                <MoreVertical style={{ width: 14, height: 14 }} />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => setViewUserModal(user)}
+                                className="text-xs cursor-pointer flex items-center gap-2"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleEditUser(user)}
+                                className="text-xs cursor-pointer flex items-center gap-2"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                                Edit User
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteUser(user)}
+                                className="text-xs cursor-pointer text-red-600 focus:text-red-600 flex items-center gap-2"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Delete User
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
-            {/* Pagination */}
-            {filteredUsers.length > 0 && totalPages > 1 && (
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, flexWrap: "wrap", gap: 10 }}>
                 <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
                   Showing <strong style={{ color: "var(--foreground)" }}>{(page - 1) * ITEMS_PER_PAGE + 1}</strong>–<strong style={{ color: "var(--foreground)" }}>{Math.min(page * ITEMS_PER_PAGE, filteredUsers.length)}</strong> of <strong style={{ color: "var(--foreground)" }}>{filteredUsers.length}</strong>
@@ -511,7 +817,9 @@ export const UsersPage = () => {
                 })()}
                 <div>
                   <h2 style={{ fontFamily: "var(--font-manrope), system-ui, sans-serif", fontSize: 16, fontWeight: 800, color: "var(--foreground)", margin: 0 }}>{viewUserModal.firstName} {viewUserModal.lastName}</h2>
-                  <span className={viewUserModal.role === "teacher" ? "badge badge-active" : "badge badge-info"} style={{ fontSize: 11, marginTop: 5, display: "inline-flex" }}>{viewUserModal.role === "teacher" ? "Teacher" : "Student"}</span>
+                  <div style={{ marginTop: 5 }}>
+                    {renderRoleBadge(viewUserModal.role)}
+                  </div>
                 </div>
               </div>
               <button onClick={() => setViewUserModal(null)} style={{ padding: 6, borderRadius: "var(--radius-sm)", border: "none", background: "transparent", cursor: "pointer", color: "var(--text-secondary)" }}><X style={{ width: 16, height: 16 }} /></button>
@@ -537,7 +845,7 @@ export const UsersPage = () => {
                   <span style={{ fontSize: 9, fontWeight: 800, color: "var(--text-secondary)", letterSpacing: "0.05em" }}>ID</span>
                 </div>
                 <div>
-                  <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: 0, fontWeight: 500 }}>User ID</p>
+                  <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: 0, fontWeight: 500 }}>User ID / Code</p>
                   <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0, fontFamily: "'Geist Mono', ui-monospace, monospace" }}>{viewUserModal.id}</p>
                 </div>
               </div>
@@ -552,7 +860,6 @@ export const UsersPage = () => {
         </div>,
         document.body
       )}
-
 
       {/* Edit User Modal */}
       <EditUserModal

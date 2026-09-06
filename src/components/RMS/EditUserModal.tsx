@@ -16,7 +16,7 @@ type UserRow = {
   firstName: string;
   lastName: string;
   email: string;
-  role: "teacher" | "student" | "vp" | "accountant";
+  role: "teacher" | "student" | "vp" | "accountant" | "admin" | "principal";
   phoneNumber?: string;
   dateOfBirth?: string;
   address?: string;

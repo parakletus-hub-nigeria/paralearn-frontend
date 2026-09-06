@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/reduxToolKit/store";
 import { useRouter, usePathname } from "next/navigation";
 import { routespath } from "@/lib/routepath";
-import { LayoutDashboard, Banknote, FileText } from "lucide-react";
+import { LayoutDashboard, Banknote, FileText, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SideBar from "@/components/RMS/sideBar";
 import ProtectedRoute from "@/components/protectedRoute/protectedRoute";
@@ -12,8 +12,9 @@ import RoleGuard from "@/components/protectedRoute/RoleGuard";
 
 const tabs = [
   { label: "Bursary Overview", href: routespath.FINANCE, icon: LayoutDashboard, exact: true },
-  { label: "Fee Structures", href: routespath.FEE_STRUCTURES, icon: Banknote },
   { label: "Invoices & Billing", href: routespath.INVOICES, icon: FileText },
+  { label: "Fee Structures", href: routespath.FEE_STRUCTURES, icon: Banknote },
+  { label: "Bank & Settlement", href: routespath.FINANCE_SETTINGS, icon: CreditCard },
 ];
 
 export default function FinanceLayout({ children }: { children: React.ReactNode }) {

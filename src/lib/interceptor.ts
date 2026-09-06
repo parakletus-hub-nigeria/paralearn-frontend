@@ -7,7 +7,7 @@ import { getSubdomain } from "./subdomainManager";
 
 export const apiFetch = async (
   urlPath: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<Response> => {
   const state = store.getState();
   let accessToken = tokenManager.getToken() || state.user.accessToken;
@@ -16,7 +16,10 @@ export const apiFetch = async (
     urlPath.includes(`/api/proxy${routespath.API_REFRESH}`);
 
   // Helper function to retry request with token refresh
-  const makeRequest = async (token: string, retry = false): Promise<Response> => {
+  const makeRequest = async (
+    token: string,
+    retry = false,
+  ): Promise<Response> => {
     const headers: any = {
       ...options?.headers,
       "Content-Type": "application/json",
@@ -83,7 +86,9 @@ export const apiFetch = async (
           }
         }
 
-        throw new Error(refreshError.message || "Session expired. Please log in again.");
+        throw new Error(
+          refreshError.message || "Session expired. Please log in again.",
+        );
       }
     }
 
@@ -93,22 +98,30 @@ export const apiFetch = async (
         return response;
       }
 
-      let errorMessage = "API request failed";
+      let errorMessage: any = "API request failed";
       try {
         const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
+        const raw = errorData.message || errorData.error || errorMessage;
+        errorMessage = Array.isArray(raw) ? raw.join(", ") : raw;
       } catch {
         // If response is not JSON, use status text
         errorMessage = response.statusText || errorMessage;
       }
 
+      const stringError =
+        typeof errorMessage === "string"
+          ? errorMessage
+          : JSON.stringify(errorMessage || "");
+
       // Check if it's a subdomain error to trigger automatic logout
-      const isSubdomainError = 
-        errorMessage.toLowerCase().includes("subdomain") || 
-        errorMessage.toLowerCase().includes("invalid subdomain");
+      const isSubdomainError =
+        stringError.toLowerCase().includes("subdomain") ||
+        stringError.toLowerCase().includes("invalid subdomain");
 
       if (isSubdomainError) {
-        console.warn("[API Fetch] Invalid subdomain error detected, logging out...");
+        console.warn(
+          "[API Fetch] Invalid subdomain error detected, logging out...",
+        );
         tokenManager.removeToken();
         store.dispatch(logoutUser());
         if (typeof window !== "undefined") {
@@ -119,7 +132,7 @@ export const apiFetch = async (
         }
       }
 
-      throw new Error(`${errorMessage} (HTTP ${response.status})`);
+      throw new Error(`${stringError} (HTTP ${response.status})`);
     }
 
     return response;
@@ -129,7 +142,11 @@ export const apiFetch = async (
     return await makeRequest(accessToken || "");
   } catch (error: any) {
     // Only log non-404 and non-401 (if caught here) errors to reduce console noise
-    if (!error.message?.includes("Cannot GET") && !error.message?.includes("404") && !error.message?.includes("401")) {
+    if (
+      !error.message?.includes("Cannot GET") &&
+      !error.message?.includes("404") &&
+      !error.message?.includes("401")
+    ) {
       console.error("[API Fetch Error]", error);
     }
     throw error;

@@ -6,7 +6,7 @@ import { CBTQuestionBankPage } from "@/components/RMS/CBT/CBTQuestionBankPage";
 export default function CBTQuestionBankRoutePage() {
   return (
     <ProtectedRoute>
-      <RoleGuard allow={["admin"]}>
+      <RoleGuard allow={["admin", "principal", "vp"]}>
         <SideBar>
           <CBTQuestionBankPage />
         </SideBar>

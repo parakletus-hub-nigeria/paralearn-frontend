@@ -6,7 +6,7 @@ import { AdminAssessmentsPage } from "@/components/RMS/AdminAssessmentsPage";
 export default function AdminAssessments() {
   return (
     <ProtectedRoute>
-      <RoleGuard allow={["admin", "teacher"]}>
+      <RoleGuard allow={["admin", "principal", "vp", "teacher"]}>
         <SideBar>
           <AdminAssessmentsPage />
         </SideBar>
