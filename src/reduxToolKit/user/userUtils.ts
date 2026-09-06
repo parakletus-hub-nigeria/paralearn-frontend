@@ -132,7 +132,11 @@ export const pickRedirectPath = (
  * Extracts authentication token and user object from API response data.
  */
 export const extractTokenAndUser = (data: any) => {
-  const token = data?.accessToken || data?.token;
+  const token =
+    data?.accessToken ||
+    data?.token ||
+    data?.data?.accessToken ||
+    data?.data?.token;
   // Handle various user nesting possibilities
   const user = data?.user || data?.data?.user;
   return { token, user };

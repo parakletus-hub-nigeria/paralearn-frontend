@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import { RootState, AppDispatch } from "@/reduxToolKit/store";
 import { fetchClasses } from "@/reduxToolKit/admin/adminThunks";
+import { fetchAllUsers } from "@/reduxToolKit/user/userThunks";
 import { fetchAllSessions } from "@/reduxToolKit/setUp/setUpThunk";
 import { fetchCurrentSession } from "@/reduxToolKit/setUp/setUpSlice";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,9 @@ import {
   Calendar,
   Building,
   DollarSign,
+  Users,
+  Check,
+  X,
 } from "lucide-react";
 import {
   useGetInvoicesQuery,
@@ -76,6 +80,7 @@ const STATUS_STYLES: Record<string, string> = {
 export default function InvoicesPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { classes } = useSelector((s: RootState) => s.admin);
+  const { students = [] } = useSelector((s: RootState) => s.user);
   const currentUser = useSelector((s: RootState) => s.user.user);
   const currentSession = useSelector((s: RootState) => s.setUp.currentSession);
   const sessions = useSelector((s: RootState) => s.setUp.sessions);
@@ -95,6 +100,7 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     dispatch(fetchClasses(undefined));
+    dispatch(fetchAllUsers());
     dispatch(fetchAllSessions());
     dispatch(fetchCurrentSession());
   }, [dispatch]);
@@ -103,8 +109,12 @@ export default function InvoicesPage() {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewInvoice, setViewInvoice] = useState<InvoiceRecord | null>(null);
 
-  // Generate modal
+    // Generate modal
   const [genOpen, setGenOpen] = useState(false);
+  const [genMode, setGenMode] = useState<"batch" | "individual">("individual");
+  const [studentQuery, setStudentQuery] = useState("");
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
+  const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
   const [genForm, setGenForm] = useState({
     termId: activeTermId,
     classId: "all",
@@ -136,37 +146,63 @@ export default function InvoicesPage() {
     const q = search.toLowerCase();
     return (
       inv.studentName?.toLowerCase().includes(q) ||
+      (inv as any).studentCode?.toLowerCase().includes(q) ||
       inv.studentEmail?.toLowerCase().includes(q) ||
       inv.className?.toLowerCase().includes(q) ||
       inv.id.toLowerCase().includes(q)
     );
   });
 
-  const handleGenerate = async () => {
+    const handleGenerate = async () => {
     if (!genForm.termId && !activeTermId) {
       return toast.error("Please select an academic term");
     }
 
     try {
-      const res = await generateInvoices({
-        termId: genForm.termId || activeTermId,
-        classId: genForm.classId === "all" ? undefined : genForm.classId,
-        dueDate: genForm.dueDate ? new Date(genForm.dueDate).toISOString() : undefined,
-      }).unwrap();
+      if (genMode === "individual") {
+        if (!selectedStudent) {
+          return toast.error("Please search and select a student first");
+        }
 
-      const createdMsg = res.generated > 0 ? (res.generated + " created") : "";
-      const updatedMsg = res.updated > 0 ? (res.updated + " updated") : "";
-      const summary = [createdMsg, updatedMsg].filter(Boolean).join(", ");
+        const studentIdToUse = selectedStudent.id || selectedStudent.dbId;
+        const res = await generateInvoices({
+          termId: genForm.termId || activeTermId,
+          studentIds: [studentIdToUse],
+          dueDate: genForm.dueDate ? new Date(genForm.dueDate).toISOString() : undefined,
+        }).unwrap();
 
-      toast.success(
-        summary
-          ? "Invoices processed: " + summary + " (" + (res.skipped || 0) + " skipped)"
-          : "Invoices up to date (" + (res.skipped || 0) + " skipped)"
-      );
-      setGenOpen(false);
-      refetch();
+        const studentName = [selectedStudent.firstName, selectedStudent.lastName].filter(Boolean).join(" ") || "Student";
+        toast.success(
+          res.generated > 0
+            ? `Invoice created successfully for ${studentName}`
+            : `Invoice for ${studentName} is up to date`
+        );
+        setGenOpen(false);
+        setSelectedStudent(null);
+        setStudentQuery("");
+        refetch();
+      } else {
+        // Batch generation
+        const res = await generateInvoices({
+          termId: genForm.termId || activeTermId,
+          classId: genForm.classId === "all" ? undefined : genForm.classId,
+          dueDate: genForm.dueDate ? new Date(genForm.dueDate).toISOString() : undefined,
+        }).unwrap();
+
+        const createdMsg = res.generated > 0 ? (res.generated + " created") : "";
+        const updatedMsg = res.updated > 0 ? (res.updated + " updated") : "";
+        const summary = [createdMsg, updatedMsg].filter(Boolean).join(", ");
+
+        toast.success(
+          summary
+            ? "Invoices processed: " + summary + " (" + (res.skipped || 0) + " skipped)"
+            : "Invoices up to date (" + (res.skipped || 0) + " skipped)"
+        );
+        setGenOpen(false);
+        refetch();
+      }
     } catch (e: any) {
-      toast.error(e?.data?.message || e?.message || "Failed to generate invoices");
+      toast.error(e?.data?.message || e?.message || "Failed to generate invoice");
     }
   };
 
@@ -626,24 +662,197 @@ export default function InvoicesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Generate Invoices Dialog */}
-      <Dialog open={genOpen} onOpenChange={setGenOpen}>
-        <DialogContent className="sm:max-w-md">
+            {/* Generate Invoices Dialog */}
+      <Dialog open={genOpen} onOpenChange={(val) => {
+        setGenOpen(val);
+        if (!val) {
+          setSelectedStudent(null);
+          setStudentQuery("");
+          setIsStudentDropdownOpen(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Generate Batch Invoices</DialogTitle>
+            <DialogTitle className="text-base font-bold text-slate-900">
+              Generate Invoices
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-xs text-muted-foreground">
-              This generates or synchronizes termly billing invoices for all enrolled students matching active fee structures. Existing payments are preserved.
-            </p>
 
+          <div className="space-y-4 py-2">
+            {/* Mode Switcher */}
+            <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setGenMode("individual")}
+                className={cn(
+                  "py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer",
+                  genMode === "individual"
+                    ? "bg-white text-purple-900 shadow-xs font-bold"
+                    : "text-slate-600 hover:text-slate-900"
+                )}
+              >
+                <User className="w-3.5 h-3.5" />
+                Individual Student
+              </button>
+              <button
+                type="button"
+                onClick={() => setGenMode("batch")}
+                className={cn(
+                  "py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer",
+                  genMode === "batch"
+                    ? "bg-white text-purple-900 shadow-xs font-bold"
+                    : "text-slate-600 hover:text-slate-900"
+                )}
+              >
+                <Users className="w-3.5 h-3.5" />
+                Batch (Class / School-wide)
+              </button>
+            </div>
+
+            {/* Individual Student Search */}
+            {genMode === "individual" && (
+              <div className="space-y-2 relative">
+                <Label className="text-xs font-semibold text-slate-700">
+                  Search Student <span className="text-red-500">*</span>
+                </Label>
+
+                {selectedStudent ? (
+                  <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-200 text-purple-800 font-bold text-xs flex items-center justify-center">
+                        {((selectedStudent.firstName?.[0] || "") + (selectedStudent.lastName?.[0] || "")).toUpperCase() || "S"}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-900">
+                          {[selectedStudent.firstName, selectedStudent.lastName].filter(Boolean).join(" ") || "Student"}
+                        </p>
+                        <p className="text-2xs text-muted-foreground font-mono">
+                          ID: {selectedStudent.studentId || selectedStudent.code || "—"} {selectedStudent.className ? `• ${selectedStudent.className}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedStudent(null);
+                        setStudentQuery("");
+                      }}
+                      className="h-7 w-7 p-0 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        type="text"
+                        placeholder="Type student name or ID (e.g. Serah, BFA-S-26-0001)..."
+                        value={studentQuery}
+                        onChange={(e) => {
+                          setStudentQuery(e.target.value);
+                          setIsStudentDropdownOpen(true);
+                        }}
+                        onFocus={() => setIsStudentDropdownOpen(true)}
+                        className="pl-9 h-10 text-xs rounded-xl"
+                      />
+                    </div>
+
+                    {isStudentDropdownOpen && (
+                      <div className="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-1 divide-y divide-slate-100">
+                        {(() => {
+                          const list = (students || []).filter((st: any) => {
+                            if (!studentQuery.trim()) return true;
+                            const q = studentQuery.toLowerCase().trim();
+                            const name = [st.firstName, st.lastName].filter(Boolean).join(" ").toLowerCase();
+                            const email = (st.email || st.user?.email || "").toLowerCase();
+                            const code = (st.studentId || st.code || "").toLowerCase();
+                            return name.includes(q) || email.includes(q) || code.includes(q);
+                          });
+
+                          if (list.length === 0) {
+                            return (
+                              <div className="py-3 px-2 text-center text-xs text-muted-foreground">
+                                No students found matching &quot;{studentQuery}&quot;
+                              </div>
+                            );
+                          }
+
+                          return list.slice(0, 10).map((st: any) => (
+                            <button
+                              key={st.id || st.dbId}
+                              type="button"
+                              onClick={() => {
+                                setSelectedStudent(st);
+                                setIsStudentDropdownOpen(false);
+                                setStudentQuery("");
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-purple-50 flex items-center justify-between rounded-lg transition-colors cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-700 font-bold text-2xs flex items-center justify-center">
+                                  {((st.firstName?.[0] || "") + (st.lastName?.[0] || "")).toUpperCase() || "S"}
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold text-slate-900">
+                                    {[st.firstName, st.lastName].filter(Boolean).join(" ") || st.email || "Student"}
+                                  </p>
+                                  <p className="text-2xs text-muted-foreground font-mono">
+                                    {st.studentId || st.code || "No ID"}
+                                  </p>
+                                </div>
+                              </div>
+                              {st.className ? (
+                                <span className="text-2xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
+                                  {st.className}
+                                </span>
+                              ) : (
+                                <span className="text-2xs text-slate-400">Newly Added</span>
+                              )}
+                            </button>
+                          ));
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Batch Target Class Selection */}
+            {genMode === "batch" && (
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-slate-700">Target Class</Label>
+                <Select
+                  value={genForm.classId}
+                  onValueChange={(val) => setGenForm((p) => ({ ...p, classId: val }))}
+                >
+                  <SelectTrigger className="text-xs h-10 rounded-xl">
+                    <SelectValue placeholder="All Classes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Classes (Entire School + New Students)</SelectItem>
+                    {classes?.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Academic Term Selection */}
             <div className="space-y-2">
-              <Label className="text-xs">Academic Term</Label>
+              <Label className="text-xs font-semibold text-slate-700">Academic Term</Label>
               <Select
                 value={genForm.termId || activeTermId}
                 onValueChange={(val) => setGenForm((p) => ({ ...p, termId: val }))}
               >
-                <SelectTrigger className="text-xs">
+                <SelectTrigger className="text-xs h-10 rounded-xl">
                   <SelectValue placeholder="Select Term" />
                 </SelectTrigger>
                 <SelectContent>
@@ -658,44 +867,30 @@ export default function InvoicesPage() {
               </Select>
             </div>
 
+            {/* Payment Due Date */}
             <div className="space-y-2">
-              <Label className="text-xs">Target Class (Optional)</Label>
-              <Select
-                value={genForm.classId}
-                onValueChange={(val) => setGenForm((p) => ({ ...p, classId: val }))}
-              >
-                <SelectTrigger className="text-xs">
-                  <SelectValue placeholder="All Classes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Classes (Entire School)</SelectItem>
-                  {classes?.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs">Payment Due Date (Optional)</Label>
+              <Label className="text-xs font-semibold text-slate-700">Payment Due Date (Optional)</Label>
               <Input
                 type="date"
                 value={genForm.dueDate}
                 onChange={(e) => setGenForm((p) => ({ ...p, dueDate: e.target.value }))}
-                className="text-xs"
+                className="text-xs h-10 rounded-xl"
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setGenOpen(false)}>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setGenOpen(false)} className="rounded-xl">
               Cancel
             </Button>
-            <Button size="sm" onClick={handleGenerate} disabled={isGenerating}>
-              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-              Generate Now
+            <Button
+              size="sm"
+              onClick={handleGenerate}
+              disabled={isGenerating || (genMode === "individual" && !selectedStudent)}
+              className="bg-purple-700 hover:bg-purple-800 text-white rounded-xl gap-1.5"
+            >
+              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+              {genMode === "individual" ? "Create Student Invoice" : "Generate Invoices"}
             </Button>
           </DialogFooter>
         </DialogContent>
