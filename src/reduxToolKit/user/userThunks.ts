@@ -235,13 +235,27 @@ export const loginUser = createAsyncThunk(
       // Determine redirect path
       let redirectPath: string;
 
+      const isAccountant =
+        roles.some((r: any) =>
+          ["accountant", "bursar", "finance"].includes(
+            String(r).toLowerCase().trim(),
+          ),
+        ) &&
+        !roles.some((r: any) =>
+          ["admin", "principal"].includes(String(r).toLowerCase().trim()),
+        );
+
       // If explicit redirect path provided (e.g., from signup), use it
       if (credentials.redirectTo) {
         redirectPath = credentials.redirectTo;
       }
-      // If skipSessionCheck is true (e.g., for new signups), go to setup
+      // If skipSessionCheck is true (e.g., for new signups), go to setup (or finance if accountant)
       else if (credentials.skipSessionCheck) {
-        redirectPath = "/setup";
+        redirectPath = isAccountant ? routespath.FINANCE : "/setup";
+      }
+      // Bursar / Accountant accounts should always land directly on the Finance dashboard
+      else if (isAccountant) {
+        redirectPath = routespath.FINANCE;
       }
       // Otherwise, check if academic session is set up
       else {
@@ -253,7 +267,7 @@ export const loginUser = createAsyncThunk(
         );
 
         if (isTeacher || isStudent) {
-          redirectPath = redirectTo;
+          redirectPath = pickRedirectPath(roles, "k12");
         } else {
           redirectPath = routespath.DASHBOARD;
           try {

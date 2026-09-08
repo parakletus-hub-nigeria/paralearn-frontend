@@ -23,6 +23,7 @@ type RoleGuardProps = {
     | "student"
     | "lecturer"
     | "accountant"
+    | "bursar"
     | "principal"
     | "vp"
   >;
@@ -65,11 +66,14 @@ export default function RoleGuard({
     if (!Array.isArray(roles)) return false;
     if (roles.length === 0) return false;
 
-    // Normalize both user roles and allowed roles to lowercase for comparison
-    const normalizedUserRoles = roles.map((r: any) =>
-      String(r).toLowerCase().trim(),
-    );
-    const normalizedAllowedRoles = allow.map((r) => r.toLowerCase().trim());
+    // Normalize both user roles and allowed roles to lowercase for comparison, mapping bursar to accountant
+    const mapRole = (s: string) => {
+      const lower = s.toLowerCase().trim();
+      if (lower === "bursar" || lower === "finance") return "accountant";
+      return lower;
+    };
+    const normalizedUserRoles = roles.map((r: any) => mapRole(String(r)));
+    const normalizedAllowedRoles = allow.map((r) => mapRole(r));
 
     return normalizedUserRoles.some((r: string) =>
       normalizedAllowedRoles.includes(r),
@@ -83,20 +87,22 @@ export default function RoleGuard({
     if (!hasToken) return;
     if (ok) return;
     if (didKickoff.current) return;
-    if (Array.isArray(roles) && roles.length > 0) return;
-
     didKickoff.current = true;
-    const profileThunk =
-      institutionType === "university"
-        ? fetchUniUserProfile
-        : getCurrentUserProfile;
-    dispatch(profileThunk())
-      .unwrap()
-      .catch(() => {})
-      .finally(() => setCheckedProfile(true));
-  }, [dispatch, hasToken, ok, roles, institutionType]);
+    if (institutionType === "university") {
+      dispatch(fetchUniUserProfile());
+    } else {
+      dispatch(getCurrentUserProfile());
+    }
+  }, [hasToken, ok, dispatch, institutionType]);
 
-  // If roles are still empty after attempting profile fetch, stop showing blank.
+  // Set timeout to avoid infinite loading if profile fetch fails
+  useEffect(() => {
+    if (!hasToken) return;
+    if (ok) return;
+    const t = setTimeout(() => setCheckedProfile(true), 3000);
+    return () => clearTimeout(t);
+  }, [hasToken, ok]);
+
   useEffect(() => {
     if (!hasToken) return;
     if (Array.isArray(roles) && roles.length > 0) return;
@@ -112,7 +118,11 @@ export default function RoleGuard({
 
     if (mode !== "redirect") return;
     if (ok) return;
-    const normalizedRoles = roles.map((r: any) => String(r).toLowerCase());
+    const normalizedRoles = roles.map((r: any) => {
+      const s = String(r).toLowerCase().trim();
+      if (s === "bursar" || s === "finance") return "accountant";
+      return s;
+    });
     const fallback =
       redirectTo ||
       (normalizedRoles.includes("accountant")

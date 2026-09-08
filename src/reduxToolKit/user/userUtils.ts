@@ -7,18 +7,20 @@ import { routespath } from "@/lib/routepath";
 export const normalizeRoles = (roles: any): string[] => {
   if (!roles) return [];
 
+  const mapRole = (val: string): string => {
+    const normalized = val.trim().toLowerCase();
+    if (normalized === "school_admin") return "admin";
+    if (normalized === "bursar" || normalized === "finance") return "accountant";
+    return normalized;
+  };
+
   // If roles is already an array of strings
   if (
     Array.isArray(roles) &&
     roles.length > 0 &&
     typeof roles[0] === "string"
   ) {
-    return roles.map((r) => {
-      const normalized = String(r).trim().toLowerCase();
-      // Map university role names to frontend role names
-      if (normalized === "school_admin") return "admin";
-      return normalized;
-    });
+    return roles.map(mapRole);
   }
 
   // If roles is an array of objects like [{role: {name: 'admin'}}]
@@ -26,18 +28,12 @@ export const normalizeRoles = (roles: any): string[] => {
     return roles
       .map((r) => r?.role?.name || r?.name || r)
       .filter((v) => typeof v === "string")
-      .map((v) => {
-        const normalized = v.trim().toLowerCase();
-        if (normalized === "school_admin") return "admin";
-        return normalized;
-      });
+      .map(mapRole);
   }
 
   // If roles is a single string
   if (typeof roles === "string") {
-    const normalized = roles.trim().toLowerCase();
-    if (normalized === "school_admin") return ["admin"];
-    return [normalized];
+    return [mapRole(roles)];
   }
 
   // If roles is actually a user object or payload containing role indicators
@@ -54,7 +50,7 @@ export const normalizeRoles = (roles: any): string[] => {
   if (mainRole === "admin" || mainRole === "school_admin") extractedRoles.add("admin");
   if (mainRole === "principal") extractedRoles.add("principal");
   if (mainRole === "vp" || mainRole === "vice_principal") extractedRoles.add("vp");
-  if (mainRole === "accountant" || mainRole === "bursar") extractedRoles.add("accountant");
+  if (mainRole === "accountant" || mainRole === "bursar" || mainRole === "finance") extractedRoles.add("accountant");
   if (mainRole === "teacher") extractedRoles.add("teacher");
   if (mainRole === "lecturer") extractedRoles.add("lecturer");
   if (mainRole === "student") extractedRoles.add("student");
@@ -84,7 +80,7 @@ export const normalizeRoles = (roles: any): string[] => {
   if (typeof roles.roles === "string" && roles.roles.includes(",")) {
     roles.roles
       .split(",")
-      .forEach((r: string) => extractedRoles.add(r.trim().toLowerCase()));
+      .forEach((r: string) => extractedRoles.add(mapRole(r)));
   }
 
   return Array.from(extractedRoles);
@@ -108,7 +104,11 @@ export const pickRedirectPath = (
     return "/uni-admin/dashboard";
   }
 
-  if (roles.includes("accountant") && !roles.includes("admin") && !roles.includes("principal")) {
+  if (
+    (roles.includes("accountant") || roles.includes("bursar") || roles.includes("finance")) &&
+    !roles.includes("admin") &&
+    !roles.includes("principal")
+  ) {
     return routespath.FINANCE;
   }
 

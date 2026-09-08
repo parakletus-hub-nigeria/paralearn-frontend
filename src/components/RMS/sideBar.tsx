@@ -83,9 +83,9 @@ const SideBar = ({ children }: { children: ReactNode }) => {
     }
   };
 
-    const userRoles = user?.roles || [];
+    const userRoles = (user?.roles || []).map((r: any) => String(r).toLowerCase().trim());
   const isAccountantOnly =
-    userRoles.includes("accountant") &&
+    (userRoles.includes("accountant") || userRoles.includes("bursar") || userRoles.includes("finance")) &&
     !userRoles.includes("admin") &&
     !userRoles.includes("principal");
 

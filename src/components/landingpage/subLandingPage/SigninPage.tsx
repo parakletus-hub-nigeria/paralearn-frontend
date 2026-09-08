@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { handleError } from "@/lib/error-handler";
 import { useRouter } from "next/navigation";
 import { routespath } from "@/lib/routepath";
+import { pickRedirectPath } from "@/reduxToolKit/user/userUtils";
 import { loginUser } from "@/reduxToolKit/user/userThunks";
 import { AppDispatch } from "@/reduxToolKit/store";
 import { fetchCurrentSession } from "@/reduxToolKit/setUp/setUpThunk";
@@ -34,8 +35,7 @@ export default function SigninPage() {
   };
 
   const isValid = () => {
-    const emailRe = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return emailRe.test(data.email) && data.password.length >= 8;
+    return data.email.trim().length >= 3 && data.password.trim().length >= 4;
   };
 
   const submit = async () => {
@@ -51,6 +51,25 @@ export default function SigninPage() {
         }
         toast.success("Logged in successfully!");
 
+        const roles = result.user?.roles || [];
+        const isAccountant =
+          roles.some((r: any) =>
+            ["accountant", "bursar", "finance"].includes(
+              String(r).toLowerCase().trim(),
+            ),
+          ) &&
+          !roles.some((r: any) =>
+            ["admin", "principal"].includes(String(r).toLowerCase().trim()),
+          );
+
+        if (isAccountant) {
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem("redirectAfterLogin");
+          }
+          router.push(routespath.FINANCE);
+          return;
+        }
+
         // Check if there's a redirect path stored (e.g., from signup)
         const redirectPath =
           typeof window !== "undefined"
@@ -61,6 +80,12 @@ export default function SigninPage() {
           // Clear the redirect path and redirect
           sessionStorage.removeItem("redirectAfterLogin");
           router.push(redirectPath);
+          return;
+        }
+
+        const roleTarget = pickRedirectPath(roles, institutionType);
+        if (roleTarget !== routespath.DASHBOARD) {
+          router.push(roleTarget);
           return;
         }
 
