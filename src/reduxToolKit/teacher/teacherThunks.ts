@@ -272,14 +272,64 @@ export const fetchMyAssessments = createAsyncThunk(
   },
 );
 
+export const fetchTeacherGradingQueue = createAsyncThunk(
+  "teacher/fetchGradingQueue",
+  async (params: { assessmentId?: string } | undefined, { rejectWithValue }) => {
+    try {
+      const q = params?.assessmentId ? `?assessmentId=${encodeURIComponent(params.assessmentId)}` : "";
+      const res = await apiClient.get(`/api/proxy/teacher/grading-queue${q}`);
+      return res.data?.data || res.data || [];
+    } catch (e: any) {
+      return rejectWithValue(
+        e?.response?.data?.message || e?.message || "Failed to fetch grading queue",
+      );
+    }
+  },
+);
+
 export const fetchTeacherClasses = createAsyncThunk(
   "teacher/fetchTeacherClasses",
   async (params: { teacherId: string }, { rejectWithValue }) => {
-    // DUAL FETCH STRATEGY:
+    // 1. Try optimized teacher assigned-context endpoint
+    try {
+      const contextRes = await apiClient.get("/api/proxy/teacher/assigned-context");
+      const ctx = contextRes.data?.data || contextRes.data;
+      if (ctx && (Array.isArray(ctx.assignedClasses) || Array.isArray(ctx.assignedSubjects))) {
+        const merged: any[] = [];
+        (ctx.assignedClasses || []).forEach((c: any) => {
+          merged.push({
+            id: `class-${c.id}`,
+            classId: c.id,
+            className: c.name,
+            class: { ...c, id: c.id, name: c.name },
+            subject: null,
+            teacherId: params.teacherId,
+            type: "class_assignment",
+          });
+        });
+        (ctx.assignedSubjects || []).forEach((s: any) => {
+          merged.push({
+            id: `subject-${s.id}-${s.classId || "all"}`,
+            classId: s.classId || s.id,
+            className: s.className || s.class?.name || "Assigned Class",
+            class: { id: s.classId || s.id, name: s.className || s.class?.name || "Assigned Class" },
+            subject: s,
+            teacherId: params.teacherId,
+            type: "subject_assignment",
+          });
+        });
+        if (merged.length > 0) {
+          return merged;
+        }
+      }
+    } catch (err) {
+      // Fall through to dual fetch strategy
+    }
+
+    // DUAL FETCH FALLBACK STRATEGY:
     // 1. Fetch classes explicitly assigned to teacher (e.g. Class Teacher role)
     // 2. Fetch subjects explicitly assigned to teacher (Subject Teacher role)
     // Merge results to provide full access list.
-
     try {
       const [classesRes, subjectsRes] = await Promise.allSettled([
         apiClient.get(`/api/proxy/classes/teacher/${params.teacherId}`),

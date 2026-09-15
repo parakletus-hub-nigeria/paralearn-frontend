@@ -30,6 +30,16 @@ const academicApi = paraApi.injectEndpoints({
       providesTags: [{ type: "CurrentSession" as const }],
     }),
 
+    // GET /api/proxy/academic/timeline — hierarchical sessions with child terms
+    getAcademicTimeline: builder.query<any[], void>({
+      query: () => ({ url: "/api/proxy/academic/timeline" }),
+      transformResponse: (res: any) => {
+        const data = Array.isArray(res) ? res : res?.data ?? [];
+        return Array.isArray(data) ? data : [];
+      },
+      providesTags: [{ type: "AcademicTimeline" as const }],
+    }),
+
     // POST /api/proxy/academic/sessions
     createSession: builder.mutation<
       any,
@@ -101,6 +111,7 @@ const academicApi = paraApi.injectEndpoints({
 export const {
   useGetAllSessionsQuery,
   useGetCurrentSessionQuery,
+  useGetAcademicTimelineQuery,
   useCreateSessionMutation,
   useCreateTermMutation,
   useActivateTermMutation,

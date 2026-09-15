@@ -11,7 +11,7 @@ const saveCBTIds = (ids: string[]) => {
   if (typeof window === "undefined") return;
   try { localStorage.setItem(CBT_IDS_KEY, JSON.stringify(ids)); } catch {}
 };
-import type { AssessmentItem, ClassItem, SchoolStatistics, SubjectItem } from "./adminThunks";
+import type { AssessmentItem, ClassItem, SchoolStatistics, SubjectItem, ClassLookupItem, SubjectLookupItem } from "./adminThunks";
 import {
   addCommentAdmin,
   approveReports,
@@ -60,6 +60,13 @@ import {
   fetchCBTExams,
   previewSchoolPromotion,
   executeSchoolPromotion,
+  fetchClassesLookup,
+  fetchSubjectsLookup,
+  fetchDashboardOverview,
+  fetchUnenrolledStudents,
+  fetchClassRoster,
+  fetchScoreSheet,
+  batchSaveScores,
   type PromotionPreviewResponse,
 } from "./adminThunks";
 
@@ -69,7 +76,9 @@ type AdminState = {
   success: string | null;
 
   classes: ClassItem[];
+  classesLookup: ClassLookupItem[];
   subjects: SubjectItem[];
+  subjectsLookup: SubjectLookupItem[];
   assessments: AssessmentItem[];
 
   scores: any[];
@@ -87,7 +96,6 @@ type AdminState = {
   // Class details with enrolled students
   selectedClassDetails: any | null;
   // Teacher's assigned classes
-  // Teacher's assigned classes
   teacherClasses: any | null;
   assessmentCategories: any[];
   selectedAssessment: AssessmentItem | null;
@@ -98,6 +106,11 @@ type AdminState = {
   promotionLoading: boolean;
   promotionError: string | null;
   cbtExamIds: string[];
+
+  unenrolledStudents: any[];
+  dashboardOverview: any | null;
+  scoreSheet: any | null;
+  classRosters: Record<string, any[]>;
 };
 
 const ensureString = (val: any, fallback: string): string => {
@@ -111,7 +124,9 @@ const initialState: AdminState = {
   error: null,
   success: null,
   classes: [],
+  classesLookup: [],
   subjects: [],
+  subjectsLookup: [],
   assessments: [],
   scores: [],
   schoolStatistics: null,
@@ -128,11 +143,14 @@ const initialState: AdminState = {
   selectedAssessment: null,
   assessmentSubmissions: [],
   selectedClassSubjects: [],
-
   promotionPreview: null,
   promotionLoading: false,
   promotionError: null,
   cbtExamIds: loadCBTIds(),
+  unenrolledStudents: [],
+  dashboardOverview: null,
+  scoreSheet: null,
+  classRosters: {},
 };
 
 const adminSlice = createSlice({
@@ -687,6 +705,33 @@ const adminSlice = createSlice({
       .addCase(executeSchoolPromotion.rejected, (state, action) => {
         state.promotionLoading = false;
         state.promotionError = ensureString(action.payload, "Failed to execute promotion");
+      });
+
+    // Lookups & Dashboard Overview
+    builder
+      .addCase(fetchClassesLookup.fulfilled, (state, action) => {
+        state.classesLookup = action.payload;
+        if (!state.classes || state.classes.length === 0) {
+          state.classes = action.payload as any;
+        }
+      })
+      .addCase(fetchSubjectsLookup.fulfilled, (state, action) => {
+        state.subjectsLookup = action.payload;
+        if (!state.subjects || state.subjects.length === 0) {
+          state.subjects = action.payload as any;
+        }
+      })
+      .addCase(fetchDashboardOverview.fulfilled, (state, action) => {
+        state.dashboardOverview = action.payload;
+      })
+      .addCase(fetchUnenrolledStudents.fulfilled, (state, action) => {
+        state.unenrolledStudents = action.payload;
+      })
+      .addCase(fetchClassRoster.fulfilled, (state, action) => {
+        state.classRosters[action.payload.classId] = action.payload.students;
+      })
+      .addCase(fetchScoreSheet.fulfilled, (state, action) => {
+        state.scoreSheet = action.payload;
       });
   },
 });

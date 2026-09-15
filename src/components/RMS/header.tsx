@@ -55,7 +55,10 @@ export const Header = ({
             >
               {getGreeting()},{" "}
               <span style={{ color: "var(--violet-ink)" }}>
-                {user?.firstName || "there"}
+                {user?.firstName ||
+                  ((user as any)?.name ? (user as any).name.split(" ")[0] : "") ||
+                  (user?.email ? user.email.split("@")[0] : "") ||
+                  "there"}
               </span>
             </h1>
             <p

@@ -19,6 +19,41 @@ const scoresApi = paraApi.injectEndpoints({
       ],
     }),
 
+    // GET /api/proxy/scores/sheet — full class score grid for an assessment
+    getScoreSheet: builder.query<
+      any,
+      { assessmentId: string; classId?: string }
+    >({
+      query: ({ assessmentId, classId }) => {
+        const q = new URLSearchParams({ assessmentId });
+        if (classId) q.set("classId", classId);
+        return { url: `/api/proxy/scores/sheet?${q.toString()}` };
+      },
+      transformResponse: (res: any) => res?.data ?? res,
+      providesTags: (_r, _e, { assessmentId }) => [
+        { type: "ScoreSheet" as const, id: assessmentId },
+      ],
+    }),
+
+    // POST /api/proxy/scores/batch-save — atomic batch upsert of student scores
+    batchSaveScores: builder.mutation<
+      any,
+      {
+        assessmentId: string;
+        scores: { studentId: string; score: number; feedback?: string }[];
+      }
+    >({
+      query: (body) => ({
+        url: "/api/proxy/scores/batch-save",
+        method: "POST",
+        data: body,
+      }),
+      invalidatesTags: (_r, _e, { assessmentId }) => [
+        { type: "ScoreSheet" as const, id: assessmentId },
+        { type: "ScoreList", id: assessmentId },
+      ],
+    }),
+
     // POST /api/proxy/assessments/:id/scores
     submitScores: builder.mutation<
       any,
@@ -113,6 +148,8 @@ const scoresApi = paraApi.injectEndpoints({
 
 export const {
   useGetScoresByAssessmentQuery,
+  useGetScoreSheetQuery,
+  useBatchSaveScoresMutation,
   useSubmitScoresMutation,
   useBulkUploadScoresMutation,
   useGetMyScoresQuery,

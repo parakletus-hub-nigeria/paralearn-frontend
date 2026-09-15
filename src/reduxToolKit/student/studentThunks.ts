@@ -254,3 +254,18 @@ export const syncOfflineSubmissions = createAsyncThunk(
     }
   },
 );
+
+// Fetch consolidated student dashboard overview
+export const fetchStudentDashboardOverview = createAsyncThunk(
+  "student/fetchDashboardOverview",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get("/api/proxy/student/dashboard-overview");
+      return response.data?.data || response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || error?.message || "Failed to fetch student dashboard overview",
+      );
+    }
+  },
+);
