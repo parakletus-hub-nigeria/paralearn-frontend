@@ -16,6 +16,50 @@ const reportsApi = paraApi.injectEndpoints({
       providesTags: [{ type: "Statistics" }],
     }),
 
+    // GET /api/proxy/reports/overview — paginated pre-aggregated student reports
+    getReportsOverview: builder.query<
+      {
+        data: any[];
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+          hasNextPage: boolean;
+          hasPrevPage: boolean;
+        };
+      },
+      {
+        classId?: string;
+        term?: string;
+        session?: string;
+        search?: string;
+        page?: number;
+        limit?: number;
+      } | void
+    >({
+      query: (params) => {
+        const q = new URLSearchParams();
+        if (params && params.classId) q.set("classId", params.classId);
+        if (params && params.term) q.set("term", params.term);
+        if (params && params.session) q.set("session", params.session);
+        if (params && params.search) q.set("search", params.search);
+        if (params && params.page) q.set("page", String(params.page));
+        if (params && params.limit) q.set("limit", String(params.limit));
+        const qs = q.toString();
+        return { url: `/api/proxy/reports/overview${qs ? `?${qs}` : ""}` };
+      },
+      transformResponse: (res: any) => {
+        if (res && Array.isArray(res.data) && res.pagination) return res;
+        const data = Array.isArray(res) ? res : [];
+        return {
+          data,
+          pagination: { total: data.length, page: 1, limit: data.length, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+        };
+      },
+      providesTags: [{ type: "ReportsOverview" as const }],
+    }),
+
     // GET /api/proxy/reports/approval-queue?status=...
     getApprovalQueue: builder.query<any[], string | void>({
       query: (status = "pending") => ({
@@ -275,6 +319,7 @@ const reportsApi = paraApi.injectEndpoints({
 
 export const {
   useGetSchoolStatisticsQuery,
+  useGetReportsOverviewQuery,
   useGetApprovalQueueQuery,
   useGetBookletPreviewQuery,
   useGetStudentReportCardQuery,

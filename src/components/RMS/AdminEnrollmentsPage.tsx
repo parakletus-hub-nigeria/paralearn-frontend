@@ -6,7 +6,15 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import { fetchAllUsers, getTenantInfo } from "@/reduxToolKit/user/userThunks";
-import { bulkEnrollStudents, fetchClasses, fetchClassDetails, removeStudentFromClass, previewSchoolPromotion, executeSchoolPromotion } from "@/reduxToolKit/admin/adminThunks";
+import {
+  bulkEnrollStudents,
+  fetchClasses,
+  fetchClassDetails,
+  removeStudentFromClass,
+  previewSchoolPromotion,
+  executeSchoolPromotion,
+  fetchUnenrolledStudents,
+} from "@/reduxToolKit/admin/adminThunks";
 import type { PromotionPreviewResponse, ClassItem } from "@/reduxToolKit/admin/adminThunks";
 import { fetchCurrentSession } from "@/reduxToolKit/setUp/setUpThunk";
 import { AddStudentDialog } from "@/components/RMS/dialogs";
@@ -47,7 +55,7 @@ const DEFAULT_PRIMARY = "#641BC4";
 export function AdminEnrollmentsPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { students, teachers, tenantInfo } = useSelector((s: RootState) => s.user);
-  const { classes, selectedClassDetails, promotionPreview, promotionLoading, promotionError } = useSelector((s: RootState) => s.admin);
+  const { classes, selectedClassDetails, promotionPreview, promotionLoading, promotionError, unenrolledStudents = [] } = useSelector((s: RootState) => s.admin);
   const schoolSettings = useSelector((s: RootState) => s.admin.schoolSettings);
   const { currentSession } = useSelector((s: RootState) => s.setUp);
   const primaryColor = schoolSettings?.primaryColor || DEFAULT_PRIMARY;
@@ -64,11 +72,17 @@ export function AdminEnrollmentsPage() {
   const [executing, setExecuting] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchAllUsers());
     dispatch(fetchClasses(undefined));
+    dispatch(fetchUnenrolledStudents({ limit: 50 }));
     dispatch(getTenantInfo());
     dispatch(fetchCurrentSession());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (debouncedSearch) {
+      dispatch(fetchUnenrolledStudents({ search: debouncedSearch, limit: 50 }));
+    }
+  }, [debouncedSearch, dispatch]);
 
   const currentSessionName = currentSession?.session || "";
   const newSessionName = useMemo(() => {
@@ -123,32 +137,28 @@ export function AdminEnrollmentsPage() {
     return new Set(enrolledStudents.map((s: any) => s.id));
   }, [enrolledStudents]);
 
-  // Get available students (only those not enrolled in ANY class)
+  // Get available students (using dedicated unenrolled query with fallback to store)
   const availableStudents = useMemo(() => {
+    const list = (unenrolledStudents && unenrolledStudents.length > 0)
+      ? unenrolledStudents
+      : students.filter((s: any) => {
+          if (enrolledStudentIds.has(s.id)) return false;
+          const firstEnrollment = s.enrollments?.[0] || s.enrollment || {};
+          const profile = s.studentProfile || s.profile || {};
+          const existingClassId = s.classId || firstEnrollment.classId || s.class?.id || firstEnrollment.class?.id || profile.classId || "";
+          return !existingClassId;
+        });
+
     const term = debouncedSearch.trim().toLowerCase();
-    
-    let available = students.filter((s: any) => {
-      // 1. Skip if already in the currently selected class
+    if (!term) return list.filter((s: any) => !enrolledStudentIds.has(s.id));
+
+    return list.filter((s: any) => {
       if (enrolledStudentIds.has(s.id)) return false;
-      
-      // 2. Skip if already enrolled in ANY other class
-      const firstEnrollment = s.enrollments?.[0] || s.enrollment || {};
-      const profile = s.studentProfile || s.profile || {};
-      const existingClassId = s.classId || firstEnrollment.classId || s.class?.id || firstEnrollment.class?.id || profile.classId || "";
-      
-      return !existingClassId;
+      const name = `${s?.firstName || ""} ${s?.lastName || ""} ${s?.name || ""}`.toLowerCase();
+      const studentId = String(s?.studentId || s?.code || s?.userCode || "").toLowerCase();
+      return name.includes(term) || studentId.includes(term);
     });
-    
-    if (term) {
-      available = available.filter((s: any) => {
-        const name = `${s?.firstName || ""} ${s?.lastName || ""}`.toLowerCase();
-        const studentId = String(s?.studentId || s?.code || "").toLowerCase();
-        return name.includes(term) || studentId.includes(term);
-      });
-    }
-    
-    return available;
-  }, [students, enrolledStudentIds, debouncedSearch]);
+  }, [unenrolledStudents, students, enrolledStudentIds, debouncedSearch]);
 
   // Enroll a single student
   const enrollStudent = async (studentId: string) => {
@@ -162,6 +172,7 @@ export function AdminEnrollmentsPage() {
       })).unwrap();
       toast.success("Student enrolled successfully");
       dispatch(fetchClassDetails(selectedClassId));
+      dispatch(fetchUnenrolledStudents({ limit: 50 }));
     } catch (error: any) {
       toast.error(error || "Failed to enroll student");
     } finally {

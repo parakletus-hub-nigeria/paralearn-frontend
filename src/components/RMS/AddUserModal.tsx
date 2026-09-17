@@ -51,7 +51,8 @@ export function AddUserModal({
     if (open) {
       // Fetch classes for student enrollment
       import("@/lib/interceptor").then(({ apiFetch }) => {
-        apiFetch("/api/proxy/classes")
+        apiFetch("/api/proxy/classes/lookup")
+          .catch(() => apiFetch("/api/proxy/classes"))
           .then((res: any) => {
             const list = Array.isArray(res)
               ? res

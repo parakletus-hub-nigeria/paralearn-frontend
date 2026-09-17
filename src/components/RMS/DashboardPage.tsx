@@ -6,6 +6,7 @@ import { Plus, Clock, ArrowRight, GraduationCap, Users, BookOpen, FileText, Cale
 import { AddStudentDialog, AddTeacherDialog } from "@/components/RMS/dialogs";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useGetDashboardOverviewQuery } from "@/reduxToolKit/api";
 import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import { selectDashboardUserData, selectCurrentSession } from "@/reduxToolKit/selectors";
 import { fetchAllUsers, getTenantInfo } from "@/reduxToolKit/user/userThunks";
@@ -40,20 +41,34 @@ export const DashboardPage = () => {
   const { studentCount, teacherCount, tenantInfo } = useSelector(selectDashboardUserData);
   const { users } = useSelector((state: RootState) => state.user);
   const currentSession = useSelector(selectCurrentSession);
-  const [subjectCount, setSubjectCount] = useState(0);
-  const [assessmentCount, setAssessmentCount] = useState(0);
-  const [recentAssessments, setRecentAssessments] = useState<any[]>([]);
-  const [recentReportCards, setRecentReportCards] = useState<any[]>([]);
+
+  // ── Primary: single consolidated overview via RTK Query ──
+  const { data: overviewData, isError: overviewFailed } = useGetDashboardOverviewQuery();
+
+  const [fallbackStats, setFallbackStats] = useState<{
+    studentCount: number;
+    teacherCount: number;
+  } | null>(null);
+  const [fallbackSubjectCount, setFallbackSubjectCount] = useState(0);
+  const [fallbackAssessmentCount, setFallbackAssessmentCount] = useState(0);
+  const [fallbackRecentAssessments, setFallbackRecentAssessments] = useState<any[]>([]);
+  const [fallbackRecentReportCards, setFallbackRecentReportCards] = useState<any[]>([]);
 
   useEffect(() => {
     dispatch(fetchCurrentSession());
     dispatch(getTenantInfo());
+  }, [dispatch]);
 
-    async function load() {
+  // ── Fallback: only runs if the consolidated endpoint fails ──
+  useEffect(() => {
+    if (!overviewFailed) return;
+
+    async function loadFallback() {
       const fetchJson = async (url: string) => {
         const res = await apiFetch(url, { method: "GET", headers: { "Content-Type": "application/json" } });
         return res.ok ? res.json() : null;
       };
+
       const fetchByStatus = async (status: string) => {
         try { const d = await fetchJson(`/api/proxy/assessments/${status}`); return Array.isArray(d) ? d : []; }
         catch { try { const d = await fetchJson(`/api/proxy/assessments?status=${status}`); return Array.isArray(d) ? d : []; } catch { return []; } }
@@ -69,13 +84,15 @@ export const DashboardPage = () => {
       ]);
 
       const subjectsArr = subjectResult?.data || subjectResult?.subjects || subjectResult;
-      setSubjectCount(Array.isArray(subjectsArr) ? subjectsArr.length : 0);
+      setFallbackSubjectCount(Array.isArray(subjectsArr) ? subjectsArr.length : 0);
 
       const all = [...aStarted, ...aEnded, ...aNotStarted];
-      setAssessmentCount(all.length);
-      setRecentAssessments([...all].sort((a, b) => new Date(b.createdAt || b.startsAt || 0).getTime() - new Date(a.createdAt || a.startsAt || 0).getTime()).slice(0, 5));
+      setFallbackAssessmentCount(all.length);
+      setFallbackRecentAssessments([...all].sort((a, b) => new Date(b.createdAt || b.startsAt || 0).getTime() - new Date(a.createdAt || a.startsAt || 0).getTime()).slice(0, 5));
 
       const usersData: any[] = usersResult?.users || [];
+      setFallbackStats({ studentCount: usersData.filter((u: any) => u.role === "student").length, teacherCount: usersData.filter((u: any) => u.role === "teacher").length });
+
       if (reportResult) {
         const studentsArr = reportResult?.data || reportResult || [];
         const allReports: any[] = [];
@@ -87,18 +104,35 @@ export const DashboardPage = () => {
           const enrollment = student?.enrollments?.find((e: any) => e.status === "active") || student?.enrollments?.[0];
           return { ...r, student: student ? { id: student.id, code: student.studentId || student.id, firstName: student.firstName, lastName: student.lastName, class: enrollment?.class } : null };
         });
-        setRecentReportCards(enriched.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 10));
+        setFallbackRecentReportCards(enriched.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 10));
       }
     }
 
-    load().catch(console.error);
-  }, [dispatch]);
+    loadFallback().catch(console.error);
+  }, [dispatch, overviewFailed]);
+
+  // ── Derive display values: prefer consolidated data, fall back to legacy ──
+  const hasOverview = !!overviewData?.stats;
+  const finalStudentCount = hasOverview
+    ? (overviewData.stats.studentCount ?? overviewData.stats.totalStudents ?? 0)
+    : (fallbackStats?.studentCount ?? studentCount);
+  const finalTeacherCount = hasOverview
+    ? (overviewData.stats.teacherCount ?? overviewData.stats.totalTeachers ?? 0)
+    : (fallbackStats?.teacherCount ?? teacherCount);
+  const subjectCount = hasOverview
+    ? (overviewData.stats.subjectCount ?? overviewData.stats.totalSubjects ?? 0)
+    : fallbackSubjectCount;
+  const assessmentCount = hasOverview
+    ? (overviewData.stats.assessmentCount ?? overviewData.stats.totalAssessments ?? 0)
+    : fallbackAssessmentCount;
+  const recentAssessments = hasOverview ? (overviewData.recentAssessments?.slice(0, 5) ?? []) : fallbackRecentAssessments;
+  const recentReportCards = hasOverview ? (overviewData.recentReportCards?.slice(0, 10) ?? []) : fallbackRecentReportCards;
 
   const stats = [
-    { label: "Students",    value: studentCount,    icon: GraduationCap, tint: "var(--violet-tint)",  iconColor: "var(--violet-ink)" },
-    { label: "Teachers",    value: teacherCount,    icon: Users,         tint: "var(--emerald-tint)", iconColor: "var(--emerald-signal)" },
-    { label: "Subjects",    value: subjectCount,    icon: BookOpen,      tint: "var(--cobalt-tint)",  iconColor: "var(--cobalt-signal)" },
-    { label: "Assessments", value: assessmentCount, icon: FileText,      tint: "var(--amber-tint)",   iconColor: "var(--amber-signal)" },
+    { label: "Students",    value: finalStudentCount, icon: GraduationCap, tint: "var(--violet-tint)",  iconColor: "var(--violet-ink)" },
+    { label: "Teachers",    value: finalTeacherCount, icon: Users,         tint: "var(--emerald-tint)", iconColor: "var(--emerald-signal)" },
+    { label: "Subjects",    value: subjectCount,      icon: BookOpen,      tint: "var(--cobalt-tint)",  iconColor: "var(--cobalt-signal)" },
+    { label: "Assessments", value: assessmentCount,   icon: FileText,      tint: "var(--amber-tint)",   iconColor: "var(--amber-signal)" },
   ];
 
   return (

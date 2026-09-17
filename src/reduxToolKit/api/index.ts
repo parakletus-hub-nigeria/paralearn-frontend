@@ -12,6 +12,8 @@ export {
 // Users
 export {
   useGetUsersQuery,
+  useGetUsersLookupQuery,
+  useGetUsersPaginatedQuery,
   useGetUserByIdQuery,
   useGetCurrentUserQuery,
   useGetStudentsByClassQuery,
@@ -24,6 +26,7 @@ export {
 export {
   useGetAllSessionsQuery,
   useGetCurrentSessionQuery,
+  useGetAcademicTimelineQuery,
   useCreateSessionMutation,
   useActivateTermMutation,
   useOnboardingSetupMutation,
@@ -32,6 +35,9 @@ export {
 // Classes
 export {
   useGetClassesQuery,
+  useGetClassesLookupQuery,
+  useGetClassesPaginatedQuery,
+  useGetClassRosterQuery,
   useGetClassByIdQuery,
   useGetTeacherClassesQuery,
   useGetTeacherAssignedClassesQuery,
@@ -46,6 +52,7 @@ export {
 // Subjects
 export {
   useGetSubjectsQuery,
+  useGetSubjectsLookupQuery,
   useGetSubjectsByClassQuery,
   useGetSubjectsByTeacherQuery,
   useCreateSubjectMutation,
@@ -55,6 +62,7 @@ export {
 // Assessments
 export {
   useGetAssessmentsByStatusQuery,
+  useGetAssessmentsPaginatedQuery,
   useGetAssessmentByIdQuery,
   useGetAssessmentSubmissionsQuery,
   useGetAssessmentCategoriesQuery,
@@ -70,6 +78,8 @@ export {
 // Scores
 export {
   useGetScoresByAssessmentQuery,
+  useGetScoreSheetQuery,
+  useBatchSaveScoresMutation,
   useSubmitScoresMutation,
   useBulkUploadScoresMutation,
 } from "./endpoints/scores";
@@ -85,6 +95,7 @@ export {
 // Reports
 export {
   useGetSchoolStatisticsQuery,
+  useGetReportsOverviewQuery,
   useGetApprovalQueueQuery,
   useGetBookletPreviewQuery,
   useGetStudentReportCardQuery,
@@ -105,6 +116,10 @@ export {
 export {
   useGetAttendanceQuery,
   useRecordAttendanceMutation,
+  useGetDailyClassAttendanceQuery,
+  useBulkUpdateAttendanceMutation,
+  useGetDailyAttendanceSheetQuery,
+  useBulkMarkAttendanceMutation,
 } from "./endpoints/attendance";
 
 // Settings & Branding
@@ -128,6 +143,9 @@ export {
 
 // Finance & Bursary (v1.5)
 export {
+  useGetFinanceDashboardQuery,
+  useGetFinanceInvoicesPaginatedQuery,
+  useGetFinanceFeeStructuresQuery,
   useGetBursaryDashboardQuery,
   useGetFeeStructuresQuery,
   useCreateFeeStructureMutation,
@@ -148,3 +166,20 @@ export {
   useGetPsychomotorRatingsQuery,
   useLazyGetPsychomotorRatingsQuery,
 } from "./endpoints/psychomotor";
+
+// Dashboard (consolidated overview)
+export {
+  useGetDashboardOverviewQuery,
+} from "./endpoints/dashboard";
+
+// Teacher Portal
+export {
+  useGetTeacherAssignedContextQuery,
+  useGetTeacherGradingQueueQuery,
+  useGetTeacherClassSheetQuery,
+} from "./endpoints/teacher-portal";
+
+// Student Portal
+export {
+  useGetStudentDashboardOverviewQuery,
+} from "./endpoints/student-portal";

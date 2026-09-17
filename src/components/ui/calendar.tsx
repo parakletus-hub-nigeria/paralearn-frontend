@@ -36,7 +36,14 @@ function Calendar({
   maxDate,
   ...props
 }: CalendarProps) {
-  const [currentMonth, setCurrentMonth] = React.useState(new Date())
+  const initialDate = selected instanceof Date ? selected : (Array.isArray(selected) && selected[0] instanceof Date ? selected[0] : new Date())
+  const [currentMonth, setCurrentMonth] = React.useState(initialDate)
+
+  React.useEffect(() => {
+    if (selected instanceof Date) {
+      setCurrentMonth(new Date(selected.getFullYear(), selected.getMonth(), 1))
+    }
+  }, [selected])
 
   const handleDateClick = (date: Date) => {
     if (disabled?.(date)) return

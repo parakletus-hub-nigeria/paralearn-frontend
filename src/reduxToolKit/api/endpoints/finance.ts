@@ -179,11 +179,102 @@ export interface RecordManualPaymentResponse {
   invoice: InvoiceRecord;
 }
 
+export interface StudentLookupItem {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  email?: string;
+  studentId?: string;
+  code?: string;
+  className?: string;
+  userCode?: string;
+  dbId?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Finance & Bursary Endpoints
 // ---------------------------------------------------------------------------
 const financeApi = paraApi.injectEndpoints({
   endpoints: (builder) => ({
+    // ── Finance route-parity endpoints (/finance/* mirrors /fees/*) ──
+
+    // GET /api/proxy/finance/dashboard — bursary finance overview metrics
+    getFinanceDashboard: builder.query<
+      BursaryDashboardResponse,
+      { termId?: string; sessionId?: string; classId?: string } | void
+    >({
+      query: (params) => ({
+        url: "/api/proxy/finance/dashboard",
+        params: params || undefined,
+      }),
+      transformResponse: (res: any) => res?.data ?? res,
+      providesTags: [{ type: "BursaryDashboard" }],
+    }),
+
+    // GET /api/proxy/finance/invoices — paginated invoices via /finance/ route
+    getFinanceInvoicesPaginated: builder.query<
+      {
+        data: InvoiceRecord[];
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+          hasNextPage: boolean;
+          hasPrevPage: boolean;
+        };
+      },
+      { page?: number; limit?: number; search?: string; classId?: string; status?: string } | void
+    >({
+      query: (params) => {
+        const q = new URLSearchParams();
+        if (params && params.page) q.set("page", String(params.page));
+        if (params && params.limit) q.set("limit", String(params.limit));
+        if (params && params.search) q.set("search", params.search);
+        if (params && params.classId) q.set("classId", params.classId);
+        if (params && params.status) q.set("status", params.status);
+        const qs = q.toString();
+        return { url: `/api/proxy/finance/invoices${qs ? `?${qs}` : ""}` };
+      },
+      transformResponse: (res: any) => {
+        if (res && Array.isArray(res.data) && res.pagination) return res;
+        const data = res?.data ?? res;
+        const arr = Array.isArray(data) ? data : [];
+        return {
+          data: arr,
+          pagination: { total: arr.length, page: 1, limit: arr.length, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+        };
+      },
+      providesTags: [{ type: "InvoiceList" }],
+    }),
+
+    // GET /api/proxy/finance/fee-structures — active fee structures via /finance/ route
+    getFinanceFeeStructures: builder.query<FeeStructureItem[], void>({
+      query: () => ({ url: "/api/proxy/finance/fee-structures" }),
+      transformResponse: (res: any) => {
+        const data = res?.data ?? res;
+        return Array.isArray(data) ? data : [];
+      },
+      providesTags: [{ type: "FeeStructureList" }],
+    }),
+    // GET /students/search?q=...&limit=...
+    searchStudents: builder.query<
+      StudentLookupItem[],
+      { q: string; limit?: number }
+    >({
+      query: ({ q, limit = 10 }) => ({
+        url: "/api/proxy/users/students/search",
+        params: { q, search: q, limit },
+      }),
+      transformResponse: (res: any) => {
+        const data = res?.data ?? res;
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.data)) return data.data;
+        if (Array.isArray(data?.items)) return data.items;
+        return [];
+      },
+    }),
     
     // GET /fees/settlement/config
     getSettlementConfig: builder.query<SettlementConfigResponse, void>({
@@ -307,7 +398,10 @@ const financeApi = paraApi.injectEndpoints({
       }),
       transformResponse: (res: any) => {
         const data = res?.data ?? res;
-        return Array.isArray(data) ? data : [];
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.data)) return data.data;
+        if (Array.isArray(data?.items)) return data.items;
+        return [];
       },
       providesTags: [{ type: "InvoiceList" }],
     }),
@@ -405,6 +499,9 @@ const financeApi = paraApi.injectEndpoints({
 });
 
 export const {
+  useGetFinanceDashboardQuery,
+  useGetFinanceInvoicesPaginatedQuery,
+  useGetFinanceFeeStructuresQuery,
   useGetSettlementConfigQuery,
   useGetBanksQuery,
   useLazyVerifyBankAccountQuery,
@@ -422,6 +519,8 @@ export const {
   useLazyVerifyPaymentQuery,
   useApplyFeeOverrideMutation,
   useRevokeFeeOverrideMutation,
+  useSearchStudentsQuery,
+  useLazySearchStudentsQuery,
 } = financeApi;
 
 export default financeApi;

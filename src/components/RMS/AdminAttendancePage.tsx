@@ -7,6 +7,7 @@ import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import { fetchClasses } from "@/reduxToolKit/admin/adminThunks";
 import { getTenantInfo } from "@/reduxToolKit/user/userThunks";
 import { useGetDailyClassAttendanceQuery, useBulkUpdateAttendanceMutation } from "@/reduxToolKit/api/endpoints/attendance";
+import { useGetClassesLookupQuery } from "@/reduxToolKit/api";
 import { Header } from "@/components/RMS/header";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -52,6 +53,7 @@ export function AdminAttendancePage() {
   // State
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Draft State: Stores ONLY the changes made by the user.
@@ -60,27 +62,25 @@ export function AdminAttendancePage() {
   >({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  const { data: classesLookup = [] } = useGetClassesLookupQuery();
+  const availableClasses = classesLookup.length > 0 ? classesLookup : (classes || []);
+
   // Fetch Tenant Info on mount
   useEffect(() => {
     dispatch(getTenantInfo());
     dispatch(fetchClasses(undefined)); // Fetch all classes (matching AdminClassesPage)
   }, [dispatch]);
 
-  // Set default class if available and not selected
-  useEffect(() => {
-    if (!selectedClassId && classes && classes.length > 0) {
-      setSelectedClassId(classes[0].id);
-    }
-  }, [classes, selectedClassId]);
-
+  // Ensure first available class is automatically selected on mount
+  const effectiveClassId = selectedClassId || (availableClasses.length > 0 ? availableClasses[0].id : "");
 
   // Format date for API
   const dateStr = format(currentDate, "yyyy-MM-dd");
 
   // Fetch Attendance Query
   const { data: attendanceData, isLoading, isError, refetch } = useGetDailyClassAttendanceQuery(
-    { classId: selectedClassId, date: dateStr },
-    { skip: !selectedClassId }
+    { classId: effectiveClassId, date: dateStr },
+    { skip: !effectiveClassId }
   );
 
   const [bulkUpdate, { isLoading: isSaving }] = useBulkUpdateAttendanceMutation();
@@ -267,7 +267,7 @@ export function AdminAttendancePage() {
             {/* Class Selector */}
             <div className="relative w-full md:w-64">
                 <Select
-                    value={selectedClassId}
+                    value={effectiveClassId}
                     onValueChange={(val) => {
                       if (hasUnsavedChanges) {
                         if (!confirm("You have unsaved attendance changes. Are you sure you want to switch classes? Your changes will be lost.")) {
@@ -283,7 +283,7 @@ export function AdminAttendancePage() {
                     <SelectValue placeholder="Select Class" />
                     </SelectTrigger>
                     <SelectContent>
-                    {classes?.map((c: any) => (
+                    {availableClasses?.map((c: any) => (
                         <SelectItem key={c.id} value={c.id}>
                         {c.name}
                         </SelectItem>
@@ -294,7 +294,7 @@ export function AdminAttendancePage() {
 
             {/* Date Picker */}
             <div className="relative w-full md:w-auto">
-                <Popover>
+                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                     <PopoverTrigger 
                         className={cn(
                             buttonVariants({ variant: "outline" }),
@@ -324,6 +324,7 @@ export function AdminAttendancePage() {
                                 setCurrentDate(date as Date);
                                 setDraftAttendance({}); // Clear draft when switching date
                                 setHasUnsavedChanges(false);
+                                setIsCalendarOpen(false);
                               }
                             }}
                             disabled={(date) =>

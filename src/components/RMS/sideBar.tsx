@@ -407,7 +407,7 @@ const SidebarContentContainer = ({
                 flexShrink: 0,
               }}
             >
-              {getInitials(user?.firstName || user?.name || "PL")}
+              {getInitials(user?.firstName || user?.name || user?.email || "PL")}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p
@@ -422,7 +422,7 @@ const SidebarContentContainer = ({
                   lineHeight: 1.3,
                 }}
               >
-                {user?.firstName || "User"}
+                {[user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || (user?.email ? user.email.split("@")[0] : "") || "User"}
               </p>
               <p
                 style={{
@@ -474,15 +474,17 @@ const SidebarContentContainer = ({
         {(!isExpanded || isMobile) && (
           <div
             style={{
-              position: "absolute",
+              position: "sticky",
               top: 0,
               left: 0,
               right: 0,
-              padding: "12px 16px",
+              padding: "10px 16px",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
               zIndex: 50,
+              background: "#ffffff",
+              borderBottom: "1px solid var(--border-fine)",
             }}
             className="md:hidden"
           >
@@ -523,12 +525,18 @@ const SidebarContentContainer = ({
         {!isExpanded && !isMobile && (
           <div
             style={{
-              position: "absolute",
-              top: 20,
-              left: 16,
-              zIndex: 50,
+              position: "sticky",
+              top: 0,
+              left: 0,
+              right: 0,
+              padding: "10px 24px",
+              display: "flex",
+              alignItems: "center",
+              zIndex: 40,
+              background: "#ffffff",
+              borderBottom: "1px solid var(--border-fine)",
             }}
-            className="hidden md:block"
+            className="hidden md:flex"
           >
             <SidebarTrigger
               style={{

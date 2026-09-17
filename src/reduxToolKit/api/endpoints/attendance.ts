@@ -76,7 +76,7 @@ const attendanceApi = paraApi.injectEndpoints({
           id?: string;
           enrollmentId: string;
           status: "PRESENT" | "ABSENT" | "LATE";
-          remarks?: string; // Adding remarks as it's in the UI
+          remarks?: string;
         }[];
       }
     >({
@@ -85,10 +85,43 @@ const attendanceApi = paraApi.injectEndpoints({
         method: "PATCH",
         data: body,
       }),
-      invalidatesTags: (result, error, { date }) => [
-        { type: "Attendance" }, 
-        // We might want to be more specific here if possible, but general invalidation is safer for now
+      invalidatesTags: () => [{ type: "Attendance" }],
+    }),
+
+    // GET /attendance/daily-sheet?classId=...&date=YYYY-MM-DD
+    getDailyAttendanceSheet: builder.query<
+      any,
+      { classId: string; date: string }
+    >({
+      query: ({ classId, date }) => ({
+        url: "/api/proxy/attendance/daily-sheet",
+        params: { classId, date },
+      }),
+      transformResponse: (res: any) => res?.data ?? res,
+      providesTags: (result, error, { classId, date }) => [
+        { type: "Attendance", id: `daily-sheet-${classId}-${date}` },
       ],
+    }),
+
+    // POST /attendance/bulk-mark
+    bulkMarkAttendance: builder.mutation<
+      any,
+      {
+        classId: string;
+        date: string;
+        records: {
+          studentId: string;
+          status: "PRESENT" | "ABSENT" | "LATE";
+          remark?: string;
+        }[];
+      }
+    >({
+      query: (body) => ({
+        url: "/api/proxy/attendance/bulk-mark",
+        method: "POST",
+        data: body,
+      }),
+      invalidatesTags: () => [{ type: "Attendance" }],
     }),
   }),
   overrideExisting: false,
@@ -99,4 +132,6 @@ export const {
   useRecordAttendanceMutation,
   useGetDailyClassAttendanceQuery,
   useBulkUpdateAttendanceMutation,
+  useGetDailyAttendanceSheetQuery,
+  useBulkMarkAttendanceMutation,
 } = attendanceApi;

@@ -7,7 +7,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import { fetchAllUsers, deleteUser, reactivateUser, hardDeleteUser, getTenantInfo } from "@/reduxToolKit/user/userThunks";
 import { fetchClasses } from "@/reduxToolKit/admin/adminThunks";
-import { exportStudentsToPDF, exportTeachersToPDF } from "@/lib/pdfExport";
+import { useGetUsersPaginatedQuery, useGetClassesLookupQuery } from "@/reduxToolKit/api";
+import { exportStudentsToPDF, exportTeachersToPDF, exportStudentsToCSV, exportTeachersToCSV } from "@/lib/pdfExport";
 import { Header } from "@/components/RMS/header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,7 @@ export const UsersPage = () => {
   const { classes } = useSelector((s: RootState) => s.admin);
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "teacher" | "student" | "vp" | "accountant" | "admin">("all");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
@@ -111,22 +113,47 @@ export const UsersPage = () => {
   // Selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const ITEMS_PER_PAGE = 8;
+  const ITEMS_PER_PAGE = 20;
+
+  // Debounce search to avoid excessive API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1); // Reset to page 1 on search
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // ── Server-side paginated query ──
+  const paginatedQuery = useGetUsersPaginatedQuery({
+    page,
+    limit: ITEMS_PER_PAGE,
+    search: debouncedSearch || undefined,
+    role: roleFilter !== "all" ? roleFilter : undefined,
+    classId: classFilter !== "all" ? classFilter : undefined,
+  });
+  const serverData = paginatedQuery.data;
+  const serverLoading = paginatedQuery.isLoading || paginatedQuery.isFetching;
+
+  // ── Lightweight class lookup for filter dropdown ──
+  const { data: classLookup = [] } = useGetClassesLookupQuery();
 
   useEffect(() => {
+    // Still fetch all users for export functionality and fallback
     dispatch(fetchAllUsers());
     dispatch(fetchClasses(undefined));
     dispatch(getTenantInfo());
   }, [dispatch]);
 
-  // Create a map of class IDs to class names
+  // Create a map of class IDs to class names (from lookup or legacy)
   const classNameById = useMemo(() => {
     const map = new Map<string, string>();
-    for (const c of classes) {
+    const source = classLookup.length > 0 ? classLookup : classes;
+    for (const c of source) {
       map.set(c.id, c.name);
     }
     return map;
-  }, [classes]);
+  }, [classes, classLookup]);
 
   // Build unified user list
   const allUsers = useMemo<UserRow[]>(() => {
@@ -216,12 +243,50 @@ export const UsersPage = () => {
     return result;
   }, [allUsers, roleFilter, classFilter, search]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  // ── Pagination: prefer server-side data, fall back to client-side ──
+  const useServerPagination = !!serverData?.pagination;
+
+  const totalPages = useServerPagination
+    ? (serverData.pagination.totalPages || 1)
+    : Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+
   const paginatedUsers = useMemo(() => {
+    if (useServerPagination && serverData?.data) {
+      // Server already returned the right page — just map to UserRow format
+      return serverData.data.map((u: any) => {
+        const roles = Array.isArray(u.roles)
+          ? u.roles.map((r: any) => (r.role?.name || r.name || r || "").toLowerCase())
+          : [String(u.role || "").toLowerCase()];
+        let primaryRole: UserRow["role"] = "student";
+        if (roles.includes("admin")) primaryRole = "admin";
+        else if (roles.includes("principal")) primaryRole = "principal" as any;
+        else if (roles.includes("vp") || roles.includes("vice_principal")) primaryRole = "vp";
+        else if (roles.includes("accountant") || roles.includes("bursar")) primaryRole = "accountant";
+        else if (roles.includes("teacher")) primaryRole = "teacher";
+        const firstEnrollment = u.enrollments?.[0] || u.enrollment || {};
+        const classId = u.classId || firstEnrollment.classId || u.class?.id || firstEnrollment.class?.id || "";
+        const className = classNameById.get(classId) || u.className || u.class?.name || firstEnrollment.class?.name || "";
+        return {
+          id: u.studentId || u.teacherId || u.staffId || u.code || "",
+          dbId: u.id || "",
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          email: u.email || "",
+          role: primaryRole,
+          classId,
+          className,
+          status: (u.isActive === false ? "inactive" : "active") as "active" | "inactive",
+          avatar: u.profilePicture || u.avatar || "",
+          phoneNumber: u.phoneNumber || "",
+          dateOfBirth: u.dateOfBirth,
+          address: u.address || "",
+        } as UserRow;
+      });
+    }
+    // Client-side fallback
     const start = (page - 1) * ITEMS_PER_PAGE;
     return filteredUsers.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredUsers, page]);
+  }, [useServerPagination, serverData, filteredUsers, page, classNameById]);
 
   // Handlers
   const handleSelectAll = (checked: boolean) => {
@@ -256,6 +321,82 @@ export const UsersPage = () => {
 
   const handleEditUser = (user: UserRow) => {
     setEditUserModal(user);
+  };
+
+  const handleExportStudents = (format: "pdf" | "csv") => {
+    const rawList = (students && students.length > 0)
+      ? students
+      : (users || []).filter((u: any) => {
+          const roles = Array.isArray(u.roles)
+            ? u.roles.map((r: any) => (r.role?.name || r.name || r || "").toLowerCase())
+            : [String(u.role || "").toLowerCase()];
+          return roles.includes("student");
+        });
+
+    if (!rawList || rawList.length === 0) {
+      toast.error("No students available to export");
+      return;
+    }
+
+    const data = rawList.map((s: any) => {
+      const userCode = s.code || s.studentId || s.userCode || s.user?.code || s.user?.studentId || s.id || "";
+      const firstName = s.firstName || s.user?.firstName || (s.name ? s.name.split(" ")[0] : "") || "";
+      const lastName = s.lastName || s.user?.lastName || (s.name ? s.name.split(" ").slice(1).join(" ") : "") || "";
+      const email = s.user?.email || s.email || s.personalEmail || "";
+      const guardianName = s.guardianName || s.user?.guardianName || "";
+      const guardianPhone = s.guardianPhone || s.guardianContact || s.user?.guardianPhone || "";
+
+      return {
+        userCode,
+        firstName,
+        lastName,
+        email,
+        guardianName,
+        guardianPhone,
+      };
+    });
+
+    if (format === "pdf") {
+      exportStudentsToPDF(data, tenantInfo?.name);
+    } else {
+      exportStudentsToCSV(data);
+    }
+  };
+
+  const handleExportTeachers = (format: "pdf" | "csv") => {
+    const rawList = (teachers && teachers.length > 0)
+      ? teachers
+      : (users || []).filter((u: any) => {
+          const roles = Array.isArray(u.roles)
+            ? u.roles.map((r: any) => (r.role?.name || r.name || r || "").toLowerCase())
+            : [String(u.role || "").toLowerCase()];
+          return roles.includes("teacher");
+        });
+
+    if (!rawList || rawList.length === 0) {
+      toast.error("No teachers available to export");
+      return;
+    }
+
+    const data = rawList.map((t: any) => {
+      const userCode = t.code || t.teacherId || t.staffId || t.userCode || t.user?.code || t.user?.teacherId || t.id || "";
+      const firstName = t.firstName || t.user?.firstName || (t.name ? t.name.split(" ")[0] : "") || "";
+      const lastName = t.lastName || t.user?.lastName || (t.name ? t.name.split(" ").slice(1).join(" ") : "") || "";
+      const email = t.user?.email || t.email || t.personalEmail || "";
+
+      return {
+        userCode,
+        firstName,
+        lastName,
+        email,
+      };
+    });
+
+    if (format === "pdf") {
+      exportTeachersToPDF(data, tenantInfo?.name);
+    } else {
+      exportTeachersToCSV(data);
+    }
   };
 
   const getInitials = (first?: string, last?: string, fallbackEmail?: string) => {
@@ -490,40 +631,31 @@ export const UsersPage = () => {
                 Export
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem
-                onClick={() => {
-                const data = (students || []).map((s: any) => ({
-                  id: s.code || s.id || "",
-                  name: [s.firstName, s.lastName].filter(Boolean).join(" ") || s.name || "",
-                  email: s.user?.email || s.email || "",
-                  dateOfBirth: s.dateOfBirth || "",
-                  address: s.address || "",
-                  phoneNumber: s.phoneNumber || "",
-                  guardianName: s.guardianName || "",
-                  guardianPhone: s.guardianPhone || "",
-                }));
-                exportStudentsToPDF(data);
-              }}
+                onClick={() => handleExportStudents("pdf")}
                 className="text-xs cursor-pointer"
               >
                 Export Students (PDF)
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => {
-                const data = (teachers || []).map((t: any) => ({
-                  id: t.code || t.id || "",
-                  name: [t.firstName, t.lastName].filter(Boolean).join(" ") || t.name || "",
-                  email: t.user?.email || t.email || "",
-                  dateOfBirth: t.dateOfBirth || "",
-                  phoneNumber: t.phoneNumber || "",
-                  address: t.address || "",
-                }));
-                exportTeachersToPDF(data);
-              }}
+                onClick={() => handleExportStudents("csv")}
+                className="text-xs cursor-pointer"
+              >
+                Export Students (CSV)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => handleExportTeachers("pdf")}
                 className="text-xs cursor-pointer"
               >
                 Export Teachers (PDF)
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleExportTeachers("csv")}
+                className="text-xs cursor-pointer"
+              >
+                Export Teachers (CSV)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -123,7 +123,170 @@ export interface BookletPreviewResponse {
 }
 
 // ---------- Helpers ----------
-const unwrap = (res: any) => res?.data?.data ?? res?.data ?? null;
+const unwrap = (res: any) => {
+  const d = res?.data;
+  if (!d) return null;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  if (Array.isArray(d?.items)) return d.items;
+  return d?.data ?? d;
+};
+
+export interface ClassLookupItem {
+  id: string;
+  name: string;
+  code?: string;
+  level?: string | number;
+  stream?: string;
+}
+
+export interface SubjectLookupItem {
+  id: string;
+  name: string;
+  code?: string;
+}
+
+// ---------- Lightweight Lookups & Dashboard ----------
+export const fetchClassesLookup = createAsyncThunk(
+  "admin/fetchClassesLookup",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await apiClient.get("/api/proxy/classes/lookup");
+      const data = unwrap(res) || [];
+      return Array.isArray(data) ? (data as ClassLookupItem[]) : [];
+    } catch (e: any) {
+      try {
+        const fallback = await apiClient.get("/api/proxy/classes");
+        const fbData = unwrap(fallback) || [];
+        return Array.isArray(fbData) ? (fbData as ClassLookupItem[]) : [];
+      } catch (err: any) {
+        return rejectWithValue(
+          e?.response?.data?.message || e?.message || "Failed to fetch class lookup",
+        );
+      }
+    }
+  },
+);
+
+export const fetchSubjectsLookup = createAsyncThunk(
+  "admin/fetchSubjectsLookup",
+  async (params: { classId?: string } | undefined, { rejectWithValue }) => {
+    try {
+      const q = params?.classId ? `?classId=${encodeURIComponent(params.classId)}` : "";
+      const res = await apiClient.get(`/api/proxy/subjects/lookup${q}`);
+      const data = unwrap(res) || [];
+      return Array.isArray(data) ? (data as SubjectLookupItem[]) : [];
+    } catch (e: any) {
+      try {
+        const fallback = await apiClient.get("/api/proxy/subjects");
+        const fbData = unwrap(fallback) || [];
+        return Array.isArray(fbData) ? (fbData as SubjectLookupItem[]) : [];
+      } catch (err: any) {
+        return rejectWithValue(
+          e?.response?.data?.message || e?.message || "Failed to fetch subject lookup",
+        );
+      }
+    }
+  },
+);
+
+export const fetchDashboardOverview = createAsyncThunk(
+  "admin/fetchDashboardOverview",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await apiClient.get("/api/proxy/dashboard/overview");
+      return res.data?.data || res.data;
+    } catch (e: any) {
+      return rejectWithValue(
+        e?.response?.data?.message || e?.message || "Failed to fetch dashboard overview",
+      );
+    }
+  },
+);
+
+export const fetchUnenrolledStudents = createAsyncThunk(
+  "admin/fetchUnenrolledStudents",
+  async (
+    params: { search?: string; page?: number; limit?: number } | undefined,
+    { rejectWithValue },
+  ) => {
+    try {
+      const q = new URLSearchParams();
+      if (params?.search) q.set("search", params.search);
+      if (params?.page) q.set("page", String(params.page));
+      if (params?.limit) q.set("limit", String(params.limit));
+      const qs = q.toString() ? `?${q}` : "";
+      const res = await apiClient.get(`/api/proxy/enrollments/unenrolled-students${qs}`);
+      const data = res?.data;
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data?.items)
+        ? data.items
+        : [];
+      return items;
+    } catch (e: any) {
+      return rejectWithValue(
+        e?.response?.data?.message || e?.message || "Failed to fetch unenrolled students",
+      );
+    }
+  },
+);
+
+export const fetchClassRoster = createAsyncThunk(
+  "admin/fetchClassRoster",
+  async (classId: string, { rejectWithValue }) => {
+    try {
+      const res = await apiClient.get(`/api/proxy/classes/${classId}/roster`);
+      const data = res?.data?.students || res?.data?.data || res?.data || [];
+      return { classId, students: Array.isArray(data) ? data : [] };
+    } catch (e: any) {
+      return rejectWithValue(
+        e?.response?.data?.message || e?.message || "Failed to fetch class roster",
+      );
+    }
+  },
+);
+
+export const fetchScoreSheet = createAsyncThunk(
+  "admin/fetchScoreSheet",
+  async (
+    params: { assessmentId: string; classId?: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const q = new URLSearchParams({ assessmentId: params.assessmentId });
+      if (params.classId) q.set("classId", params.classId);
+      const res = await apiClient.get(`/api/proxy/scores/sheet?${q.toString()}`);
+      return res.data?.data || res.data;
+    } catch (e: any) {
+      return rejectWithValue(
+        e?.response?.data?.message || e?.message || "Failed to fetch score sheet",
+      );
+    }
+  },
+);
+
+export const batchSaveScores = createAsyncThunk(
+  "admin/batchSaveScores",
+  async (
+    payload: {
+      assessmentId: string;
+      scores: { studentId: string; score: number; feedback?: string }[];
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const res = await apiClient.post("/api/proxy/scores/batch-save", payload);
+      return res.data?.data || res.data;
+    } catch (e: any) {
+      return rejectWithValue(
+        e?.response?.data?.message || e?.message || "Failed to batch save scores",
+      );
+    }
+  },
+);
 
 // ---------- Admin: Classes ----------
 export const fetchClasses = createAsyncThunk(
@@ -360,11 +523,20 @@ export const previewSchoolPromotion = createAsyncThunk(
   ) => {
     try {
       const { currentSession, newSession } = payload;
-      const res = await apiClient.get(
-        `/api/proxy/student-progression/school/promotion-preview?currentSession=${encodeURIComponent(
-          currentSession,
-        )}&newSession=${encodeURIComponent(newSession)}`,
-      );
+      let res;
+      try {
+        res = await apiClient.get(
+          `/api/proxy/enrollments/promotion-preview?currentSession=${encodeURIComponent(
+            currentSession,
+          )}&newSession=${encodeURIComponent(newSession)}`,
+        );
+      } catch (err) {
+        res = await apiClient.get(
+          `/api/proxy/student-progression/school/promotion-preview?currentSession=${encodeURIComponent(
+            currentSession,
+          )}&newSession=${encodeURIComponent(newSession)}`,
+        );
+      }
       const data = unwrap(res);
       if (!data) return { classes: [], totalStudents: 0, summary: {} };
 
@@ -441,10 +613,15 @@ export const executeSchoolPromotion = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const res = await apiClient.post(
-        "/api/proxy/student-progression/school/execute-promotion",
-        payload,
-      );
+      let res;
+      try {
+        res = await apiClient.post("/api/proxy/enrollments/promote", payload);
+      } catch (err) {
+        res = await apiClient.post(
+          "/api/proxy/student-progression/school/execute-promotion",
+          payload,
+        );
+      }
       return unwrap(res);
     } catch (e: any) {
       return rejectWithValue(
