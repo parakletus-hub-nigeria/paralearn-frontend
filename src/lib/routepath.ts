@@ -61,6 +61,9 @@ export const routespath = {
   API_FORGOT_PASSWORD: "/auth/forgot-password",
   API_RESET_PASSWORD: "/auth/reset-password",
   API_CHANGE_PASSWORD: "/auth/change-password",
+  API_WHATSAPP_START: "/auth/whatsapp/start",
+  API_WHATSAPP_STATUS: "/auth/whatsapp/status",
+  API_WHATSAPP_COMPLETE: "/auth/whatsapp/complete",
   // Academic Session endpoints
   API_CREATE_ACADEMIC_SESSION: "/academic/sessions",
   API_GET_ALL_SESSIONS: "/academic/sessions",

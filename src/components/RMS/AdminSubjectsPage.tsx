@@ -418,19 +418,20 @@ export function AdminSubjectsPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="subjects-filter-bar" style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-          <div style={{ position: "relative", flex: "1 1 240px", minWidth: 0 }}>
+        <div className="subjects-filter-bar flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+          <div className="relative w-full sm:w-auto flex-1 min-w-0">
             <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--text-secondary)", pointerEvents: "none" }} />
             <Input
               placeholder="Search by subject code or name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ paddingLeft: 36, height: 40, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }}
+              className="w-full"
             />
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+          <div className="flex items-center gap-2.5 justify-between sm:justify-end">
             <Select value={classFilter} onValueChange={setClassFilter}>
-              <SelectTrigger style={{ height: 40, width: 160, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }}>
+              <SelectTrigger style={{ height: 40, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }} className="w-full sm:w-[160px]">
                 <SelectValue placeholder="All Classes" />
               </SelectTrigger>
               <SelectContent>

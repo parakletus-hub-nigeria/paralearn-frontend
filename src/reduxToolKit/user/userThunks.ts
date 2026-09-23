@@ -1039,3 +1039,9 @@ export const fetchUniUserProfile = createAsyncThunk(
     }
   },
 );
+
+export {
+  startWhatsAppAuth,
+  checkWhatsAppStatus,
+  completeWhatsAppAuth,
+} from "./whatsappAuthThunks";

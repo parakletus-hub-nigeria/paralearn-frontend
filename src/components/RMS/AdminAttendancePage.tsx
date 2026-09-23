@@ -249,19 +249,19 @@ export function AdminAttendancePage() {
       />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6">
+      <div className="w-full space-y-4 sm:space-y-6">
         {/* Page Title */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>Admin Attendance</h1>
-            <p className="mt-1" style={{ color: "var(--foreground-muted)" }}>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>Admin Attendance</h1>
+            <p className="mt-1 text-xs sm:text-sm" style={{ color: "var(--foreground-muted)" }}>
               Manage daily attendance for any class.
             </p>
           </div>
         </div>
 
         {/* Controls */}
-        <div className="bg-white p-4 flex flex-col lg:flex-row gap-4 items-center justify-between" style={{ borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
+        <div className="bg-white p-3 sm:p-4 md:p-5 flex flex-col lg:flex-row gap-3 sm:gap-4 items-stretch lg:items-center justify-between" style={{ borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
           <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto items-center">
             
             {/* Class Selector */}

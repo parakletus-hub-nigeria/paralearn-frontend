@@ -3,7 +3,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useState } from "react";
 import Link from "next/link";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaWhatsapp } from "react-icons/fa";
 import AuthHeader from "@/components/auth/authHeader";
 import { toast } from "sonner";
 import { handleError } from "@/lib/error-handler";
@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Mail } from "lucide-react";
+import WhatsAppAuthModal from "@/components/auth/WhatsAppAuthModal";
 
 export default function SigninPage() {
   const [data, setData] = useState({ email: "", password: "" });
@@ -26,6 +27,8 @@ export default function SigninPage() {
     "k12",
   );
   const [showPassword, setShowPassword] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+
   const dispatch = useDispatch<AppDispatch>();
   const { error, loading } = useSelector((state: any) => state.user);
   const router = useRouter();
@@ -70,14 +73,12 @@ export default function SigninPage() {
           return;
         }
 
-        // Check if there's a redirect path stored (e.g., from signup)
         const redirectPath =
           typeof window !== "undefined"
             ? sessionStorage.getItem("redirectAfterLogin")
             : null;
 
         if (redirectPath) {
-          // Clear the redirect path and redirect
           sessionStorage.removeItem("redirectAfterLogin");
           router.push(redirectPath);
           return;
@@ -89,15 +90,12 @@ export default function SigninPage() {
           return;
         }
 
-        // Check if academic session is set up
         try {
           const sessionResult = await dispatch(fetchCurrentSession()).unwrap();
 
-          // If session exists, redirect to dashboard
           if (sessionResult && sessionResult.sessionDetails) {
             router.push(routespath.DASHBOARD);
           } else {
-            // No active session — check if any sessions exist at all
             try {
               const allSessionsResp = await apiClient.get(
                 `/api/proxy${routespath.API_GET_ALL_SESSIONS}`,
@@ -114,7 +112,6 @@ export default function SigninPage() {
             }
           }
         } catch (sessionError: any) {
-          // If fetching current session fails, fallback to checking all sessions
           try {
             const allSessionsResp = await apiClient.get(
               `/api/proxy${routespath.API_GET_ALL_SESSIONS}`,
@@ -151,14 +148,14 @@ export default function SigninPage() {
               <Mail className="h-6 w-6 text-primary" />
             </div>
             <CardTitle className="text-xl font-bold text-slate-900">
-              Admin Login
+              Account Login
             </CardTitle>
             <p className="text-sm text-slate-500">
-              Sign in to your administrator account to continue
+              Sign in to your ParaLearn account to continue
             </p>
           </CardHeader>
           <CardContent className="space-y-5 px-6 pb-6">
-            <div className="flex gap-4 p-1 pb-3">
+            <div className="flex gap-4 p-1 pb-3 justify-center">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -189,15 +186,15 @@ export default function SigninPage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-slate-700">
-                Email Address
+                Email Address or Code
               </Label>
               <Input
                 id="email"
                 name="email"
-                type="email"
+                type="text"
                 value={data.email}
                 onChange={handleChange}
-                placeholder="user@institution.edu"
+                placeholder="user@institution.edu or code"
                 className="h-11 rounded-lg border-slate-300 bg-slate-50/50 focus:bg-white"
               />
             </div>
@@ -243,8 +240,27 @@ export default function SigninPage() {
               disabled={loading || !isValid()}
               className="h-12 w-full rounded-xl bg-gradient-to-r from-primary via-purple-700 to-primary font-semibold text-white shadow-lg shadow-primary/30 transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-60"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? "Signing in..." : "Sign In with Password"}
             </Button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 h-[1px] bg-slate-200" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Or continue with
+              </span>
+              <div className="flex-1 h-[1px] bg-slate-200" />
+            </div>
+
+            {/* 1-Click WhatsApp Sign In */}
+            <button
+              type="button"
+              onClick={() => setIsWhatsAppModalOpen(true)}
+              className="h-12 w-full rounded-xl bg-[#25D366] hover:bg-[#20bd5a] font-semibold text-white shadow-md transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+            >
+              <FaWhatsapp className="text-xl" />
+              <span>1-Click Sign in with WhatsApp</span>
+            </button>
 
             <div className="flex flex-col items-center gap-2 pt-1 text-center">
               <Link
@@ -270,6 +286,12 @@ export default function SigninPage() {
           </CardContent>
         </Card>
       </div>
+
+      <WhatsAppAuthModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        institutionType={institutionType}
+      />
     </div>
   );
 }

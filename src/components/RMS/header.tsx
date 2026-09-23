@@ -39,19 +39,19 @@ export const Header = ({
       }}
     >
       {/* Left: greeting */}
-      <div>
+      <div className="min-w-0 flex-1">
         {showGreeting && (
           <>
             <h1
               style={{
                 fontFamily: "var(--font-manrope), system-ui, sans-serif",
-                fontSize: "clamp(1.375rem, 2.5vw, 1.75rem)",
                 fontWeight: 800,
                 letterSpacing: "-0.03em",
                 lineHeight: 1.1,
                 color: "#0f172a",
                 margin: 0,
               }}
+              className="text-lg sm:text-xl md:text-2xl lg:text-3xl truncate"
             >
               {getGreeting()},{" "}
               <span style={{ color: "var(--violet-ink)" }}>
@@ -64,14 +64,10 @@ export const Header = ({
             <p
               style={{
                 fontFamily: "var(--font-manrope), system-ui, sans-serif",
-                fontSize: 13,
                 fontWeight: 500,
                 color: "var(--text-secondary)",
-                marginTop: 6,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
               }}
+              className="text-xs sm:text-sm mt-1 sm:mt-1.5 flex items-center gap-1.5"
             >
               <span
                 style={{
@@ -96,15 +92,14 @@ export const Header = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: 52,
-            height: 52,
             borderRadius: "var(--radius-lg)",
             border: "1px solid var(--border-fine)",
             background: "#ffffff",
             overflow: "hidden",
-            padding: 8,
+            padding: 6,
             flexShrink: 0,
           }}
+          className="w-10 h-10 sm:w-13 sm:h-13"
         >
           {schoolLogo ? (
             <Image
@@ -119,9 +114,9 @@ export const Header = ({
               style={{
                 fontFamily: "var(--font-manrope), system-ui, sans-serif",
                 fontWeight: 700,
-                fontSize: 16,
                 color: "var(--violet-ink)",
               }}
+              className="text-xs sm:text-sm md:text-base"
             >
               {getInitials(schoolName || "PL")}
             </span>

@@ -104,10 +104,10 @@ export default function BursaryDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           {/* Class filter */}
           <Select value={classFilter} onValueChange={setClassFilter}>
-            <SelectTrigger className="w-[150px] h-9 text-xs">
+            <SelectTrigger className="w-full sm:w-[150px] h-9 text-xs">
               <SelectValue placeholder="All Classes" />
             </SelectTrigger>
             <SelectContent>
@@ -120,30 +120,32 @@ export default function BursaryDashboardPage() {
             </SelectContent>
           </Select>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="gap-1.5 h-9 text-xs"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="gap-1.5 h-9 text-xs flex-1 sm:flex-none"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
+              Refresh
+            </Button>
 
-          <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 text-xs">
-            <Link href={routespath.FEE_STRUCTURES}>
-              <Banknote className="h-3.5 w-3.5" />
-              Fee Structures
-            </Link>
-          </Button>
+            <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 text-xs flex-1 sm:flex-none">
+              <Link href={routespath.FEE_STRUCTURES}>
+                <Banknote className="h-3.5 w-3.5" />
+                Fee Structures
+              </Link>
+            </Button>
 
-          <Button size="sm" asChild className="gap-1.5 h-9 text-xs bg-emerald-700 hover:bg-emerald-800 text-white">
-            <Link href={routespath.INVOICES}>
-              <Plus className="h-3.5 w-3.5" />
-              Manage Invoices
-            </Link>
-          </Button>
+            <Button size="sm" asChild className="gap-1.5 h-9 text-xs bg-emerald-700 hover:bg-emerald-800 text-white flex-1 sm:flex-none">
+              <Link href={routespath.INVOICES}>
+                <Plus className="h-3.5 w-3.5" />
+                Invoices
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
 
