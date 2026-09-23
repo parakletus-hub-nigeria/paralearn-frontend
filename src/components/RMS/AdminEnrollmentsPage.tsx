@@ -237,10 +237,10 @@ export function AdminEnrollmentsPage() {
             </span>
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           {/* Class Selector */}
           <Select value={selectedClassId} onValueChange={setSelectedClassId}>
-            <SelectTrigger className="enrollment-class-selector h-11 w-[200px] rounded-xl bg-white">
+            <SelectTrigger className="enrollment-class-selector h-11 w-full sm:w-[200px] rounded-xl bg-white">
               <SelectValue placeholder="Select Class" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -253,7 +253,7 @@ export function AdminEnrollmentsPage() {
           </Select>
           <AddStudentDialog>
             <Button
-              className="enrollment-add-student-btn h-11 rounded-xl text-white font-semibold gap-2"
+              className="enrollment-add-student-btn h-11 rounded-xl text-white font-semibold gap-2 w-full sm:w-auto justify-center"
               style={{ backgroundColor: primaryColor }}
             >
               <UserPlus className="w-4 h-4" />

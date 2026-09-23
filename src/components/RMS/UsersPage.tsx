@@ -497,27 +497,18 @@ export const UsersPage = () => {
   };
 
   return (
-    <div className="users-page-container" style={{ padding: "0 0 40px 0" }}>
+    <div className="users-page-container pb-8 sm:pb-10">
       <ProductTour steps={usersTourSteps} tourKey="users_directory_tour_v1" />
-      <div className="users-directory-header" style={{ marginBottom: 24 }}>
+      <div className="users-directory-header mb-4 sm:mb-6">
         <Header schoolLogo={tenantInfo?.logoUrl} schoolName={tenantInfo?.name || "ParaLearn School"} />
       </div>
 
       {/* Filter and Action Bar */}
       <div
-        className="users-filter-bar panel-card"
-        style={{
-          padding: "16px 20px",
-          marginBottom: 20,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 12,
-        }}
+        className="users-filter-bar panel-card p-3 sm:p-4 md:p-5 mb-4 sm:mb-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", flex: 1 }}>
-          <div style={{ position: "relative", minWidth: 220, flex: "1 1 220px", maxWidth: 360 }}>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 flex-1">
+          <div className="relative w-full sm:w-auto sm:min-w-[200px] sm:max-w-[320px]">
             <Search
               style={{
                 position: "absolute",
@@ -544,6 +535,7 @@ export const UsersPage = () => {
                 border: "1px solid var(--border-fine)",
                 background: "var(--surface-muted)",
               }}
+              className="w-full"
             />
           </div>
 
@@ -558,12 +550,12 @@ export const UsersPage = () => {
             <SelectTrigger
               style={{
                 height: 36,
-                width: 170,
                 fontSize: 13,
                 borderRadius: "var(--radius-md)",
                 border: "1px solid var(--border-fine)",
                 background: "var(--surface-muted)",
               }}
+              className="w-full sm:w-[160px]"
             >
               <SelectValue placeholder="All Roles" />
             </SelectTrigger>
@@ -588,12 +580,12 @@ export const UsersPage = () => {
             <SelectTrigger
               style={{
                 height: 36,
-                width: 160,
                 fontSize: 13,
                 borderRadius: "var(--radius-md)",
                 border: "1px solid var(--border-fine)",
                 background: "var(--surface-muted)",
               }}
+              className="w-full sm:w-[150px]"
             >
               <SelectValue placeholder="All Classes" />
             </SelectTrigger>
@@ -609,7 +601,7 @@ export const UsersPage = () => {
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="flex items-center gap-2 justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -727,7 +719,7 @@ export const UsersPage = () => {
       </div>
 
       {/* Directory Table */}
-      <div className="panel-card" style={{ padding: "20px 24px" }}>
+      <div className="panel-card p-3 sm:p-5 md:p-6">
         {loading ? (
           <div style={{ padding: "48px 0", textAlign: "center", color: "var(--text-secondary)" }}>
             <p style={{ fontSize: 14 }}>Loading directory...</p>

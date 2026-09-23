@@ -379,18 +379,18 @@ export function AdminAssessmentsPage() {
             Create and monitor assessments across all classes and subjects.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           <ManageCategoriesDialog>
             <Button
               variant="outline"
-              className="assessments-manage-categories-btn gap-2"
+              className="assessments-manage-categories-btn gap-2 w-full sm:w-auto justify-center"
               style={{ borderColor: "var(--border-fine)", borderRadius: "var(--radius-md)" }}
             >
               <Settings className="w-4 h-4" /> Manage Categories
             </Button>
           </ManageCategoriesDialog>
           <Button
-            className="gap-2 text-white shadow-sm"
+            className="gap-2 text-white shadow-sm w-full sm:w-auto justify-center"
             style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}
             onClick={() => setShowCreateModal(true)}
           >

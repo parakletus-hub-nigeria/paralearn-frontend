@@ -1,52 +1,68 @@
 "use client";
-import { useDispatch, useSelector } from "react-redux";
-import { useState } from "react";
+
 import Link from "next/link";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import AuthHeader from "@/components/auth/authHeader";
+import React, { useState } from "react";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/reduxToolKit/store";
+import { useRouter } from "next/navigation";
+import { FaEye, FaEyeSlash, FaWhatsapp } from "react-icons/fa";
 import { BiEnvelope } from "react-icons/bi";
 import { toast } from "sonner";
 import { handleError } from "@/lib/error-handler";
-import { useRouter } from "next/navigation";
 import { loginUser } from "@/reduxToolKit/user/userThunks";
-import { AppDispatch } from "@/reduxToolKit/store";
 import { pickRedirectPath } from "@/reduxToolKit/user/userUtils";
+import AuthHeader from "@/components/auth/authHeader";
+import WhatsAppAuthModal from "@/components/auth/WhatsAppAuthModal";
 
 const Signin = () => {
-  const [data, setData] = useState({ email: "", password: "" });
-  const [showPassword, setShowPassword] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+
+  const [institutionType, setInstitutionType] = useState<"k12" | "university">("k12");
   const [loginMode, setLoginMode] = useState<
     "admin" | "accountant" | "vp" | "teacher" | "student"
   >("admin");
-  const [institutionType, setInstitutionType] = useState<"k12" | "university">(
-    "k12",
-  );
 
-  const dispatch = useDispatch<AppDispatch>();
-  const { error, loading } = useSelector((state: any) => state.user);
-  const router = useRouter();
+  const [data, setData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // WhatsApp 1-Click State
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setData((p) => ({ ...p, [e.target.name]: e.target.value }));
+    setData({
+      ...data,
+      [e.target.name]: e.target.value,
+    });
   };
 
   const isValid = () => {
-    if (loginMode === "admin" || loginMode === "accountant" || loginMode === "vp") {
-      const emailRe = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      return (emailRe.test(data.email) || data.email.trim().length >= 3) && data.password.length >= 4;
-    }
-    // Teacher / Student: username / student code / email
-    return data.email.trim().length >= 2 && data.password.trim().length >= 4;
+    return Boolean(data.email && data.password);
   };
 
-  const submit = async () => {
+  const submit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!isValid()) return;
+
+    setLoading(true);
+    setError(null);
+
     try {
-      const result = await dispatch(
-        loginUser({ ...data, institutionType }),
+      const result: any = await dispatch(
+        loginUser({
+          email: data.email,
+          password: data.password,
+          institutionType,
+        })
       ).unwrap();
 
       if (result && result.accessToken) {
-        // Subdomain redirect happens inside the thunk — just show toast
         if (result.redirecting) {
           toast.success("Logged in successfully! Redirecting...");
           return;
@@ -58,11 +74,15 @@ const Signin = () => {
       } else {
         toast.error("Login failed. No token received.");
       }
-    } catch (e: any) {
-      handleError(
-        e,
-        "Login failed. Please check your credentials and try again.",
-      );
+    } catch (err: any) {
+      const msg =
+        typeof err === "string"
+          ? err
+          : err?.message || "Invalid email or password. Please try again.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,7 +91,7 @@ const Signin = () => {
       <AuthHeader />
       <div className="border-[1px] border-[#641BC4] rounded-2xl w-[95%] sm:w-[500px] flex flex-col items-center justify-between py-[36px] bg-[#EDEAFB] mt-[30px] mb-12 shadow-md">
         <div className="flex flex-col items-center mb-5 text-center px-4">
-          <p className="text-[20px] font-bold flex flex-row items-center space-x-2">
+          <p className="text-[20px] font-bold flex flex-row items-center space-x-2 text-slate-900">
             <BiEnvelope className="text-[#641BC4]" />{" "}
             <span>
               {loginMode === "admin"
@@ -85,7 +105,7 @@ const Signin = () => {
                       : "Student Login"}
             </span>
           </p>
-          <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--foreground-muted)" }}>
+          <p className="text-xs sm:text-sm mt-1 text-slate-600">
             {loginMode === "admin"
               ? "Login to your administrator or principal account"
               : loginMode === "accountant"
@@ -112,7 +132,7 @@ const Signin = () => {
                 key={tab.key}
                 type="button"
                 onClick={() => setLoginMode(tab.key as any)}
-                className={`py-2 rounded-lg font-bold text-2xs sm:text-xs transition-all ${
+                className={`py-2 rounded-lg font-bold text-2xs sm:text-xs transition-all cursor-pointer ${
                   loginMode === tab.key
                     ? "bg-[#641BC4] text-white shadow-sm"
                     : "text-slate-700 hover:bg-white/80"
@@ -136,7 +156,7 @@ const Signin = () => {
                 onChange={() => setInstitutionType("k12")}
                 className="w-4 h-4 text-[#641BC4]"
               />
-              <span className="text-xs sm:text-sm font-medium" style={{ color: "var(--foreground)" }}>
+              <span className="text-xs sm:text-sm font-medium text-slate-800">
                 K-12 School
               </span>
             </label>
@@ -149,7 +169,7 @@ const Signin = () => {
                 onChange={() => setInstitutionType("university")}
                 className="w-4 h-4 text-[#641BC4]"
               />
-              <span className="text-xs sm:text-sm font-medium" style={{ color: "var(--foreground)" }}>
+              <span className="text-xs sm:text-sm font-medium text-slate-800">
                 University / College
               </span>
             </label>
@@ -157,7 +177,7 @@ const Signin = () => {
         </div>
 
         {/* Credentials */}
-        <div className="w-full space-y-3.5 px-4">
+        <form onSubmit={submit} className="w-full space-y-3.5 px-4">
           <div className="flex flex-col w-full">
             <label htmlFor="email" className="mb-1 text-xs sm:text-sm font-semibold text-slate-800">
               {loginMode === "admin"
@@ -176,7 +196,7 @@ const Signin = () => {
               type="text"
               value={data.email}
               onChange={handleChange}
-              className="border border-[#641BC4]/50 focus:border-[#641BC4] bg-white focus:border-2 focus:outline-none h-11 w-full px-3 rounded-lg text-sm"
+              className="border border-[#641BC4]/50 focus:border-[#641BC4] bg-white focus:border-2 focus:outline-none h-11 w-full px-3 rounded-lg text-sm text-slate-800"
               placeholder={
                 loginMode === "admin"
                   ? "admin@brightfuture.ng"
@@ -192,7 +212,7 @@ const Signin = () => {
           </div>
 
           <div className="flex flex-col w-full">
-            <label htmlFor="password" className="mb-2 text-sm font-medium">
+            <label htmlFor="password" className="mb-1 text-xs sm:text-sm font-semibold text-slate-800">
               Password
             </label>
             <div className="relative">
@@ -202,37 +222,53 @@ const Signin = () => {
                 type={showPassword ? "text" : "password"}
                 value={data.password}
                 onChange={handleChange}
-                className="border border-[#641BC4] focus:border-2 focus:outline-none h-11 w-full px-3 rounded-md text-base pr-10"
+                className="border border-[#641BC4]/50 focus:border-[#641BC4] bg-white focus:border-2 focus:outline-none h-11 w-full px-3 rounded-lg text-sm pr-10 text-slate-800"
                 placeholder="Enter your password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute top-1/2 right-3 -translate-y-1/2 text-lg"
-                style={{ color: "var(--foreground-muted)" }}
+                className="absolute top-1/2 right-3 -translate-y-1/2 text-lg text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 {!showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
           </div>
 
-          {error && <p className="text-sm" style={{ color: "var(--crimson-signal)" }}>{error}</p>}
+          {error && <p className="text-xs font-semibold text-rose-600">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading || !isValid()}
+            className="w-full rounded-xl font-semibold text-white h-12 flex flex-row items-center justify-center transition-colors duration-200 disabled:opacity-70 mt-4 bg-[#641BC4] hover:bg-[#5214a3] cursor-pointer shadow-sm"
+          >
+            {loading ? "Signing in..." : "Sign In with Password"}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="w-full flex items-center gap-3 my-4 px-4">
+          <div className="flex-1 h-[1px] bg-[#641BC4]/30" />
+          <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+            Or continue with
+          </span>
+          <div className="flex-1 h-[1px] bg-[#641BC4]/30" />
         </div>
 
-        <button
-          onClick={submit}
-          disabled={loading || !isValid()}
-          style={
-            isValid()
-              ? { backgroundColor: "#641BC4" }
-              : { backgroundColor: "#a166f0" }
-          }
-          className="w-full sm:w-3/4 rounded-xl font-semibold text-white h-12 flex flex-row items-center justify-center transition-colors duration-200 disabled:opacity-70 mt-6"
-        >
-          {loading ? "Signing in..." : "Sign In"}
-        </button>
+        {/* WhatsApp 1-Click Button */}
+        <div className="w-full px-4">
+          <button
+            type="button"
+            onClick={() => setIsWhatsAppModalOpen(true)}
+            className="w-full rounded-xl font-semibold text-white h-12 flex flex-row items-center justify-center gap-2.5 transition-colors duration-200 bg-[#25D366] hover:bg-[#20bd5a] shadow-sm cursor-pointer"
+          >
+            <FaWhatsapp className="text-xl" />
+            <span>1-Click Sign in with WhatsApp</span>
+          </button>
+        </div>
 
-        <div className="w-full text-center mt-4 flex flex-col space-y-2 px-4">
+        {/* Footer links */}
+        <div className="w-full text-center mt-5 flex flex-col space-y-2 px-4">
           <p>
             <Link
               href={
@@ -245,8 +281,8 @@ const Signin = () => {
               Forgot password?
             </Link>
           </p>
-          <p className="text-sm">
-            Don't have an account?{" "}
+          <p className="text-sm text-slate-600">
+            Don&apos;t have an account?{" "}
             <Link
               href="/auth/signup"
               className="text-[#641BC4] font-semibold hover:underline"
@@ -256,6 +292,13 @@ const Signin = () => {
           </p>
         </div>
       </div>
+
+      {/* WhatsApp Auth Modal */}
+      <WhatsAppAuthModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        institutionType={institutionType}
+      />
     </div>
   );
 };

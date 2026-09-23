@@ -663,19 +663,20 @@ export function AdminClassesPage() {
       </div>
 
       {/* Search and Filters */}
-      <div className="classes-filter-bar" style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
-        <div style={{ position: "relative", flex: "1 1 240px", minWidth: 0 }}>
+      <div className="classes-filter-bar flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5">
+        <div className="relative w-full sm:w-auto flex-1 min-w-0">
           <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--text-secondary)", pointerEvents: "none" }} />
           <Input
             placeholder="Search by class name..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
             style={{ paddingLeft: 36, height: 40, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }}
+            className="w-full"
           />
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div className="flex items-center gap-2.5 justify-between sm:justify-end">
           <Select value={sessionFilter} onValueChange={setSessionFilter}>
-            <SelectTrigger style={{ height: 40, width: 160, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }}>
+            <SelectTrigger style={{ height: 40, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }} className="w-full sm:w-[160px]">
               <SelectValue placeholder="Session" />
             </SelectTrigger>
             <SelectContent>
@@ -685,7 +686,7 @@ export function AdminClassesPage() {
               ))}
             </SelectContent>
           </Select>
-          <div style={{ display: "flex", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-md)", overflow: "hidden", background: "#ffffff" }}>
+          <div style={{ display: "flex", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-md)", overflow: "hidden", background: "#ffffff", flexShrink: 0 }}>
             <button
               onClick={() => setViewMode("grid")}
               style={{ padding: "0 10px", background: viewMode === "grid" ? "var(--surface-muted)" : "transparent", transition: "background var(--dur-fast)" }}
@@ -711,7 +712,7 @@ export function AdminClassesPage() {
           </div>
         </div>
       ) : viewMode === "grid" ? (
-        <div className="classes-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+        <div className="classes-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.length === 0 ? (
             <div style={{ gridColumn: "1/-1", padding: "64px 0", textAlign: "center" }}>
               <div style={{ width: 48, height: 48, borderRadius: "var(--radius-lg)", background: "var(--surface-muted)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>

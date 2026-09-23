@@ -113,17 +113,18 @@ export const DashboardPage = () => {
 
   // ── Derive display values: prefer consolidated data, fall back to legacy ──
   const hasOverview = !!overviewData?.stats;
+  const overviewStats = (overviewData?.stats || {}) as any;
   const finalStudentCount = hasOverview
-    ? (overviewData.stats.studentCount ?? overviewData.stats.totalStudents ?? 0)
+    ? (overviewStats.studentCount ?? overviewStats.totalStudents ?? 0)
     : (fallbackStats?.studentCount ?? studentCount);
   const finalTeacherCount = hasOverview
-    ? (overviewData.stats.teacherCount ?? overviewData.stats.totalTeachers ?? 0)
+    ? (overviewStats.teacherCount ?? overviewStats.totalTeachers ?? 0)
     : (fallbackStats?.teacherCount ?? teacherCount);
   const subjectCount = hasOverview
-    ? (overviewData.stats.subjectCount ?? overviewData.stats.totalSubjects ?? 0)
+    ? (overviewStats.subjectCount ?? overviewStats.totalSubjects ?? 0)
     : fallbackSubjectCount;
   const assessmentCount = hasOverview
-    ? (overviewData.stats.assessmentCount ?? overviewData.stats.totalAssessments ?? 0)
+    ? (overviewStats.assessmentCount ?? overviewStats.totalAssessments ?? 0)
     : fallbackAssessmentCount;
   const recentAssessments = hasOverview ? (overviewData.recentAssessments?.slice(0, 5) ?? []) : fallbackRecentAssessments;
   const recentReportCards = hasOverview ? (overviewData.recentReportCards?.slice(0, 10) ?? []) : fallbackRecentReportCards;
@@ -196,13 +197,7 @@ export const DashboardPage = () => {
 
       {/* ── Stats ───────────────────────────────────────────────────── */}
       <div
-        className="dashboard-stats-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: 16,
-          marginBottom: 32,
-        }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8"
       >
         {stats.map(({ label, value, icon: Icon, tint, iconColor }) => (
           <div
@@ -212,10 +207,10 @@ export const DashboardPage = () => {
               border: "1px solid var(--border-fine)",
               borderRadius: "var(--radius-lg)",
               boxShadow: "var(--shadow-card)",
-              padding: "20px 24px",
+              padding: "16px 20px",
               display: "flex",
               alignItems: "center",
-              gap: 16,
+              gap: 14,
             }}
           >
             <div
@@ -249,7 +244,6 @@ export const DashboardPage = () => {
               <p
                 style={{
                   fontFamily: "var(--font-manrope), system-ui, sans-serif",
-                  fontSize: 28,
                   fontWeight: 800,
                   letterSpacing: "-0.03em",
                   color: "#0f172a",
@@ -257,6 +251,7 @@ export const DashboardPage = () => {
                   marginTop: 2,
                   fontVariantNumeric: "tabular-nums",
                 }}
+                className="text-xl sm:text-2xl md:text-3xl"
               >
                 {value.toLocaleString()}
               </p>
@@ -345,13 +340,7 @@ export const DashboardPage = () => {
 
       {/* ── Main 2-col grid ─────────────────────────────────────────── */}
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 2fr",
-          gap: 24,
-          alignItems: "start",
-        }}
-        className="grid-cols-1 lg:grid-cols-[1fr_2fr]"
+        className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4 sm:gap-6 items-start"
       >
         {/* Recent Assessments */}
         <div className="dashboard-recent-assessments">

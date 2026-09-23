@@ -128,11 +128,11 @@ export function TeacherDashboardPage() {
 
       <div className="space-y-6">
         {/* Welcome banner */}
-        <div className="p-6 md:p-8" style={{ borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", background: "var(--surface-muted)", boxShadow: "var(--shadow-card)" }}>
+        <div className="p-4 sm:p-6 md:p-8" style={{ borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", background: "var(--surface-muted)", boxShadow: "var(--shadow-card)" }}>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div className="space-y-1">
               <p className="text-sm font-medium" style={{ color: "var(--foreground-muted)" }}>Welcome back,</p>
-              <h1 className="text-2xl md:text-3xl font-bold" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>
                 {(user as any)?.firstName || "Teacher"} {(user as any)?.lastName || ""}
               </h1>
               <div className="flex items-center gap-2 mt-2 w-fit px-3 py-1.5" style={{ borderRadius: "var(--radius-md)", background: "white", border: "1px solid var(--border-fine)" }}>
@@ -144,7 +144,7 @@ export function TeacherDashboardPage() {
             </div>
 
             {/* Summary pills */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
               {[
                 { label: "Classes", value: stats.totalClasses, icon: GraduationCap, bg: "var(--violet-tint)", color: "var(--violet-ink)" },
                 { label: "Subjects", value: stats.totalSubjects, icon: BookOpen, bg: "var(--cobalt-tint)", color: "var(--cobalt-signal)" },
