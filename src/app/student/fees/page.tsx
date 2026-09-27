@@ -2,351 +2,304 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import Link from "next/link";
 import { StudentHeader } from "@/components/Student/StudentHeader";
 import {
-  Lock,
-  Loader2,
-  CreditCard,
-  CheckCircle2,
-  Clock,
   AlertCircle,
-  RefreshCw,
-  Receipt,
+  ArrowLeft,
+  Banknote,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
+  CreditCard,
+  Loader2,
+  Lock,
+  Receipt,
+  RefreshCw,
   ShieldCheck,
-  ArrowLeft,
 } from "lucide-react";
 import {
+  InvoiceRecord,
   useGetMyInvoicesQuery,
   useInitializePaystackPaymentMutation,
-  InvoiceRecord,
 } from "@/reduxToolKit/api/endpoints/finance";
-import { cn } from "@/lib/utils";
 
 const fmtKobo = (kobo: number) =>
   "\u20a6" + (kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 });
 
-const STATUS_STYLES: Record<string, string> = {
-  PENDING: "bg-amber-100 text-amber-800 border-amber-200",
-  PARTIAL: "bg-orange-100 text-orange-800 border-orange-200",
-  PAID: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  WAIVED: "bg-slate-100 text-slate-700 border-slate-200",
-  OVERRIDDEN: "bg-purple-100 text-purple-800 border-purple-200",
+const getInvoiceStatusStyle = (status: string) => {
+  switch (status) {
+    case "PAID":
+      return { background: "var(--emerald-tint)", color: "var(--emerald-signal)" };
+    case "PENDING":
+    case "PARTIAL":
+      return { background: "var(--amber-tint)", color: "var(--amber-signal)" };
+    case "WAIVED":
+    case "OVERRIDDEN":
+      return { background: "var(--violet-tint)", color: "var(--violet-ink)" };
+    default:
+      return { background: "var(--surface-muted)", color: "var(--foreground-muted)" };
+  }
 };
 
 export default function StudentFeesPage() {
   const { data: rawData, isLoading, isFetching, refetch } = useGetMyInvoicesQuery();
   const [initPaystack, { isLoading: isInitializing }] = useInitializePaystackPaymentMutation();
+  const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
+  const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
+
   const invoices: InvoiceRecord[] = Array.isArray(rawData)
     ? rawData
     : Array.isArray((rawData as any)?.data)
       ? (rawData as any).data
       : [];
 
-  const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
-  const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
-
-  const totalFees = invoices.reduce((s: number, i: InvoiceRecord) => s + (i.totalAmount || 0), 0);
-  const totalPaid = invoices.reduce((s: number, i: InvoiceRecord) => s + (i.amountPaid || 0), 0);
-  const totalBalance = totalFees - totalPaid;
-  const hasUnpaid = invoices.some((i: InvoiceRecord) => i.status !== "PAID" && !i.adminOverride);
-  const hasActiveOverride = invoices.some((i: InvoiceRecord) => i.adminOverride);
+  const totalFees = invoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
+  const totalPaid = invoices.reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
+  const totalBalance = Math.max(totalFees - totalPaid, 0);
+  const hasUnpaid = invoices.some((invoice) => invoice.status !== "PAID" && !invoice.adminOverride);
+  const hasActiveOverride = invoices.some((invoice) => invoice.adminOverride);
 
   const handlePay = async (invoice: InvoiceRecord) => {
     setPayingInvoiceId(invoice.id);
     try {
       const res = await initPaystack({ invoiceId: invoice.id }).unwrap();
       if (res?.authorizationUrl) {
-        toast.info("Redirecting to secure Paystack payment gateway...");
+        toast.info("Opening secure Paystack checkout");
         window.location.href = res.authorizationUrl;
-      } else {
-        toast.error("Could not obtain payment link from gateway. Please try again.");
+        return;
       }
+      toast.error("Payment link was not returned. Please try again.");
     } catch (err: any) {
-      toast.error(err?.data?.message || err?.message || "Failed to initialize payment checkout");
+      toast.error(err?.data?.message || err?.message || "Failed to initialize payment");
     } finally {
       setPayingInvoiceId(null);
     }
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedInvoiceId((prev) => (prev === id ? null : id));
-  };
-
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen" style={{ background: "var(--surface-muted)" }}>
         <StudentHeader />
-        <div className="flex h-96 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="h-32 animate-pulse" style={{ background: "var(--chalk-white)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)" }} />
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="h-28 animate-pulse" style={{ background: "var(--chalk-white)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)" }} />
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: "var(--surface-muted)" }}>
       <StudentHeader />
-      <div className="max-w-4xl mx-auto space-y-6 p-4 sm:p-6 pb-16">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+      <main className="mx-auto max-w-7xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
+        <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Button variant="ghost" size="sm" asChild className="gap-1 h-7 px-2 text-xs text-muted-foreground hover:text-foreground -ml-2">
-                <Link href="/student/dashboard">
-                  <ArrowLeft className="h-3.5 w-3.5" /> Back to Dashboard
-                </Link>
-              </Button>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">My School Fees &amp; Billing</h1>
-            <p className="text-sm text-muted-foreground">
-              View term invoices, itemized fee breakdowns, payment records, and pay online securely.
+            <Link
+              href="/student/dashboard"
+              className="mb-4 inline-flex items-center gap-2 text-sm font-semibold"
+              style={{ color: "var(--foreground-muted)" }}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Dashboard
+            </Link>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em]" style={{ color: "var(--emerald-signal)" }}>
+              School Fees
+            </p>
+            <h1 className="mb-2 text-2xl font-bold tracking-tight md:text-3xl" style={{ color: "var(--foreground)" }}>
+              Fees and payments
+            </h1>
+            <p className="max-w-2xl text-sm md:text-base" style={{ color: "var(--foreground-muted)" }}>
+              Review invoices, fee items, payment history, and complete outstanding payments through Paystack.
             </p>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={() => refetch()}
             disabled={isFetching}
-            className="gap-1.5 h-9 text-xs self-start sm:self-auto"
+            className="inline-flex h-11 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60"
+            style={{ background: "var(--chalk-white)", color: "var(--foreground)", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-md)" }}
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
+            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
             Refresh
-          </Button>
+          </button>
         </div>
 
-      {/* Paywall Alert or Exemption Banner */}
-      {hasUnpaid ? (
-        <div className="flex items-start gap-3.5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4.5 text-amber-900 shadow-2xs">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">
-            <Lock className="h-5 w-5" />
+        <div className="mb-6 flex items-start gap-4 p-5" style={{ background: "var(--chalk-white)", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)" }}>
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center"
+            style={{
+              background: hasUnpaid ? "var(--amber-tint)" : hasActiveOverride ? "var(--violet-tint)" : "var(--emerald-tint)",
+              color: hasUnpaid ? "var(--amber-signal)" : hasActiveOverride ? "var(--violet-ink)" : "var(--emerald-signal)",
+              borderRadius: "var(--radius-lg)",
+            }}
+          >
+            {hasUnpaid ? <Lock className="h-6 w-6" /> : hasActiveOverride ? <ShieldCheck className="h-6 w-6" /> : <CheckCircle2 className="h-6 w-6" />}
           </div>
-          <div className="space-y-1">
-            <p className="font-bold text-sm text-amber-950">Report Card Access is Locked</p>
-            <p className="text-xs text-amber-800 leading-relaxed">
-              Your terminal academic report cards are locked pending full fee settlement for this term.
-              Outstanding balance: <strong className="font-mono">{fmtKobo(totalBalance)}</strong>. Complete your payment below to unlock instant access.
-            </p>
-          </div>
-        </div>
-      ) : hasActiveOverride ? (
-        <div className="flex items-start gap-3.5 rounded-2xl border border-purple-200 bg-purple-50/80 p-4.5 text-purple-900 shadow-2xs">
-          <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0 text-purple-700">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <div className="space-y-1">
-            <p className="font-bold text-sm text-purple-950">Administrative Exemption Active</p>
-            <p className="text-xs text-purple-800 leading-relaxed">
-              Your report cards are unlocked via an official administrative fee waiver or scholarship exemption.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-start gap-3.5 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-emerald-900 shadow-2xs">
-          <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
           <div>
-            <p className="font-semibold text-sm">All School Fees Cleared</p>
-            <p className="text-xs text-emerald-700 mt-0.5">
-              You have no outstanding fee balance. Your terminal report cards are fully unlocked.
+            <h2 className="text-base font-bold" style={{ color: "var(--foreground)" }}>
+              {hasUnpaid ? "Report card access is locked" : hasActiveOverride ? "Administrative exemption active" : "All fees cleared"}
+            </h2>
+            <p className="mt-1 max-w-3xl text-sm leading-relaxed" style={{ color: "var(--foreground-muted)" }}>
+              {hasUnpaid
+                ? `Outstanding balance: ${fmtKobo(totalBalance)}. Complete payment to unlock report card access.`
+                : hasActiveOverride
+                  ? "Your school has unlocked access with an official waiver or scholarship exemption."
+                  : "You have no outstanding balance. Your report cards remain available."}
             </p>
           </div>
         </div>
-      )}
 
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { label: "Total Billed Fees", value: totalFees, color: "text-slate-900", icon: Receipt },
-          { label: "Total Amount Paid", value: totalPaid, color: "text-emerald-700", icon: CheckCircle2 },
-          {
-            label: "Outstanding Balance",
-            value: totalBalance,
-            color: totalBalance > 0 ? "text-rose-600" : "text-emerald-700",
-            icon: totalBalance > 0 ? AlertCircle : CheckCircle2,
-          },
-        ].map((s) => (
-          <Card key={s.label} className="border-border shadow-xs">
-            <CardHeader className="pb-1 pt-4 px-4">
-              <CardTitle className="text-xs font-medium text-muted-foreground flex items-center justify-between">
-                <span>{s.label}</span>
-                <s.icon className={cn("h-4 w-4", s.color)} />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <p className={cn("text-2xl font-bold font-mono", s.color)}>{fmtKobo(s.value)}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Invoices List with Itemized Breakdown */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900">Termly Fee Invoices</h2>
-          <span className="text-xs text-muted-foreground">{invoices.length} Invoices</span>
+        <div className="mb-8 grid gap-4 sm:grid-cols-3">
+          {[
+            { label: "Total billed", value: totalFees, icon: Receipt, tone: "var(--foreground)" },
+            { label: "Total paid", value: totalPaid, icon: CheckCircle2, tone: "var(--emerald-signal)" },
+            { label: "Outstanding", value: totalBalance, icon: AlertCircle, tone: totalBalance > 0 ? "var(--amber-signal)" : "var(--emerald-signal)" },
+          ].map((metric) => (
+            <div key={metric.label} className="flex items-center gap-4 p-5" style={{ background: "var(--chalk-white)", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)" }}>
+              <div className="flex h-12 w-12 items-center justify-center" style={{ background: "var(--surface-muted)", color: metric.tone, borderRadius: "var(--radius-lg)" }}>
+                <metric.icon className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--foreground-muted)" }}>{metric.label}</p>
+                <p className="text-xl font-bold tabular-nums" style={{ color: metric.tone }}>{fmtKobo(metric.value)}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
-        {invoices.length === 0 ? (
-          <Card>
-            <CardContent className="py-16 text-center text-sm text-muted-foreground">
-              No fee invoices have been issued to your account yet.
-            </CardContent>
-          </Card>
-        ) : (
-          invoices.map((inv: InvoiceRecord) => {
-            const balanceKobo = inv.totalAmount - inv.amountPaid;
-            const isExpanded = expandedInvoiceId === inv.id;
-            const isPaying = payingInvoiceId === inv.id;
+        <section style={{ background: "var(--chalk-white)", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)" }}>
+          <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "var(--border-fine)" }}>
+            <div>
+              <h2 className="text-base font-bold" style={{ color: "var(--foreground)" }}>Invoices</h2>
+              <p className="text-sm" style={{ color: "var(--foreground-muted)" }}>{invoices.length} record{invoices.length === 1 ? "" : "s"}</p>
+            </div>
+            <Banknote className="h-5 w-5" style={{ color: "var(--emerald-signal)" }} />
+          </div>
 
-            return (
-              <Card key={inv.id} className="border-border shadow-xs overflow-hidden">
-                <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-base text-slate-900">
-                        {inv.termName || "Academic Term"} Invoice
-                      </p>
-                      <span
-                        className={cn(
-                          "inline-flex items-center px-2 py-0.5 rounded-md text-2xs font-semibold border",
-                          STATUS_STYLES[inv.status] || "bg-gray-100 text-gray-800"
-                        )}
-                      >
-                        {inv.status}
-                      </span>
-                      {inv.adminOverride && (
-                        <span className="inline-flex items-center gap-1 text-2xs font-semibold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 border border-purple-200">
-                          <ShieldCheck className="h-3 w-3" /> Exemption Active
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      Invoice Ref: {inv.id} &bull; Due:{" "}
-                      {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("en-NG") : "End of Term"}
-                    </p>
-                  </div>
+          {invoices.length === 0 ? (
+            <div className="px-5 py-16 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center" style={{ background: "var(--surface-muted)", color: "var(--foreground-muted)", borderRadius: "var(--radius-xl)" }}>
+                <Receipt className="h-8 w-8" />
+              </div>
+              <h3 className="text-lg font-bold" style={{ color: "var(--foreground)" }}>No invoices yet</h3>
+              <p className="mt-1 text-sm" style={{ color: "var(--foreground-muted)" }}>Your school has not issued a fee invoice to this account.</p>
+            </div>
+          ) : (
+            <div className="divide-y" style={{ borderColor: "var(--border-fine)" }}>
+              {invoices.map((invoice) => {
+                const balanceKobo = Math.max(invoice.totalAmount - invoice.amountPaid, 0);
+                const isExpanded = expandedInvoiceId === invoice.id;
+                const isPaying = payingInvoiceId === invoice.id;
+                const statusStyle = getInvoiceStatusStyle(invoice.status);
 
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Outstanding</p>
-                      <p
-                        className={cn(
-                          "text-lg font-bold font-mono",
-                          balanceKobo > 0 ? "text-rose-600" : "text-emerald-700"
-                        )}
-                      >
-                        {fmtKobo(balanceKobo)}
-                      </p>
-                    </div>
-
-                    {inv.status === "PAID" ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200">
-                        <CheckCircle2 className="h-4 w-4" /> Paid
-                      </span>
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={() => handlePay(inv)}
-                        disabled={isPaying || isInitializing}
-                        className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                      >
-                        {isPaying ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <CreditCard className="h-4 w-4" />
-                        )}
-                        Pay Now via Paystack
-                      </Button>
-                    )}
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => toggleExpand(inv.id)}
-                      className="h-8 w-8 text-slate-500"
-                      title="View Breakdown"
-                    >
-                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Expanded Itemized Fee Items and Payment History */}
-                {isExpanded && (
-                  <div className="border-t bg-slate-50/70 p-4 sm:p-5 space-y-4">
-                    {/* Itemized breakdown */}
-                    <div>
-                      <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                        Fee Breakdown Items
-                      </p>
-                      {inv.items && inv.items.length > 0 ? (
-                        <div className="bg-white rounded-xl border divide-y text-xs">
-                          {inv.items.map((item) => (
-                            <div key={item.id} className="flex items-center justify-between p-3">
-                              <span className="text-slate-800 font-medium">{item.description}</span>
-                              <span className="font-mono font-semibold text-slate-900">{fmtKobo(item.amount)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="bg-white rounded-xl border p-3 text-xs flex justify-between">
-                          <span className="text-slate-700">Composite Term Fee</span>
-                          <span className="font-mono font-semibold">{fmtKobo(inv.totalAmount)}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Past Payments History */}
-                    {inv.payments && inv.payments.length > 0 && (
+                return (
+                  <article key={invoice.id}>
+                    <div className="grid gap-4 px-5 py-5 lg:grid-cols-[1fr_auto] lg:items-center">
                       <div>
-                        <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                          Payment History
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <h3 className="text-base font-bold" style={{ color: "var(--foreground)" }}>
+                            {invoice.termName || "Academic term"} invoice
+                          </h3>
+                          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold" style={statusStyle}>
+                            {invoice.status}
+                          </span>
+                          {invoice.adminOverride && (
+                            <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "var(--violet-tint)", color: "var(--violet-ink)" }}>
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              Exemption
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-medium tabular-nums" style={{ color: "var(--foreground-muted)" }}>
+                          Ref: {invoice.id} • Due: {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString("en-NG") : "End of term"}
                         </p>
-                        <div className="bg-white rounded-xl border divide-y text-xs">
-                          {inv.payments.map((p) => (
-                            <div key={p.id} className="flex items-center justify-between p-3">
-                              <div>
-                                <p className="font-medium text-slate-900">
-                                  {p.method} Payment &bull; <span className="font-mono text-muted-foreground">{p.reference}</span>
-                                </p>
-                                <p className="text-2xs text-muted-foreground">
-                                  {p.paidAt ? new Date(p.paidAt).toLocaleDateString("en-NG", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  }) : "-"}
-                                </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                        <div className="mr-1 text-left lg:text-right">
+                          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--foreground-muted)" }}>Outstanding</p>
+                          <p className="text-lg font-bold tabular-nums" style={{ color: balanceKobo > 0 ? "var(--amber-signal)" : "var(--emerald-signal)" }}>
+                            {fmtKobo(balanceKobo)}
+                          </p>
+                        </div>
+
+                        {invoice.status === "PAID" || balanceKobo === 0 ? (
+                          <span className="inline-flex h-10 items-center gap-2 px-4 text-sm font-semibold" style={{ background: "var(--emerald-tint)", color: "var(--emerald-signal)", borderRadius: "var(--radius-md)" }}>
+                            <CheckCircle2 className="h-4 w-4" />
+                            Paid
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handlePay(invoice)}
+                            disabled={isPaying || isInitializing}
+                            className="inline-flex h-10 items-center gap-2 px-4 text-sm font-semibold text-white disabled:opacity-60"
+                            style={{ background: "var(--emerald-signal)", borderRadius: "var(--radius-md)", border: "none" }}
+                          >
+                            {isPaying ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                            Pay with Paystack
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => setExpandedInvoiceId(isExpanded ? null : invoice.id)}
+                          className="flex h-10 w-10 items-center justify-center"
+                          style={{ background: "var(--surface-muted)", color: "var(--foreground)", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-md)" }}
+                          title={isExpanded ? "Hide breakdown" : "View breakdown"}
+                        >
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="grid gap-5 px-5 pb-5 lg:grid-cols-2">
+                        <div className="p-4" style={{ background: "var(--surface-muted)", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-lg)" }}>
+                          <p className="mb-3 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--foreground)" }}>Fee breakdown</p>
+                          <div className="space-y-2">
+                            {(invoice.items?.length ? invoice.items : [{ id: "composite", description: "Composite term fee", amount: invoice.totalAmount }]).map((item: any) => (
+                              <div key={item.id} className="flex items-center justify-between gap-4 text-sm">
+                                <span style={{ color: "var(--foreground-muted)" }}>{item.description}</span>
+                                <span className="font-semibold tabular-nums" style={{ color: "var(--foreground)" }}>{fmtKobo(item.amount)}</span>
                               </div>
-                              <span className="font-mono font-bold text-emerald-700">{fmtKobo(p.amount)}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="p-4" style={{ background: "var(--surface-muted)", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-lg)" }}>
+                          <p className="mb-3 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--foreground)" }}>Payment history</p>
+                          {invoice.payments?.length ? (
+                            <div className="space-y-3">
+                              {invoice.payments.map((payment) => (
+                                <div key={payment.id} className="flex items-start justify-between gap-4 text-sm">
+                                  <div>
+                                    <p className="font-semibold" style={{ color: "var(--foreground)" }}>{payment.method} payment</p>
+                                    <p className="text-xs tabular-nums" style={{ color: "var(--foreground-muted)" }}>
+                                      {payment.reference} • {payment.paidAt ? new Date(payment.paidAt).toLocaleString("en-NG") : "Date unavailable"}
+                                    </p>
+                                  </div>
+                                  <span className="font-bold tabular-nums" style={{ color: "var(--emerald-signal)" }}>{fmtKobo(payment.amount)}</span>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          ) : (
+                            <p className="text-sm" style={{ color: "var(--foreground-muted)" }}>No payment has been recorded for this invoice.</p>
+                          )}
                         </div>
                       </div>
                     )}
-                  </div>
-                )}
-              </Card>
-            );
-          })
-        )}
-        </div>
-      </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }

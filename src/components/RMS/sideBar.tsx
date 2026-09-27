@@ -121,7 +121,6 @@ const SideBar = ({ children }: { children: ReactNode }) => {
         { label: "Classes", path: routespath.CLASSES, icon: BookOpenCheck, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Subjects", path: routespath.SUBJECTS, icon: BookOpen, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Assessments", path: routespath.ASSESSMENTS, icon: ClipboardList, roles: ["admin", "principal", "teacher", "vp"] },
-        { label: "CBT", path: routespath.CBT, icon: MonitorCheck, roles: ["admin", "principal", "vp"] },
         { label: "Report Cards", path: routespath.REPORT, icon: BookOpen, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Comments", path: routespath.COMMENTS, icon: MessageSquareText, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Attendance", path: routespath.ATTENDANCE, icon: Calendar, roles: ["admin", "principal", "teacher", "vp"] },
@@ -470,7 +469,7 @@ const SidebarContentContainer = ({
           position: "relative",
         }}
       >
-        {/* Mobile top bar */}
+        {/* Sticky top header bar when sidebar is collapsed or on mobile */}
         {(!isExpanded || isMobile) && (
           <div
             style={{
@@ -479,14 +478,13 @@ const SidebarContentContainer = ({
               left: 0,
               right: 0,
               padding: "10px 16px",
-              display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
+              justifyContent: "space-between",
               zIndex: 50,
               background: "#ffffff",
               borderBottom: "1px solid var(--border-fine)",
             }}
-            className="md:hidden"
+            className="flex"
           >
             <SidebarTrigger
               style={{
@@ -514,40 +512,11 @@ const SidebarContentContainer = ({
                 color: "var(--text-secondary)",
                 cursor: "pointer",
               }}
+              className="md:hidden"
             >
               <LogOut style={{ width: 13, height: 13 }} />
               Log out
             </button>
-          </div>
-        )}
-
-        {/* Desktop collapsed trigger */}
-        {!isExpanded && !isMobile && (
-          <div
-            style={{
-              position: "sticky",
-              top: 0,
-              left: 0,
-              right: 0,
-              padding: "10px 24px",
-              display: "flex",
-              alignItems: "center",
-              zIndex: 40,
-              background: "#ffffff",
-              borderBottom: "1px solid var(--border-fine)",
-            }}
-            className="hidden md:flex"
-          >
-            <SidebarTrigger
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--border-fine)",
-                background: "#ffffff",
-              }}
-              className="hover:bg-[var(--surface-muted)]"
-            />
           </div>
         )}
 

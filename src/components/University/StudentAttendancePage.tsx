@@ -18,6 +18,7 @@ import { format } from "date-fns";
 const DEFAULT_PRIMARY = "#641BC4";
 
 const STATUS_STYLES: Record<string, string> = {
+  UNMARKED: "text-slate-600 bg-slate-100",
   PRESENT: "text-emerald-700 bg-emerald-50",
   LATE: "text-amber-700 bg-amber-50",
   ABSENT: "text-red-700 bg-red-50",
@@ -231,10 +232,10 @@ export function StudentAttendancePage() {
                     <td className="py-3 px-4">
                       <span
                         className={`text-xs font-bold px-2 py-1 rounded-full ${
-                          STATUS_STYLES[log.status] || STATUS_STYLES.PRESENT
+                          STATUS_STYLES[log.status] || STATUS_STYLES.UNMARKED
                         }`}
                       >
-                        {log.status || "PRESENT"}
+                        {log.status === "UNMARKED" ? "Unmarked" : log.status || "Unmarked"}
                       </span>
                     </td>
                   </tr>

@@ -350,11 +350,25 @@ const adminSlice = createSlice({
         state.success = "Publish status updated";
         const payload = action.payload as any;
         if (payload?.id) {
-          state.assessments = state.assessments.map((a: any) =>
-            a.id === payload.id
-              ? { ...a, status: payload.isPublished ? "started" : "not_started", isPublished: payload.isPublished }
-              : a
-          );
+          state.assessments = state.assessments.map((a: any) => {
+            if (a.id !== payload.id) return a;
+            const startsAt = payload.startsAt ?? a.startsAt;
+            const endsAt = payload.endsAt ?? a.endsAt;
+            let status = "draft";
+            if (payload.isPublished) {
+              const now = new Date();
+              const start = startsAt ? new Date(startsAt) : null;
+              const end = endsAt ? new Date(endsAt) : null;
+              if (end && now > end) {
+                status = "ended";
+              } else if (start && now >= start) {
+                status = "started";
+              } else {
+                status = "not_started";
+              }
+            }
+            return { ...a, ...payload, status, isPublished: payload.isPublished };
+          });
         }
       })
       .addCase(publishAssessmentAdmin.rejected, (state, action) => rejected(state, action, "Failed to publish assessment"));

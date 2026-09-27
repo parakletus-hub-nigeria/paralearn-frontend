@@ -120,6 +120,7 @@ export const paraApi = createApi({
     "AcademicTimeline",
     "ScoreSheet",
     "ReportsOverview",
+    "ReportShareLog",
     "TeacherContext",
     "GradingQueue",
     "TeacherClassSheet",

@@ -82,6 +82,7 @@ export default function WhatsAppAuthModal({
 
   // Challenge data
   const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number>(300);
@@ -117,6 +118,7 @@ export default function WhatsAppAuthModal({
         const result = await dispatch(
           completeWhatsAppAuth({
             challengeId: verifiedChallengeId,
+            clientSecret: clientSecret || undefined,
             subdomain: subdomainInput.trim() || undefined,
             institutionType,
           })
@@ -145,6 +147,7 @@ export default function WhatsAppAuthModal({
     },
     [
       dispatch,
+      clientSecret,
       subdomainInput,
       institutionType,
       router,
@@ -167,6 +170,7 @@ export default function WhatsAppAuthModal({
         ).unwrap();
 
         setChallengeId(result.challengeId);
+        setClientSecret(result.clientSecret || null);
         setWhatsappUrl(result.whatsappUrl);
         setExpiresAt(result.expiresAt);
 
@@ -219,6 +223,7 @@ export default function WhatsAppAuthModal({
       setErrorMessage(null);
       setIsLoading(false);
       setChallengeId(null);
+      setClientSecret(null);
       setWhatsappUrl(null);
       setQrCodeDataUrl("");
       hasAutoStartedRef.current = false;

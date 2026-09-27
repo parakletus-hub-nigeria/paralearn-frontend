@@ -33,6 +33,7 @@ export interface WhatsAppStartResponse {
   message: string;
   data: {
     challengeId: string;
+    clientSecret?: string;
     whatsappUrl: string;
     expiresAt: string;
   };
@@ -81,6 +82,7 @@ export const startWhatsAppAuth = createAsyncThunk(
 
       return {
         challengeId: data.challengeId as string,
+        clientSecret: data.clientSecret as string | undefined,
         whatsappUrl: data.whatsappUrl as string,
         expiresAt: data.expiresAt as string,
       };
@@ -154,6 +156,7 @@ export const completeWhatsAppAuth = createAsyncThunk(
   async (
     payload: {
       challengeId: string;
+      clientSecret?: string;
       subdomain?: string;
       institutionType?: "k12" | "university";
     },
@@ -169,7 +172,10 @@ export const completeWhatsAppAuth = createAsyncThunk(
 
       const response = await apiClient.post(
         `/api/proxy${routespath.API_WHATSAPP_COMPLETE}`,
-        { challengeId: payload.challengeId },
+        {
+          challengeId: payload.challengeId,
+          clientSecret: payload.clientSecret,
+        },
         { headers }
       );
 

@@ -9,8 +9,8 @@ import { FaEye, FaEyeSlash, FaWhatsapp } from "react-icons/fa";
 import { BiEnvelope } from "react-icons/bi";
 import { toast } from "sonner";
 import { handleError } from "@/lib/error-handler";
-import { loginUser } from "@/reduxToolKit/user/userThunks";
-import { pickRedirectPath } from "@/reduxToolKit/user/userUtils";
+import { loginUser, logoutUser } from "@/reduxToolKit/user/userThunks";
+import { pickRedirectPath, normalizeRoles } from "@/reduxToolKit/user/userUtils";
 import AuthHeader from "@/components/auth/authHeader";
 import WhatsAppAuthModal from "@/components/auth/WhatsAppAuthModal";
 
@@ -35,15 +35,110 @@ const Signin = () => {
   // WhatsApp 1-Click State
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
 
+  const handleModeChange = (mode: "admin" | "accountant" | "vp" | "teacher" | "student") => {
+    setLoginMode(mode);
+    setData({
+      email: "",
+      password: "",
+    });
+    setError(null);
+    setShowPassword(false);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setData({
       ...data,
       [e.target.name]: e.target.value,
     });
+    if (error) setError(null);
   };
 
   const isValid = () => {
     return Boolean(data.email && data.password);
+  };
+
+  const validateRoleForMode = (
+    userRoles: string[],
+    mode: "admin" | "accountant" | "vp" | "teacher" | "student"
+  ): { allowed: boolean; errorMessage?: string } => {
+    const normalized = (userRoles || []).map((r) => String(r || "").toLowerCase());
+
+    const getSuggestedTab = (): string => {
+      if (normalized.some((r) => ["admin", "principal", "school_admin", "editor"].includes(r))) {
+        return "Admin";
+      }
+      if (normalized.some((r) => ["accountant", "bursar", "finance"].includes(r))) {
+        return "Bursar";
+      }
+      if (normalized.some((r) => ["vp", "vice_principal"].includes(r))) {
+        return "VP";
+      }
+      if (normalized.some((r) => ["teacher", "lecturer"].includes(r))) {
+        return "Teacher";
+      }
+      if (normalized.includes("student")) {
+        return "Student";
+      }
+      return "appropriate";
+    };
+
+    const suggestedTab = getSuggestedTab();
+
+    if (mode === "student") {
+      if (normalized.includes("student")) return { allowed: true };
+      return {
+        allowed: false,
+        errorMessage: `This account is not a Student account. Please switch to the ${suggestedTab} login tab.`,
+      };
+    }
+
+    if (mode === "teacher") {
+      if (normalized.some((r) => ["teacher", "lecturer"].includes(r))) return { allowed: true };
+      return {
+        allowed: false,
+        errorMessage: `This account is not a Teacher account. Please switch to the ${suggestedTab} login tab.`,
+      };
+    }
+
+    if (mode === "admin") {
+      if (normalized.some((r) => ["admin", "principal", "school_admin", "editor"].includes(r))) {
+        return { allowed: true };
+      }
+      return {
+        allowed: false,
+        errorMessage: `This account is not an Administrator account. Please switch to the ${suggestedTab} login tab.`,
+      };
+    }
+
+    if (mode === "accountant") {
+      if (
+        normalized.some((r) =>
+          ["accountant", "bursar", "finance", "admin", "principal", "school_admin"].includes(r)
+        )
+      ) {
+        return { allowed: true };
+      }
+      return {
+        allowed: false,
+        errorMessage: `This account is not authorized for Bursar/Finance login. Please switch to the ${suggestedTab} login tab.`,
+      };
+    }
+
+    if (mode === "vp") {
+      if (
+        normalized.some((r) =>
+          ["vp", "vice_principal", "admin", "principal", "school_admin"].includes(r)
+        )
+      ) {
+        return { allowed: true };
+      }
+      return {
+        allowed: false,
+        errorMessage: `This account is not authorized for Vice Principal login. Please switch to the ${suggestedTab} login tab.`,
+      };
+    }
+
+    return { allowed: true };
   };
 
   const submit = async (e?: React.FormEvent) => {
@@ -63,13 +158,24 @@ const Signin = () => {
       ).unwrap();
 
       if (result && result.accessToken) {
+        const roles = normalizeRoles(result.user?.roles || result.roles || result.user);
+        const roleValidation = validateRoleForMode(roles, loginMode);
+
+        if (!roleValidation.allowed) {
+          // Clear session created by login attempt
+          await dispatch(logoutUser());
+          const msg = roleValidation.errorMessage || "Account is not authorized for this login tab.";
+          setError(msg);
+          toast.error(msg);
+          return;
+        }
+
         if (result.redirecting) {
           toast.success("Logged in successfully! Redirecting...");
           return;
         }
 
         toast.success("Logged in successfully!");
-        const roles = result.user?.roles || [];
         router.push(pickRedirectPath(roles, institutionType));
       } else {
         toast.error("Login failed. No token received.");
@@ -131,7 +237,7 @@ const Signin = () => {
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setLoginMode(tab.key as any)}
+                onClick={() => handleModeChange(tab.key as any)}
                 className={`py-2 rounded-lg font-bold text-2xs sm:text-xs transition-all cursor-pointer ${
                   loginMode === tab.key
                     ? "bg-[#641BC4] text-white shadow-sm"

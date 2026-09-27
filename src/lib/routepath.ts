@@ -18,7 +18,7 @@ export const routespath = {
   ENROLLMENTS: "/RMS/enrollments",
   // CBT module
   CBT: "/RMS/cbt",
-  CBT_EXAMS: "/RMS/cbt/exams",
+  CBT_EXAMS: "/RMS/assessments",
   CBT_QUESTION_BANK: "/RMS/cbt/question-bank",
   CBT_RESULTS: "/RMS/cbt/results",
   LESSON_GENERATOR: "/RMS/lesson-generator",

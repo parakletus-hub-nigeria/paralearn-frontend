@@ -39,18 +39,48 @@ export function TeacherGradingPage() {
   const [gradingState, setGradingState] = useState<Record<string, { marksAwarded: string; comment: string }>>({});
   const [isSavingAll, setIsSavingAll] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [hasLoadedSubmissions, setHasLoadedSubmissions] = useState(false);
 
   useEffect(() => {
     if (!assessmentId) return;
-    dispatch(fetchAssessmentDetail(assessmentId));
-    dispatch(fetchAssessmentSubmissions(assessmentId));
+    let cancelled = false;
+
+    const loadAssessmentForGrading = async () => {
+      setLoadError(null);
+      setHasLoadedSubmissions(false);
+      try {
+        await Promise.all([
+          dispatch(fetchAssessmentDetail(assessmentId)).unwrap(),
+          dispatch(fetchAssessmentSubmissions(assessmentId)).unwrap(),
+        ]);
+        if (!cancelled) {
+          setHasLoadedSubmissions(true);
+        }
+      } catch (error: any) {
+        if (!cancelled) {
+          setHasLoadedSubmissions(true);
+          setLoadError(
+            typeof error === "string"
+              ? error
+              : error?.message || "Assessment not found or unauthorized",
+          );
+        }
+      }
+    };
+
+    loadAssessmentForGrading();
+
+    return () => {
+      cancelled = true;
+    };
   }, [dispatch, assessmentId]);
 
   useEffect(() => {
-    if (!loading && submissions.length > 0 && !submissionId) {
+    if (hasLoadedSubmissions && submissions.length > 0 && !submissionId) {
       router.replace(`/teacher/assessments/${assessmentId}/grade/${submissions[0].id}`);
     }
-  }, [loading, submissions, submissionId, assessmentId, router]);
+  }, [hasLoadedSubmissions, submissions, submissionId, assessmentId, router]);
 
   const submission: any = useMemo(() => {
     return submissions.find((s: any) => s.id === submissionId);
@@ -147,7 +177,7 @@ export function TeacherGradingPage() {
     }
   };
 
-  if (loading && !selectedAssessment) {
+  if (!hasLoadedSubmissions && (!selectedAssessment || !submission)) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--surface-muted)" }}>
         <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid var(--border-fine)", borderTopColor: "var(--violet-ink)", animation: "spin 0.6s linear infinite" }} />
@@ -155,7 +185,30 @@ export function TeacherGradingPage() {
     );
   }
 
-  if (submissions.length === 0 && !loading) {
+  if (loadError && hasLoadedSubmissions && !loading) {
+    return (
+      <div className="flex h-screen items-center justify-center flex-col gap-4" style={{ background: "var(--surface-muted)" }}>
+        <div className="p-8 text-center max-w-sm" style={{ background: "white", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
+          <div className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4" style={{ background: "var(--amber-tint)" }}>
+            <AlertTriangle className="w-6 h-6" style={{ color: "var(--amber-signal)" }} />
+          </div>
+          <h2 className="text-lg font-bold mb-2" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>Assessment unavailable</h2>
+          <p className="text-sm mb-6" style={{ color: "var(--foreground-muted)" }}>
+            This assessment could not be opened for grading. It may have been deleted, moved to another teacher, or created by an admin.
+          </p>
+          <button
+            onClick={() => router.push(`/teacher/assessments`)}
+            className="px-6 py-2 font-bold text-sm"
+            style={{ background: "var(--violet-ink)", color: "white", borderRadius: "var(--radius-md)", border: "none" }}
+          >
+            Back to Assessments
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (submissions.length === 0 && hasLoadedSubmissions && !loading) {
     return (
       <div className="flex h-screen items-center justify-center flex-col gap-4" style={{ background: "var(--surface-muted)" }}>
         <div className="p-8 text-center max-w-sm" style={{ background: "white", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
@@ -172,6 +225,14 @@ export function TeacherGradingPage() {
             Back to Assessments
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (!submission && submissions.length > 0 && !submissionId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--surface-muted)" }}>
+        <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid var(--border-fine)", borderTopColor: "var(--violet-ink)", animation: "spin 0.6s linear infinite" }} />
       </div>
     );
   }

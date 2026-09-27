@@ -8,7 +8,6 @@ import {
   useGetDailyClassAttendanceQuery,
   useBulkUpdateAttendanceMutation,
 } from "@/reduxToolKit/api/endpoints/attendance";
-import { TeacherHeader } from "./TeacherHeader";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -41,6 +40,7 @@ import {
   Save,
   Search,
   Sun,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO, subDays } from "date-fns";
@@ -52,10 +52,11 @@ const ATTENDANCE_STATUS = {
 } as const;
 
 type AttendanceStatusType = keyof typeof ATTENDANCE_STATUS;
+type EffectiveAttendanceStatus = AttendanceStatusType | "UNMARKED";
 type TabType = "today" | "history";
 
 interface AttendanceRecord {
-  status: AttendanceStatusType;
+  status: EffectiveAttendanceStatus;
   remarks: string;
 }
 
@@ -153,13 +154,13 @@ export default function TeacherAttendancePage() {
   const getEffectiveRecord = (record: any): AttendanceRecord => {
     if (isReadOnly) {
       return {
-        status: record.attendance?.status || "ABSENT",
+        status: record.attendance?.status || "UNMARKED",
         remarks: record.attendance?.remarks || "",
       };
     }
     const draft = draftAttendance[record.enrollmentId];
     return {
-      status: draft?.status || record.attendance?.status || "ABSENT",
+      status: draft?.status || record.attendance?.status || "UNMARKED",
       remarks: draft?.remarks !== undefined ? draft.remarks : (record.attendance?.remarks || ""),
     };
   };
@@ -208,15 +209,26 @@ export default function TeacherAttendancePage() {
       return;
     }
     try {
-      const records = studentOnlyData.map((record: any) => {
+      const records = studentOnlyData
+        .filter((record: any) => {
+          const hasDraft = Boolean(draftAttendance[record.enrollmentId]);
+          const existingStatus = record.attendance?.status;
+          return hasDraft || (existingStatus && existingStatus !== "UNMARKED");
+        })
+        .map((record: any) => {
         const effective = getEffectiveRecord(record);
         return {
           id: record.attendance?.id, // CRITICAL: This prevents the backend from wiping untouched students on a secondary save.
           enrollmentId: record.enrollmentId,
-          status: effective.status,
+          status: effective.status as AttendanceStatusType,
           remarks: effective.remarks,
         };
       });
+
+      if (records.length === 0) {
+        toast.warning("No attendance changes to save. Please mark at least one student.");
+        return;
+      }
 
       const presentCount = records.filter((r: any) => r.status === "PRESENT").length;
       const absentCount = records.filter((r: any) => r.status === "ABSENT").length;
@@ -266,15 +278,16 @@ export default function TeacherAttendancePage() {
 
   // Stats
   const stats = useMemo(() => {
-    if (!studentOnlyData) return { total: 0, present: 0, late: 0, absent: 0 };
-    let present = 0, late = 0, absent = 0;
+    if (!studentOnlyData) return { total: 0, present: 0, late: 0, absent: 0, marked: 0 };
+    let present = 0, late = 0, absent = 0, marked = 0;
     studentOnlyData.forEach((record: any) => {
       const { status } = getEffectiveRecord(record);
+      if (status !== "UNMARKED") marked++;
       if (status === "PRESENT") present++;
       else if (status === "LATE") late++;
-      else absent++;
+      else if (status === "ABSENT") absent++;
     });
-    return { total: studentOnlyData.length, present, late, absent };
+    return { total: studentOnlyData.length, present, late, absent, marked };
   }, [studentOnlyData, draftAttendance, isReadOnly]);
 
   const getInitials = (f?: string, l?: string) =>
@@ -282,7 +295,7 @@ export default function TeacherAttendancePage() {
 
   // ─── Render: Editable Status Buttons ───────────────────────────────────
   const renderStatusButtons = (enrollmentId: string, status: string, isMobile = false) => (
-    <div className="inline-flex p-1 gap-1" style={{ borderRadius: "var(--radius-md)", background: "var(--surface-muted)" }}>
+    <div className="inline-flex p-0.5 gap-0.5" style={{ borderRadius: "var(--radius-md)", background: "var(--surface-muted)", border: "1px solid var(--border-fine)" }}>
       {(["PRESENT", "LATE", "ABSENT"] as const).map((s) => {
         const isActive = status === s;
         const activeBg = s === "PRESENT" ? "var(--emerald-signal)" : s === "LATE" ? "var(--amber-signal)" : "var(--crimson-signal)";
@@ -291,7 +304,7 @@ export default function TeacherAttendancePage() {
           <button
             key={s}
             onClick={() => handleStatusChange(enrollmentId, s)}
-            className={`flex items-center justify-center font-bold text-xs transition-all ${isMobile ? "w-8 h-8" : "w-9 h-8"}`}
+            className={`flex items-center justify-center font-bold text-xs transition-all ${isMobile ? "w-8 h-8" : "w-8 h-7"}`}
             style={{
               borderRadius: "var(--radius-sm)",
               background: isActive ? activeBg : "",
@@ -309,11 +322,13 @@ export default function TeacherAttendancePage() {
 
   // ─── Render: Read-Only Status Badge (History mode) ───────────────────────
   const renderStatusBadge = (status: string, isMobile = false) => {
-    const sz = isMobile ? "w-9 h-9" : "w-10 h-9";
+    const sz = isMobile ? "w-9 h-9" : "w-8 h-7";
     const cfg = status === "PRESENT"
       ? { bg: "var(--emerald-tint)", color: "var(--emerald-signal)", label: "P" }
       : status === "LATE"
       ? { bg: "var(--amber-tint)", color: "var(--amber-signal)", label: "L" }
+      : status === "UNMARKED"
+      ? { bg: "var(--surface-muted)", color: "var(--foreground-muted)", label: "-" }
       : { bg: "var(--crimson-tint)", color: "var(--crimson-signal)", label: "A" };
     return (
       <span className={`inline-flex items-center justify-center ${sz} font-bold text-xs`} style={{ borderRadius: "var(--radius-md)", background: cfg.bg, color: cfg.color }}>
@@ -323,10 +338,7 @@ export default function TeacherAttendancePage() {
   };
 
   return (
-    <div className="w-full min-h-screen pb-32 md:pb-20">
-      <div className="hidden md:block">
-        <TeacherHeader />
-      </div>
+    <div className="w-full min-h-screen pb-28 md:pb-16">
 
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 sticky top-0 z-30 bg-white" style={{ borderBottom: "1px solid var(--border-fine)" }}>
@@ -349,25 +361,29 @@ export default function TeacherAttendancePage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6">
+      <div className="w-full mx-auto px-0 py-0 space-y-4">
         {/* Page Title */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>Class Attendance</h1>
-            <p className="mt-1" style={{ color: "var(--foreground-muted)" }}>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--foreground-muted)" }}>
+              <Users className="w-4 h-4" />
+              Teacher register
+            </div>
+            <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>Class Attendance</h1>
+            <p className="mt-1 text-sm" style={{ color: "var(--foreground-muted)" }}>
               {isReadOnly
-                ? "Viewing past attendance records — read only."
-                : "Mark attendance and track student presence."}
+                ? "View a previous register without changing saved records."
+                : "Mark only what you know. Unmarked students stay unmarked until saved."}
             </p>
           </div>
 
           {/* ── Tab Switcher ── */}
-          <div className="flex p-1 gap-1 self-start md:self-auto" style={{ borderRadius: "var(--radius-lg)", background: "var(--surface-muted)" }}>
+          <div className="flex p-1 gap-1 self-start lg:self-auto" style={{ borderRadius: "var(--radius-md)", background: "white", border: "1px solid var(--border-fine)" }}>
             {(["today", "history"] as TabType[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-bold transition-all"
                 style={{
                   borderRadius: "var(--radius-md)",
                   background: activeTab === tab ? "white" : "transparent",
@@ -386,14 +402,14 @@ export default function TeacherAttendancePage() {
         {isReadOnly && (
           <div className="flex items-center gap-3 px-4 py-3 text-sm font-semibold" style={{ borderRadius: "var(--radius-lg)", background: "var(--amber-tint)", border: "1px solid color-mix(in oklch, var(--amber-signal) 25%, transparent)", color: "var(--amber-signal)" }}>
             <Eye className="w-4 h-4 flex-shrink-0" />
-            <span>View-only · Past Record — you cannot edit historical attendance.</span>
+            <span>View-only record. Historical attendance cannot be edited here.</span>
           </div>
         )}
 
         {/* Controls Bar */}
-        <div className="hidden md:flex bg-white p-4 flex-col md:flex-row gap-4 items-center justify-between" style={{ borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
-          <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-            <div className="relative w-full md:w-80">
+        <div className="hidden md:flex bg-white p-3 flex-col xl:flex-row gap-3 items-center justify-between" style={{ borderRadius: "var(--radius-lg)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
+          <div className="flex flex-col md:flex-row gap-2 w-full xl:w-auto">
+            <div className="relative w-full md:w-72">
               <div className="hidden md:block absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
                 <Search className="h-4 w-4" style={{ color: "var(--foreground-muted)" }} />
               </div>
@@ -408,7 +424,7 @@ export default function TeacherAttendancePage() {
                   setHasUnsavedChanges(false);
                 }}
               >
-                <SelectTrigger className="pl-4 md:pl-10 h-11 w-full font-bold" style={{ borderRadius: "var(--radius-lg)", background: "var(--surface-muted)", borderColor: "var(--border-fine)", color: "var(--foreground)" }}>
+                <SelectTrigger className="pl-4 md:pl-10 h-10 w-full font-bold" style={{ borderRadius: "var(--radius-md)", background: "white", borderColor: "var(--border-fine)", color: "var(--foreground)" }}>
                   <SelectValue placeholder="Select Class" />
                 </SelectTrigger>
                 <SelectContent>
@@ -420,7 +436,7 @@ export default function TeacherAttendancePage() {
             </div>
 
             {activeTab === "today" ? (
-              <div className="hidden md:flex items-center gap-2 px-4 h-11 font-bold min-w-[200px] justify-center" style={{ borderRadius: "var(--radius-lg)", background: "var(--violet-tint)", border: "1px solid color-mix(in oklch, var(--violet-ink) 15%, transparent)", color: "var(--violet-ink)" }}>
+              <div className="hidden md:flex items-center gap-2 px-4 h-10 text-sm font-bold min-w-[190px] justify-center" style={{ borderRadius: "var(--radius-md)", background: "var(--violet-tint)", border: "1px solid color-mix(in oklch, var(--violet-ink) 15%, transparent)", color: "var(--violet-ink)" }}>
                 <Sun className="w-4 h-4" />
                 <span>{format(today, "eeee, d MMMM")}</span>
               </div>
@@ -437,8 +453,8 @@ export default function TeacherAttendancePage() {
                     }
                     setHistoryDateStr(e.target.value);
                   }}
-                  className="h-11 px-4 font-bold text-sm focus:outline-none w-full md:w-auto"
-                  style={{ borderRadius: "var(--radius-lg)", border: "1px solid var(--border-fine)", background: "var(--surface-muted)", color: "var(--foreground)" }}
+                  className="h-10 px-4 font-bold text-sm focus:outline-none w-full md:w-auto"
+                  style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", background: "white", color: "var(--foreground)" }}
                 />
               </div>
             )}
@@ -447,8 +463,8 @@ export default function TeacherAttendancePage() {
           {!isReadOnly && (
             <button
               onClick={handleMarkAllPresent}
-              className="flex items-center gap-2 h-11 font-bold px-6 transition-colors"
-              style={{ borderRadius: "var(--radius-lg)", background: "var(--emerald-tint)", border: "1px solid color-mix(in oklch, var(--emerald-signal) 25%, transparent)", color: "var(--emerald-signal)" }}
+              className="flex items-center gap-2 h-10 font-bold px-5 text-sm transition-colors"
+              style={{ borderRadius: "var(--radius-md)", background: "var(--emerald-tint)", border: "1px solid color-mix(in oklch, var(--emerald-signal) 25%, transparent)", color: "var(--emerald-signal)" }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "color-mix(in oklch, var(--emerald-tint) 80%, white)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "var(--emerald-tint)")}
             >
@@ -489,21 +505,21 @@ export default function TeacherAttendancePage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search students..."
-            className="pl-9 h-11 bg-white"
-            style={{ borderRadius: "var(--radius-lg)", borderColor: "var(--border-fine)" }}
+            className="pl-9 h-10 bg-white"
+            style={{ borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)" }}
           />
         </div>
 
         {/* ─── Desktop Table View ─── */}
-        <div className="hidden md:block bg-white overflow-x-auto" style={{ borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
+        <div className="hidden md:block bg-white overflow-x-auto" style={{ borderRadius: "var(--radius-lg)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
           <Table className="min-w-[800px]">
             <TableHeader style={{ background: "var(--surface-muted)" }}>
               <TableRow>
-                <TableHead className="w-[80px] font-bold text-xs uppercase pl-8 py-5" style={{ color: "var(--foreground-muted)" }}>S/N</TableHead>
-                <TableHead className="font-bold text-xs uppercase py-5" style={{ color: "var(--foreground-muted)" }}>Student Details</TableHead>
-                <TableHead className="font-bold text-xs uppercase py-5 text-center" style={{ color: "var(--foreground-muted)" }}>Attendance Status</TableHead>
-                <TableHead className="font-bold text-xs uppercase py-5" style={{ color: "var(--foreground-muted)" }}>{isReadOnly ? "Remark" : "Last Remark"}</TableHead>
-                <TableHead className="w-[100px] font-bold text-xs uppercase py-5 text-right pr-8" style={{ color: "var(--foreground-muted)" }}>Action</TableHead>
+                <TableHead className="w-[64px] font-bold text-xs uppercase pl-5 py-3" style={{ color: "var(--foreground-muted)" }}>S/N</TableHead>
+                <TableHead className="font-bold text-xs uppercase py-3" style={{ color: "var(--foreground-muted)" }}>Student</TableHead>
+                <TableHead className="w-[220px] font-bold text-xs uppercase py-3 text-center" style={{ color: "var(--foreground-muted)" }}>Status</TableHead>
+                <TableHead className="font-bold text-xs uppercase py-3" style={{ color: "var(--foreground-muted)" }}>Remark</TableHead>
+                <TableHead className="w-[64px] font-bold text-xs uppercase py-3 text-right pr-5" style={{ color: "var(--foreground-muted)" }}>More</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -544,19 +560,19 @@ export default function TeacherAttendancePage() {
                       onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-muted)")}
                       onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                     >
-                      <TableCell className="font-bold pl-8" style={{ color: "var(--foreground-muted)" }}>
+                      <TableCell className="font-bold pl-5 py-3" style={{ color: "var(--foreground-muted)" }}>
                         {String(index + 1).padStart(2, "0")}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-3">
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10 border-2 border-white" style={{ boxShadow: "var(--shadow-card)" }}>
+                          <Avatar className="h-8 w-8 border border-white" style={{ boxShadow: "var(--shadow-card)" }}>
                             <AvatarImage src={record?.student?.profilePicture} />
                             <AvatarFallback className="font-bold" style={{ background: "var(--violet-tint)", color: "var(--violet-ink)" }}>
                               {getInitials(record.student.firstName, record.student.lastName)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-bold" style={{ color: "var(--foreground)" }}>
+                            <p className="font-bold text-sm" style={{ color: "var(--foreground)" }}>
                               {record.student.firstName} {record.student.lastName}
                             </p>
                             <p className="text-xs font-medium" style={{ color: "var(--foreground-muted)" }}>
@@ -565,10 +581,10 @@ export default function TeacherAttendancePage() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center py-3">
                         {isReadOnly ? renderStatusBadge(status) : renderStatusButtons(record.enrollmentId, status)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-3">
                         {isReadOnly ? (
                           <span className="text-sm italic" style={{ color: "var(--foreground-muted)" }}>{remarks || "—"}</span>
                         ) : (
@@ -577,14 +593,14 @@ export default function TeacherAttendancePage() {
                             value={remarks}
                             onChange={(e) => handleRemarkChange(record.enrollmentId, e.target.value)}
                             placeholder="Add remark..."
-                            className="h-9 text-sm transition-all bg-transparent"
+                            className="h-8 text-sm transition-all"
                             style={{ borderRadius: "var(--radius-md)", borderColor: "transparent" }}
                             onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-medium)")}
                             onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
                           />
                         )}
                       </TableCell>
-                      <TableCell className="text-right pr-8">
+                      <TableCell className="text-right pr-5 py-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0" style={{ color: "var(--foreground-muted)" }}>
@@ -662,8 +678,8 @@ export default function TeacherAttendancePage() {
       {/* ─── Persistent Footer ─── */}
       {/* Only shown in Today mode */}
       {!isReadOnly && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 z-40 md:pl-[280px]" style={{ background: "white", borderTop: "1px solid var(--border-fine)" }}>
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
+        <div className="fixed bottom-0 left-0 right-0 p-3 z-40 md:pl-[280px]" style={{ background: "white", borderTop: "1px solid var(--border-fine)" }}>
+          <div className="w-full mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-5">
 
             {/* Mobile Footer Top */}
             <div className="flex md:hidden items-center justify-between w-full">
@@ -673,17 +689,17 @@ export default function TeacherAttendancePage() {
                 <div className="w-3 h-3 rounded-full" style={{ background: "var(--crimson-signal)" }} />
               </div>
               <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--foreground-muted)" }}>
-                {stats.present + stats.late + stats.absent}/{stats.total} Marked Complete
+                {stats.marked}/{stats.total} Marked
               </div>
             </div>
 
             {/* Desktop Progress */}
-            <div className="hidden md:flex items-center gap-6 flex-1">
-              <div className="flex flex-col gap-1 w-full max-w-md">
+            <div className="hidden md:flex items-center gap-5 flex-1">
+              <div className="flex flex-col gap-1 w-full max-w-sm">
                 <div className="flex justify-between text-xs font-bold uppercase tracking-wider mb-1" style={{ color: "var(--foreground-muted)" }}>
                   <span>Marked Progress</span>
                   <span style={{ color: "var(--violet-ink)" }}>
-                    {stats.present + stats.late + stats.absent} / {stats.total} Students
+                    {stats.marked} / {stats.total} Students
                   </span>
                 </div>
                 <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "var(--surface-muted)" }}>
@@ -693,7 +709,7 @@ export default function TeacherAttendancePage() {
                       background: "var(--violet-ink)",
                       width: `${
                         stats.total
-                          ? ((stats.present + stats.late + stats.absent) / stats.total) * 100
+                          ? (stats.marked / stats.total) * 100
                           : 0
                       }%`,
                     }}
@@ -702,9 +718,9 @@ export default function TeacherAttendancePage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="flex items-center gap-3 w-full md:w-auto">
               {/* Desktop Status Circles */}
-              <div className="hidden md:flex items-center gap-2 mr-4">
+              <div className="hidden md:flex items-center gap-2 mr-2">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "var(--emerald-tint)", color: "var(--emerald-signal)" }} title="Present">
                   {stats.present}
                 </div>
@@ -714,13 +730,16 @@ export default function TeacherAttendancePage() {
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "var(--crimson-tint)", color: "var(--crimson-signal)" }} title="Absent">
                   {stats.absent}
                 </div>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "var(--surface-muted)", color: "var(--foreground-muted)" }} title="Unmarked">
+                  {stats.total - stats.marked}
+                </div>
               </div>
 
               <button
                 onClick={handleSave}
                 disabled={isSaving || isLoading}
-                className="h-12 w-full md:w-auto px-8 font-bold transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                style={{ background: "var(--violet-ink)", color: "white", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)", border: "none" }}
+                className="h-10 w-full md:w-auto px-6 font-bold transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ background: "var(--violet-ink)", color: "white", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-card)", border: "none" }}
               >
                 {isSaving ? (
                   <>Saving...</>
@@ -738,3 +757,6 @@ export default function TeacherAttendancePage() {
     </div>
   );
 }
+
+
+

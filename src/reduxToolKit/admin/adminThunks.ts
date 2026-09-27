@@ -63,6 +63,7 @@ export type AssessmentItem = {
   session?: string;
   term?: string;
   isOnline?: boolean;
+  isPublished?: boolean;
   status?: string;
   submittedCount?: number;
   _count?: {

@@ -10,7 +10,12 @@ import { fetchClasses, fetchStudentsByClass, fetchClassReportCards } from "@/red
 import { clearAdminError, clearAdminSuccess } from "@/reduxToolKit/admin/adminSlice";
 import { useSessionsAndTerms } from "@/hooks/useSessionsAndTerms";
 import { useGetSchoolReportCardTemplatesQuery } from "@/reduxToolKit/api/endpoints/settings";
-import { useDeleteReportCardMutation, useDeleteClassReportCardsMutation, useDeleteClassReportCardJobMutation } from "@/reduxToolKit/api/endpoints/reports";
+import {
+  useDeleteReportCardMutation,
+  useDeleteClassReportCardsMutation,
+  useDeleteClassReportCardJobMutation,
+  useGetReportShareLogsQuery,
+} from "@/reduxToolKit/api/endpoints/reports";
 import { Header } from "@/components/RMS/header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -306,10 +311,22 @@ export function AdminReportsPage() {
 
   const { data: schoolTemplates = [] } = useGetSchoolReportCardTemplatesQuery();
   const activeTemplates = useMemo(() => schoolTemplates.filter((t: any) => t.isActive), [schoolTemplates]);
+  const hasRole = user?.roles && user.roles.length > 0;
+  const { data: shareLogData, isFetching: shareLogsFetching, refetch: refetchShareLogs } =
+    useGetReportShareLogsQuery(
+      { take: 8 },
+      { pollingInterval: 15000, skip: !hasRole },
+    );
+
+  const shareLogs = Array.isArray(shareLogData?.logs) ? shareLogData.logs : [];
+  const shareSummary = Array.isArray(shareLogData?.summary) ? shareLogData.summary : [];
+  const shareCounts = shareSummary.reduce((acc: Record<string, number>, item: any) => {
+    const key = String(item.status || "UNKNOWN").toUpperCase();
+    acc[key] = (acc[key] || 0) + Number(item._count?._all || item.count || 0);
+    return acc;
+  }, {});
 
   const resolvedTemplateId = selectedTemplateId === "__active__" ? undefined : selectedTemplateId;
-
-  const hasRole = user?.roles && user.roles.length > 0;
 
   useEffect(() => {
     if (!hasRole) return;
@@ -571,6 +588,10 @@ export function AdminReportsPage() {
     pending: { background: "var(--amber-tint)", color: "var(--amber-signal)" },
     rejected: { background: "var(--crimson-tint)", color: "var(--crimson-signal)" },
     processing: { background: "var(--cobalt-tint)", color: "var(--cobalt-signal)" },
+    queued: { background: "var(--amber-tint)", color: "var(--amber-signal)" },
+    retrying: { background: "var(--amber-tint)", color: "var(--amber-signal)" },
+    sent: { background: "var(--cobalt-tint)", color: "var(--cobalt-signal)" },
+    delivered: { background: "var(--emerald-tint)", color: "var(--emerald-signal)" },
     completed: { background: "var(--emerald-tint)", color: "var(--emerald-signal)" },
     failed: { background: "var(--crimson-tint)", color: "var(--crimson-signal)" },
   }[s?.toLowerCase()] ?? { background: "var(--surface-muted)", color: "var(--foreground-muted)" });
@@ -792,6 +813,63 @@ export function AdminReportsPage() {
           </div>
         ) : (
           <div className="space-y-4">
+            <Card className="p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Send className="w-4 h-4" style={{ color: "var(--violet-ink)" }} />
+                    <h2 className="text-base font-semibold" style={{ color: "var(--foreground)" }}>Result Notification Queue</h2>
+                  </div>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--foreground-muted)" }}>Recent WhatsApp result-available notifications to guardian contacts</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => refetchShareLogs()} disabled={shareLogsFetching} className="gap-2">
+                  {shareLogsFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Clock className="w-3.5 h-3.5" />}
+                  Refresh
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {["QUEUED", "RETRYING", "SENT", "DELIVERED", "FAILED"].map((status) => (
+                  <div key={status} className="px-3 py-2" style={{ borderRadius: "var(--radius-md)", background: "var(--surface-muted)", border: "1px solid var(--border-fine)" }}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--foreground-muted)" }}>{status}</p>
+                    <p className="text-xl font-bold" style={{ color: "var(--foreground)" }}>{shareCounts[status] || 0}</p>
+                  </div>
+                ))}
+              </div>
+
+              {shareLogs.length === 0 ? (
+                <div className="text-center py-8" style={{ color: "var(--foreground-muted)" }}>
+                  <Send className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">No notification activity yet.</p>
+                </div>
+              ) : (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Channel</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Contact</TableHead>
+                        <TableHead>Dispatched</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {shareLogs.map((log: any) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="font-medium">{`${log.student?.firstName || ""} ${log.student?.lastName || ""}`.trim() || "Student"}</TableCell>
+                          <TableCell><Badge variant="outline">{log.channel || "WHATSAPP"}</Badge></TableCell>
+                          <TableCell><span className="inline-flex items-center text-xs font-medium px-2 py-0.5" style={{ borderRadius: "var(--radius-sm)", ...statusStyle(log.status) }}>{log.status || "UNKNOWN"}</span></TableCell>
+                          <TableCell className="font-mono text-xs" style={{ color: "var(--foreground-muted)" }}>{log.recipientContact || "N/A"}</TableCell>
+                          <TableCell className="text-sm" style={{ color: "var(--foreground-muted)" }}>{fmtDate(log.dispatchedAt || log.updatedAt)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </Card>
+
             {/* Class PDF history */}
             <Card className="p-6 space-y-4">
               <div className="flex items-center justify-between">

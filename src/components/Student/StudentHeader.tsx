@@ -4,9 +4,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { useState } from "react";
 import { RootState, AppDispatch } from "@/reduxToolKit/store";
 import { logoutUser } from "@/reduxToolKit/user/userThunks";
-import { LogOut, LayoutDashboard, Bell, Banknote } from "lucide-react";
+import { LogOut, LayoutDashboard, Banknote } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LogoutConfirmModal } from "@/components/auth/LogoutConfirmModal";
 
 interface StudentHeaderProps {
@@ -17,6 +17,7 @@ export function StudentHeader({ transparent = false }: StudentHeaderProps) {
   const { user } = useSelector((s: RootState) => s.user);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const pathname = usePathname();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -29,6 +30,39 @@ export function StudentHeader({ transparent = false }: StudentHeaderProps) {
       setIsLoggingOut(false);
       setIsLogoutModalOpen(false);
     }
+  };
+
+  const isDashboard = pathname === "/student/dashboard" || pathname === "/student";
+  const isFees = pathname?.startsWith("/student/fees");
+
+  const navStyle = (active: boolean, tone: "violet" | "emerald" = "violet") => {
+    const isEmerald = tone === "emerald";
+    return {
+      borderRadius: "var(--radius-lg)",
+      background: transparent
+        ? active
+          ? "rgba(255,255,255,0.14)"
+          : "transparent"
+        : active
+          ? isEmerald
+            ? "#ecfdf5"
+            : "var(--violet-tint)"
+          : "transparent",
+      color: transparent
+        ? "white"
+        : active
+          ? isEmerald
+            ? "#047857"
+            : "var(--violet-ink)"
+          : "var(--foreground)",
+      border: transparent
+        ? "1px solid rgba(255,255,255,0.08)"
+        : active && isEmerald
+          ? "1px solid #a7f3d0"
+          : active
+            ? "1px solid transparent"
+            : "1px solid transparent",
+    };
   };
 
   return (
@@ -61,12 +95,7 @@ export function StudentHeader({ transparent = false }: StudentHeaderProps) {
           <Link
             href="/student/dashboard"
             className="px-4 py-2 font-medium text-sm flex items-center gap-2 transition-all"
-            style={{
-              borderRadius: "var(--radius-lg)",
-              background: transparent ? "rgba(255,255,255,0.1)" : "var(--violet-tint)",
-              color: transparent ? "white" : "var(--violet-ink)",
-              border: transparent ? "1px solid rgba(255,255,255,0.05)" : "none",
-            }}
+            style={navStyle(isDashboard)}
           >
             <LayoutDashboard className="w-4 h-4" />
             Dashboard
@@ -74,12 +103,7 @@ export function StudentHeader({ transparent = false }: StudentHeaderProps) {
           <Link
             href="/student/fees"
             className="px-4 py-2 font-semibold text-sm flex items-center gap-2 transition-all"
-            style={{
-              borderRadius: "var(--radius-lg)",
-              background: transparent ? "rgba(16,185,129,0.2)" : "#ecfdf5",
-              color: transparent ? "#6ee7b7" : "#047857",
-              border: transparent ? "1px solid rgba(16,185,129,0.3)" : "1px solid #a7f3d0",
-            }}
+            style={navStyle(isFees, "emerald")}
           >
             <Banknote className="w-4 h-4 text-emerald-600" />
             School Fees &amp; Payments

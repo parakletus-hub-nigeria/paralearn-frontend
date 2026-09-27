@@ -134,6 +134,7 @@ const reportsApi = paraApi.injectEndpoints({
       invalidatesTags: [
         { type: "ApprovalQueue" },
         { type: "ReportCard", id: "LIST" },
+        { type: "ReportShareLog" },
       ],
     }),
 
@@ -268,7 +269,38 @@ const reportsApi = paraApi.injectEndpoints({
         { type: "ReportCard" },
         { type: "SignatureAudit", id: reportCardId },
         { type: "ApprovalQueue" },
+        { type: "ReportShareLog" },
       ],
+    }),
+
+    getReportShareLogs: builder.query<
+      any,
+      | {
+          status?: string;
+          channel?: string;
+          reportCardId?: string;
+          studentId?: string;
+          take?: number;
+          skip?: number;
+        }
+      | void
+    >({
+      query: (params) => {
+        const search = new URLSearchParams();
+        if (params) {
+          Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") {
+              search.set(key, String(value));
+            }
+          });
+        }
+        const qs = search.toString();
+        return {
+          url: `/api/proxy/reports/share/logs${qs ? `?${qs}` : ""}`,
+        };
+      },
+      transformResponse: (res: any) => res?.data ?? res,
+      providesTags: [{ type: "ReportShareLog" }],
     }),
 
     // POST /api/proxy/reports/share/bulk (Bulk Dispatch via BullMQ Queue)
@@ -286,6 +318,7 @@ const reportsApi = paraApi.injectEndpoints({
         data: body,
       }),
       transformResponse: (res: any) => res?.data ?? res,
+      invalidatesTags: [{ type: "ReportShareLog" }],
     }),
 
     // POST /api/proxy/reports/report-cards/:id/share/whatsapp
@@ -299,6 +332,7 @@ const reportsApi = paraApi.injectEndpoints({
         data: { phone },
       }),
       transformResponse: (res: any) => res?.data ?? res,
+      invalidatesTags: [{ type: "ReportShareLog" }],
     }),
 
     // POST /api/proxy/reports/report-cards/:id/share/email
@@ -312,6 +346,7 @@ const reportsApi = paraApi.injectEndpoints({
         data: { email },
       }),
       transformResponse: (res: any) => res?.data ?? res,
+      invalidatesTags: [{ type: "ReportShareLog" }],
     }),
   }),
   overrideExisting: true,
@@ -335,6 +370,7 @@ export const {
   useLazyVerifyReportSignatureQuery,
   useGetReportAuditTrailQuery,
   useSignReportCardMutation,
+  useGetReportShareLogsQuery,
   useBulkShareReportsMutation,
   useShareReportCardWhatsappMutation,
   useShareReportCardEmailMutation,

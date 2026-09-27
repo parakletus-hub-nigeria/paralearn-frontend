@@ -920,6 +920,7 @@ export const UsersPage = () => {
         primaryColor="var(--violet-ink)"
         onSuccess={() => {
           dispatch(fetchAllUsers());
+          dispatch(fetchClasses(undefined));
           setAddModalOpen(false);
         }}
       />
