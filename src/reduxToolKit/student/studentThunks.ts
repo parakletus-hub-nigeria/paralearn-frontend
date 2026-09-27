@@ -54,7 +54,29 @@ export interface StartAssessmentResponse {
   status: string;
   startedAt: string;
   deadline: string;
+  serverTime?: string;
+  clientSubmissionId?: string;
+  deviceId?: string;
+  questions?: AssessmentQuestion[];
 }
+
+const EXAM_DEVICE_ID_KEY = "paralearn_exam_device_id";
+
+const createClientId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `client_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+};
+
+const getExamDeviceId = () => {
+  if (typeof window === "undefined") return createClientId();
+  const existing = localStorage.getItem(EXAM_DEVICE_ID_KEY);
+  if (existing) return existing;
+  const next = createClientId();
+  localStorage.setItem(EXAM_DEVICE_ID_KEY, next);
+  return next;
+};
 
 // Fetch all available assessments for the student (K-12 System)
 // Uses the optimized student/published endpoint (returns all statuses in one call)
@@ -63,18 +85,9 @@ export const fetchStudentAssessments = createAsyncThunk(
   "student/fetchAssessments",
   async (_, { rejectWithValue }) => {
     try {
-      console.log(
-        "[fetchStudentAssessments] Fetching published assessments from backend in a single request...",
-      );
-
       const res = await apiClient.get("/api/proxy/assessments/student/published");
       const rawData = res.data?.data || res.data || [];
       const rawCombined = Array.isArray(rawData) ? rawData : [];
-
-      console.log(
-        "[fetchStudentAssessments] Raw items returned:",
-        rawCombined.length,
-      );
 
       // Handle grouped response structure (grouped by subject)
       // Teacher endpoint returns: [ { name: "Subject", class: {...}, assessments: [...] }, ... ]
@@ -84,9 +97,6 @@ export const fetchStudentAssessments = createAsyncThunk(
       );
 
       if (isGrouped) {
-        console.log(
-          "[fetchStudentAssessments] Response is GROUPED by subject - flattening...",
-        );
         rawCombined.forEach((group: any) => {
           if (group.assessments && Array.isArray(group.assessments)) {
             group.assessments.forEach((assess: any) => {
@@ -123,9 +133,6 @@ export const fetchStudentAssessments = createAsyncThunk(
           }
         });
       } else {
-        console.log(
-          "[fetchStudentAssessments] Response is FLAT array - using directly",
-        );
         assessments = rawCombined.map((a: any) => {
           // Calculate fallback status if missing
           let status = a.status;
@@ -151,9 +158,6 @@ export const fetchStudentAssessments = createAsyncThunk(
         });
       }
 
-      console.log(
-        `[fetchStudentAssessments] Final flattened count: ${assessments.length} assessments`,
-      );
       return assessments;
     } catch (error: any) {
       console.error(
@@ -191,16 +195,24 @@ export const startAssessment = createAsyncThunk(
   "student/startAssessment",
   async (id: string, { rejectWithValue }) => {
     try {
+      const clientSubmissionId = createClientId();
+      const deviceId = getExamDeviceId();
       const response = await apiClient.post(
         `/api/proxy/assessments/${id}/start`,
         {
           deviceMeta: {
+            deviceId,
             userAgent: window.navigator.userAgent,
             platform: window.navigator.platform,
           },
+          clientSubmissionId,
         },
       );
-      return response.data?.data || response.data;
+      return {
+        ...(response.data?.data || response.data),
+        clientSubmissionId,
+        deviceId,
+      };
     } catch (error: any) {
       if (error.response?.data) {
         return rejectWithValue(error.response.data);

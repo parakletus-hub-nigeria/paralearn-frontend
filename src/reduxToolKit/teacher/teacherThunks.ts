@@ -67,161 +67,14 @@ export const fetchAcademicCurrent = createAsyncThunk(
 
 export const fetchMyAssessments = createAsyncThunk(
   "teacher/fetchMyAssessments",
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      // REFACTORED (April 2026): Backend now returns flattened assessments with classId/subjectId at root
-      // No need for complex grouping logic or deep normalization
-
-      const state: any = getState();
-      const teacherClasses =
-        state.teacher?.teacherClasses || state.teacher?.classes || [];
-
-      // Build map of teacher's assigned class-subject pairs for filtering
-      const assignedClassSubjectPairs = new Map<string, Set<string>>();
-
-      teacherClasses.forEach((c: any) => {
-        if (c.type === "subject_assignment" && c.subjectId && c.classId) {
-          if (!assignedClassSubjectPairs.has(c.classId)) {
-            assignedClassSubjectPairs.set(c.classId, new Set());
-          }
-          assignedClassSubjectPairs.get(c.classId)!.add(c.subjectId);
-        }
-        if (
-          c.type === "class_assignment" &&
-          c.classId &&
-          Array.isArray(c.class?.subjects)
-        ) {
-          if (!assignedClassSubjectPairs.has(c.classId)) {
-            assignedClassSubjectPairs.set(c.classId, new Set());
-          }
-          c.class.subjects.forEach((s: any) => {
-            const subjId = s.id || s;
-            assignedClassSubjectPairs.get(c.classId)!.add(subjId);
-          });
-        }
-        if (!c.type && c.subjectId && c.classId) {
-          if (!assignedClassSubjectPairs.has(c.classId)) {
-            assignedClassSubjectPairs.set(c.classId, new Set());
-          }
-          assignedClassSubjectPairs.get(c.classId)!.add(c.subjectId);
-        }
-      });
-
-      console.log("[fetchMyAssessments] Teacher assignments loaded");
-
-      // Fetch assessments from all statuses
-      const statuses: Array<"started" | "ended" | "not_started"> = [
-        "started",
-        "ended",
-        "not_started",
-      ];
-      const results = await Promise.all(
-        statuses.map(async (status) => {
-          try {
-            const res = await apiClient.get(`/api/proxy/assessments/${status}`);
-            const data = res.data?.data || res.data || [];
-            if (Array.isArray(data)) {
-              return data.map((item: any) => ({
-                ...item,
-                _fetchedStatus: status,
-              }));
-            }
-            return [];
-          } catch (e: any) {
-            console.error(
-              `[fetchMyAssessments] Failed to fetch /assessments/${status}:`,
-              e?.message,
-            );
-            return [];
-          }
-        }),
-      );
-
-      const rawCombined = results.flat();
-      console.log(
-        `[fetchMyAssessments] Fetched ${rawCombined.length} total assessments`,
-      );
-
-      if (rawCombined.length === 0) {
-        console.warn("[fetchMyAssessments] No assessments found");
-        return [];
-      }
-
-      // NEW (APRIL 2026): Backend now returns flat array structure with flattened IDs
-      // Check if response is still grouped (old model) or flat (new model)
-      const isGrouped = rawCombined.some(
-        (item: any) => item.assessments && Array.isArray(item.assessments),
-      );
-
-      let items: Assessment[] = [];
-
-      if (isGrouped) {
-        // LEGACY PATH: Handle grouped response (backward compatibility)
-        console.log(
-          "[fetchMyAssessments] Processing grouped response (legacy)",
-        );
-
-        items = rawCombined.flatMap((group: any) => {
-          if (!group.assessments || !Array.isArray(group.assessments))
-            return [];
-
-          const subjectId = group.id || group.subjectId || group.subject?.id;
-          const classId = group.class?.id || group.classId;
-
-          // Filter by teacher assignments
-          const isAssigned =
-            assignedClassSubjectPairs.has(classId) &&
-            assignedClassSubjectPairs.get(classId)!.has(subjectId);
-
-          if (!isAssigned) {
-            console.warn(
-              `[fetchMyAssessments] Skipping group: class=${classId}, subject=${subjectId}`,
-            );
-            return [];
-          }
-
-          return group.assessments.map((a: any) => ({
-            ...a,
-            classId: classId || a.classId,
-            subjectId: subjectId || a.subjectId,
-            class: group.class || a.class || { id: classId, name: "Unknown" },
-            subject: {
-              id: subjectId,
-              name: group.name || a.subject?.name || "Unknown",
-            },
-            isOnline: a.assessmentType === "online" || a.isOnline === true,
-            submissionCount: a.submissionCount ?? 0,
-          }));
-        });
-      } else {
-        // NEW PATH (PRIMARY): Backend returns flat array with flattened classId/subjectId
-        // Simply validate assignments and normalize field names
-        console.log(
-          "[fetchMyAssessments] Processing flat response (new model)",
-        );
-
-        items = rawCombined.filter((a: any) => {
-          const classId = a.classId;
-          const subjectId = a.subjectId;
-
-          if (!classId || !subjectId) {
-            console.warn(
-              "[fetchMyAssessments] Assessment missing classId or subjectId:",
-              a.title,
-            );
-            return false;
-          }
-
-          const isAssigned =
-            assignedClassSubjectPairs.has(classId) &&
-            assignedClassSubjectPairs.get(classId)!.has(subjectId);
-
-          return isAssigned;
-        }) as Assessment[];
-      }
+      const res = await apiClient.get("/api/proxy/assessments/teacher/my-assessments");
+      const raw = res.data?.data || res.data || [];
+      const items: Assessment[] = Array.isArray(raw) ? raw : [];
 
       // NORMALIZATION: Ensure consistent field naming across model versions
-      items = items.map((a: any) => {
+      const normalizedItems = items.map((a: any) => {
         const isOnline = a.isOnline ?? a.assessmentType === "online";
         const totalMarks = a.totalMarks ?? a.marks ?? a.totalScore ?? 100;
         const duration = a.duration ?? a.durationMins ?? a.durationMinutes ?? 60;
@@ -253,15 +106,11 @@ export const fetchMyAssessments = createAsyncThunk(
 
       // Deduplicate by ID
       const byId = new Map<string, Assessment>();
-      items.forEach((a) => {
+      normalizedItems.forEach((a) => {
         if (a?.id) byId.set(a.id, a);
       });
 
-      const finalItems = Array.from(byId.values());
-      console.log(
-        `[fetchMyAssessments] Returning ${finalItems.length} assessments`,
-      );
-      return finalItems;
+      return Array.from(byId.values());
     } catch (e: any) {
       return rejectWithValue(
         e?.response?.data?.message ||

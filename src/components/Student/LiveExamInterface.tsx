@@ -75,9 +75,15 @@ export default function LiveExamInterface() {
   // FIX #8: Guard against missing or blank assessmentId
   useEffect(() => {
     if (!assessmentId || assessmentId.trim() === "") return;
-    // Fetch current assessment details
+    if (
+      currentAssessment?.id === assessmentId &&
+      Array.isArray(currentAssessment.questions) &&
+      currentAssessment.questions.length > 0
+    ) {
+      return;
+    }
     dispatch(fetchAssessmentDetails(assessmentId));
-  }, [dispatch, assessmentId]);
+  }, [dispatch, assessmentId, currentAssessment?.id, currentAssessment?.questions]);
 
   // -------------------------------------------------------------------------
   // Timer Logic — Secure against basic system clock manipulation
@@ -209,17 +215,23 @@ export default function LiveExamInterface() {
     // by capping the finishedAt timestamp to the exact deadline minus 1 second
     let finishedAtTime = Date.now();
     if (currentAssessment?.durationMins && reliableStartedAt) {
-      const deadlineTime = new Date(reliableStartedAt).getTime() + (currentAssessment.durationMins * 60 * 1000);
+      const deadlineTime = activeSession.deadline
+        ? new Date(activeSession.deadline).getTime()
+        : new Date(reliableStartedAt).getTime() + (currentAssessment.durationMins * 60 * 1000);
       if (finishedAtTime > deadlineTime) {
         finishedAtTime = deadlineTime - 1000;
       }
     }
 
     const submissionData = {
+      clientSubmissionId:
+        activeSession.clientSubmissionId ||
+        `client_${assessmentId}_${Date.now()}`,
       startedAt: reliableStartedAt,
       finishedAt: new Date(finishedAtTime).toISOString(),
       submissionReason: reason,
       deviceMeta: {
+        deviceId: activeSession.deviceId,
         browser: window.navigator.userAgent,
         os: window.navigator.platform,
       },
@@ -245,7 +257,8 @@ export default function LiveExamInterface() {
       try {
          const offlineSubmission = {
            assessmentId,
-           data: submissionData,
+           ...submissionData,
+           capturedAt: new Date().toISOString(),
            savedAt: new Date().toISOString()
          };
          

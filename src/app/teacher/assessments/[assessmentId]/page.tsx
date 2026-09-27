@@ -5,7 +5,7 @@ import { TeacherGradingPage } from "@/components/Teacher/TeacherGradingPage";
 export default function GradeAssessmentRedirect() {
   return (
     <ProtectedRoute>
-      <RoleGuard allow={["teacher"]} mode="block">
+      <RoleGuard allow={["teacher", "admin", "principal", "vp"]} mode="block">
         <TeacherGradingPage />
       </RoleGuard>
     </ProtectedRoute>

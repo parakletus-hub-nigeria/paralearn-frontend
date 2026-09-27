@@ -107,6 +107,8 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
         // Identify if this is a login or password reset request for logging/warning purposes
         const isAuthAction =
           (config.url || "").includes(routespath.API_LOGIN) ||
+          (config.url || "").includes("/auth/whatsapp/") ||
+          (config.url || "").includes("/auth/logout") ||
           (config.url || "").includes("/auth/forgot-password") ||
           (config.url || "").includes("/auth/reset-password") ||
           (config.url || "").includes("/sabinote/auth/") ||

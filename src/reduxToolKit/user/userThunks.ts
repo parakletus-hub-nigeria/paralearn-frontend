@@ -45,6 +45,7 @@ export const loginUser = createAsyncThunk(
       redirectTo?: string;
       institutionType?: "k12" | "university";
       universityId?: string;
+      expectedRole?: "admin" | "accountant" | "vp" | "teacher" | "student";
     },
     { rejectWithValue },
   ) => {
@@ -114,6 +115,27 @@ export const loginUser = createAsyncThunk(
       }
 
       console.log("[Login Debug] Final Extracted Roles:", roles);
+
+      const expectedRole = credentials.expectedRole;
+      if (type === "k12" && expectedRole) {
+        const allowedByMode: Record<string, string[]> = {
+          admin: ["admin", "principal"],
+          accountant: ["accountant", "bursar", "finance"],
+          vp: ["vp", "vice_principal"],
+          teacher: ["teacher"],
+          student: ["student"],
+        };
+        const allowedRoles = allowedByMode[expectedRole] || [];
+        const hasExpectedRole = roles.some((role) =>
+          allowedRoles.includes(String(role).toLowerCase().trim()),
+        );
+
+        if (!hasExpectedRole) {
+          return rejectWithValue(
+            `This account is not a ${expectedRole === "vp" ? "Vice Principal" : expectedRole} account. Choose the correct login tab.`,
+          );
+        }
+      }
 
       const mustChangePassword = !!response.data?.mustChangePassword;
 

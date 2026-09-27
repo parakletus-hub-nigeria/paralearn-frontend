@@ -14,6 +14,8 @@ interface StudentState {
   activeSession: {
     assessmentId: string | null;
     submissionId: string | null;
+    clientSubmissionId: string | null;
+    deviceId: string | null;
     status: string | null;
     startedAt: string | null;
     deadline: string | null;
@@ -30,6 +32,8 @@ interface StudentState {
 const initialActiveSession = {
   assessmentId: null,
   submissionId: null,
+  clientSubmissionId: null,
+  deviceId: null,
   status: null,
   startedAt: null,
   deadline: null,
@@ -61,6 +65,8 @@ function saveSessionToStorage(assessmentId: string, session: StudentState["activ
       JSON.stringify({
         assessmentId: session.assessmentId,
         submissionId: session.submissionId,
+        clientSubmissionId: session.clientSubmissionId,
+        deviceId: session.deviceId,
         startedAt: session.startedAt,
         deadline: session.deadline,
         answers: session.answers,
@@ -218,9 +224,33 @@ const studentSlice = createSlice({
         const assessmentId = action.meta.arg; // the id passed to the thunk
         state.activeSession.assessmentId = assessmentId;
         state.activeSession.submissionId = action.payload.submissionId;
+        state.activeSession.clientSubmissionId = action.payload.clientSubmissionId || null;
+        state.activeSession.deviceId = action.payload.deviceId || null;
         state.activeSession.status = action.payload.status;
         state.activeSession.startedAt = action.payload.startedAt;
         state.activeSession.deadline = action.payload.deadline;
+        if (Array.isArray(action.payload.questions)) {
+          state.currentAssessment = {
+            ...(state.currentAssessment || {
+              id: assessmentId,
+              title: "",
+              instructions: "",
+              durationMins: 0,
+              startsAt: "",
+              endsAt: "",
+              isPublished: true,
+              totalMarks: 0,
+              passingMarks: 0,
+              questionCount: action.payload.questions.length,
+              subject: { id: "", name: "", class: { id: "", name: "", code: "" } },
+              category: { id: "", name: "" },
+              submissions: [],
+              status: "started",
+            }),
+            id: assessmentId,
+            questions: action.payload.questions,
+          } as StudentAssessment;
+        }
         // Immediately persist so a refresh can recover startedAt
         saveSessionToStorage(assessmentId, state.activeSession);
       })

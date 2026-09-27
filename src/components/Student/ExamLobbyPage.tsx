@@ -407,12 +407,8 @@ export default function ExamLobbyPage() {
                          setStartError(null);
                          
                          try {
-                           // If it's already started, skip the start request and just resume
-                           if (assessment.status === "started" || (assessment.submissions && assessment.submissions.length > 0 && assessment.submissions[0].status === "started")) {
-                             router.push(`/student/exam?assessmentId=${assessment.id}`);
-                             return;
-                           }
-                           
+                           // Always go through the backend. It creates a new session or safely resumes
+                           // the existing in-progress one, and returns the sanitized question payload.
                            await dispatch(startAssessment(assessmentId)).unwrap();
                            router.push(`/student/exam?assessmentId=${assessment.id}`);
                           } catch (error: any) {
