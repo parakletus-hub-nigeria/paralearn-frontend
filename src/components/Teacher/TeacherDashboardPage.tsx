@@ -234,7 +234,8 @@ export function TeacherDashboardPage() {
                   return (
                     <Link
                       key={assessment.id || idx}
-                      href={`${routespath.TEACHER_ASSESSMENTS}/${assessment.id}`}
+                      prefetch={false}
+                      href={`${routespath.TEACHER_ASSESSMENTS}/${assessment.id}/grade`}
                       className="flex items-center gap-4 px-5 py-4 transition-colors"
                       style={{ borderTop: "1px solid var(--border-fine)" }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-muted)")}

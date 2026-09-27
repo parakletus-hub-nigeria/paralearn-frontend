@@ -28,6 +28,7 @@ export type Assessment = {
   session?: string;
   term?: string;
   isOnline?: boolean;
+  isPublished?: boolean;
   status?: string;
   subject?: { id: string; name: string };
   class?: { id: string; name: string };
@@ -45,6 +46,37 @@ export type TeacherComment = {
   comment: string;
   type: CommentType;
   createdAt?: string;
+};
+
+const normalizeAssessmentStatus = (assessment: any) => {
+  const backendStatus = String(
+    assessment?._fetchedStatus || assessment?.status || "",
+  ).toLowerCase();
+
+  if (backendStatus === "started" || backendStatus === "active") {
+    return "started";
+  }
+  if (backendStatus === "not_started" || backendStatus === "upcoming") {
+    return "not_started";
+  }
+  if (backendStatus === "ended" || backendStatus === "completed") {
+    return "ended";
+  }
+
+  const isPublished =
+    assessment?.isPublished === true ||
+    assessment?.published === true ||
+    String(assessment?.publishStatus || "").toLowerCase() === "published";
+
+  if (!isPublished) return "draft";
+
+  const now = new Date();
+  const startsAt = assessment?.startsAt ? new Date(assessment.startsAt) : null;
+  const endsAt = assessment?.endsAt ? new Date(assessment.endsAt) : null;
+
+  if (endsAt && now > endsAt) return "ended";
+  if (!startsAt || now >= startsAt) return "started";
+  return "not_started";
 };
 
 export const fetchAcademicCurrent = createAsyncThunk(
@@ -69,41 +101,133 @@ export const fetchMyAssessments = createAsyncThunk(
   "teacher/fetchMyAssessments",
   async (_, { rejectWithValue, getState }) => {
     try {
+      try {
+        const res = await apiClient.get(
+          "/api/proxy/assessments/teacher/my-assessments",
+          { skipGlobalErrorLog: true } as any,
+        );
+        const payload = res.data?.data || res.data?.items || res.data || [];
+        const rawItems = Array.isArray(payload) ? payload : [];
+
+        return rawItems.map((a: any) => {
+          const classSubjects = Array.isArray(a.classSubjects)
+            ? a.classSubjects
+            : Array.isArray(a.assessmentClassSubjects)
+              ? a.assessmentClassSubjects
+              : [];
+          const firstClassSubject =
+            classSubjects[0]?.classSubject || classSubjects[0];
+          const isOnline =
+            a.isOnline ??
+            (a.assessmentType === "online" || a.assessmentType === "cbt");
+          const totalMarks = a.totalMarks ?? a.marks ?? a.totalScore ?? 100;
+          const duration =
+            a.duration ?? a.durationMins ?? a.durationMinutes ?? 60;
+
+          return {
+            ...a,
+            classId:
+              a.classId ||
+              a.class?.id ||
+              firstClassSubject?.classId ||
+              firstClassSubject?.class?.id,
+            subjectId:
+              a.subjectId ||
+              a.subject?.id ||
+              firstClassSubject?.subjectId ||
+              firstClassSubject?.subject?.id,
+            class: a.class || firstClassSubject?.class,
+            subject: a.subject || firstClassSubject?.subject,
+            isOnline,
+            totalMarks,
+            duration,
+            submissionCount:
+              a.submissionCount ?? a.submissionsCount ?? a._count?.submissions ?? 0,
+            questionCount:
+              a.questionCount ?? a.questionsCount ?? a._count?.questions ?? 0,
+            status: normalizeAssessmentStatus(a),
+          };
+        }) as Assessment[];
+      } catch (endpointError: any) {
+        if (endpointError?.response?.status !== 404) {
+          throw endpointError;
+        }
+      }
+
       // REFACTORED (April 2026): Backend now returns flattened assessments with classId/subjectId at root
       // No need for complex grouping logic or deep normalization
 
       const state: any = getState();
       const teacherClasses =
         state.teacher?.teacherClasses || state.teacher?.classes || [];
+      const currentUser = state.user?.user || state.auth?.user || {};
+      const currentTeacherIds = new Set(
+        [
+          currentUser.id,
+          currentUser.userId,
+          currentUser.teacherId,
+          currentUser.profile?.id,
+          currentUser.profile?.teacherId,
+        ].filter(Boolean).map(String),
+      );
 
       // Build map of teacher's assigned class-subject pairs for filtering
       const assignedClassSubjectPairs = new Map<string, Set<string>>();
+      const assignedClassSubjectIds = new Set<string>();
+      const assignedClassIds = new Set<string>();
+      const addAssignedPair = (classId?: string, subjectId?: string) => {
+        if (!classId || !subjectId) return;
+        const classKey = String(classId);
+        const subjectKey = String(subjectId);
+        if (!assignedClassSubjectPairs.has(classKey)) {
+          assignedClassSubjectPairs.set(classKey, new Set());
+        }
+        assignedClassSubjectPairs.get(classKey)!.add(subjectKey);
+      };
+      const isTeacherOwnedAssessment = (assessment: any) => {
+        const ownerIds = [
+          assessment?.createdById,
+          assessment?.createdBy?.id,
+          assessment?.createdBy?.teacherId,
+          assessment?.teacherId,
+          assessment?.teacher?.id,
+          assessment?.teacher?.teacherId,
+          assessment?.ownerId,
+          assessment?.authorId,
+        ].filter(Boolean).map(String);
+
+        return ownerIds.some((id) => currentTeacherIds.has(id));
+      };
 
       teacherClasses.forEach((c: any) => {
+        if (c.classSubjectId) {
+          assignedClassSubjectIds.add(String(c.classSubjectId));
+        }
+        if (c.classSubject?.id) {
+          assignedClassSubjectIds.add(String(c.classSubject.id));
+        }
+        if (c.type === "class_assignment" && c.classId) {
+          assignedClassIds.add(String(c.classId));
+        }
         if (c.type === "subject_assignment" && c.subjectId && c.classId) {
-          if (!assignedClassSubjectPairs.has(c.classId)) {
-            assignedClassSubjectPairs.set(c.classId, new Set());
-          }
-          assignedClassSubjectPairs.get(c.classId)!.add(c.subjectId);
+          addAssignedPair(c.classId, c.subjectId);
         }
         if (
           c.type === "class_assignment" &&
           c.classId &&
           Array.isArray(c.class?.subjects)
         ) {
-          if (!assignedClassSubjectPairs.has(c.classId)) {
-            assignedClassSubjectPairs.set(c.classId, new Set());
-          }
           c.class.subjects.forEach((s: any) => {
             const subjId = s.id || s;
-            assignedClassSubjectPairs.get(c.classId)!.add(subjId);
+            const classSubjectId = s.classSubjectId || s.classSubject?.id;
+            if (classSubjectId) {
+              assignedClassSubjectIds.add(String(classSubjectId));
+            }
+            addAssignedPair(c.classId, subjId);
           });
         }
         if (!c.type && c.subjectId && c.classId) {
-          if (!assignedClassSubjectPairs.has(c.classId)) {
-            assignedClassSubjectPairs.set(c.classId, new Set());
-          }
-          assignedClassSubjectPairs.get(c.classId)!.add(c.subjectId);
+          addAssignedPair(c.classId, c.subjectId);
         }
       });
 
@@ -168,19 +292,23 @@ export const fetchMyAssessments = createAsyncThunk(
           const subjectId = group.id || group.subjectId || group.subject?.id;
           const classId = group.class?.id || group.classId;
 
-          // Filter by teacher assignments
-          const isAssigned =
-            assignedClassSubjectPairs.has(classId) &&
-            assignedClassSubjectPairs.get(classId)!.has(subjectId);
+          // Filter by teacher assignments, but keep assessments this teacher created.
+          const isGroupAssigned =
+            assignedClassIds.has(String(classId)) ||
+            assignedClassSubjectPairs.has(String(classId)) &&
+              assignedClassSubjectPairs.get(String(classId))!.has(String(subjectId));
+          const visibleAssessments = group.assessments.filter(
+            (a: any) => isGroupAssigned || isTeacherOwnedAssessment(a) || isTeacherOwnedAssessment(group),
+          );
 
-          if (!isAssigned) {
+          if (visibleAssessments.length === 0) {
             console.warn(
               `[fetchMyAssessments] Skipping group: class=${classId}, subject=${subjectId}`,
             );
             return [];
           }
 
-          return group.assessments.map((a: any) => ({
+          return visibleAssessments.map((a: any) => ({
             ...a,
             classId: classId || a.classId,
             subjectId: subjectId || a.subjectId,
@@ -201,8 +329,39 @@ export const fetchMyAssessments = createAsyncThunk(
         );
 
         items = rawCombined.filter((a: any) => {
-          const classId = a.classId;
-          const subjectId = a.subjectId;
+          if (isTeacherOwnedAssessment(a)) {
+            return true;
+          }
+
+          const classSubjects = Array.isArray(a.classSubjects)
+            ? a.classSubjects
+            : Array.isArray(a.assessmentClassSubjects)
+              ? a.assessmentClassSubjects
+              : [];
+          const classSubjectIds = [
+            a.classSubjectId,
+            a.classSubject?.id,
+            ...(Array.isArray(a.classSubjectIds) ? a.classSubjectIds : []),
+            ...classSubjects.map((cs: any) => cs.id || cs.classSubjectId || cs.classSubject?.id),
+          ].filter(Boolean);
+
+          if (
+            classSubjectIds.some((id: string) => assignedClassSubjectIds.has(id))
+          ) {
+            return true;
+          }
+
+          const firstClassSubject = classSubjects[0];
+          const classId =
+            a.classId ||
+            a.class?.id ||
+            firstClassSubject?.classId ||
+            firstClassSubject?.class?.id;
+          const subjectId =
+            a.subjectId ||
+            a.subject?.id ||
+            firstClassSubject?.subjectId ||
+            firstClassSubject?.subject?.id;
 
           if (!classId || !subjectId) {
             console.warn(
@@ -213,8 +372,9 @@ export const fetchMyAssessments = createAsyncThunk(
           }
 
           const isAssigned =
-            assignedClassSubjectPairs.has(classId) &&
-            assignedClassSubjectPairs.get(classId)!.has(subjectId);
+            assignedClassIds.has(String(classId)) ||
+            (assignedClassSubjectPairs.has(String(classId)) &&
+              assignedClassSubjectPairs.get(String(classId))!.has(String(subjectId)));
 
           return isAssigned;
         }) as Assessment[];
@@ -226,23 +386,29 @@ export const fetchMyAssessments = createAsyncThunk(
         const totalMarks = a.totalMarks ?? a.marks ?? a.totalScore ?? 100;
         const duration = a.duration ?? a.durationMins ?? a.durationMinutes ?? 60;
         const submissionCount = a.submissionCount ?? 0;
+        const classSubjects = Array.isArray(a.classSubjects)
+          ? a.classSubjects
+          : Array.isArray(a.assessmentClassSubjects)
+            ? a.assessmentClassSubjects
+            : [];
+        const firstClassSubject = classSubjects[0];
 
-        let status = "draft";
-        if (a.isPublished) {
-          const now = new Date();
-          const startsAt = a.startsAt ? new Date(a.startsAt) : null;
-          const endsAt = a.endsAt ? new Date(a.endsAt) : null;
-          if (endsAt && now > endsAt) {
-            status = "ended";
-          } else if (startsAt && now >= startsAt) {
-            status = "started";
-          } else {
-            status = "not_started";
-          }
-        }
+        const status = normalizeAssessmentStatus(a);
 
         return {
           ...a,
+          classId:
+            a.classId ||
+            a.class?.id ||
+            firstClassSubject?.classId ||
+            firstClassSubject?.class?.id,
+          subjectId:
+            a.subjectId ||
+            a.subject?.id ||
+            firstClassSubject?.subjectId ||
+            firstClassSubject?.subject?.id,
+          class: a.class || firstClassSubject?.class,
+          subject: a.subject || firstClassSubject?.subject,
           isOnline,
           totalMarks,
           duration,
@@ -296,8 +462,21 @@ export const fetchTeacherClasses = createAsyncThunk(
       const ctx = contextRes.data?.data || contextRes.data;
       if (ctx && (Array.isArray(ctx.assignedClasses) || Array.isArray(ctx.assignedSubjects))) {
         const merged: any[] = [];
+        const seen = new Set<string>();
+        const addContextItem = (item: any) => {
+          const key = [
+            item.type,
+            item.classId || "",
+            item.subjectId || "",
+            item.classSubjectId || "",
+          ].join(":");
+          if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(item);
+          }
+        };
         (ctx.assignedClasses || []).forEach((c: any) => {
-          merged.push({
+          addContextItem({
             id: `class-${c.id}`,
             classId: c.id,
             className: c.name,
@@ -308,16 +487,81 @@ export const fetchTeacherClasses = createAsyncThunk(
           });
         });
         (ctx.assignedSubjects || []).forEach((s: any) => {
-          merged.push({
+          addContextItem({
             id: `subject-${s.id}-${s.classId || "all"}`,
+            classSubjectId: s.classSubjectId || null,
+            subjectId: s.subjectId || s.id,
+            subjectName: s.subjectName || s.name,
             classId: s.classId || s.id,
             className: s.className || s.class?.name || "Assigned Class",
             class: { id: s.classId || s.id, name: s.className || s.class?.name || "Assigned Class" },
-            subject: s,
+            subject: {
+              ...s,
+              id: s.subjectId || s.id,
+              name: s.subjectName || s.name,
+            },
             teacherId: params.teacherId,
             type: "subject_assignment",
           });
         });
+        try {
+          const profileRes = await apiClient.get("/api/proxy/users/me");
+          const profile = profileRes.data?.data || profileRes.data || {};
+          const directAssignments =
+            profile.directSubjectAssignments ||
+            profile.classSubjectAssignments ||
+            profile.teacherSubjectAssignments ||
+            [];
+
+          if (Array.isArray(directAssignments)) {
+            directAssignments.forEach((assignment: any) => {
+              const classId = assignment.classId || assignment.class?.id;
+              const subjectId = assignment.subjectId || assignment.subject?.id;
+              if (!classId || !subjectId) return;
+
+              addContextItem({
+                id:
+                  assignment.assignmentId ||
+                  assignment.classSubjectId ||
+                  `${classId}-${subjectId}`,
+                assignmentId: assignment.assignmentId,
+                classSubjectId: assignment.classSubjectId || null,
+                subjectId,
+                subjectName:
+                  assignment.subjectName ||
+                  assignment.subject?.name ||
+                  "Assigned Subject",
+                classId,
+                className:
+                  assignment.className ||
+                  assignment.class?.name ||
+                  `Class ${String(classId).slice(0, 6)}`,
+                class: {
+                  id: classId,
+                  name:
+                    assignment.className ||
+                    assignment.class?.name ||
+                    `Class ${String(classId).slice(0, 6)}`,
+                  code: assignment.classCode || assignment.class?.code,
+                  level: assignment.classLevel || assignment.class?.level,
+                  stream: assignment.classStream || assignment.class?.stream,
+                },
+                subject: {
+                  id: subjectId,
+                  name:
+                    assignment.subjectName ||
+                    assignment.subject?.name ||
+                    "Assigned Subject",
+                  code: assignment.subjectCode || assignment.subject?.code,
+                },
+                teacherId: params.teacherId,
+                type: "subject_assignment",
+              });
+            });
+          }
+        } catch (err) {
+          console.warn("[fetchTeacherClasses] Failed to enrich teacher assignments from profile", err);
+        }
         if (merged.length > 0) {
           return merged;
         }
@@ -331,13 +575,27 @@ export const fetchTeacherClasses = createAsyncThunk(
     // 2. Fetch subjects explicitly assigned to teacher (Subject Teacher role)
     // Merge results to provide full access list.
     try {
-      const [classesRes, subjectsRes] = await Promise.allSettled([
+      const [classesRes, subjectsRes, profileRes] = await Promise.allSettled([
         apiClient.get(`/api/proxy/classes/teacher/${params.teacherId}`),
         apiClient.get(`/api/proxy/subjects?teacherId=${params.teacherId}`),
+        apiClient.get("/api/proxy/users/me"),
       ]);
 
       const mergedItems: any[] = [];
       const seenIds = new Set<string>();
+
+      const addItem = (item: any) => {
+        const key = [
+          item.type,
+          item.classId || "",
+          item.subjectId || "",
+          item.classSubjectId || "",
+        ].join(":");
+        if (!seenIds.has(key)) {
+          seenIds.add(key);
+          mergedItems.push(item);
+        }
+      };
 
       if (classesRes.status === "fulfilled") {
         const rawClasses =
@@ -353,7 +611,7 @@ export const fetchTeacherClasses = createAsyncThunk(
               teacherId: params.teacherId,
               type: "class_assignment",
             };
-            mergedItems.push(item);
+            addItem(item);
           });
         }
       }
@@ -407,7 +665,63 @@ export const fetchTeacherClasses = createAsyncThunk(
               teacherId: params.teacherId,
               type: "subject_assignment",
             };
-            mergedItems.push(item);
+            addItem(item);
+          });
+        }
+      }
+
+      if (profileRes.status === "fulfilled") {
+        const profile = profileRes.value.data?.data || profileRes.value.data || {};
+        const directAssignments =
+          profile.directSubjectAssignments ||
+          profile.classSubjectAssignments ||
+          profile.teacherSubjectAssignments ||
+          [];
+
+        if (Array.isArray(directAssignments)) {
+          directAssignments.forEach((assignment: any) => {
+            const classId = assignment.classId || assignment.class?.id;
+            const subjectId = assignment.subjectId || assignment.subject?.id;
+            if (!classId || !subjectId) return;
+
+            addItem({
+              id:
+                assignment.assignmentId ||
+                assignment.classSubjectId ||
+                `${classId}-${subjectId}`,
+              assignmentId: assignment.assignmentId,
+              classSubjectId: assignment.classSubjectId || null,
+              subjectId,
+              subjectName:
+                assignment.subjectName ||
+                assignment.subject?.name ||
+                "Assigned Subject",
+              classId,
+              className:
+                assignment.className ||
+                assignment.class?.name ||
+                `Class ${String(classId).slice(0, 6)}`,
+              class: {
+                id: classId,
+                name:
+                  assignment.className ||
+                  assignment.class?.name ||
+                  `Class ${String(classId).slice(0, 6)}`,
+                code: assignment.classCode || assignment.class?.code,
+                level: assignment.classLevel || assignment.class?.level,
+                stream: assignment.classStream || assignment.class?.stream,
+              },
+              subject: {
+                id: subjectId,
+                name:
+                  assignment.subjectName ||
+                  assignment.subject?.name ||
+                  "Assigned Subject",
+                code: assignment.subjectCode || assignment.subject?.code,
+              },
+              teacherId: params.teacherId,
+              type: "subject_assignment",
+            });
           });
         }
       }
@@ -652,19 +966,7 @@ export const fetchAssessmentsByClassSubject = createAsyncThunk(
         const duration = a.duration ?? a.durationMins ?? a.durationMinutes ?? 60;
         const submissionCount = a.submissionCount ?? 0;
 
-        let status = "draft";
-        if (a.isPublished) {
-          const now = new Date();
-          const startsAt = a.startsAt ? new Date(a.startsAt) : null;
-          const endsAt = a.endsAt ? new Date(a.endsAt) : null;
-          if (endsAt && now > endsAt) {
-            status = "ended";
-          } else if (startsAt && now >= startsAt) {
-            status = "started";
-          } else {
-            status = "not_started";
-          }
-        }
+        const status = normalizeAssessmentStatus(a);
 
         return {
           ...a,
@@ -749,23 +1051,12 @@ export const fetchAssessmentDetail = createAsyncThunk(
       // Updated endpoint to avoid collision with :status route
       const res = await apiClient.get(
         `/api/proxy/assessments/details/${assessmentId}`,
+        { skipGlobalErrorLog: true } as any,
       );
       const data = res.data?.data || res.data;
       if (!data) return rejectWithValue("Assessment not found");
 
-      let status = "draft";
-      if (data.isPublished) {
-        const now = new Date();
-        const startsAt = data.startsAt ? new Date(data.startsAt) : null;
-        const endsAt = data.endsAt ? new Date(data.endsAt) : null;
-        if (endsAt && now > endsAt) {
-          status = "ended";
-        } else if (startsAt && now >= startsAt) {
-          status = "started";
-        } else {
-          status = "not_started";
-        }
-      }
+      const status = normalizeAssessmentStatus(data);
 
       return {
         ...data,
@@ -788,6 +1079,7 @@ export const fetchAssessmentSubmissions = createAsyncThunk(
     try {
       const res = await apiClient.get(
         `/api/proxy/assessments/${assessmentId}/submissions`,
+        { skipGlobalErrorLog: true } as any,
       );
       const items = res.data?.data || res.data || [];
       return Array.isArray(items) ? items : [];

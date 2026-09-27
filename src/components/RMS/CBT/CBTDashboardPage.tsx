@@ -39,7 +39,7 @@ const statCards = [
 ];
 
 const quickLinks = [
-  { href: routespath.CBT_EXAMS, icon: MonitorCheck, title: "Manage Exams", desc: "Create, publish, and configure CBT exams for your classes.", bg: "var(--violet-tint)", border: "color-mix(in oklch, var(--violet-ink) 20%, transparent)", iconColor: "var(--violet-ink)" },
+  { href: routespath.ASSESSMENTS, icon: MonitorCheck, title: "Manage Assessments", desc: "Create, publish, and configure CBT assessments for your classes.", bg: "var(--violet-tint)", border: "color-mix(in oklch, var(--violet-ink) 20%, transparent)", iconColor: "var(--violet-ink)" },
   { href: routespath.CBT_QUESTION_BANK, icon: BookOpen, title: "Question Bank", desc: "Build your question library. Add individually or bulk upload.", bg: "var(--cobalt-tint)", border: "color-mix(in oklch, var(--cobalt-signal) 20%, transparent)", iconColor: "var(--cobalt-signal)" },
   { href: routespath.CBT_RESULTS, icon: BarChart3, title: "View Results", desc: "Review scores, rankings, and per-student breakdowns.", bg: "var(--emerald-tint)", border: "color-mix(in oklch, var(--emerald-signal) 20%, transparent)", iconColor: "var(--emerald-signal)" },
 ];
@@ -108,7 +108,7 @@ export function CBTDashboardPage() {
           </Link>
           <Link href={routespath.CBT_EXAMS}>
             <Button className="gap-2 text-white h-10" style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}>
-              <Plus className="w-4 h-4" /> New Exam
+              <Plus className="w-4 h-4" /> New Assessment
             </Button>
           </Link>
         </div>
@@ -178,7 +178,7 @@ export function CBTDashboardPage() {
           <h2 className="font-bold" style={{ color: "var(--foreground)" }}>Recent CBT Exams</h2>
           <Link href={routespath.CBT_EXAMS}>
             <button className="text-sm font-medium flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: "var(--violet-ink)" }}>
-              View all <ArrowRight className="w-3.5 h-3.5" />
+              View assessments <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </Link>
         </div>
@@ -191,10 +191,10 @@ export function CBTDashboardPage() {
           <div className="py-12 text-center">
             <MonitorCheck className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--border-medium)" }} />
             <p className="font-medium" style={{ color: "var(--foreground-muted)" }}>No CBT exams yet</p>
-            <p className="text-sm mt-1" style={{ color: "var(--foreground-muted)", opacity: 0.7 }}>Create your first exam to get started.</p>
+            <p className="text-sm mt-1" style={{ color: "var(--foreground-muted)", opacity: 0.7 }}>Create a CBT assessment to get started.</p>
             <Link href={routespath.CBT_EXAMS}>
               <Button className="mt-4 gap-2 text-white" style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}>
-                <Plus className="w-4 h-4" /> Create Exam
+                <Plus className="w-4 h-4" /> Create Assessment
               </Button>
             </Link>
           </div>

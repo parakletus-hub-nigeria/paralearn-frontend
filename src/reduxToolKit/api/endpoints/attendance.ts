@@ -75,7 +75,7 @@ const attendanceApi = paraApi.injectEndpoints({
         records: {
           id?: string;
           enrollmentId: string;
-          status: "PRESENT" | "ABSENT" | "LATE";
+          status: "UNMARKED" | "PRESENT" | "ABSENT" | "LATE";
           remarks?: string;
         }[];
       }
@@ -111,7 +111,7 @@ const attendanceApi = paraApi.injectEndpoints({
         date: string;
         records: {
           studentId: string;
-          status: "PRESENT" | "ABSENT" | "LATE";
+          status: "UNMARKED" | "PRESENT" | "ABSENT" | "LATE";
           remark?: string;
         }[];
       }

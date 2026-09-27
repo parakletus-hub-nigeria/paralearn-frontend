@@ -53,6 +53,7 @@ import {
   Sparkles,
   Send,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import { routespath } from "@/lib/routepath";
 import { toast } from "sonner";
@@ -86,6 +87,27 @@ const statusConfig: Record<string, { background: string; color: string; icon: ty
   draft: { background: "var(--surface-muted)", color: "var(--foreground-muted)", icon: FileText, label: "Draft" },
 };
 
+const toDateTimeLocal = (date: Date) => {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+};
+
+const getPublishScheduleIssue = (assessment: any) => {
+  const startsAt = assessment?.startsAt ? new Date(assessment.startsAt) : null;
+  const endsAt = assessment?.endsAt ? new Date(assessment.endsAt) : null;
+
+  if (!startsAt) return "Set a start date before publishing.";
+  if (!endsAt) return "Set an end date before publishing.";
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+    return "Check the assessment dates before publishing.";
+  }
+  if (endsAt <= startsAt) return "End date must be after start date.";
+  if (endsAt <= new Date()) {
+    return "This assessment has already ended. Update the dates before publishing.";
+  }
+  return null;
+};
+
 export function TeacherAssessmentsPage() {
   const dispatch = useDispatch<AppDispatch>();
   const {
@@ -103,6 +125,7 @@ export function TeacherAssessmentsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [classFilter, setClassFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [publishingAssessmentId, setPublishingAssessmentId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [classSubjects, setClassSubjects] = useState<any[]>([]);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
@@ -409,6 +432,35 @@ export function TeacherAssessmentsPage() {
     setShowEditModal(true);
   };
 
+  const openScheduleEditor = (assessment: any) => {
+    const durationMins =
+      Number(
+        assessment.durationMins ??
+          assessment.durationMinutes ??
+          assessment.duration ??
+          60,
+      ) || 60;
+    const start = new Date(Date.now() + 5 * 60_000);
+    const end = new Date(start.getTime() + durationMins * 60_000);
+
+    setSelectedEditAssessment(assessment);
+    setEditForm({
+      title: assessment.title || "",
+      totalMarks: String(assessment.totalMarks ?? assessment.marks ?? 100),
+      durationMins: String(durationMins),
+      startsAt:
+        assessment.startsAt && new Date(assessment.startsAt) > new Date()
+          ? new Date(assessment.startsAt).toISOString().slice(0, 16)
+          : toDateTimeLocal(start),
+      endsAt:
+        assessment.endsAt && new Date(assessment.endsAt) > start
+          ? new Date(assessment.endsAt).toISOString().slice(0, 16)
+          : toDateTimeLocal(end),
+      instructions: assessment.instructions || "",
+    });
+    setShowEditModal(true);
+  };
+
   const handleUpdateAssessment = async () => {
     if (!selectedEditAssessment) return;
     try {
@@ -443,11 +495,37 @@ export function TeacherAssessmentsPage() {
 
   const handlePublishToggle = async (publish: boolean) => {
     if (!selectedEditAssessment) return;
+    setPublishingAssessmentId(selectedEditAssessment.id);
     try {
+      if (publish) {
+        const schedulePayload = {
+          startsAt: editForm.startsAt
+            ? new Date(editForm.startsAt).toISOString()
+            : selectedEditAssessment.startsAt,
+          endsAt: editForm.endsAt
+            ? new Date(editForm.endsAt).toISOString()
+            : selectedEditAssessment.endsAt,
+        };
+        const scheduleIssue = getPublishScheduleIssue(schedulePayload);
+        if (scheduleIssue) {
+          toast.error(scheduleIssue);
+          return;
+        }
+
+        await dispatch(
+          updateTeacherAssessment({
+            id: selectedEditAssessment.id,
+            data: schedulePayload,
+          }),
+        ).unwrap();
+      }
+
       await dispatch(
         publishAssessment({ assessmentId: selectedEditAssessment.id, publish }),
       ).unwrap();
-      refreshData(true);
+      setSelectedEditAssessment((prev: any) =>
+        prev ? { ...prev, isPublished: publish } : prev,
+      );
       toast.success(
         `Assessment ${publish ? "published" : "unpublished"} successfully`,
       );
@@ -455,18 +533,30 @@ export function TeacherAssessmentsPage() {
       toast.error(
         e || `Failed to ${publish ? "publish" : "unpublish"} assessment`,
       );
+    } finally {
+      setPublishingAssessmentId(null);
     }
   };
 
   const handlePublish = async (assessmentId: string) => {
+    const assessment = assessments.find((item: any) => item.id === assessmentId);
+    const scheduleIssue = getPublishScheduleIssue(assessment);
+    if (scheduleIssue) {
+      if (assessment) openScheduleEditor(assessment);
+      toast.error(scheduleIssue);
+      return;
+    }
+
+    setPublishingAssessmentId(assessmentId);
     try {
       await dispatch(
         publishAssessment({ assessmentId, publish: true }),
       ).unwrap();
       toast.success("Assessment published and is now active!");
-      refreshData(true);
     } catch (e: any) {
       toast.error(e || "Failed to publish assessment");
+    } finally {
+      setPublishingAssessmentId(null);
     }
   };
 
@@ -735,12 +825,21 @@ export function TeacherAssessmentsPage() {
                           </Link>
                         )}
                         {status === "not_started" ? (
-                          <Button onClick={() => handlePublish(assessment.id)} className="flex items-center justify-center gap-2 h-10 text-sm font-semibold text-white col-span-2" style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}>
-                            <Send className="w-4 h-4" />
-                            Publish Assessment
+                          <Button
+                            onClick={() => handlePublish(assessment.id)}
+                            disabled={publishingAssessmentId === assessment.id}
+                            className="flex items-center justify-center gap-2 h-10 text-sm font-semibold text-white col-span-2 disabled:opacity-70"
+                            style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}
+                          >
+                            {publishingAssessmentId === assessment.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
+                            {publishingAssessmentId === assessment.id ? "Publishing..." : "Publish Assessment"}
                           </Button>
                         ) : (
-                          <Link href={`${routespath.TEACHER_ASSESSMENTS}/${assessment.id}`} className="flex items-center justify-center gap-2 h-10 text-sm font-semibold text-white col-span-2" style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}>
+                          <Link prefetch={false} href={`${routespath.TEACHER_ASSESSMENTS}/${assessment.id}/grade`} className="flex items-center justify-center gap-2 h-10 text-sm font-semibold text-white col-span-2" style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}>
                             <BarChart3 className="w-4 h-4" />
                             Grade Submissions
                           </Link>
@@ -820,11 +919,22 @@ export function TeacherAssessmentsPage() {
                                 </Link>
                               )}
                               {status === "not_started" ? (
-                                <Button onClick={() => handlePublish(assessment.id)} size="sm" className="h-9 text-white gap-1" style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}>
-                                  <Send className="w-4 h-4" /> Publish
+                                <Button
+                                  onClick={() => handlePublish(assessment.id)}
+                                  disabled={publishingAssessmentId === assessment.id}
+                                  size="sm"
+                                  className="h-9 text-white gap-1 disabled:opacity-70"
+                                  style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}
+                                >
+                                  {publishingAssessmentId === assessment.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Send className="w-4 h-4" />
+                                  )}
+                                  {publishingAssessmentId === assessment.id ? "Publishing..." : "Publish"}
                                 </Button>
                               ) : (
-                                <Link href={`${routespath.TEACHER_ASSESSMENTS}/${assessment.id}`}>
+                                <Link prefetch={false} href={`${routespath.TEACHER_ASSESSMENTS}/${assessment.id}/grade`}>
                                   <Button size="sm" className="h-9 text-white gap-1" style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}>
                                     <BarChart3 className="w-4 h-4" /> Grade
                                   </Button>
@@ -1263,22 +1373,38 @@ export function TeacherAssessmentsPage() {
                     <Button
                       onClick={() => handlePublishToggle(true)}
                       variant="outline"
-                      disabled={selectedEditAssessment.status === "started" || selectedEditAssessment.status === "active"}
+                      disabled={
+                        publishingAssessmentId === selectedEditAssessment.id ||
+                        selectedEditAssessment.status === "started" ||
+                        selectedEditAssessment.status === "active"
+                      }
                       className="flex-1 h-11 font-semibold"
                       style={{ borderRadius: "var(--radius-md)", borderColor: "color-mix(in oklch, var(--emerald-signal) 30%, transparent)", color: "var(--emerald-signal)" }}
                     >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Publish
+                      {publishingAssessmentId === selectedEditAssessment.id ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                      )}
+                      {publishingAssessmentId === selectedEditAssessment.id ? "Publishing..." : "Publish"}
                     </Button>
                     <Button
                       onClick={() => handlePublishToggle(false)}
                       variant="outline"
-                      disabled={selectedEditAssessment.status === "not_started" || selectedEditAssessment.status === "draft"}
+                      disabled={
+                        publishingAssessmentId === selectedEditAssessment.id ||
+                        selectedEditAssessment.status === "not_started" ||
+                        selectedEditAssessment.status === "draft"
+                      }
                       className="flex-1 h-11 font-semibold"
                       style={{ borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", color: "var(--foreground-muted)" }}
                     >
-                      <X className="w-4 h-4 mr-2" />
-                      Unpublish
+                      {publishingAssessmentId === selectedEditAssessment.id ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <X className="w-4 h-4 mr-2" />
+                      )}
+                      {publishingAssessmentId === selectedEditAssessment.id ? "Updating..." : "Unpublish"}
                     </Button>
                   </div>
                 </div>

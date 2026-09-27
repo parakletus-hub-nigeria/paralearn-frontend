@@ -39,9 +39,10 @@ const ATTENDANCE_STATUS = {
 } as const;
 
 type AttendanceStatusType = keyof typeof ATTENDANCE_STATUS;
+type EffectiveAttendanceStatus = AttendanceStatusType | "UNMARKED";
 
 interface AttendanceRecord {
-  status: AttendanceStatusType;
+  status: EffectiveAttendanceStatus;
   remarks: string;
 }
 
@@ -73,6 +74,12 @@ export function AdminAttendancePage() {
 
   // Ensure first available class is automatically selected on mount
   const effectiveClassId = selectedClassId || (availableClasses.length > 0 ? availableClasses[0].id : "");
+
+  useEffect(() => {
+    if (!selectedClassId && availableClasses.length > 0) {
+      setSelectedClassId(availableClasses[0].id);
+    }
+  }, [availableClasses, selectedClassId]);
 
   // Format date for API
   const dateStr = format(currentDate, "yyyy-MM-dd");
@@ -109,7 +116,7 @@ export function AdminAttendancePage() {
   const getEffectiveRecord = (record: any): AttendanceRecord => {
     const draft = draftAttendance[record.enrollmentId];
     return {
-      status: draft?.status || record.attendance?.status || "ABSENT",
+      status: draft?.status || record.attendance?.status || "UNMARKED",
       remarks: draft?.remarks !== undefined ? draft.remarks : (record.attendance?.remarks || ""),
     };
   };
@@ -156,15 +163,26 @@ export function AdminAttendancePage() {
       return;
     }
     try {
-      const records = attendanceData.map((record: any) => {
+      const records = attendanceData
+        .filter((record: any) => {
+          const hasDraft = Boolean(draftAttendance[record.enrollmentId]);
+          const existingStatus = record.attendance?.status;
+          return hasDraft || (existingStatus && existingStatus !== "UNMARKED");
+        })
+        .map((record: any) => {
         const effective = getEffectiveRecord(record);
         return {
           id: record.attendance?.id, // CRITICAL: This was missing in the original code, causing the backend to wipe untouched students on a 2nd save.
           enrollmentId: record.enrollmentId,
-          status: effective.status,
+          status: effective.status as AttendanceStatusType,
           remarks: effective.remarks,
         };
       });
+
+      if (records.length === 0) {
+        toast.warning("No attendance changes to save. Please mark at least one student.");
+        return;
+      }
 
       const presentCount = records.filter((r: any) => r.status === "PRESENT").length;
       const absentCount = records.filter((r: any) => r.status === "ABSENT").length;
@@ -200,15 +218,16 @@ export function AdminAttendancePage() {
 
   // Stats
   const stats = useMemo(() => {
-    if (!attendanceData) return { total: 0, present: 0, late: 0, absent: 0 };
-    let present = 0, late = 0, absent = 0;
+    if (!attendanceData) return { total: 0, present: 0, late: 0, absent: 0, marked: 0 };
+    let present = 0, late = 0, absent = 0, marked = 0;
     attendanceData.forEach((record: any) => {
       const { status } = getEffectiveRecord(record);
+      if (status !== "UNMARKED") marked++;
       if (status === "PRESENT") present++;
       else if (status === "LATE") late++;
-      else absent++;
+      else if (status === "ABSENT") absent++;
     });
-    return { total: attendanceData.length, present, late, absent };
+    return { total: attendanceData.length, present, late, absent, marked };
   }, [attendanceData, draftAttendance]);
 
   const getInitials = (f?: string, l?: string) =>
@@ -350,7 +369,7 @@ export function AdminAttendancePage() {
                 onClick={handleMarkAllPresent}
                 className="h-11 font-bold px-6"
                 style={{ background: "var(--emerald-tint)", color: "var(--emerald-signal)", border: "1px solid color-mix(in oklch, var(--emerald-signal) 20%, transparent)", borderRadius: "var(--radius-md)" }}
-                disabled={!selectedClassId || isLoading}
+                disabled={!effectiveClassId || isLoading}
               >
                 <CheckCheck className="w-4 h-4 mr-2" />
                 Mark All Present
@@ -379,7 +398,7 @@ export function AdminAttendancePage() {
                 <TableRow>
                   <TableCell colSpan={5} className="h-40 text-center font-medium" style={{ color: "var(--crimson-signal)" }}>Failed to load attendance data. Please try again.</TableCell>
                 </TableRow>
-              ) : !selectedClassId ? (
+              ) : !effectiveClassId ? (
                 <TableRow>
                     <TableCell colSpan={5} className="h-40 text-center" style={{ color: "var(--foreground-muted)" }}>Please select a class to view attendance.</TableCell>
                 </TableRow>
@@ -446,12 +465,12 @@ export function AdminAttendancePage() {
                 <div className="flex flex-col gap-1 w-full max-w-md">
                     <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                         <span>Marked Progress</span>
-                        <span style={{ color: "var(--violet-ink)" }}>{stats.present + stats.late + stats.absent} / {stats.total} Students</span>
+                        <span style={{ color: "var(--violet-ink)" }}>{stats.marked} / {stats.total} Students</span>
                     </div>
                     <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "var(--surface-muted)" }}>
                         <div
                             className="h-full transition-all duration-500"
-                            style={{ width: `${stats.total ? ((stats.present + stats.late + stats.absent) / stats.total) * 100 : 0}%`, background: "var(--violet-ink)" }}
+                            style={{ width: `${stats.total ? (stats.marked / stats.total) * 100 : 0}%`, background: "var(--violet-ink)" }}
                         />
                     </div>
                 </div>

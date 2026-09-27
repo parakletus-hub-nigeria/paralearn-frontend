@@ -11,7 +11,6 @@ import {
   bulkUploadScoresExcel,
   fetchClassStudents,
   fetchClassSubjects,
-  publishAssessment,
 } from "@/reduxToolKit/teacher/teacherThunks";
 import { useSessionsAndTerms } from "@/hooks/useSessionsAndTerms";
 import { TeacherHeader } from "./TeacherHeader";
@@ -106,27 +105,6 @@ export function TeacherScoresPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadAssessmentId, setUploadAssessmentId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Assessment publish state
-  const [publishingAssessmentId, setPublishingAssessmentId] = useState<string | null>(null);
-
-  const handlePublishToggle = async (assessmentId: string, currentlyPublished: boolean) => {
-    setPublishingAssessmentId(assessmentId);
-    try {
-      await dispatch(
-        publishAssessment({ assessmentId, publish: !currentlyPublished }),
-      ).unwrap();
-      toast.success(
-        currentlyPublished
-          ? "Assessment unpublished — students can no longer see scores"
-          : "Assessment published — students can now view their scores",
-      );
-    } catch (e: any) {
-      toast.error(e || `Failed to ${currentlyPublished ? "unpublish" : "publish"} assessment`);
-    } finally {
-      setPublishingAssessmentId(null);
-    }
-  };
 
   // Extract unique classes
   const uniqueClasses = useMemo(() => {
@@ -841,9 +819,6 @@ export function TeacherScoresPage() {
                           const isOnline =
                             assessment.assessmentType === "online" ||
                             assessment.isOnline === true;
-                          const isPublished = !!assessment.isPublished;
-                          const isToggling = publishingAssessmentId === assessment.id;
-
                           return (
                             <div key={assessment.id} className="space-y-1">
                               <div className="flex items-center justify-between">
@@ -855,18 +830,6 @@ export function TeacherScoresPage() {
                                     </span>
                                   )}
                                 </label>
-                                {idx === 0 && (
-                                  <button
-                                    onClick={() => handlePublishToggle(assessment.id, isPublished)}
-                                    disabled={isToggling}
-                                    className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
-                                    style={isPublished
-                                      ? { background: "var(--emerald-tint)", color: "var(--emerald-signal)" }
-                                      : { background: "var(--amber-tint)", color: "var(--amber-signal)" }}
-                                  >
-                                    {isToggling ? "…" : isPublished ? "Published" : "Unpublished"}
-                                  </button>
-                                )}
                               </div>
                               <div
                                 onClick={() => {
@@ -955,8 +918,6 @@ export function TeacherScoresPage() {
                           const isOnline =
                             assessment.assessmentType === "online" ||
                             assessment.isOnline === true;
-                          const isPublished = !!assessment.isPublished;
-                          const isToggling = publishingAssessmentId === assessment.id;
                           return (
                             <th
                               key={assessment.id}
@@ -974,17 +935,6 @@ export function TeacherScoresPage() {
                                 <span className="text-[10px] opacity-70">
                                   ({assessment.totalMarks || 100})
                                 </span>
-                                <button
-                                  onClick={() => handlePublishToggle(assessment.id, isPublished)}
-                                  disabled={isToggling}
-                                  title={isPublished ? "Click to unpublish (hide from students)" : "Click to publish (show scores to students)"}
-                                  className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
-                                  style={isPublished
-                                    ? { background: "var(--emerald-tint)", color: "var(--emerald-signal)" }
-                                    : { background: "var(--amber-tint)", color: "var(--amber-signal)" }}
-                                >
-                                  {isToggling ? "…" : isPublished ? "Published" : "Unpublished"}
-                                </button>
                               </div>
                             </th>
                           );

@@ -71,6 +71,17 @@ import { cn } from "@/lib/utils";
 const fmtKobo = (kobo: number) =>
   "\u20a6" + ((kobo || 0) / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 });
 
+const formatWithCommas = (value: string | number): string => {
+  if (value === undefined || value === null || value === "") return "";
+  const str = String(value).replace(/,/g, "");
+  if (isNaN(Number(str)) && str !== "." && !str.endsWith(".")) {
+    return str.replace(/[^0-9.]/g, "");
+  }
+  const parts = str.split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.join(".");
+};
+
 const STATUS_STYLES: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-800 border-amber-200",
   PARTIAL: "bg-orange-100 text-orange-800 border-orange-200",
@@ -232,12 +243,13 @@ export default function InvoicesPage() {
 
   const handleRecordPayment = async () => {
     if (!payForm.invoiceId) return toast.error("Invoice ID is missing");
-    if (!payForm.amountNaira || Number(payForm.amountNaira) <= 0) {
+    const rawAmount = payForm.amountNaira.replace(/,/g, "");
+    if (!rawAmount || isNaN(Number(rawAmount)) || Number(rawAmount) <= 0) {
       return toast.error("Please enter a valid amount");
     }
 
     try {
-      const amountKobo = Math.round(parseFloat(payForm.amountNaira) * 100);
+      const amountKobo = Math.round(parseFloat(rawAmount) * 100);
       const res = await recordPayment({
         invoiceId: payForm.invoiceId,
         amount: amountKobo,
@@ -977,11 +989,20 @@ export default function InvoicesPage() {
               <div className="space-y-2">
                 <Label className="text-xs">Amount Paid (NGN)</Label>
                 <Input
-                  type="number"
-                  placeholder="e.g. 50000"
-                  value={payForm.amountNaira}
-                  onChange={(e) => setPayForm((p) => ({ ...p, amountNaira: e.target.value }))}
-                  className="text-xs"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="e.g. 50,000"
+                  value={formatWithCommas(payForm.amountNaira)}
+                  onChange={(e) => {
+                    let raw = e.target.value.replace(/,/g, "");
+                    if (raw === payForm.amountNaira && e.target.value.length < formatWithCommas(payForm.amountNaira).length) {
+                      raw = raw.slice(0, -1);
+                    }
+                    if (raw === "" || /^\d*\.?\d*$/.test(raw)) {
+                      setPayForm((p) => ({ ...p, amountNaira: raw }));
+                    }
+                  }}
+                  className="text-xs font-mono"
                 />
               </div>
 

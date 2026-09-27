@@ -175,7 +175,7 @@ export function CBTExamDetailPage() {
     try {
       await dispatch(deleteAssessment(selectedAssessment.id)).unwrap();
       toast.success("Exam deleted");
-      router.push("/RMS/cbt/exams");
+      router.push("/RMS/assessments");
     } catch (e: any) {
       toast.error(e || "Failed to delete exam");
     }
@@ -194,8 +194,8 @@ export function CBTExamDetailPage() {
       <div className="text-center py-20">
         <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
         <p className="text-slate-500 font-medium">Exam not found</p>
-        <Link href="/RMS/cbt/exams">
-          <Button className="mt-4" variant="outline">Back to Exams</Button>
+        <Link href="/RMS/assessments">
+          <Button className="mt-4" variant="outline">Back to Assessments</Button>
         </Link>
       </div>
     );
@@ -207,9 +207,9 @@ export function CBTExamDetailPage() {
 
       {/* Back + title */}
       <div className="mb-6">
-        <Link href="/RMS/cbt/exams">
+        <Link href="/RMS/assessments">
           <button className="flex items-center gap-2 text-sm mb-4 transition-colors" style={{ color: "var(--foreground-muted)" }}>
-            <ArrowLeft className="w-4 h-4" /> Back to Exams
+            <ArrowLeft className="w-4 h-4" /> Back to Assessments
           </button>
         </Link>
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
