@@ -121,6 +121,7 @@ const SideBar = ({ children }: { children: ReactNode }) => {
         { label: "Classes", path: routespath.CLASSES, icon: BookOpenCheck, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Subjects", path: routespath.SUBJECTS, icon: BookOpen, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Assessments", path: routespath.ASSESSMENTS, icon: ClipboardList, roles: ["admin", "principal", "teacher", "vp"] },
+        { label: "CBT", path: routespath.CBT, icon: MonitorCheck, roles: ["admin", "principal", "vp"] },
         { label: "Report Cards", path: routespath.REPORT, icon: BookOpen, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Comments", path: routespath.COMMENTS, icon: MessageSquareText, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Attendance", path: routespath.ATTENDANCE, icon: Calendar, roles: ["admin", "principal", "teacher", "vp"] },
@@ -406,7 +407,7 @@ const SidebarContentContainer = ({
                 flexShrink: 0,
               }}
             >
-              {getInitials(user?.firstName || user?.name || user?.email || "PL")}
+              {getInitials(user?.firstName || user?.name || "PL")}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p
@@ -421,7 +422,7 @@ const SidebarContentContainer = ({
                   lineHeight: 1.3,
                 }}
               >
-                {[user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || (user?.email ? user.email.split("@")[0] : "") || "User"}
+                {user?.firstName || "User"}
               </p>
               <p
                 style={{
@@ -469,22 +470,21 @@ const SidebarContentContainer = ({
           position: "relative",
         }}
       >
-        {/* Sticky top header bar when sidebar is collapsed or on mobile */}
+        {/* Mobile top bar */}
         {(!isExpanded || isMobile) && (
           <div
             style={{
-              position: "sticky",
+              position: "absolute",
               top: 0,
               left: 0,
               right: 0,
-              padding: "10px 16px",
-              alignItems: "center",
+              padding: "12px 16px",
+              display: "flex",
               justifyContent: "space-between",
+              alignItems: "center",
               zIndex: 50,
-              background: "#ffffff",
-              borderBottom: "1px solid var(--border-fine)",
             }}
-            className="flex"
+            className="md:hidden"
           >
             <SidebarTrigger
               style={{
@@ -512,11 +512,34 @@ const SidebarContentContainer = ({
                 color: "var(--text-secondary)",
                 cursor: "pointer",
               }}
-              className="md:hidden"
             >
               <LogOut style={{ width: 13, height: 13 }} />
               Log out
             </button>
+          </div>
+        )}
+
+        {/* Desktop collapsed trigger */}
+        {!isExpanded && !isMobile && (
+          <div
+            style={{
+              position: "absolute",
+              top: 20,
+              left: 16,
+              zIndex: 50,
+            }}
+            className="hidden md:block"
+          >
+            <SidebarTrigger
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--border-fine)",
+                background: "#ffffff",
+              }}
+              className="hover:bg-[var(--surface-muted)]"
+            />
           </div>
         )}
 

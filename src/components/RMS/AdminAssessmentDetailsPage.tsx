@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
@@ -9,8 +9,6 @@ import {
   fetchAssessmentDetail,
   fetchAssessmentSubmissions,
   deleteAssessment,
-  updateAssessment,
-  publishAssessmentAdmin,
 } from "@/reduxToolKit/admin/adminThunks";
 import { Header } from "@/components/RMS/header";
 import {
@@ -24,9 +22,6 @@ import {
   BarChart3,
   Calendar,
   Trash2,
-  CheckCircle2,
-  Send,
-  XCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { getTenantInfo } from "@/reduxToolKit/user/userThunks";
@@ -38,15 +33,6 @@ export function AdminAssessmentDetailsPage() {
   const { selectedAssessment, assessmentSubmissions, loading, error } =
     useSelector((s: RootState) => s.admin);
   const { tenantInfo } = useSelector((s: RootState) => s.user);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({
-    title: "",
-    totalMarks: "",
-    durationMins: "",
-    startsAt: "",
-    endsAt: "",
-    instructions: "",
-  });
 
   useEffect(() => {
     if (params.assessmentId) {
@@ -75,98 +61,6 @@ export function AdminAssessmentDetailsPage() {
       } catch (err: any) {
         toast.error(err || "Failed to delete assessment");
       }
-    }
-  };
-
-  const openEditPanel = () => {
-    if (!selectedAssessment) return;
-    setEditForm({
-      title: selectedAssessment.title || "",
-      totalMarks: String(selectedAssessment.totalMarks ?? ""),
-      durationMins: String(
-        selectedAssessment.durationMins ?? selectedAssessment.duration ?? "",
-      ),
-      startsAt: selectedAssessment.startsAt
-        ? new Date(selectedAssessment.startsAt).toISOString().slice(0, 16)
-        : "",
-      endsAt: selectedAssessment.endsAt
-        ? new Date(selectedAssessment.endsAt).toISOString().slice(0, 16)
-        : "",
-      instructions: selectedAssessment.instructions || "",
-    });
-    setIsEditing(true);
-  };
-
-  const handleUpdate = async () => {
-    if (!selectedAssessment) return;
-    if (!editForm.title.trim()) {
-      toast.error("Assessment title is required");
-      return;
-    }
-
-    try {
-      await dispatch(
-        updateAssessment({
-          id: selectedAssessment.id,
-          data: {
-            title: editForm.title.trim(),
-            totalMarks: editForm.totalMarks
-              ? Number(editForm.totalMarks)
-              : undefined,
-            durationMins: editForm.durationMins
-              ? Number(editForm.durationMins)
-              : undefined,
-            startsAt: editForm.startsAt
-              ? new Date(editForm.startsAt).toISOString()
-              : undefined,
-            endsAt: editForm.endsAt
-              ? new Date(editForm.endsAt).toISOString()
-              : undefined,
-            instructions: editForm.instructions,
-          },
-        }),
-      ).unwrap();
-      await dispatch(fetchAssessmentDetail(selectedAssessment.id)).unwrap();
-      setIsEditing(false);
-      toast.success("Assessment updated successfully");
-    } catch (err: any) {
-      toast.error(err || "Failed to update assessment");
-    }
-  };
-
-  const isPublished =
-    selectedAssessment?.isPublished === true ||
-    selectedAssessment?.status === "started" ||
-    selectedAssessment?.status === "active";
-
-  const handlePublishToggle = async (publish: boolean) => {
-    if (!selectedAssessment) return;
-    const actionLabel = publish ? "approve and publish" : "unpublish";
-    if (
-      !window.confirm(
-        `Are you sure you want to ${actionLabel} "${selectedAssessment.title}"?`,
-      )
-    ) {
-      return;
-    }
-
-    try {
-      await dispatch(
-        publishAssessmentAdmin({
-          assessmentId: selectedAssessment.id,
-          publish,
-        }),
-      ).unwrap();
-      await dispatch(fetchAssessmentDetail(selectedAssessment.id)).unwrap();
-      toast.success(
-        publish
-          ? "Assessment approved and published"
-          : "Assessment unpublished",
-      );
-    } catch (err: any) {
-      toast.error(
-        err || `Failed to ${publish ? "publish" : "unpublish"} assessment`,
-      );
     }
   };
 
@@ -282,50 +176,9 @@ export function AdminAssessmentDetailsPage() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => handlePublishToggle(!isPublished)}
-                className="rounded-xl px-4 py-2 text-sm font-medium border-0 flex items-center gap-2 transition-colors text-white"
-                style={{
-                  background: isPublished
-                    ? "var(--foreground-muted)"
-                    : "var(--violet-ink)",
-                }}
-              >
-                {isPublished ? (
-                  <>
-                    <XCircle className="w-4 h-4" />
-                    <span>Unpublish</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Approve & Publish</span>
-                  </>
-                )}
-              </button>
-              {isOnline() && (
-                <button
-                  onClick={() =>
-                    router.push(`/RMS/cbt/exams/${selectedAssessment.id}`)
-                  }
-                  className="rounded-xl px-4 py-2 text-sm font-medium border transition-colors flex items-center gap-2"
-                  style={{ borderColor: "var(--border-medium)", color: "var(--violet-ink)", background: "var(--violet-tint)" }}
-                >
-                  <Send className="w-4 h-4" />
-                  Questions
-                </button>
-              )}
-              <button
                 onClick={() =>
-                  router.push(`/RMS/scores?assessmentId=${selectedAssessment.id}`)
+                  router.push(`/RMS/assessments/edit/${selectedAssessment.id}`)
                 }
-                className="rounded-xl px-4 py-2 text-sm font-medium border transition-colors flex items-center gap-2"
-                style={{ borderColor: "var(--border-medium)", color: "var(--foreground-muted)", background: "white" }}
-              >
-                <BarChart3 className="w-4 h-4" />
-                Scores
-              </button>
-              <button
-                onClick={openEditPanel}
                 className="rounded-xl px-4 py-2 text-sm font-medium border transition-colors"
                 style={{ borderColor: "var(--border-medium)", color: "var(--foreground-muted)", background: "white" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-muted)")}
@@ -345,125 +198,6 @@ export function AdminAssessmentDetailsPage() {
               </button>
             </div>
           </div>
-
-          {isEditing && (
-            <div
-              className="mt-6 pt-6"
-              style={{ borderTop: "1px solid var(--border-fine)" }}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.title}
-                    onChange={(e) =>
-                      setEditForm((p) => ({ ...p, title: e.target.value }))
-                    }
-                    className="mt-2 w-full h-11 px-3 text-sm focus:outline-none"
-                    style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", color: "var(--foreground)" }}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-                    Total Marks
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={editForm.totalMarks}
-                    onChange={(e) =>
-                      setEditForm((p) => ({ ...p, totalMarks: e.target.value }))
-                    }
-                    className="mt-2 w-full h-11 px-3 text-sm focus:outline-none"
-                    style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", color: "var(--foreground)" }}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-                    Duration (mins)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={editForm.durationMins}
-                    onChange={(e) =>
-                      setEditForm((p) => ({
-                        ...p,
-                        durationMins: e.target.value,
-                      }))
-                    }
-                    className="mt-2 w-full h-11 px-3 text-sm focus:outline-none"
-                    style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", color: "var(--foreground)" }}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-                    Start Date
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={editForm.startsAt}
-                    onChange={(e) =>
-                      setEditForm((p) => ({ ...p, startsAt: e.target.value }))
-                    }
-                    className="mt-2 w-full h-11 px-3 text-sm focus:outline-none"
-                    style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", color: "var(--foreground)" }}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-                    End Date
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={editForm.endsAt}
-                    onChange={(e) =>
-                      setEditForm((p) => ({ ...p, endsAt: e.target.value }))
-                    }
-                    className="mt-2 w-full h-11 px-3 text-sm focus:outline-none"
-                    style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", color: "var(--foreground)" }}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-                    Instructions
-                  </label>
-                  <textarea
-                    value={editForm.instructions}
-                    onChange={(e) =>
-                      setEditForm((p) => ({
-                        ...p,
-                        instructions: e.target.value,
-                      }))
-                    }
-                    className="mt-2 w-full p-3 text-sm focus:outline-none"
-                    style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", color: "var(--foreground)" }}
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <div className="mt-4 flex justify-end gap-3">
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="rounded-xl px-4 py-2 text-sm font-medium border transition-colors"
-                  style={{ borderColor: "var(--border-medium)", color: "var(--foreground-muted)", background: "white" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUpdate}
-                  disabled={loading}
-                  className="rounded-xl px-4 py-2 text-sm font-medium border-0 text-white transition-colors disabled:opacity-60"
-                  style={{ background: "var(--violet-ink)" }}
-                >
-                  {loading ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </div>
-          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-8 pt-8" style={{ borderTop: "1px solid var(--border-fine)" }}>
             <div className="rounded-2xl p-4" style={{ background: "var(--surface-muted)" }}>

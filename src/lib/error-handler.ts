@@ -30,10 +30,6 @@ export const handleError = (error: unknown, fallbackMessage = "An unexpected err
     }
   }
 
-  if (typeof message === "string") {
-    message = message.replace(/\s*\(HTTP\s*\d+\)/gi, "");
-  }
-
   toast.error(message, {
     position: "top-right",
     duration: 5000,

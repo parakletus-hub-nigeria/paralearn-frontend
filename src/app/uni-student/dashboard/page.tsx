@@ -9,7 +9,6 @@ import { useGetStudentTimetableQuery } from "@/reduxToolKit/uniFeatures/timetabl
 import { format } from "date-fns";
 
 const STATUS_STYLES: Record<string, string> = {
-  UNMARKED: "text-slate-600 bg-slate-50 border-slate-100",
   PRESENT: "text-emerald-700 bg-emerald-50 border-emerald-100",
   LATE: "text-amber-700 bg-amber-50 border-amber-100",
   ABSENT: "text-red-700 bg-red-50 border-red-100",
@@ -52,7 +51,7 @@ export default function UniStudentDashboardPage() {
     const present = logs.filter((l: any) =>
       ["PRESENT", "LATE"].includes(l.status)
     ).length;
-    const total = logs.filter((l: any) => l.status !== "UNMARKED").length;
+    const total = logs.length;
     const pct = total > 0 ? Math.round((present / total) * 100) : null;
     return { ...course, attendanceLogs: logs, present, total, pct };
   });
@@ -109,7 +108,7 @@ export default function UniStudentDashboardPage() {
                     (history.filter((l: any) =>
                       ["PRESENT", "LATE"].includes(l.status)
                     ).length /
-                      Math.max(1, history.filter((l: any) => l.status !== "UNMARKED").length)) *
+                      history.length) *
                       100
                   ) + "%"
                 : "—",
@@ -199,10 +198,10 @@ export default function UniStudentDashboardPage() {
                   </div>
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
-                      STATUS_STYLES[log.status] || STATUS_STYLES.UNMARKED
+                      STATUS_STYLES[log.status] || STATUS_STYLES.PRESENT
                     }`}
                   >
-                    {log.status === "UNMARKED" ? "Unmarked" : log.status || "Unmarked"}
+                    {log.status || "PRESENT"}
                   </span>
                 </div>
               ))}

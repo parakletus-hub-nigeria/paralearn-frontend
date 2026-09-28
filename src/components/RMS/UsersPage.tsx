@@ -7,8 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import { fetchAllUsers, deleteUser, reactivateUser, hardDeleteUser, getTenantInfo } from "@/reduxToolKit/user/userThunks";
 import { fetchClasses } from "@/reduxToolKit/admin/adminThunks";
-import { useGetUsersPaginatedQuery, useGetClassesLookupQuery } from "@/reduxToolKit/api";
-import { exportStudentsToPDF, exportTeachersToPDF, exportStudentsToCSV, exportTeachersToCSV } from "@/lib/pdfExport";
+import { exportStudentsToPDF, exportTeachersToPDF } from "@/lib/pdfExport";
 import { Header } from "@/components/RMS/header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -99,7 +98,6 @@ export const UsersPage = () => {
   const { classes } = useSelector((s: RootState) => s.admin);
 
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "teacher" | "student" | "vp" | "accountant" | "admin">("all");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
@@ -113,47 +111,22 @@ export const UsersPage = () => {
   // Selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const ITEMS_PER_PAGE = 20;
-
-  // Debounce search to avoid excessive API calls
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1); // Reset to page 1 on search
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  // ── Server-side paginated query ──
-  const paginatedQuery = useGetUsersPaginatedQuery({
-    page,
-    limit: ITEMS_PER_PAGE,
-    search: debouncedSearch || undefined,
-    role: roleFilter !== "all" ? roleFilter : undefined,
-    classId: classFilter !== "all" ? classFilter : undefined,
-  });
-  const serverData = paginatedQuery.data;
-  const serverLoading = paginatedQuery.isLoading || paginatedQuery.isFetching;
-
-  // ── Lightweight class lookup for filter dropdown ──
-  const { data: classLookup = [] } = useGetClassesLookupQuery();
+  const ITEMS_PER_PAGE = 8;
 
   useEffect(() => {
-    // Still fetch all users for export functionality and fallback
     dispatch(fetchAllUsers());
     dispatch(fetchClasses(undefined));
     dispatch(getTenantInfo());
   }, [dispatch]);
 
-  // Create a map of class IDs to class names (from lookup or legacy)
+  // Create a map of class IDs to class names
   const classNameById = useMemo(() => {
     const map = new Map<string, string>();
-    const source = classLookup.length > 0 ? classLookup : classes;
-    for (const c of source) {
+    for (const c of classes) {
       map.set(c.id, c.name);
     }
     return map;
-  }, [classes, classLookup]);
+  }, [classes]);
 
   // Build unified user list
   const allUsers = useMemo<UserRow[]>(() => {
@@ -243,50 +216,12 @@ export const UsersPage = () => {
     return result;
   }, [allUsers, roleFilter, classFilter, search]);
 
-  // ── Pagination: prefer server-side data, fall back to client-side ──
-  const useServerPagination = !!serverData?.pagination;
-
-  const totalPages = useServerPagination
-    ? (serverData.pagination.totalPages || 1)
-    : Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
-
+  // Pagination
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
   const paginatedUsers = useMemo(() => {
-    if (useServerPagination && serverData?.data) {
-      // Server already returned the right page — just map to UserRow format
-      return serverData.data.map((u: any) => {
-        const roles = Array.isArray(u.roles)
-          ? u.roles.map((r: any) => (r.role?.name || r.name || r || "").toLowerCase())
-          : [String(u.role || "").toLowerCase()];
-        let primaryRole: UserRow["role"] = "student";
-        if (roles.includes("admin")) primaryRole = "admin";
-        else if (roles.includes("principal")) primaryRole = "principal" as any;
-        else if (roles.includes("vp") || roles.includes("vice_principal")) primaryRole = "vp";
-        else if (roles.includes("accountant") || roles.includes("bursar")) primaryRole = "accountant";
-        else if (roles.includes("teacher")) primaryRole = "teacher";
-        const firstEnrollment = u.enrollments?.[0] || u.enrollment || {};
-        const classId = u.classId || firstEnrollment.classId || u.class?.id || firstEnrollment.class?.id || "";
-        const className = classNameById.get(classId) || u.className || u.class?.name || firstEnrollment.class?.name || "";
-        return {
-          id: u.studentId || u.teacherId || u.staffId || u.code || "",
-          dbId: u.id || "",
-          firstName: u.firstName || "",
-          lastName: u.lastName || "",
-          email: u.email || "",
-          role: primaryRole,
-          classId,
-          className,
-          status: (u.isActive === false ? "inactive" : "active") as "active" | "inactive",
-          avatar: u.profilePicture || u.avatar || "",
-          phoneNumber: u.phoneNumber || "",
-          dateOfBirth: u.dateOfBirth,
-          address: u.address || "",
-        } as UserRow;
-      });
-    }
-    // Client-side fallback
     const start = (page - 1) * ITEMS_PER_PAGE;
     return filteredUsers.slice(start, start + ITEMS_PER_PAGE);
-  }, [useServerPagination, serverData, filteredUsers, page, classNameById]);
+  }, [filteredUsers, page]);
 
   // Handlers
   const handleSelectAll = (checked: boolean) => {
@@ -321,82 +256,6 @@ export const UsersPage = () => {
 
   const handleEditUser = (user: UserRow) => {
     setEditUserModal(user);
-  };
-
-  const handleExportStudents = (format: "pdf" | "csv") => {
-    const rawList = (students && students.length > 0)
-      ? students
-      : (users || []).filter((u: any) => {
-          const roles = Array.isArray(u.roles)
-            ? u.roles.map((r: any) => (r.role?.name || r.name || r || "").toLowerCase())
-            : [String(u.role || "").toLowerCase()];
-          return roles.includes("student");
-        });
-
-    if (!rawList || rawList.length === 0) {
-      toast.error("No students available to export");
-      return;
-    }
-
-    const data = rawList.map((s: any) => {
-      const userCode = s.code || s.studentId || s.userCode || s.user?.code || s.user?.studentId || s.id || "";
-      const firstName = s.firstName || s.user?.firstName || (s.name ? s.name.split(" ")[0] : "") || "";
-      const lastName = s.lastName || s.user?.lastName || (s.name ? s.name.split(" ").slice(1).join(" ") : "") || "";
-      const email = s.user?.email || s.email || s.personalEmail || "";
-      const guardianName = s.guardianName || s.user?.guardianName || "";
-      const guardianPhone = s.guardianPhone || s.guardianContact || s.user?.guardianPhone || "";
-
-      return {
-        userCode,
-        firstName,
-        lastName,
-        email,
-        guardianName,
-        guardianPhone,
-      };
-    });
-
-    if (format === "pdf") {
-      exportStudentsToPDF(data, tenantInfo?.name);
-    } else {
-      exportStudentsToCSV(data);
-    }
-  };
-
-  const handleExportTeachers = (format: "pdf" | "csv") => {
-    const rawList = (teachers && teachers.length > 0)
-      ? teachers
-      : (users || []).filter((u: any) => {
-          const roles = Array.isArray(u.roles)
-            ? u.roles.map((r: any) => (r.role?.name || r.name || r || "").toLowerCase())
-            : [String(u.role || "").toLowerCase()];
-          return roles.includes("teacher");
-        });
-
-    if (!rawList || rawList.length === 0) {
-      toast.error("No teachers available to export");
-      return;
-    }
-
-    const data = rawList.map((t: any) => {
-      const userCode = t.code || t.teacherId || t.staffId || t.userCode || t.user?.code || t.user?.teacherId || t.id || "";
-      const firstName = t.firstName || t.user?.firstName || (t.name ? t.name.split(" ")[0] : "") || "";
-      const lastName = t.lastName || t.user?.lastName || (t.name ? t.name.split(" ").slice(1).join(" ") : "") || "";
-      const email = t.user?.email || t.email || t.personalEmail || "";
-
-      return {
-        userCode,
-        firstName,
-        lastName,
-        email,
-      };
-    });
-
-    if (format === "pdf") {
-      exportTeachersToPDF(data, tenantInfo?.name);
-    } else {
-      exportTeachersToCSV(data);
-    }
   };
 
   const getInitials = (first?: string, last?: string, fallbackEmail?: string) => {
@@ -497,18 +356,27 @@ export const UsersPage = () => {
   };
 
   return (
-    <div className="users-page-container pb-8 sm:pb-10">
+    <div className="users-page-container" style={{ padding: "0 0 40px 0" }}>
       <ProductTour steps={usersTourSteps} tourKey="users_directory_tour_v1" />
-      <div className="users-directory-header mb-4 sm:mb-6">
+      <div className="users-directory-header" style={{ marginBottom: 24 }}>
         <Header schoolLogo={tenantInfo?.logoUrl} schoolName={tenantInfo?.name || "ParaLearn School"} />
       </div>
 
       {/* Filter and Action Bar */}
       <div
-        className="users-filter-bar panel-card p-3 sm:p-4 md:p-5 mb-4 sm:mb-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3"
+        className="users-filter-bar panel-card"
+        style={{
+          padding: "16px 20px",
+          marginBottom: 20,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
       >
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 flex-1">
-          <div className="relative w-full sm:w-auto sm:min-w-[200px] sm:max-w-[320px]">
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", flex: 1 }}>
+          <div style={{ position: "relative", minWidth: 220, flex: "1 1 220px", maxWidth: 360 }}>
             <Search
               style={{
                 position: "absolute",
@@ -535,7 +403,6 @@ export const UsersPage = () => {
                 border: "1px solid var(--border-fine)",
                 background: "var(--surface-muted)",
               }}
-              className="w-full"
             />
           </div>
 
@@ -550,12 +417,12 @@ export const UsersPage = () => {
             <SelectTrigger
               style={{
                 height: 36,
+                width: 170,
                 fontSize: 13,
                 borderRadius: "var(--radius-md)",
                 border: "1px solid var(--border-fine)",
                 background: "var(--surface-muted)",
               }}
-              className="w-full sm:w-[160px]"
             >
               <SelectValue placeholder="All Roles" />
             </SelectTrigger>
@@ -580,12 +447,12 @@ export const UsersPage = () => {
             <SelectTrigger
               style={{
                 height: 36,
+                width: 160,
                 fontSize: 13,
                 borderRadius: "var(--radius-md)",
                 border: "1px solid var(--border-fine)",
                 background: "var(--surface-muted)",
               }}
-              className="w-full sm:w-[150px]"
             >
               <SelectValue placeholder="All Classes" />
             </SelectTrigger>
@@ -601,7 +468,7 @@ export const UsersPage = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 justify-end">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -623,31 +490,40 @@ export const UsersPage = () => {
                 Export
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end">
               <DropdownMenuItem
-                onClick={() => handleExportStudents("pdf")}
+                onClick={() => {
+                const data = (students || []).map((s: any) => ({
+                  id: s.code || s.id || "",
+                  name: [s.firstName, s.lastName].filter(Boolean).join(" ") || s.name || "",
+                  email: s.user?.email || s.email || "",
+                  dateOfBirth: s.dateOfBirth || "",
+                  address: s.address || "",
+                  phoneNumber: s.phoneNumber || "",
+                  guardianName: s.guardianName || "",
+                  guardianPhone: s.guardianPhone || "",
+                }));
+                exportStudentsToPDF(data);
+              }}
                 className="text-xs cursor-pointer"
               >
                 Export Students (PDF)
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => handleExportStudents("csv")}
-                className="text-xs cursor-pointer"
-              >
-                Export Students (CSV)
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => handleExportTeachers("pdf")}
+                onClick={() => {
+                const data = (teachers || []).map((t: any) => ({
+                  id: t.code || t.id || "",
+                  name: [t.firstName, t.lastName].filter(Boolean).join(" ") || t.name || "",
+                  email: t.user?.email || t.email || "",
+                  dateOfBirth: t.dateOfBirth || "",
+                  phoneNumber: t.phoneNumber || "",
+                  address: t.address || "",
+                }));
+                exportTeachersToPDF(data);
+              }}
                 className="text-xs cursor-pointer"
               >
                 Export Teachers (PDF)
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleExportTeachers("csv")}
-                className="text-xs cursor-pointer"
-              >
-                Export Teachers (CSV)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -719,7 +595,7 @@ export const UsersPage = () => {
       </div>
 
       {/* Directory Table */}
-      <div className="panel-card p-3 sm:p-5 md:p-6">
+      <div className="panel-card" style={{ padding: "20px 24px" }}>
         {loading ? (
           <div style={{ padding: "48px 0", textAlign: "center", color: "var(--text-secondary)" }}>
             <p style={{ fontSize: 14 }}>Loading directory...</p>
@@ -920,7 +796,6 @@ export const UsersPage = () => {
         primaryColor="var(--violet-ink)"
         onSuccess={() => {
           dispatch(fetchAllUsers());
-          dispatch(fetchClasses(undefined));
           setAddModalOpen(false);
         }}
       />

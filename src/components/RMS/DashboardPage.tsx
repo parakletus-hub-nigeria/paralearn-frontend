@@ -6,7 +6,6 @@ import { Plus, Clock, ArrowRight, GraduationCap, Users, BookOpen, FileText, Cale
 import { AddStudentDialog, AddTeacherDialog } from "@/components/RMS/dialogs";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useGetDashboardOverviewQuery } from "@/reduxToolKit/api";
 import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import { selectDashboardUserData, selectCurrentSession } from "@/reduxToolKit/selectors";
 import { fetchAllUsers, getTenantInfo } from "@/reduxToolKit/user/userThunks";
@@ -41,34 +40,20 @@ export const DashboardPage = () => {
   const { studentCount, teacherCount, tenantInfo } = useSelector(selectDashboardUserData);
   const { users } = useSelector((state: RootState) => state.user);
   const currentSession = useSelector(selectCurrentSession);
-
-  // ── Primary: single consolidated overview via RTK Query ──
-  const { data: overviewData, isError: overviewFailed } = useGetDashboardOverviewQuery();
-
-  const [fallbackStats, setFallbackStats] = useState<{
-    studentCount: number;
-    teacherCount: number;
-  } | null>(null);
-  const [fallbackSubjectCount, setFallbackSubjectCount] = useState(0);
-  const [fallbackAssessmentCount, setFallbackAssessmentCount] = useState(0);
-  const [fallbackRecentAssessments, setFallbackRecentAssessments] = useState<any[]>([]);
-  const [fallbackRecentReportCards, setFallbackRecentReportCards] = useState<any[]>([]);
+  const [subjectCount, setSubjectCount] = useState(0);
+  const [assessmentCount, setAssessmentCount] = useState(0);
+  const [recentAssessments, setRecentAssessments] = useState<any[]>([]);
+  const [recentReportCards, setRecentReportCards] = useState<any[]>([]);
 
   useEffect(() => {
     dispatch(fetchCurrentSession());
     dispatch(getTenantInfo());
-  }, [dispatch]);
 
-  // ── Fallback: only runs if the consolidated endpoint fails ──
-  useEffect(() => {
-    if (!overviewFailed) return;
-
-    async function loadFallback() {
+    async function load() {
       const fetchJson = async (url: string) => {
         const res = await apiFetch(url, { method: "GET", headers: { "Content-Type": "application/json" } });
         return res.ok ? res.json() : null;
       };
-
       const fetchByStatus = async (status: string) => {
         try { const d = await fetchJson(`/api/proxy/assessments/${status}`); return Array.isArray(d) ? d : []; }
         catch { try { const d = await fetchJson(`/api/proxy/assessments?status=${status}`); return Array.isArray(d) ? d : []; } catch { return []; } }
@@ -84,15 +69,13 @@ export const DashboardPage = () => {
       ]);
 
       const subjectsArr = subjectResult?.data || subjectResult?.subjects || subjectResult;
-      setFallbackSubjectCount(Array.isArray(subjectsArr) ? subjectsArr.length : 0);
+      setSubjectCount(Array.isArray(subjectsArr) ? subjectsArr.length : 0);
 
       const all = [...aStarted, ...aEnded, ...aNotStarted];
-      setFallbackAssessmentCount(all.length);
-      setFallbackRecentAssessments([...all].sort((a, b) => new Date(b.createdAt || b.startsAt || 0).getTime() - new Date(a.createdAt || a.startsAt || 0).getTime()).slice(0, 5));
+      setAssessmentCount(all.length);
+      setRecentAssessments([...all].sort((a, b) => new Date(b.createdAt || b.startsAt || 0).getTime() - new Date(a.createdAt || a.startsAt || 0).getTime()).slice(0, 5));
 
       const usersData: any[] = usersResult?.users || [];
-      setFallbackStats({ studentCount: usersData.filter((u: any) => u.role === "student").length, teacherCount: usersData.filter((u: any) => u.role === "teacher").length });
-
       if (reportResult) {
         const studentsArr = reportResult?.data || reportResult || [];
         const allReports: any[] = [];
@@ -104,36 +87,18 @@ export const DashboardPage = () => {
           const enrollment = student?.enrollments?.find((e: any) => e.status === "active") || student?.enrollments?.[0];
           return { ...r, student: student ? { id: student.id, code: student.studentId || student.id, firstName: student.firstName, lastName: student.lastName, class: enrollment?.class } : null };
         });
-        setFallbackRecentReportCards(enriched.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 10));
+        setRecentReportCards(enriched.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 10));
       }
     }
 
-    loadFallback().catch(console.error);
-  }, [dispatch, overviewFailed]);
-
-  // ── Derive display values: prefer consolidated data, fall back to legacy ──
-  const hasOverview = !!overviewData?.stats;
-  const overviewStats = (overviewData?.stats || {}) as any;
-  const finalStudentCount = hasOverview
-    ? (overviewStats.studentCount ?? overviewStats.totalStudents ?? 0)
-    : (fallbackStats?.studentCount ?? studentCount);
-  const finalTeacherCount = hasOverview
-    ? (overviewStats.teacherCount ?? overviewStats.totalTeachers ?? 0)
-    : (fallbackStats?.teacherCount ?? teacherCount);
-  const subjectCount = hasOverview
-    ? (overviewStats.subjectCount ?? overviewStats.totalSubjects ?? 0)
-    : fallbackSubjectCount;
-  const assessmentCount = hasOverview
-    ? (overviewStats.assessmentCount ?? overviewStats.totalAssessments ?? 0)
-    : fallbackAssessmentCount;
-  const recentAssessments = hasOverview ? (overviewData.recentAssessments?.slice(0, 5) ?? []) : fallbackRecentAssessments;
-  const recentReportCards = hasOverview ? (overviewData.recentReportCards?.slice(0, 10) ?? []) : fallbackRecentReportCards;
+    load().catch(console.error);
+  }, [dispatch]);
 
   const stats = [
-    { label: "Students",    value: finalStudentCount, icon: GraduationCap, tint: "var(--violet-tint)",  iconColor: "var(--violet-ink)" },
-    { label: "Teachers",    value: finalTeacherCount, icon: Users,         tint: "var(--emerald-tint)", iconColor: "var(--emerald-signal)" },
-    { label: "Subjects",    value: subjectCount,      icon: BookOpen,      tint: "var(--cobalt-tint)",  iconColor: "var(--cobalt-signal)" },
-    { label: "Assessments", value: assessmentCount,   icon: FileText,      tint: "var(--amber-tint)",   iconColor: "var(--amber-signal)" },
+    { label: "Students",    value: studentCount,    icon: GraduationCap, tint: "var(--violet-tint)",  iconColor: "var(--violet-ink)" },
+    { label: "Teachers",    value: teacherCount,    icon: Users,         tint: "var(--emerald-tint)", iconColor: "var(--emerald-signal)" },
+    { label: "Subjects",    value: subjectCount,    icon: BookOpen,      tint: "var(--cobalt-tint)",  iconColor: "var(--cobalt-signal)" },
+    { label: "Assessments", value: assessmentCount, icon: FileText,      tint: "var(--amber-tint)",   iconColor: "var(--amber-signal)" },
   ];
 
   return (
@@ -197,7 +162,13 @@ export const DashboardPage = () => {
 
       {/* ── Stats ───────────────────────────────────────────────────── */}
       <div
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8"
+        className="dashboard-stats-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: 16,
+          marginBottom: 32,
+        }}
       >
         {stats.map(({ label, value, icon: Icon, tint, iconColor }) => (
           <div
@@ -207,10 +178,10 @@ export const DashboardPage = () => {
               border: "1px solid var(--border-fine)",
               borderRadius: "var(--radius-lg)",
               boxShadow: "var(--shadow-card)",
-              padding: "16px 20px",
+              padding: "20px 24px",
               display: "flex",
               alignItems: "center",
-              gap: 14,
+              gap: 16,
             }}
           >
             <div
@@ -244,6 +215,7 @@ export const DashboardPage = () => {
               <p
                 style={{
                   fontFamily: "var(--font-manrope), system-ui, sans-serif",
+                  fontSize: 28,
                   fontWeight: 800,
                   letterSpacing: "-0.03em",
                   color: "#0f172a",
@@ -251,7 +223,6 @@ export const DashboardPage = () => {
                   marginTop: 2,
                   fontVariantNumeric: "tabular-nums",
                 }}
-                className="text-xl sm:text-2xl md:text-3xl"
               >
                 {value.toLocaleString()}
               </p>
@@ -340,7 +311,13 @@ export const DashboardPage = () => {
 
       {/* ── Main 2-col grid ─────────────────────────────────────────── */}
       <div
-        className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4 sm:gap-6 items-start"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 2fr",
+          gap: 24,
+          alignItems: "start",
+        }}
+        className="grid-cols-1 lg:grid-cols-[1fr_2fr]"
       >
         {/* Recent Assessments */}
         <div className="dashboard-recent-assessments">

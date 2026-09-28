@@ -60,17 +60,6 @@ const FEE_TYPE_COLORS: Record<string, string> = {
 const fmtKobo = (kobo: number) =>
   "\u20a6" + (kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 });
 
-const formatWithCommas = (value: string | number): string => {
-  if (value === undefined || value === null || value === "") return "";
-  const str = String(value).replace(/,/g, "");
-  if (isNaN(Number(str)) && str !== "." && !str.endsWith(".")) {
-    return str.replace(/[^0-9.]/g, "");
-  }
-  const parts = str.split(".");
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return parts.join(".");
-};
-
 export default function FeeStructuresPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { classes } = useSelector((s: RootState) => s.admin);
@@ -110,8 +99,7 @@ export default function FeeStructuresPage() {
 
   const handleCreate = async () => {
     if (!form.name.trim()) return toast.error("Please enter a fee name");
-    const rawAmount = form.amountNaira.replace(/,/g, "");
-    if (!rawAmount || isNaN(Number(rawAmount)) || Number(rawAmount) <= 0) {
+    if (!form.amountNaira || isNaN(Number(form.amountNaira)) || Number(form.amountNaira) <= 0) {
       return toast.error("Please enter a valid amount in Naira");
     }
     if (!form.termId) {
@@ -119,7 +107,7 @@ export default function FeeStructuresPage() {
     }
 
     try {
-      const amountKobo = Math.round(parseFloat(rawAmount) * 100);
+      const amountKobo = Math.round(parseFloat(form.amountNaira) * 100);
       await createFeeStructure({
         termId: form.termId,
         name: form.name.trim(),
@@ -279,19 +267,11 @@ export default function FeeStructuresPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Amount in Naira (₦)</Label>
                 <Input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="50,000"
-                  value={formatWithCommas(form.amountNaira)}
-                  onChange={(e) => {
-                    let raw = e.target.value.replace(/,/g, "");
-                    if (raw === form.amountNaira && e.target.value.length < formatWithCommas(form.amountNaira).length) {
-                      raw = raw.slice(0, -1);
-                    }
-                    if (raw === "" || /^\d*\.?\d*$/.test(raw)) {
-                      setForm({ ...form, amountNaira: raw });
-                    }
-                  }}
+                  type="number"
+                  min="0"
+                  placeholder="50000"
+                  value={form.amountNaira}
+                  onChange={(e) => setForm({ ...form, amountNaira: e.target.value })}
                   className="font-mono text-xs"
                 />
               </div>

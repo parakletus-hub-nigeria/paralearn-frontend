@@ -18,7 +18,7 @@ export const routespath = {
   ENROLLMENTS: "/RMS/enrollments",
   // CBT module
   CBT: "/RMS/cbt",
-  CBT_EXAMS: "/RMS/assessments",
+  CBT_EXAMS: "/RMS/cbt/exams",
   CBT_QUESTION_BANK: "/RMS/cbt/question-bank",
   CBT_RESULTS: "/RMS/cbt/results",
   LESSON_GENERATOR: "/RMS/lesson-generator",
@@ -61,9 +61,6 @@ export const routespath = {
   API_FORGOT_PASSWORD: "/auth/forgot-password",
   API_RESET_PASSWORD: "/auth/reset-password",
   API_CHANGE_PASSWORD: "/auth/change-password",
-  API_WHATSAPP_START: "/auth/whatsapp/start",
-  API_WHATSAPP_STATUS: "/auth/whatsapp/status",
-  API_WHATSAPP_COMPLETE: "/auth/whatsapp/complete",
   // Academic Session endpoints
   API_CREATE_ACADEMIC_SESSION: "/academic/sessions",
   API_GET_ALL_SESSIONS: "/academic/sessions",

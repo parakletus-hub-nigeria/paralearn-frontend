@@ -13,7 +13,6 @@ import {
   deleteAssessment,
   createAssessment,
   fetchAssessmentCategoriesMap,
-  publishAssessmentAdmin,
 } from "@/reduxToolKit/admin/adminThunks";
 import { getTenantInfo } from "@/reduxToolKit/user/userThunks";
 import {
@@ -23,6 +22,7 @@ import {
 import { Header } from "@/components/RMS/header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -46,14 +46,11 @@ import {
   Target,
   Filter,
   AlertCircle,
+  Eye,
   Settings,
   Trash2,
   Plus,
   X,
-  CheckCircle,
-  Send,
-  Edit,
-  BarChart3,
 } from "lucide-react";
 import { ManageCategoriesDialog } from "./ManageCategoriesDialog";
 import { ProductTour } from "@/components/common/ProductTour";
@@ -117,24 +114,6 @@ const getIconBg = (subjectName: string) => {
   if (name.includes("geo")) return { background: "var(--emerald-tint)", color: "var(--emerald-signal)" };
   return { background: "var(--surface-muted)", color: "var(--foreground-muted)" };
 };
-
-const isAssessmentPublished = (assessment: any) =>
-  assessment.isPublished === true ||
-  assessment.status === "started" ||
-  assessment.status === "active";
-
-const getApprovalStyle = (published: boolean) =>
-  published
-    ? {
-        background: "var(--emerald-tint)",
-        color: "var(--emerald-signal)",
-        label: "Published",
-      }
-    : {
-        background: "var(--amber-tint)",
-        color: "var(--amber-signal)",
-        label: "Needs approval",
-      };
 
 export function AdminAssessmentsPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -234,28 +213,6 @@ export function AdminAssessmentsPage() {
 
     return result;
   }, [assessments, statusFilter, typeFilter, classFilter, q, subjectNameById]);
-
-  const stats = useMemo(() => {
-    const published = assessments.filter(isAssessmentPublished).length;
-    const active = assessments.filter(
-      (a) => a.status === "started" || a.status === "active",
-    ).length;
-    const pending = assessments.filter(
-      (a) => a.status === "not_started" || !a.status,
-    ).length;
-    const ended = assessments.filter((a) => a.status === "ended").length;
-    const online = assessments.filter((a) => a.isOnline !== false).length;
-
-    return {
-      total: assessments.length,
-      published,
-      needsApproval: Math.max(assessments.length - published, 0),
-      active,
-      pending,
-      ended,
-      online,
-    };
-  }, [assessments]);
 
   // New model: subjects have classSubjects[] instead of classId
   // Build flat list of { subjectId, subjectName, classId, classSubjectId } for selected classes
@@ -404,33 +361,6 @@ export function AdminAssessmentsPage() {
     }
   };
 
-  const handlePublishToggle = async (assessment: any, publish: boolean) => {
-    const actionLabel = publish ? "approve and publish" : "unpublish";
-    if (
-      !confirm(
-        `Are you sure you want to ${actionLabel} "${assessment.title}"?`,
-      )
-    ) {
-      return;
-    }
-
-    try {
-      await dispatch(
-        publishAssessmentAdmin({ assessmentId: assessment.id, publish }),
-      ).unwrap();
-      toast.success(
-        publish
-          ? "Assessment approved and published"
-          : "Assessment unpublished",
-      );
-      dispatch(fetchAssessments());
-    } catch (e: any) {
-      toast.error(
-        e || `Failed to ${publish ? "publish" : "unpublish"} assessment`,
-      );
-    }
-  };
-
   return (
     <div className="w-full">
       <ProductTour tourKey="admin_assessments" steps={assessmentTourSteps} />
@@ -439,237 +369,153 @@ export function AdminAssessmentsPage() {
         schoolName={tenantInfo?.name || "ParaLearn School"}
       />
 
-      <section
-        className="mb-5 overflow-hidden"
-        style={{
-          border: "1px solid var(--border-fine)",
-          borderRadius: "var(--radius-xl)",
-          background: "var(--chalk-white, #fdfdff)",
-          boxShadow: "var(--shadow-card)",
-        }}
-      >
-        <div
-          className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5 px-5 py-5 md:px-6"
-          style={{ borderBottom: "1px solid var(--border-fine)" }}
-        >
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold"
-                style={{
-                  borderRadius: "var(--radius-pill)",
-                  background:
-                    stats.needsApproval > 0
-                      ? "var(--amber-tint)"
-                      : "var(--emerald-tint)",
-                  color:
-                    stats.needsApproval > 0
-                      ? "var(--amber-signal)"
-                      : "var(--emerald-signal)",
-                }}
-              >
-                {stats.needsApproval > 0 ? (
-                  <AlertCircle className="w-3.5 h-3.5" />
-                ) : (
-                  <CheckCircle className="w-3.5 h-3.5" />
-                )}
-                {stats.needsApproval > 0
-                  ? `${stats.needsApproval} awaiting approval`
-                  : "All assessments reviewed"}
-              </span>
-            </div>
-            <h1
-              className="text-2xl font-extrabold"
-              style={{
-                color: "var(--foreground)",
-                fontFamily: "var(--font-manrope)",
-                letterSpacing: "0",
-              }}
-            >
-              Assessments
-            </h1>
-            <p
-              className="text-sm mt-1"
-              style={{ color: "var(--foreground-muted)", maxWidth: "68ch" }}
-            >
-              Review teacher-created assessments, publish approved work, manage
-              CBT questions, and open score entry from one place.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
-            <ManageCategoriesDialog>
-              <Button
-                variant="outline"
-                className="assessments-manage-categories-btn gap-2 w-full sm:w-auto justify-center h-10"
-                style={{
-                  borderColor: "var(--border-fine)",
-                  borderRadius: "var(--radius-md)",
-                  background: "var(--chalk-white, #fdfdff)",
-                }}
-              >
-                <Settings className="w-4 h-4" /> Categories
-              </Button>
-            </ManageCategoriesDialog>
-            <Button
-              className="gap-2 text-white w-full sm:w-auto justify-center h-10"
-              style={{
-                backgroundColor: "var(--violet-ink)",
-                borderRadius: "var(--radius-md)",
-                boxShadow: "none",
-              }}
-              onClick={() => setShowCreateModal(true)}
-            >
-              <Plus className="w-4 h-4" /> Create Assessment
-            </Button>
-          </div>
+      {/* Page Header */}
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>
+            Assessments Overview
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "var(--foreground-muted)" }}>
+            Create and monitor assessments across all classes and subjects.
+          </p>
         </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6">
-          {[
-            { label: "Total", value: stats.total, color: "var(--foreground)" },
-            {
-              label: "Needs approval",
-              value: stats.needsApproval,
-              color: "var(--amber-signal)",
-            },
-            {
-              label: "Published",
-              value: stats.published,
-              color: "var(--emerald-signal)",
-            },
-            { label: "Active", value: stats.active, color: "var(--emerald-signal)" },
-            { label: "Pending", value: stats.pending, color: "var(--amber-signal)" },
-            { label: "CBT", value: stats.online, color: "var(--cobalt-signal)" },
-          ].map((stat, index) => (
-            <div
-              key={stat.label}
-              className="px-5 py-4"
-              style={{
-                borderRight:
-                  index === 5 ? undefined : "1px solid var(--border-fine)",
-                borderTop: "1px solid var(--border-fine)",
-              }}
-            >
-              <p
-                className="text-xs font-semibold uppercase"
-                style={{
-                  color: "var(--foreground-muted)",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {stat.label}
-              </p>
-              <p
-                className="mt-1 text-2xl font-extrabold tabular-nums"
-                style={{ color: stat.color, fontVariantNumeric: "tabular-nums" }}
-              >
-                {stat.value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section
-        className="assessments-filter-bar mb-4 px-4 py-3"
-        style={{
-          border: "1px solid var(--border-fine)",
-          borderRadius: "var(--radius-lg)",
-          background: "var(--chalk-white, #fdfdff)",
-        }}
-      >
-        <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
-          <div className="relative flex-1">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-              style={{ color: "var(--foreground-muted)" }}
-            />
-            <Input
-              placeholder="Search by title or subject"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              className="pl-9 h-10"
-              style={{
-                borderColor: "var(--border-fine)",
-                borderRadius: "var(--radius-md)",
-                background: "var(--chalk-white, #fdfdff)",
-                boxShadow: "none",
-              }}
-            />
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <Select value={classFilter} onValueChange={setClassFilter}>
-              <SelectTrigger
-                className="h-10 w-full sm:w-[150px]"
-                style={{
-                  borderColor: "var(--border-fine)",
-                  borderRadius: "var(--radius-md)",
-                  background: "var(--chalk-white, #fdfdff)",
-                }}
-              >
-                <SelectValue placeholder="All Classes" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="all">All Classes</SelectItem>
-                {classes.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger
-                className="h-10 w-full sm:w-[150px]"
-                style={{
-                  borderColor: "var(--border-fine)",
-                  borderRadius: "var(--radius-md)",
-                  background: "var(--chalk-white, #fdfdff)",
-                }}
-              >
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="ended">Ended</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger
-                className="h-10 w-full sm:w-[132px]"
-                style={{
-                  borderColor: "var(--border-fine)",
-                  borderRadius: "var(--radius-md)",
-                  background: "var(--chalk-white, #fdfdff)",
-                }}
-              >
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="online">Online</SelectItem>
-                <SelectItem value="offline">Offline</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="flex items-center gap-3">
+          <ManageCategoriesDialog>
             <Button
               variant="outline"
-              className="h-10 w-10 p-0"
-              style={{
-                borderColor: "var(--border-fine)",
-                borderRadius: "var(--radius-md)",
-                background: "var(--chalk-white, #fdfdff)",
-              }}
+              className="assessments-manage-categories-btn gap-2"
+              style={{ borderColor: "var(--border-fine)", borderRadius: "var(--radius-md)" }}
             >
-              <Filter
-                className="w-4 h-4"
-                style={{ color: "var(--foreground-muted)" }}
-              />
+              <Settings className="w-4 h-4" /> Manage Categories
             </Button>
-          </div>
+          </ManageCategoriesDialog>
+          <Button
+            className="gap-2 text-white shadow-sm"
+            style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}
+            onClick={() => setShowCreateModal(true)}
+          >
+            <Plus className="w-4 h-4" /> Create Assessment
+          </Button>
         </div>
-      </section>
+      </div>
+
+      {/* Info Banner */}
+      <div
+        className="assessments-info-banner rounded-xl p-4 mb-6 flex items-start gap-3"
+        style={{ background: "var(--cobalt-tint)", border: "1px solid color-mix(in oklch, var(--cobalt-signal) 20%, transparent)" }}
+      >
+        <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "var(--cobalt-signal)" }} />
+        <div>
+          <p className="text-sm font-semibold" style={{ color: "var(--cobalt-signal)" }}>
+            Assessment Management
+          </p>
+          <p className="text-sm mt-0.5" style={{ color: "var(--cobalt-signal)", opacity: 0.85 }}>
+            Create assessments for one or more subjects at once by selecting a
+            class and checking the subjects. Teachers can also create
+            assessments from their dashboard.
+          </p>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="assessments-filter-bar flex flex-col md:flex-row gap-3 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--foreground-muted)" }} />
+          <Input
+            placeholder="Search assessments..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="pl-10 h-11 rounded-xl shadow-sm"
+            style={{ borderColor: "var(--border-medium)", background: "white" }}
+          />
+        </div>
+        <div className="flex gap-3 flex-wrap">
+          <Select value={classFilter} onValueChange={setClassFilter}>
+            <SelectTrigger className="h-11 w-full sm:w-[150px] rounded-xl shadow-sm" style={{ borderColor: "var(--border-medium)", background: "white" }}>
+              <SelectValue placeholder="All Classes" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="all">All Classes</SelectItem>
+              {classes.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-11 w-full sm:w-[150px] rounded-xl shadow-sm" style={{ borderColor: "var(--border-medium)", background: "white" }}>
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="ended">Ended</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="h-11 w-full sm:w-[140px] rounded-xl shadow-sm" style={{ borderColor: "var(--border-medium)", background: "white" }}>
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="online">Online</SelectItem>
+              <SelectItem value="offline">Offline</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            className="h-11 w-11 p-0 rounded-xl shadow-sm"
+            style={{ borderColor: "var(--border-medium)", background: "white" }}
+          >
+            <Filter className="w-4 h-4" style={{ color: "var(--foreground-muted)" }} />
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl p-4" style={{ border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
+          <p className="text-xs uppercase tracking-wide font-semibold" style={{ color: "var(--foreground-muted)" }}>
+            Total Assessments
+          </p>
+          <p className="text-2xl font-bold mt-1" style={{ color: "var(--foreground)" }}>
+            {assessments.length}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl p-4" style={{ border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
+          <p className="text-xs uppercase tracking-wide font-semibold" style={{ color: "var(--foreground-muted)" }}>
+            Active
+          </p>
+          <p className="text-2xl font-bold mt-1" style={{ color: "var(--emerald-signal)" }}>
+            {
+              assessments.filter(
+                (a) => a.status === "started" || a.status === "active",
+              ).length
+            }
+          </p>
+        </div>
+        <div className="bg-white rounded-xl p-4" style={{ border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
+          <p className="text-xs uppercase tracking-wide font-semibold" style={{ color: "var(--foreground-muted)" }}>
+            Pending
+          </p>
+          <p className="text-2xl font-bold mt-1" style={{ color: "var(--amber-signal)" }}>
+            {
+              assessments.filter((a) => a.status === "not_started" || !a.status)
+                .length
+            }
+          </p>
+        </div>
+        <div className="bg-white rounded-xl p-4" style={{ border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
+          <p className="text-xs uppercase tracking-wide font-semibold" style={{ color: "var(--foreground-muted)" }}>
+            Completed
+          </p>
+          <p className="text-2xl font-bold mt-1" style={{ color: "var(--foreground-muted)" }}>
+            {assessments.filter((a) => a.status === "ended").length}
+          </p>
+        </div>
+      </div>
 
       {/* Assessment Cards Grid */}
       {loading && assessments.length === 0 ? (
@@ -683,73 +529,28 @@ export function AdminAssessmentsPage() {
           </div>
         </div>
       ) : (
-        <div
-          className="overflow-hidden"
-          style={{
-            border: "1px solid var(--border-fine)",
-            borderRadius: "var(--radius-xl)",
-            background: "var(--chalk-white, #fdfdff)",
-            boxShadow: "var(--shadow-card)",
-          }}
-        >
-          <div
-            className="hidden lg:grid grid-cols-[minmax(320px,1fr)_280px_240px] items-center gap-4 px-4 py-3 text-xs font-semibold uppercase"
-            style={{
-              color: "var(--foreground-muted)",
-              letterSpacing: "0.04em",
-              background: "var(--surface-muted)",
-              borderBottom: "1px solid var(--border-fine)",
-            }}
-          >
-            <span>Assessment</span>
-            <span>Status</span>
-            <span>Records</span>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((assessment) => {
             const subjectName =
-              assessment.subject?.name ||
-              subjectNameById.get(assessment.subjectId || "") ||
-              "Subject";
+              subjectNameById.get(assessment.subjectId || "") || "Subject";
             const className =
-              assessment.class?.name ||
-              classNameById.get(assessment.classId || "") ||
-              "Class";
+              classNameById.get(assessment.classId || "") || "Class";
             const statusStyle = getStatusStyle(assessment.status);
             const Icon = getAssessmentIcon(subjectName);
             const iconBg = getIconBg(subjectName);
-            const published = isAssessmentPublished(assessment);
-            const approvalStyle = getApprovalStyle(published);
-            const submissions =
-              (assessment as any)._count?.submissions ??
-              (assessment as any).submittedCount ??
-              (assessment as any).submissionCount ??
-              "0";
-            const totalMarks = assessment.totalMarks ?? "—";
-            const duration = assessment.durationMins ?? assessment.duration ?? "—";
 
             return (
               <div
                 key={assessment.id}
-                className="grid grid-cols-1 lg:grid-cols-[minmax(320px,1fr)_280px_240px] gap-3 lg:gap-4 px-4 py-4 lg:items-center transition-colors"
-                style={{
-                  borderBottom: "1px solid var(--border-fine)",
-                  background: "var(--chalk-white, #fdfdff)",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background =
-                    "color-mix(in oklch, var(--violet-tint) 22%, white)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background =
-                    "var(--chalk-white, #fdfdff)")
-                }
+                className="bg-white p-5 transition-all"
+                style={{ borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}
               >
                 {/* Card Header */}
-                <div className="flex items-start gap-3 min-w-0">
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-10 h-10 flex items-center justify-center flex-shrink-0"
-                      style={{ borderRadius: "var(--radius-md)", ...iconBg }}
+                      className="w-11 h-11 flex items-center justify-center flex-shrink-0"
+                      style={{ borderRadius: "var(--radius-lg)", ...iconBg }}
                     >
                       <Icon className="w-5 h-5" />
                     </div>
@@ -792,16 +593,6 @@ export function AdminAssessmentsPage() {
                       style={{ borderRadius: "var(--radius-sm)", background: statusStyle.background, color: statusStyle.color }}
                     >
                       {statusStyle.label}
-                    </span>
-                    <span
-                      className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium"
-                      style={{
-                        borderRadius: "var(--radius-sm)",
-                        background: approvalStyle.background,
-                        color: approvalStyle.color,
-                      }}
-                    >
-                      {approvalStyle.label}
                     </span>
                     <span
                       className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium"
@@ -848,61 +639,21 @@ export function AdminAssessmentsPage() {
                   </div>
                 </div>
 
-                <div
-                  className="flex flex-wrap gap-2 lg:col-span-3 pt-3"
-                  style={{ borderTop: "1px solid var(--border-fine)" }}
+                {/* View Details Button */}
+                <Link
+                  href={`/RMS/assessments/${assessment.id}`}
+                  className="block"
                 >
                   <button
-                    onClick={() => handlePublishToggle(assessment, !published)}
-                    className="h-9 px-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
-                    style={{
-                      borderRadius: "var(--radius-md)",
-                      border: "0",
-                      color: "white",
-                      background: published
-                        ? "var(--foreground-muted)"
-                        : "var(--violet-ink)",
-                    }}
+                    className="w-full h-10 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+                    style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", color: "var(--foreground)", background: "transparent" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-muted)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
-                    {published ? (
-                      <>
-                        <X className="w-4 h-4" />
-                        <span>Unpublish</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-4 h-4" />
-                        <span>Approve & Publish</span>
-                      </>
-                    )}
+                    <Eye className="w-4 h-4" />
+                    View Details
                   </button>
-                  <Link
-                    href={`/RMS/assessments/${assessment.id}`}
-                    className="h-9 px-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
-                    style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", color: "var(--foreground)", background: "transparent" }}
-                  >
-                    <Edit className="w-4 h-4" />
-                    Manage
-                  </Link>
-                  <Link
-                    href={`/RMS/scores?assessmentId=${assessment.id}`}
-                    className="h-9 px-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
-                    style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", color: "var(--foreground)", background: "transparent" }}
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                    Scores
-                  </Link>
-                  {assessment.isOnline !== false && (
-                    <Link
-                      href={`/RMS/cbt/exams/${assessment.id}`}
-                      className="h-9 px-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
-                      style={{ borderRadius: "var(--radius-md)", border: "1px solid color-mix(in oklch, var(--violet-ink) 30%, transparent)", color: "var(--violet-ink)", background: "var(--violet-tint)" }}
-                    >
-                      <Send className="w-4 h-4" />
-                      Questions & Results
-                    </Link>
-                  )}
-                </div>
+                </Link>
               </div>
             );
           })}

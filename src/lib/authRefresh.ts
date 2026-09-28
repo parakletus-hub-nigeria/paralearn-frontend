@@ -4,7 +4,6 @@ import { updateAccessToken } from "@/reduxToolKit/user/userSlice";
 import { tokenManager } from "./tokenManager";
 import { routespath } from "./routepath";
 import { getSubdomain } from "./subdomainManager";
-import { applyTenantIdHeaders, getTenantIdFromState } from "./tenantHeaders";
 
 let refreshPromise: Promise<any> | null = null;
 
@@ -26,7 +25,6 @@ export const performTokenRefresh = async (): Promise<string | null> => {
       if (subdomain) {
         headers["X-Tenant-Subdomain"] = subdomain;
       }
-      applyTenantIdHeaders(headers, getTenantIdFromState(state));
 
       const response = await axios.get(
         `/api/proxy${routespath.API_REFRESH}`,

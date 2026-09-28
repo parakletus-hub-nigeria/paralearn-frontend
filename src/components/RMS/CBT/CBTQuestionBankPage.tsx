@@ -257,10 +257,10 @@ export function CBTQuestionBankPage() {
         <div className="bg-white py-16 text-center" style={{ borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
           <FileQuestion className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--border-medium)" }} />
           <p className="font-medium" style={{ color: "var(--foreground-muted)" }}>No CBT exams found</p>
-          <p className="text-sm mt-1" style={{ color: "var(--foreground-muted)", opacity: 0.7 }}>Create a CBT assessment first, then add questions here.</p>
-          <Link href="/RMS/assessments">
+          <p className="text-sm mt-1" style={{ color: "var(--foreground-muted)", opacity: 0.7 }}>Create a CBT exam first, then add questions here.</p>
+          <Link href="/RMS/cbt/exams">
             <Button className="mt-4 gap-2 text-white" style={{ backgroundColor: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}>
-              <Plus className="w-4 h-4" /> Create Assessment
+              <Plus className="w-4 h-4" /> Create Exam
             </Button>
           </Link>
         </div>

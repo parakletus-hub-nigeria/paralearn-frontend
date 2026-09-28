@@ -2,10 +2,10 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import apiClient from "@/lib/api";
-import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, Receipt } from "lucide-react";
-import { StudentHeader } from "@/components/Student/StudentHeader";
+import { Button } from "@/components/ui/button";
+import { Loader2, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { routespath } from "@/lib/routepath";
 
 type CallbackState = "loading" | "success" | "failed";
@@ -19,111 +19,125 @@ function CallbackContent() {
   useEffect(() => {
     if (!reference) {
       setState("failed");
-      setMessage("No transaction reference was found in the payment callback.");
+      setMessage("No transaction reference found in callback.");
       return;
     }
 
+    // Attempt verification via /fees/payments/verify?reference=...
     apiClient
       .get("/fees/payments/verify", { params: { reference } })
-      .then((res) => {
-        const data = res.data?.data ?? res.data;
-        const status = data?.status || res.data?.status;
+      .then((r) => {
+        const data = r.data?.data ?? r.data;
+        const status = data?.status || r.data?.status;
         if (status === "success" || status === "SUCCESS" || status === "PAID") {
           setState("success");
         } else {
           setState("failed");
-          setMessage(res.data?.message || "Payment verification could not be confirmed.");
+          setMessage(r.data?.message || "Payment verification could not be confirmed.");
         }
       })
       .catch(() => {
+        // Fallback to path param /fees/payments/verify/:reference
         apiClient
           .get(`/fees/payments/verify/${encodeURIComponent(reference)}`)
-          .then((res) => {
-            const data = res.data?.data ?? res.data;
-            const status = data?.status || res.data?.status;
+          .then((r) => {
+            const data = r.data?.data ?? r.data;
+            const status = data?.status || r.data?.status;
             if (status === "success" || status === "SUCCESS" || status === "PAID") {
               setState("success");
             } else {
               setState("failed");
-              setMessage(res.data?.message || "Payment could not be verified.");
+              setMessage(r.data?.message || "Payment could not be verified.");
             }
           })
           .catch((err: any) => {
             setState("failed");
             setMessage(
               err?.response?.data?.message ||
-                "Payment verification failed. If your account was debited, contact your school bursar with the transaction reference.",
+                "Payment verification failed. If your bank account was debited, please contact your school bursar with your transaction reference."
             );
           });
       });
   }, [reference]);
 
-  const isSuccess = state === "success";
-  const isFailed = state === "failed";
-  const iconBg = isSuccess
-    ? "var(--emerald-tint)"
-    : isFailed
-      ? "var(--amber-tint)"
-      : "var(--surface-muted)";
-  const iconColor = isSuccess
-    ? "var(--emerald-signal)"
-    : isFailed
-      ? "var(--amber-signal)"
-      : "var(--violet-ink)";
-
   return (
-    <div className="mx-auto max-w-xl p-6 text-center" style={{ background: "var(--chalk-white)", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)" }}>
-      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center" style={{ background: iconBg, color: iconColor, borderRadius: "var(--radius-xl)" }}>
-        {state === "loading" ? (
-          <Loader2 className="h-8 w-8 animate-spin" />
-        ) : isSuccess ? (
-          <CheckCircle2 className="h-8 w-8" />
-        ) : (
-          <AlertTriangle className="h-8 w-8" />
-        )}
-      </div>
-
-      <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em]" style={{ color: iconColor }}>
-        Payment Verification
-      </p>
-      <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--foreground)" }}>
-        {state === "loading" ? "Verifying payment" : isSuccess ? "Payment confirmed" : "Verification pending"}
-      </h1>
-      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed" style={{ color: "var(--foreground-muted)" }}>
-        {state === "loading"
-          ? "We are confirming the transaction with Paystack. Keep this page open."
-          : isSuccess
-            ? "Your school fee payment has been verified. Report card access has been updated."
-            : message}
-      </p>
-
-      {reference && (
-        <div className="mt-6 p-4 text-left" style={{ background: "var(--surface-muted)", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-lg)" }}>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--foreground-muted)" }}>
-            <Receipt className="h-4 w-4" />
-            Transaction reference
+    <div className="w-full max-w-md bg-white p-8 rounded-2xl border border-border shadow-xs text-center space-y-6">
+      {state === "loading" && (
+        <div className="space-y-4 py-4">
+          <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
           </div>
-          <p className="mt-1 truncate text-sm font-bold tabular-nums" style={{ color: "var(--foreground)" }}>{reference}</p>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Verifying Your Payment</h1>
+            <p className="text-xs text-muted-foreground mt-1">
+              Communicating with Paystack gateway... Please do not close or refresh this page.
+            </p>
+          </div>
+          {reference && (
+            <p className="font-mono text-2xs bg-slate-100 py-1.5 px-3 rounded-lg text-slate-600 truncate">
+              Ref: {reference}
+            </p>
+          )}
         </div>
       )}
 
-      {state !== "loading" && (
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Link
-            href={routespath.STUDENT_DASHBOARD}
-            className="inline-flex h-11 items-center justify-center gap-2 px-5 text-sm font-semibold text-white"
-            style={{ background: "var(--violet-ink)", borderRadius: "var(--radius-md)" }}
-          >
-            Student Dashboard
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href={routespath.STUDENT_FEES}
-            className="inline-flex h-11 items-center justify-center px-5 text-sm font-semibold"
-            style={{ background: "var(--chalk-white)", color: "var(--foreground)", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-md)" }}
-          >
-            Fee Statement
-          </Link>
+      {state === "success" && (
+        <div className="space-y-4 py-2">
+          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="h-9 w-9 text-emerald-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-emerald-950">Payment Confirmed!</h1>
+            <p className="text-sm text-slate-600 mt-1">
+              Your school fee payment has been successfully verified. Your academic report cards are now unlocked.
+            </p>
+          </div>
+
+          {reference && (
+            <div className="p-3 bg-slate-50 rounded-xl border text-xs">
+              <span className="text-muted-foreground">Transaction Reference</span>
+              <p className="font-mono font-bold text-slate-900 mt-0.5">{reference}</p>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2.5 pt-2">
+            <Button asChild className="gap-2 bg-emerald-600 hover:bg-emerald-700 font-semibold">
+              <Link href={routespath.STUDENT_DASHBOARD}>
+                Go to Student Dashboard <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href={routespath.STUDENT_FEES}>View Updated Fee Statement</Link>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {state === "failed" && (
+        <div className="space-y-4 py-2">
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+            <AlertTriangle className="h-9 w-9 text-amber-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-amber-950">Verification Pending</h1>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">{message}</p>
+          </div>
+
+          {reference && (
+            <div className="p-3 bg-slate-50 rounded-xl border text-xs">
+              <span className="text-muted-foreground">Transaction Reference</span>
+              <p className="font-mono font-bold text-slate-900 mt-0.5">{reference}</p>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2.5 pt-2">
+            <Button asChild variant="outline">
+              <Link href={routespath.STUDENT_FEES}>Back to Fee Portal</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href={routespath.STUDENT_DASHBOARD}>Return to Dashboard</Link>
+            </Button>
+          </div>
         </div>
       )}
     </div>
@@ -132,19 +146,16 @@ function CallbackContent() {
 
 export default function PaymentCallbackPage() {
   return (
-    <div className="min-h-screen" style={{ background: "var(--surface-muted)" }}>
-      <StudentHeader />
-      <main className="px-4 py-16 sm:px-6 lg:px-8">
-        <Suspense
-          fallback={
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--violet-ink)" }} />
-            </div>
-          }
-        >
-          <CallbackContent />
-        </Suspense>
-      </main>
+    <div className="flex min-h-screen items-center justify-center bg-slate-50/50 p-4 sm:p-6">
+      <Suspense
+        fallback={
+          <div className="flex justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        }
+      >
+        <CallbackContent />
+      </Suspense>
     </div>
   );
 }

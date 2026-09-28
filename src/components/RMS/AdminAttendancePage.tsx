@@ -7,7 +7,6 @@ import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import { fetchClasses } from "@/reduxToolKit/admin/adminThunks";
 import { getTenantInfo } from "@/reduxToolKit/user/userThunks";
 import { useGetDailyClassAttendanceQuery, useBulkUpdateAttendanceMutation } from "@/reduxToolKit/api/endpoints/attendance";
-import { useGetClassesLookupQuery } from "@/reduxToolKit/api";
 import { Header } from "@/components/RMS/header";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -39,10 +38,9 @@ const ATTENDANCE_STATUS = {
 } as const;
 
 type AttendanceStatusType = keyof typeof ATTENDANCE_STATUS;
-type EffectiveAttendanceStatus = AttendanceStatusType | "UNMARKED";
 
 interface AttendanceRecord {
-  status: EffectiveAttendanceStatus;
+  status: AttendanceStatusType;
   remarks: string;
 }
 
@@ -54,7 +52,6 @@ export function AdminAttendancePage() {
   // State
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Draft State: Stores ONLY the changes made by the user.
@@ -63,31 +60,27 @@ export function AdminAttendancePage() {
   >({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  const { data: classesLookup = [] } = useGetClassesLookupQuery();
-  const availableClasses = classesLookup.length > 0 ? classesLookup : (classes || []);
-
   // Fetch Tenant Info on mount
   useEffect(() => {
     dispatch(getTenantInfo());
     dispatch(fetchClasses(undefined)); // Fetch all classes (matching AdminClassesPage)
   }, [dispatch]);
 
-  // Ensure first available class is automatically selected on mount
-  const effectiveClassId = selectedClassId || (availableClasses.length > 0 ? availableClasses[0].id : "");
-
+  // Set default class if available and not selected
   useEffect(() => {
-    if (!selectedClassId && availableClasses.length > 0) {
-      setSelectedClassId(availableClasses[0].id);
+    if (!selectedClassId && classes && classes.length > 0) {
+      setSelectedClassId(classes[0].id);
     }
-  }, [availableClasses, selectedClassId]);
+  }, [classes, selectedClassId]);
+
 
   // Format date for API
   const dateStr = format(currentDate, "yyyy-MM-dd");
 
   // Fetch Attendance Query
   const { data: attendanceData, isLoading, isError, refetch } = useGetDailyClassAttendanceQuery(
-    { classId: effectiveClassId, date: dateStr },
-    { skip: !effectiveClassId }
+    { classId: selectedClassId, date: dateStr },
+    { skip: !selectedClassId }
   );
 
   const [bulkUpdate, { isLoading: isSaving }] = useBulkUpdateAttendanceMutation();
@@ -116,7 +109,7 @@ export function AdminAttendancePage() {
   const getEffectiveRecord = (record: any): AttendanceRecord => {
     const draft = draftAttendance[record.enrollmentId];
     return {
-      status: draft?.status || record.attendance?.status || "UNMARKED",
+      status: draft?.status || record.attendance?.status || "ABSENT",
       remarks: draft?.remarks !== undefined ? draft.remarks : (record.attendance?.remarks || ""),
     };
   };
@@ -163,26 +156,15 @@ export function AdminAttendancePage() {
       return;
     }
     try {
-      const records = attendanceData
-        .filter((record: any) => {
-          const hasDraft = Boolean(draftAttendance[record.enrollmentId]);
-          const existingStatus = record.attendance?.status;
-          return hasDraft || (existingStatus && existingStatus !== "UNMARKED");
-        })
-        .map((record: any) => {
+      const records = attendanceData.map((record: any) => {
         const effective = getEffectiveRecord(record);
         return {
           id: record.attendance?.id, // CRITICAL: This was missing in the original code, causing the backend to wipe untouched students on a 2nd save.
           enrollmentId: record.enrollmentId,
-          status: effective.status as AttendanceStatusType,
+          status: effective.status,
           remarks: effective.remarks,
         };
       });
-
-      if (records.length === 0) {
-        toast.warning("No attendance changes to save. Please mark at least one student.");
-        return;
-      }
 
       const presentCount = records.filter((r: any) => r.status === "PRESENT").length;
       const absentCount = records.filter((r: any) => r.status === "ABSENT").length;
@@ -218,16 +200,15 @@ export function AdminAttendancePage() {
 
   // Stats
   const stats = useMemo(() => {
-    if (!attendanceData) return { total: 0, present: 0, late: 0, absent: 0, marked: 0 };
-    let present = 0, late = 0, absent = 0, marked = 0;
+    if (!attendanceData) return { total: 0, present: 0, late: 0, absent: 0 };
+    let present = 0, late = 0, absent = 0;
     attendanceData.forEach((record: any) => {
       const { status } = getEffectiveRecord(record);
-      if (status !== "UNMARKED") marked++;
       if (status === "PRESENT") present++;
       else if (status === "LATE") late++;
-      else if (status === "ABSENT") absent++;
+      else absent++;
     });
-    return { total: attendanceData.length, present, late, absent, marked };
+    return { total: attendanceData.length, present, late, absent };
   }, [attendanceData, draftAttendance]);
 
   const getInitials = (f?: string, l?: string) =>
@@ -268,25 +249,25 @@ export function AdminAttendancePage() {
       />
 
       {/* Main Content */}
-      <div className="w-full space-y-4 sm:space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6">
         {/* Page Title */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>Admin Attendance</h1>
-            <p className="mt-1 text-xs sm:text-sm" style={{ color: "var(--foreground-muted)" }}>
+            <h1 className="text-3xl font-bold" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>Admin Attendance</h1>
+            <p className="mt-1" style={{ color: "var(--foreground-muted)" }}>
               Manage daily attendance for any class.
             </p>
           </div>
         </div>
 
         {/* Controls */}
-        <div className="bg-white p-3 sm:p-4 md:p-5 flex flex-col lg:flex-row gap-3 sm:gap-4 items-stretch lg:items-center justify-between" style={{ borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
+        <div className="bg-white p-4 flex flex-col lg:flex-row gap-4 items-center justify-between" style={{ borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
           <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto items-center">
             
             {/* Class Selector */}
             <div className="relative w-full md:w-64">
                 <Select
-                    value={effectiveClassId}
+                    value={selectedClassId}
                     onValueChange={(val) => {
                       if (hasUnsavedChanges) {
                         if (!confirm("You have unsaved attendance changes. Are you sure you want to switch classes? Your changes will be lost.")) {
@@ -302,7 +283,7 @@ export function AdminAttendancePage() {
                     <SelectValue placeholder="Select Class" />
                     </SelectTrigger>
                     <SelectContent>
-                    {availableClasses?.map((c: any) => (
+                    {classes?.map((c: any) => (
                         <SelectItem key={c.id} value={c.id}>
                         {c.name}
                         </SelectItem>
@@ -313,7 +294,7 @@ export function AdminAttendancePage() {
 
             {/* Date Picker */}
             <div className="relative w-full md:w-auto">
-                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                <Popover>
                     <PopoverTrigger 
                         className={cn(
                             buttonVariants({ variant: "outline" }),
@@ -343,7 +324,6 @@ export function AdminAttendancePage() {
                                 setCurrentDate(date as Date);
                                 setDraftAttendance({}); // Clear draft when switching date
                                 setHasUnsavedChanges(false);
-                                setIsCalendarOpen(false);
                               }
                             }}
                             disabled={(date) =>
@@ -369,7 +349,7 @@ export function AdminAttendancePage() {
                 onClick={handleMarkAllPresent}
                 className="h-11 font-bold px-6"
                 style={{ background: "var(--emerald-tint)", color: "var(--emerald-signal)", border: "1px solid color-mix(in oklch, var(--emerald-signal) 20%, transparent)", borderRadius: "var(--radius-md)" }}
-                disabled={!effectiveClassId || isLoading}
+                disabled={!selectedClassId || isLoading}
               >
                 <CheckCheck className="w-4 h-4 mr-2" />
                 Mark All Present
@@ -398,7 +378,7 @@ export function AdminAttendancePage() {
                 <TableRow>
                   <TableCell colSpan={5} className="h-40 text-center font-medium" style={{ color: "var(--crimson-signal)" }}>Failed to load attendance data. Please try again.</TableCell>
                 </TableRow>
-              ) : !effectiveClassId ? (
+              ) : !selectedClassId ? (
                 <TableRow>
                     <TableCell colSpan={5} className="h-40 text-center" style={{ color: "var(--foreground-muted)" }}>Please select a class to view attendance.</TableCell>
                 </TableRow>
@@ -465,12 +445,12 @@ export function AdminAttendancePage() {
                 <div className="flex flex-col gap-1 w-full max-w-md">
                     <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                         <span>Marked Progress</span>
-                        <span style={{ color: "var(--violet-ink)" }}>{stats.marked} / {stats.total} Students</span>
+                        <span style={{ color: "var(--violet-ink)" }}>{stats.present + stats.late + stats.absent} / {stats.total} Students</span>
                     </div>
                     <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "var(--surface-muted)" }}>
                         <div
                             className="h-full transition-all duration-500"
-                            style={{ width: `${stats.total ? (stats.marked / stats.total) * 100 : 0}%`, background: "var(--violet-ink)" }}
+                            style={{ width: `${stats.total ? ((stats.present + stats.late + stats.absent) / stats.total) * 100 : 0}%`, background: "var(--violet-ink)" }}
                         />
                     </div>
                 </div>

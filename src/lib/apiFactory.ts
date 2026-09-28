@@ -7,7 +7,6 @@ import { tokenManager } from "./tokenManager";
 import { routespath } from "./routepath";
 import { toast } from "sonner";
 import { getSubdomain } from "./subdomainManager";
-import { applyTenantIdHeaders, getTenantIdFromState } from "./tenantHeaders";
 
 // Token refresh queue — ensures only one refresh runs at a time.
 // Any 401s that arrive during a refresh are queued and replayed once refresh completes.
@@ -81,7 +80,6 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
         const k12Subdomain = state?.superAdmin?.k12Subdomain;
         const isSuperAdminRoute = (config.url || "").includes("/super-admin/");
         const effectiveSubdomain = isSuperAdminRoute && k12Subdomain ? k12Subdomain : subdomain;
-        const tenantId = getTenantIdFromState(state);
 
         // Normalize relative URLs to use the Next.js proxy route if not already prefixed
         if (
@@ -105,8 +103,6 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
             config.headers["X-Tenant-Subdomain"] = effectiveSubdomain;
           }
         }
-
-        applyTenantIdHeaders(config.headers, tenantId);
 
         // Identify if this is a login or password reset request for logging/warning purposes
         const isAuthAction =
@@ -311,9 +307,7 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
           errorInfo.data ||
           errorInfo.message !== "Unknown error"
         ) {
-          if (!(config as any)?.skipGlobalErrorLog) {
-            console.warn("[API Error]", errorInfo);
-          }
+          console.warn("[API Error]", errorInfo);
         }
       }
 

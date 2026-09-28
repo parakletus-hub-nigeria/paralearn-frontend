@@ -39,6 +39,7 @@ import {
 import { ProductTour } from "@/components/common/ProductTour";
 import Link from "next/link";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 const studentTourSteps = [
   {
@@ -129,33 +130,11 @@ export default function StudentDashboardPage() {
         const rawSubmissions = localStorage.getItem("offline_submissions");
         if (!rawSubmissions) return;
 
-        const allSavedRaw: any[] = JSON.parse(rawSubmissions);
-        if (!Array.isArray(allSavedRaw) || allSavedRaw.length === 0) {
+        const allSaved: any[] = JSON.parse(rawSubmissions);
+        if (!Array.isArray(allSaved) || allSaved.length === 0) {
           localStorage.removeItem("offline_submissions");
           return;
         }
-
-        const allSaved = allSavedRaw
-          .map((saved) => {
-            const payload = saved?.data
-              ? {
-                  assessmentId: saved.assessmentId || saved.data.assessmentId,
-                  ...saved.data,
-                  capturedAt: saved.capturedAt || saved.savedAt || saved.data.capturedAt,
-                  syncAttempts: saved.syncAttempts,
-                }
-              : saved;
-
-            if (!payload?.assessmentId) return null;
-
-            return {
-              ...payload,
-              clientSubmissionId:
-                payload.clientSubmissionId ||
-                `offline-${payload.assessmentId}-${payload.startedAt || payload.capturedAt || Date.now()}`,
-            };
-          })
-          .filter(Boolean);
 
         // Drop items that have been retried too many times (stale/already submitted)
         const MAX_RETRIES = 3;
@@ -236,41 +215,40 @@ export default function StudentDashboardPage() {
   }).length;
 
   return (
-    <div className="min-h-screen flex flex-col relative font-sans overflow-x-hidden" style={{ background: "var(--surface-muted)" }}>
+    <div className="min-h-screen bg-[#f1f5f9] flex flex-col relative font-sans overflow-x-hidden">
+      {/* Mesh Gradient Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 bg-[#e0e7ff] opacity-60" />
+        <div className="absolute top-0 left-0 w-full h-[800px] bg-[radial-gradient(at_0%_0%,hsla(253,16%,7%,1)_0,transparent_50%)] opactity-80" />
+        <div className="absolute top-0 left-[50%] w-full h-[600px] bg-[radial-gradient(at_50%_0%,hsla(225,39%,30%,1)_0,transparent_50%)] opacity-60" />
+        <div className="absolute top-0 right-0 w-full h-[600px] bg-[radial-gradient(at_100%_0%,hsla(339,49%,30%,1)_0,transparent_50%)] opacity-50" />
+      </div>
+
       <div className="relative z-10 w-full">
         <ProductTour tourKey="student_dashboard" steps={studentTourSteps} />
-        <StudentHeader />
+        <StudentHeader transparent={true} />
 
         <main className="w-full pb-20">
-          <div className="relative pt-10 pb-8 px-4">
-            <div className="max-w-7xl mx-auto">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] mb-2" style={{ color: "var(--violet-ink)" }}>
-                Student Portal
-              </p>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-2" style={{ color: "var(--foreground)" }}>
+          <div className="relative pt-16 pb-24 text-center px-4">
+            <div className="max-w-4xl mx-auto space-y-4">
+              <span className="inline-block py-1 px-3 text-xs font-semibold tracking-wider uppercase mb-2" style={{ borderRadius: "var(--radius-xl)", background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.85)" }}>
+                Online Assessment Platform
+              </span>
+              <h1 className="text-4xl md:text-6xl font-serif font-bold mb-4 drop-shadow-sm tracking-tight" style={{ color: "white" }}>
                 Welcome back, {user?.firstName || "Student"}!
               </h1>
-              <p className="text-sm md:text-base max-w-2xl leading-relaxed" style={{ color: "var(--foreground-muted)" }}>
-                {upcomingCount > 0 ? (
-                  <>
-                    You have
-                    <span className="font-bold px-1" style={{ color: "var(--foreground)" }}>
-                      {upcomingCount} upcoming assessment{upcomingCount !== 1 ? "s" : ""}
-                    </span>
-                    waiting for you.
-                  </>
-                ) : visibleAssessments.length > 0 ? (
-                  <>
-                    You have no pending assessments waiting for you ({visibleAssessments.length} total assessment{visibleAssessments.length !== 1 ? "s" : ""} on record).
-                  </>
-                ) : (
-                  <>You have no assessments assigned at this time.</>
-                )}
+              <p className="text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed" style={{ color: "rgba(255,255,255,0.8)" }}>
+                Your academic journey continues. You have{" "}
+                <span className="font-bold px-1" style={{ color: "white", borderBottom: "2px solid rgba(255,255,255,0.5)" }}>
+                  {activeList.length} assessment
+                  {activeList.length !== 1 ? "s" : ""}
+                </span>{" "}
+                waiting for you.
               </p>
             </div>
           </div>
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10">
             {/* Stats Grid */}
             <div className="student-stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
               <div className="p-5 flex items-center gap-4 cursor-default" style={{ background: "rgba(255,255,255,0.92)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
@@ -317,7 +295,7 @@ export default function StudentDashboardPage() {
 
               <Link
                 href="/student/fees"
-                className="p-5 flex items-center justify-between gap-3 group transition-colors"
+                className="p-5 flex items-center justify-between gap-3 group transition-transform hover:scale-105"
                 style={{ background: "rgba(255,255,255,0.95)", borderRadius: "var(--radius-xl)", border: "1px solid #10b981", boxShadow: "0 4px 12px rgba(16,185,129,0.15)" }}
               >
                 <div className="flex items-center gap-3">
@@ -339,54 +317,82 @@ export default function StudentDashboardPage() {
 
             {/* Tab Switcher */}
             <div className="flex items-center justify-center mb-10 overflow-x-auto no-scrollbar px-2">
-              <div className="p-1.5 flex gap-1 sm:gap-2 shrink-0" style={{ background: "white", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
+              <div className="p-1.5 flex gap-1 sm:gap-2 shrink-0" style={{ background: "rgba(255,255,255,0.15)", borderRadius: "var(--radius-xl)", border: "1px solid rgba(255,255,255,0.2)" }}>
                 <button
                   onClick={() => setActiveTab("active")}
-                  className="relative px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold transition-colors flex items-center gap-1.5 sm:gap-2"
-                  style={{ borderRadius: "var(--radius-lg)", color: activeTab === "active" ? "var(--violet-ink)" : "var(--foreground-muted)", background: activeTab === "active" ? "var(--violet-tint)" : "transparent" }}
+                  className="relative px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 sm:gap-2"
+                  style={{ borderRadius: "var(--radius-lg)", color: activeTab === "active" ? "var(--violet-ink)" : "rgba(255,255,255,0.7)" }}
                 >
-                  <PlayCircle className="w-4 h-4 relative z-10" style={{ color: activeTab === "active" ? "var(--violet-ink)" : "var(--foreground-muted)" }} />
+                  {activeTab === "active" && (
+                    <motion.div
+                      layoutId="activeTabBg"
+                      className="absolute inset-0 z-0"
+                      style={{ background: "white", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)" }}
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <PlayCircle className="w-4 h-4 relative z-10" style={{ color: activeTab === "active" ? "var(--violet-ink)" : "rgba(255,255,255,0.5)" }} />
                   <span className="relative z-10">Active Exams</span>
                   {activeList.length > 0 && (
-                    <span
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
                       className="relative z-10 ml-1 px-2 py-0.5 text-[10px] font-black hidden sm:inline-block"
-                      style={{ borderRadius: "var(--radius-xl)", background: activeTab === "active" ? "white" : "var(--surface-muted)", color: activeTab === "active" ? "var(--violet-ink)" : "var(--foreground-muted)" }}
+                      style={{ borderRadius: "var(--radius-xl)", background: activeTab === "active" ? "var(--violet-tint)" : "rgba(255,255,255,0.2)", color: activeTab === "active" ? "var(--violet-ink)" : "rgba(255,255,255,0.8)" }}
                     >
                       {activeList.length}
-                    </span>
+                    </motion.span>
                   )}
                 </button>
                 <button
                   onClick={() => setActiveTab("ended")}
-                  className="relative px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold transition-colors flex items-center gap-1.5 sm:gap-2"
-                  style={{ borderRadius: "var(--radius-lg)", color: activeTab === "ended" ? "var(--crimson-signal)" : "var(--foreground-muted)", background: activeTab === "ended" ? "var(--crimson-tint)" : "transparent" }}
+                  className="relative px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 sm:gap-2"
+                  style={{ borderRadius: "var(--radius-lg)", color: activeTab === "ended" ? "var(--crimson-signal)" : "rgba(255,255,255,0.7)" }}
                 >
-                  <Clock className="w-4 h-4 relative z-10" style={{ color: activeTab === "ended" ? "var(--crimson-signal)" : "var(--foreground-muted)" }} />
+                  {activeTab === "ended" && (
+                    <motion.div
+                      layoutId="activeTabBg"
+                      className="absolute inset-0 z-0"
+                      style={{ background: "white", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)" }}
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <Clock className="w-4 h-4 relative z-10" style={{ color: activeTab === "ended" ? "var(--crimson-signal)" : "rgba(255,255,255,0.5)" }} />
                   <span className="relative z-10">History</span>
                   {endedList.length > 0 && (
-                    <span
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
                       className="relative z-10 ml-1 px-2 py-0.5 text-[10px] font-black hidden sm:inline-block"
-                      style={{ borderRadius: "var(--radius-xl)", background: activeTab === "ended" ? "white" : "var(--surface-muted)", color: activeTab === "ended" ? "var(--crimson-signal)" : "var(--foreground-muted)" }}
+                      style={{ borderRadius: "var(--radius-xl)", background: activeTab === "ended" ? "var(--crimson-tint)" : "rgba(255,255,255,0.2)", color: activeTab === "ended" ? "var(--crimson-signal)" : "rgba(255,255,255,0.8)" }}
                     >
                       {endedList.length}
-                    </span>
+                    </motion.span>
                   )}
                 </button>
 
                 <button
                   onClick={() => setActiveTab("reports")}
-                  className="relative px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold transition-colors flex items-center gap-1.5 sm:gap-2"
-                  style={{ borderRadius: "var(--radius-lg)", color: activeTab === "reports" ? "var(--emerald-signal)" : "var(--foreground-muted)", background: activeTab === "reports" ? "var(--emerald-tint)" : "transparent" }}
+                  className="relative px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 sm:gap-2"
+                  style={{ borderRadius: "var(--radius-lg)", color: activeTab === "reports" ? "var(--emerald-signal)" : "rgba(255,255,255,0.7)" }}
                 >
-                  <BookOpen className="w-4 h-4 relative z-10" style={{ color: activeTab === "reports" ? "var(--emerald-signal)" : "var(--foreground-muted)" }} />
+                  {activeTab === "reports" && (
+                    <motion.div
+                      layoutId="activeTabBg"
+                      className="absolute inset-0 z-0"
+                      style={{ background: "white", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)" }}
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <BookOpen className="w-4 h-4 relative z-10" style={{ color: activeTab === "reports" ? "var(--emerald-signal)" : "rgba(255,255,255,0.5)" }} />
                   <span className="relative z-10">Report Cards</span>
                 </button>
 
                 <Link
                   href="/student/fees"
-                  className="relative px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold transition-colors flex items-center gap-1.5 sm:gap-2 rounded-lg text-emerald-700 hover:bg-emerald-50"
+                  className="relative px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 sm:gap-2 rounded-lg text-emerald-200 hover:text-white hover:bg-emerald-700/30"
                 >
-                  <Banknote className="w-4 h-4 text-emerald-700" />
+                  <Banknote className="w-4 h-4 text-emerald-300" />
                   <span>Pay Fees</span>
                 </Link>
               </div>
@@ -407,9 +413,9 @@ export default function StudentDashboardPage() {
                 downloadingPdf={downloadingPdf}
               />
             ) : loading ? (
-              <div className="flex flex-col items-center justify-center py-20" style={{ background: "white", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)" }}>
-                <div className="animate-spin rounded-full h-12 w-12 mb-4" style={{ border: "3px solid var(--border-fine)", borderTopColor: "var(--violet-ink)" }} />
-                <p className="font-medium" style={{ color: "var(--foreground-muted)" }}>
+              <div className="flex flex-col items-center justify-center py-20" style={{ background: "rgba(255,255,255,0.12)", borderRadius: "var(--radius-xl)", border: "1px solid rgba(255,255,255,0.15)" }}>
+                <div className="animate-spin rounded-full h-12 w-12 mb-4" style={{ border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "white" }} />
+                <p className="font-medium" style={{ color: "white" }}>
                   Loading your assessments...
                 </p>
               </div>
@@ -429,27 +435,29 @@ export default function StudentDashboardPage() {
                 </button>
               </div>
             ) : currentList.length === 0 ? (
-              <div className="p-16 text-center max-w-3xl mx-auto" style={{ background: "white", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)" }}>
-                <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: "var(--surface-muted)" }}>
+              <div className="p-16 text-center max-w-3xl mx-auto" style={{ background: "rgba(255,255,255,0.12)", borderRadius: "var(--radius-xl)", border: "1px solid rgba(255,255,255,0.15)" }}>
+                <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: "rgba(255,255,255,0.15)" }}>
                   {activeTab === "active" ? (
-                    <ClipboardList className="w-12 h-12" style={{ color: "var(--foreground-muted)" }} />
+                    <ClipboardList className="w-12 h-12" style={{ color: "rgba(255,255,255,0.6)" }} />
                   ) : (
-                    <Clock className="w-12 h-12" style={{ color: "var(--foreground-muted)" }} />
+                    <Clock className="w-12 h-12" style={{ color: "rgba(255,255,255,0.6)" }} />
                   )}
                 </div>
-                <h3 className="text-2xl font-bold mb-3" style={{ color: "var(--foreground)" }}>
+                <h3 className="text-2xl font-bold mb-3 font-serif" style={{ color: "white" }}>
                   {activeTab === "active" ? "All Caught Up!" : "No History Yet"}
                 </h3>
-                <p className="text-lg max-w-md mx-auto" style={{ color: "var(--foreground-muted)" }}>
+                <p className="text-lg max-w-md mx-auto" style={{ color: "rgba(255,255,255,0.7)" }}>
                   {activeTab === "active"
                     ? "You have no pending assessments at the moment. Enjoy your free time!"
                     : "Your completed and expired exams will appear here in the future."}
                 </p>
               </div>
             ) : (
-              <div
+              <motion.div
+                layout
                 className="student-assessments-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20"
               >
+                <AnimatePresence mode="popLayout">
                   {currentList.map((assessment, idx) => {
                     const subjectName = assessment.subject?.name || "General";
                     // ... (rest of normalization logic inside map)
@@ -504,8 +512,13 @@ export default function StudentDashboardPage() {
                         : "var(--violet-ink)";
 
                     return (
-                      <div
+                      <motion.div
                         key={assessment.id}
+                        layout
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.4, delay: idx * 0.05 }}
                         className="group flex flex-col h-auto min-h-[340px] relative overflow-hidden hover:-translate-y-2 transition-all duration-300"
                         style={{ background: "rgba(255,255,255,0.92)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)", padding: "1.5rem" }}
                       >
@@ -597,10 +610,11 @@ export default function StudentDashboardPage() {
                             </Link>
                           )}
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })}
-              </div>
+                </AnimatePresence>
+              </motion.div>
             )}
           </div>
         </main>
@@ -749,11 +763,7 @@ function StudentReportCardTab({
     }
   };
 
-  const emptyCardStyle: React.CSSProperties = {
-    background: "white",
-    borderRadius: "var(--radius-xl)",
-    border: "1px solid var(--border-fine)",
-  };
+  const emptyCardStyle: React.CSSProperties = { background: "rgba(255,255,255,0.12)", borderRadius: "var(--radius-xl)", border: "1px solid rgba(255,255,255,0.15)" };
 
   return (
     <div className="space-y-6 pb-20">
@@ -789,36 +799,36 @@ function StudentReportCardTab({
       {/* States */}
       {!selectedSession || !selectedTerm ? (
         <div className="p-12 text-center" style={emptyCardStyle}>
-          <BookOpen className="w-14 h-14 mx-auto mb-4" style={{ color: "var(--foreground-muted)" }} />
-          <p className="font-semibold text-lg" style={{ color: "var(--foreground)" }}>Select a session and term</p>
-          <p className="mt-1 text-sm" style={{ color: "var(--foreground-muted)" }}>Your report cards will appear here once you choose an academic period.</p>
+          <BookOpen className="w-14 h-14 mx-auto mb-4" style={{ color: "rgba(255,255,255,0.4)" }} />
+          <p className="font-semibold text-lg" style={{ color: "white" }}>Select a session and term</p>
+          <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>Your report cards will appear here once you choose an academic period.</p>
         </div>
       ) : reportLoading ? (
         <div className="p-12 text-center" style={emptyCardStyle}>
-          <div className="animate-spin rounded-full h-10 w-10 mx-auto mb-4" style={{ border: "3px solid var(--border-fine)", borderTopColor: "var(--violet-ink)" }} />
-          <p className="font-medium" style={{ color: "var(--foreground-muted)" }}>Loading your report card...</p>
+          <div className="animate-spin rounded-full h-10 w-10 mx-auto mb-4" style={{ border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "white" }} />
+          <p className="font-medium" style={{ color: "white" }}>Loading your report card…</p>
         </div>
       ) : reportError ? (
         <div className="p-12 text-center" style={emptyCardStyle}>
           <AlertCircle className="w-14 h-14 mx-auto mb-4" style={{ color: "var(--crimson-signal)" }} />
-          <p className="font-semibold text-lg" style={{ color: "var(--foreground)" }}>Could Not Load Report Card</p>
-          <p className="mt-1 text-sm max-w-sm mx-auto" style={{ color: "var(--foreground-muted)" }}>
+          <p className="font-semibold text-lg" style={{ color: "white" }}>Could Not Load Report Card</p>
+          <p className="mt-1 text-sm max-w-sm mx-auto" style={{ color: "rgba(255,255,255,0.65)" }}>
             There was a problem fetching your report card. Please try again or contact your school administrator.
           </p>
         </div>
       ) : !isAvailable ? (
         <div className="p-12 text-center" style={emptyCardStyle}>
-          <FileText className="w-14 h-14 mx-auto mb-4" style={{ color: "var(--foreground-muted)" }} />
-          <p className="font-semibold text-lg" style={{ color: "var(--foreground)" }}>No Report Card Available</p>
-          <p className="mt-1 text-sm max-w-sm mx-auto" style={{ color: "var(--foreground-muted)" }}>
+          <FileText className="w-14 h-14 mx-auto mb-4" style={{ color: "rgba(255,255,255,0.35)" }} />
+          <p className="font-semibold text-lg" style={{ color: "white" }}>No Report Card Available</p>
+          <p className="mt-1 text-sm max-w-sm mx-auto" style={{ color: "rgba(255,255,255,0.65)" }}>
             No grades have been recorded for this period yet. Check back after your teacher submits scores.
           </p>
         </div>
       ) : hasNoScores ? (
         <div className="p-12 text-center" style={emptyCardStyle}>
-          <BarChart3 className="w-14 h-14 mx-auto mb-4" style={{ color: "var(--foreground-muted)" }} />
-          <p className="font-semibold text-lg" style={{ color: "var(--foreground)" }}>No Scores Recorded Yet</p>
-          <p className="mt-1 text-sm max-w-sm mx-auto" style={{ color: "var(--foreground-muted)" }}>
+          <BarChart3 className="w-14 h-14 mx-auto mb-4" style={{ color: "rgba(255,255,255,0.35)" }} />
+          <p className="font-semibold text-lg" style={{ color: "white" }}>No Scores Recorded Yet</p>
+          <p className="mt-1 text-sm max-w-sm mx-auto" style={{ color: "rgba(255,255,255,0.65)" }}>
             Your teacher hasn't uploaded scores for this term yet. Report cards will appear here once scores are available.
           </p>
         </div>

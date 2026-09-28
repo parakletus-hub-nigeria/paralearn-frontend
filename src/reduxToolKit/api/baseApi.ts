@@ -36,15 +36,6 @@ export const axiosBaseQuery: BaseQueryFn<
       params,
       headers: mergedHeaders,
     });
-    // Preserve paginated structures ({ data, pagination }) so pagination metadata is not stripped
-    if (result.data && typeof result.data === "object") {
-      if ("pagination" in result.data) {
-        return { data: result.data };
-      }
-      if (result.data.data && typeof result.data.data === "object" && "pagination" in result.data.data) {
-        return { data: result.data.data };
-      }
-    }
     // Unwrap common response envelope: { success, data, message }
     return { data: result.data?.data ?? result.data };
   } catch (axiosError) {
@@ -113,18 +104,6 @@ export const paraApi = createApi({
     "PsychomotorRating",
     "SignatureAudit",
     "DigitalSignature",
-    "ClassLookup",
-    "SubjectLookup",
-    "UserLookup",
-    "Dashboard",
-    "AcademicTimeline",
-    "ScoreSheet",
-    "ReportsOverview",
-    "ReportShareLog",
-    "TeacherContext",
-    "GradingQueue",
-    "TeacherClassSheet",
-    "StudentDashboard",
   ] as const,
   endpoints: () => ({}), // injected by domain files
 });
