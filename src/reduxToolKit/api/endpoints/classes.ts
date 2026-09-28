@@ -34,6 +34,69 @@ const classesApi = paraApi.injectEndpoints({
           : [{ type: "ClassList" as const }],
     }),
 
+    // GET /api/proxy/classes/lookup — lightweight selector (id, name, code, level, stream)
+    getClassesLookup: builder.query<
+      { id: string; name: string; code?: string; level?: string | number; stream?: string }[],
+      void
+    >({
+      query: () => ({ url: "/api/proxy/classes/lookup" }),
+      transformResponse: (res: any) => (Array.isArray(res) ? res : []),
+      providesTags: [{ type: "ClassLookup" as const }],
+    }),
+
+    // GET /api/proxy/classes — paginated classes table with studentCount/teacherCount
+    getClassesPaginated: builder.query<
+      {
+        data: any[];
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+          hasNextPage: boolean;
+          hasPrevPage: boolean;
+        };
+      },
+      { page?: number; limit?: number; search?: string; level?: string } | void
+    >({
+      query: (params) => {
+        const q = new URLSearchParams();
+        if (params && params.page) q.set("page", String(params.page));
+        if (params && params.limit) q.set("limit", String(params.limit));
+        if (params && params.search) q.set("search", params.search);
+        if (params && params.level) q.set("level", params.level);
+        return { url: `/api/proxy/classes${q.toString() ? `?${q}` : ""}` };
+      },
+      transformResponse: (res: any) => {
+        // Handle both paginated { data, pagination } and flat array responses
+        if (res && Array.isArray(res.data) && res.pagination) return res;
+        const data = Array.isArray(res) ? res : [];
+        return {
+          data,
+          pagination: { total: data.length, page: 1, limit: data.length, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+        };
+      },
+      providesTags: (result) =>
+        result?.data
+          ? [
+              ...result.data.map((c: any) => ({ type: "Class" as const, id: c.id })),
+              { type: "ClassList" as const },
+            ]
+          : [{ type: "ClassList" as const }],
+    }),
+
+    // GET /api/proxy/classes/:id/roster — student enrollments with guardian info
+    getClassRoster: builder.query<any[], string>({
+      query: (classId) => ({ url: `/api/proxy/classes/${classId}/roster` }),
+      transformResponse: (res: any) => {
+        const data = res?.students || res?.data || res;
+        return Array.isArray(data) ? data : [];
+      },
+      providesTags: (_r, _e, classId) => [
+        { type: "UserList", id: `roster-${classId}` },
+      ],
+    }),
+
     // GET /api/proxy/classes/:id
     getClassById: builder.query<any, string>({
       query: (classId) => ({ url: `/api/proxy/classes/${classId}` }),
@@ -164,6 +227,9 @@ const classesApi = paraApi.injectEndpoints({
 
 export const {
   useGetClassesQuery,
+  useGetClassesLookupQuery,
+  useGetClassesPaginatedQuery,
+  useGetClassRosterQuery,
   useGetClassByIdQuery,
   useGetTeacherClassesQuery,
   useGetTeacherAssignedClassesQuery,

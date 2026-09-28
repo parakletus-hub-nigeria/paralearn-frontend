@@ -21,6 +21,67 @@ const usersApi = paraApi.injectEndpoints({
           : [{ type: "UserList" as const }],
     }),
 
+    // GET /api/proxy/users/lookup — lightweight user picker
+    getUsersLookup: builder.query<
+      { id: string; firstName: string; lastName: string; email: string; role: string; studentId?: string; teacherId?: string }[],
+      { role?: string; search?: string; limit?: number } | void
+    >({
+      query: (params) => {
+        const q = new URLSearchParams();
+        if (params && params.role) q.set("role", params.role);
+        if (params && params.search) q.set("search", params.search);
+        if (params && params.limit) q.set("limit", String(params.limit));
+        const qs = q.toString();
+        return { url: `/api/proxy/users/lookup${qs ? `?${qs}` : ""}` };
+      },
+      transformResponse: (res: any) => (Array.isArray(res) ? res : []),
+      providesTags: [{ type: "UserLookup" as const }],
+    }),
+
+    // GET /api/proxy/users — paginated users table with search & filters
+    getUsersPaginated: builder.query<
+      {
+        data: any[];
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+          hasNextPage: boolean;
+          hasPrevPage: boolean;
+        };
+      },
+      { page?: number; limit?: number; search?: string; role?: string; classId?: string } | void
+    >({
+      query: (params) => {
+        const q = new URLSearchParams();
+        if (params && params.page) q.set("page", String(params.page));
+        if (params && params.limit) q.set("limit", String(params.limit));
+        if (params && params.search) q.set("search", params.search);
+        if (params && params.role) q.set("role", params.role);
+        if (params && params.classId) q.set("classId", params.classId);
+        const qs = q.toString();
+        return { url: `/api/proxy/users${qs ? `?${qs}` : ""}` };
+      },
+      transformResponse: (res: any) => {
+        // Handle both paginated { data, pagination } and flat array responses
+        if (res && Array.isArray(res.data) && res.pagination) return res;
+        const data = Array.isArray(res) ? res : res?.data ?? [];
+        const arr = Array.isArray(data) ? data : [];
+        return {
+          data: arr,
+          pagination: { total: arr.length, page: 1, limit: arr.length, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+        };
+      },
+      providesTags: (result) =>
+        result?.data
+          ? [
+              ...result.data.map((u: any) => ({ type: "User" as const, id: u.id })),
+              { type: "UserList" as const },
+            ]
+          : [{ type: "UserList" as const }],
+    }),
+
     // GET /api/proxy/users/:id
     getUserById: builder.query<any, string>({
       query: (userId) => ({ url: `/api/proxy/users/${userId}` }),
@@ -100,6 +161,8 @@ const usersApi = paraApi.injectEndpoints({
 
 export const {
   useGetUsersQuery,
+  useGetUsersLookupQuery,
+  useGetUsersPaginatedQuery,
   useGetUserByIdQuery,
   useGetCurrentUserQuery,
   useGetStudentsByClassQuery,

@@ -4,6 +4,7 @@ import { updateAccessToken } from "@/reduxToolKit/user/userSlice";
 import tokenManager from "./tokenManager";
 import { routespath } from "./routepath";
 import { getSubdomain } from "./subdomainManager";
+import { applyTenantIdHeaders, getTenantIdFromState } from "./tenantHeaders";
 
 export const apiFetch = async (
   urlPath: string,
@@ -34,6 +35,7 @@ export const apiFetch = async (
     if (subdomain) {
       headers["X-Tenant-Subdomain"] = subdomain;
     }
+    applyTenantIdHeaders(headers, getTenantIdFromState(state));
 
     const config: RequestInit = {
       ...options,
@@ -132,7 +134,7 @@ export const apiFetch = async (
         }
       }
 
-      throw new Error(`${stringError} (HTTP ${response.status})`);
+      throw new Error(stringError);
     }
 
     return response;

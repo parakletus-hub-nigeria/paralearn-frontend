@@ -199,7 +199,14 @@ const studentSlice = createSlice({
         state.error = action.payload as string;
       })
       // Fetch Details
+      .addCase(fetchAssessmentDetails.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.currentAssessment = null;
+      })
       .addCase(fetchAssessmentDetails.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
         state.currentAssessment = action.payload;
         // FIX #9: If the assessment is already submitted (e.g. finished on another device),
         // clear the stored session from localStorage so we don't restore a stale in-progress session.
@@ -218,6 +225,11 @@ const studentSlice = createSlice({
             }
           } catch {}
         }
+      })
+      .addCase(fetchAssessmentDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.currentAssessment = null;
+        state.error = action.payload as string;
       })
       // Start Assessment
       .addCase(startAssessment.fulfilled, (state, action) => {

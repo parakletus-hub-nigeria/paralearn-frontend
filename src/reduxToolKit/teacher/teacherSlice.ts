@@ -75,6 +75,30 @@ const initialState: TeacherState = {
   success: null,
 };
 
+const getPublishedAssessmentStatus = (payload: any, previous?: any) => {
+  const backendStatus = String(payload?.status || "").toLowerCase();
+  if (backendStatus === "started" || backendStatus === "active") return "started";
+  if (backendStatus === "not_started" || backendStatus === "upcoming") return "not_started";
+  if (backendStatus === "ended" || backendStatus === "completed") return "ended";
+
+  const isPublished = payload?.isPublished ?? previous?.isPublished;
+  if (!isPublished) return "draft";
+
+  const startsAt = payload?.startsAt ?? previous?.startsAt;
+  const endsAt = payload?.endsAt ?? previous?.endsAt;
+  const hasSchedule = Boolean(startsAt || endsAt);
+
+  if (!hasSchedule) return "started";
+
+  const now = new Date();
+  const start = startsAt ? new Date(startsAt) : null;
+  const end = endsAt ? new Date(endsAt) : null;
+
+  if (end && now > end) return "ended";
+  if (!start || now >= start) return "started";
+  return "not_started";
+};
+
 const teacherSlice = createSlice({
   name: "teacher",
   initialState,
@@ -227,7 +251,6 @@ const teacherSlice = createSlice({
       .addCase(fetchAssessmentDetail.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.selectedAssessment = null;
       })
       .addCase(fetchAssessmentDetail.fulfilled, (state, action) => {
         state.loading = false;
@@ -242,7 +265,6 @@ const teacherSlice = createSlice({
       .addCase(fetchAssessmentSubmissions.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.submissions = [];
       })
       .addCase(fetchAssessmentSubmissions.fulfilled, (state, action) => {
         state.loading = false;
@@ -284,21 +306,10 @@ const teacherSlice = createSlice({
         if (assessmentId) {
           state.assessments = state.assessments.map((a) => {
             if (a.id === assessmentId) {
-              const startsAt = payload.startsAt ?? a.startsAt;
-              const endsAt = payload.endsAt ?? a.endsAt;
-              let status = "draft";
-              if (isPublished) {
-                const now = new Date();
-                const start = startsAt ? new Date(startsAt) : null;
-                const end = endsAt ? new Date(endsAt) : null;
-                if (end && now > end) {
-                  status = "ended";
-                } else if (start && now >= start) {
-                  status = "started";
-                } else {
-                  status = "not_started";
-                }
-              }
+              const status = getPublishedAssessmentStatus(
+                { ...payload, isPublished },
+                a,
+              );
               return {
                 ...a,
                 ...payload,
@@ -318,15 +329,12 @@ const teacherSlice = createSlice({
 
     builder
       .addCase(gradeAnswer.pending, (state) => {
-        state.loading = true;
         state.error = null;
       })
       .addCase(gradeAnswer.fulfilled, (state) => {
-        state.loading = false;
         state.success = "Answer graded";
       })
       .addCase(gradeAnswer.rejected, (state, action) => {
-        state.loading = false;
         state.error = (action.payload as string) || "Failed to grade answer";
       });
 

@@ -62,12 +62,25 @@ import {
   useRecordManualPaymentMutation,
   useApplyFeeOverrideMutation,
   useRevokeFeeOverrideMutation,
+  useSearchStudentsQuery,
   InvoiceRecord,
 } from "@/reduxToolKit/api/endpoints/finance";
+import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
 
 const fmtKobo = (kobo: number) =>
   "\u20a6" + ((kobo || 0) / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 });
+
+const formatWithCommas = (value: string | number): string => {
+  if (value === undefined || value === null || value === "") return "";
+  const str = String(value).replace(/,/g, "");
+  if (isNaN(Number(str)) && str !== "." && !str.endsWith(".")) {
+    return str.replace(/[^0-9.]/g, "");
+  }
+  const parts = str.split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.join(".");
+};
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-800 border-amber-200",
@@ -100,7 +113,6 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     dispatch(fetchClasses(undefined));
-    dispatch(fetchAllUsers());
     dispatch(fetchAllSessions());
     dispatch(fetchCurrentSession());
   }, [dispatch]);
@@ -113,6 +125,11 @@ export default function InvoicesPage() {
   const [genOpen, setGenOpen] = useState(false);
   const [genMode, setGenMode] = useState<"batch" | "individual">("individual");
   const [studentQuery, setStudentQuery] = useState("");
+  const debouncedStudentQuery = useDebounce(studentQuery, 250);
+  const { data: searchedStudents = [], isFetching: isSearchingStudents } = useSearchStudentsQuery(
+    { q: debouncedStudentQuery, limit: 12 },
+    { skip: !debouncedStudentQuery || debouncedStudentQuery.trim().length < 2 }
+  );
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
   const [genForm, setGenForm] = useState({
@@ -226,12 +243,13 @@ export default function InvoicesPage() {
 
   const handleRecordPayment = async () => {
     if (!payForm.invoiceId) return toast.error("Invoice ID is missing");
-    if (!payForm.amountNaira || Number(payForm.amountNaira) <= 0) {
+    const rawAmount = payForm.amountNaira.replace(/,/g, "");
+    if (!rawAmount || isNaN(Number(rawAmount)) || Number(rawAmount) <= 0) {
       return toast.error("Please enter a valid amount");
     }
 
     try {
-      const amountKobo = Math.round(parseFloat(payForm.amountNaira) * 100);
+      const amountKobo = Math.round(parseFloat(rawAmount) * 100);
       const res = await recordPayment({
         invoiceId: payForm.invoiceId,
         amount: amountKobo,
@@ -763,20 +781,29 @@ export default function InvoicesPage() {
 
                     {isStudentDropdownOpen && (
                       <div className="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-1 divide-y divide-slate-100">
-                        {(() => {
-                          const list = (students || []).filter((st: any) => {
-                            if (!studentQuery.trim()) return true;
-                            const q = studentQuery.toLowerCase().trim();
-                            const name = [st.firstName, st.lastName].filter(Boolean).join(" ").toLowerCase();
-                            const email = (st.email || st.user?.email || "").toLowerCase();
-                            const code = (st.studentId || st.code || "").toLowerCase();
-                            return name.includes(q) || email.includes(q) || code.includes(q);
-                          });
+                        {isSearchingStudents ? (
+                          <div className="py-3 px-2 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
+                            <span>Searching students...</span>
+                          </div>
+                        ) : (() => {
+                          const list = searchedStudents.length > 0
+                            ? searchedStudents
+                            : (students || []).filter((st: any) => {
+                                if (!studentQuery.trim()) return true;
+                                const q = studentQuery.toLowerCase().trim();
+                                const name = [st.firstName, st.lastName].filter(Boolean).join(" ").toLowerCase();
+                                const email = (st.email || st.user?.email || "").toLowerCase();
+                                const code = (st.studentId || st.code || "").toLowerCase();
+                                return name.includes(q) || email.includes(q) || code.includes(q);
+                              });
 
                           if (list.length === 0) {
                             return (
                               <div className="py-3 px-2 text-center text-xs text-muted-foreground">
-                                No students found matching &quot;{studentQuery}&quot;
+                                {studentQuery.trim().length < 2
+                                  ? "Type at least 2 characters to search..."
+                                  : `No students found matching "${studentQuery}"`}
                               </div>
                             );
                           }
@@ -798,10 +825,10 @@ export default function InvoicesPage() {
                                 </div>
                                 <div>
                                   <p className="text-xs font-semibold text-slate-900">
-                                    {[st.firstName, st.lastName].filter(Boolean).join(" ") || st.email || "Student"}
+                                    {[st.firstName, st.lastName].filter(Boolean).join(" ") || st.name || st.email || "Student"}
                                   </p>
                                   <p className="text-2xs text-muted-foreground font-mono">
-                                    {st.studentId || st.code || "No ID"}
+                                    {st.userCode || st.studentId || st.code || "No ID"}
                                   </p>
                                 </div>
                               </div>
@@ -810,7 +837,7 @@ export default function InvoicesPage() {
                                   {st.className}
                                 </span>
                               ) : (
-                                <span className="text-2xs text-slate-400">Newly Added</span>
+                                <span className="text-2xs text-slate-400">Student</span>
                               )}
                             </button>
                           ));
@@ -962,11 +989,20 @@ export default function InvoicesPage() {
               <div className="space-y-2">
                 <Label className="text-xs">Amount Paid (NGN)</Label>
                 <Input
-                  type="number"
-                  placeholder="e.g. 50000"
-                  value={payForm.amountNaira}
-                  onChange={(e) => setPayForm((p) => ({ ...p, amountNaira: e.target.value }))}
-                  className="text-xs"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="e.g. 50,000"
+                  value={formatWithCommas(payForm.amountNaira)}
+                  onChange={(e) => {
+                    let raw = e.target.value.replace(/,/g, "");
+                    if (raw === payForm.amountNaira && e.target.value.length < formatWithCommas(payForm.amountNaira).length) {
+                      raw = raw.slice(0, -1);
+                    }
+                    if (raw === "" || /^\d*\.?\d*$/.test(raw)) {
+                      setPayForm((p) => ({ ...p, amountNaira: raw }));
+                    }
+                  }}
+                  className="text-xs font-mono"
                 />
               </div>
 

@@ -51,7 +51,8 @@ export function AddUserModal({
     if (open) {
       // Fetch classes for student enrollment
       import("@/lib/interceptor").then(({ apiFetch }) => {
-        apiFetch("/api/proxy/classes")
+        apiFetch("/api/proxy/classes/lookup")
+          .catch(() => apiFetch("/api/proxy/classes"))
           .then((res: any) => {
             const list = Array.isArray(res)
               ? res
@@ -488,31 +489,7 @@ export function AddUserModal({
                     </div>
                   </div>
 
-                  {/* Class Assignment for Students */}
-                  {type === "student" && (
-                    <div>
-                      <label className="text-sm font-semibold text-slate-700">
-                        Class Enrollment{" "}
-                        <span className="text-slate-400 font-normal">
-                          (Enrolls student for term invoices &amp; attendance)
-                        </span>
-                      </label>
-                      <div className="relative mt-2">
-                        <select
-                          value={classId}
-                          onChange={(e) => setClassId(e.target.value)}
-                          className="w-full h-12 rounded-xl border border-slate-200 px-4 bg-white text-slate-700 text-sm focus:outline-none focus:border-blue-500"
-                        >
-                          <option value="">Select a Class (Optional)</option>
-                          {availableClasses.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
+
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>

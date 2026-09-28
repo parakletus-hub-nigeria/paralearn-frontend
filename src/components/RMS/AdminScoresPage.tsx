@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import { fetchScoresByAssessment, fetchClasses, fetchSubjects, fetchAssessments, bulkUploadScores } from "@/reduxToolKit/admin/adminThunks";
@@ -34,6 +35,7 @@ const getGrade = (score: number, maxMarks: number) => {
 
 export function AdminScoresPage() {
   const dispatch = useDispatch<AppDispatch>();
+  const searchParams = useSearchParams();
   const { scores, classes, subjects, assessments, loading, error, success } = useSelector(
     (s: RootState) => s.admin
   );
@@ -52,6 +54,25 @@ export function AdminScoresPage() {
     dispatch(fetchAssessments());
     dispatch(getTenantInfo());
   }, [dispatch]);
+
+  useEffect(() => {
+    const assessmentId = searchParams.get("assessmentId");
+    if (assessmentId) setSelectedAssessment(assessmentId);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!selectedAssessment || assessments.length === 0) return;
+    const assessment = assessments.find((a) => a.id === selectedAssessment);
+    if (!assessment) return;
+    if (assessment.classId) setSelectedClass(assessment.classId);
+    if (assessment.subjectId) setSelectedSubject(assessment.subjectId);
+  }, [assessments, selectedAssessment]);
+
+  useEffect(() => {
+    const assessmentId = searchParams.get("assessmentId");
+    if (!assessmentId || !selectedAssessment) return;
+    dispatch(fetchScoresByAssessment(selectedAssessment)).catch(() => {});
+  }, [dispatch, searchParams, selectedAssessment]);
 
   useEffect(() => {
     if (error) {

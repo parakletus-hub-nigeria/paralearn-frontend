@@ -5,7 +5,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import { 
   submitAssessment, 
-  fetchAssessmentDetails 
+  fetchAssessmentDetails,
+  buildExamDeviceMeta,
 } from "@/reduxToolKit/student/studentThunks";
 import { 
   setAnswer, 
@@ -34,13 +35,26 @@ import { toast } from "sonner";
 // Question types that expect a plain text answer (not a choice ID)
 const OPEN_ENDED_TYPES = new Set(["ESSAY", "TEXT", "essay", "text"]);
 
+const normalizeExamQuestion = (question: any, index: number) => ({
+  ...question,
+  id: question?.id || question?.questionId || `question-${index}`,
+  type: question?.type || question?.questionType || "MCQ",
+  questionType: question?.questionType || question?.type || "MCQ",
+  prompt:
+    question?.prompt ||
+    question?.questionText ||
+    question?.text ||
+    `Question ${index + 1}`,
+  choices: question?.choices || question?.options || [],
+});
+
 export default function LiveExamInterface() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const assessmentId = searchParams.get("assessmentId");
 
-  const { currentAssessment, activeSession, loading } = useSelector((s: RootState) => s.student);
+  const { currentAssessment, activeSession, loading, error } = useSelector((s: RootState) => s.student);
   const { user } = useSelector((s: RootState) => s.user);
 
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -55,7 +69,16 @@ export default function LiveExamInterface() {
 
   useEffect(() => {
     if (currentAssessment?.questions && currentQuestionIdx < currentAssessment.questions.length) {
-      currentQuestionIdRef.current = currentAssessment.questions[currentQuestionIdx].id;
+      currentQuestionIdRef.current = currentAssessment.questions[currentQuestionIdx]?.id || null;
+    }
+  }, [currentAssessment?.questions, currentQuestionIdx]);
+
+  useEffect(() => {
+    const questionCount = Array.isArray(currentAssessment?.questions)
+      ? currentAssessment.questions.length
+      : 0;
+    if (questionCount > 0 && currentQuestionIdx >= questionCount) {
+      setCurrentQuestionIdx(questionCount - 1);
     }
   }, [currentAssessment?.questions, currentQuestionIdx]);
 
@@ -179,7 +202,8 @@ export default function LiveExamInterface() {
   // -------------------------------------------------------------------------
   const buildAnswersPayload = useCallback(() => {
     return (
-      currentAssessment?.questions?.map((q) => {
+      currentAssessment?.questions?.map((rawQuestion, index) => {
+        const q = normalizeExamQuestion(rawQuestion, index);
         const val = activeSession.answers[q.id];
         if (val === undefined || val === null || val === "") return null;
 
@@ -223,18 +247,16 @@ export default function LiveExamInterface() {
       }
     }
 
+    const deviceMeta = buildExamDeviceMeta();
+    const startedAtMillis = new Date(reliableStartedAt).getTime() || Date.now();
+    const clientSubmissionId = `exam-${assessmentId}-${deviceMeta.deviceId}-${startedAtMillis}`;
+
     const submissionData = {
-      clientSubmissionId:
-        activeSession.clientSubmissionId ||
-        `client_${assessmentId}_${Date.now()}`,
+      clientSubmissionId,
       startedAt: reliableStartedAt,
       finishedAt: new Date(finishedAtTime).toISOString(),
       submissionReason: reason,
-      deviceMeta: {
-        deviceId: activeSession.deviceId,
-        browser: window.navigator.userAgent,
-        os: window.navigator.platform,
-      },
+      deviceMeta,
       antiMalpracticeData: {
         tabSwitchCount: activeSession.tabSwitchCount,
         windowBlurCount: activeSession.windowBlurCount,
@@ -306,13 +328,66 @@ export default function LiveExamInterface() {
   // -------------------------------------------------------------------------
   // Loading / Guard states
   // -------------------------------------------------------------------------
-  if (!currentAssessment || !currentAssessment.questions) {
+  if (!assessmentId || assessmentId.trim() === "") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={{ background: "var(--surface-muted)" }}>
+        <AlertTriangle className="w-16 h-16 mb-4" style={{ color: "var(--amber-signal)" }} />
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>Exam Link Invalid</h2>
+        <p className="mb-6 max-w-md" style={{ color: "var(--foreground-muted)" }}>
+          This exam link is missing its assessment ID. Please return to your dashboard and open the exam again.
+        </p>
+        <button onClick={() => router.push("/student/dashboard")} className="px-6 py-2 font-bold text-white" style={{ background: "var(--violet-ink)", borderRadius: "var(--radius-md)", border: "none" }}>Return to Dashboard</button>
+      </div>
+    );
+  }
+
+  if (loading && !currentAssessment) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--surface-muted)" }}>
         <div style={{ width: 48, height: 48, borderRadius: "50%", border: "3px solid var(--border-fine)", borderTopColor: "var(--violet-ink)", animation: "spin 0.6s linear infinite" }} />
       </div>
     );
   }
+
+  if (error && !currentAssessment) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={{ background: "var(--surface-muted)" }}>
+        <AlertTriangle className="w-16 h-16 mb-4" style={{ color: "var(--crimson-signal)" }} />
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>Exam Could Not Load</h2>
+        <p className="mb-6 max-w-md" style={{ color: "var(--foreground-muted)" }}>
+          {typeof error === "string" ? error : "We could not load this exam. Please try again from your dashboard."}
+        </p>
+        <button onClick={() => router.push("/student/dashboard")} className="px-6 py-2 font-bold text-white" style={{ background: "var(--violet-ink)", borderRadius: "var(--radius-md)", border: "none" }}>Return to Dashboard</button>
+      </div>
+    );
+  }
+
+  if (!currentAssessment || !Array.isArray(currentAssessment.questions)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--surface-muted)" }}>
+        <div style={{ width: 48, height: 48, borderRadius: "50%", border: "3px solid var(--border-fine)", borderTopColor: "var(--violet-ink)", animation: "spin 0.6s linear infinite" }} />
+      </div>
+    );
+  }
+
+  const questions = currentAssessment.questions
+    .filter(Boolean)
+    .map(normalizeExamQuestion);
+
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={{ background: "var(--surface-muted)" }}>
+        <AlertTriangle className="w-16 h-16 mb-4" style={{ color: "var(--amber-signal)" }} />
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--foreground)", fontFamily: "var(--font-manrope)" }}>No Questions Available</h2>
+        <p className="mb-6 max-w-md" style={{ color: "var(--foreground-muted)" }}>
+          This exam has been published, but no questions are available for students yet. Please contact your teacher.
+        </p>
+        <button onClick={() => router.push("/student/dashboard")} className="px-6 py-2 font-bold text-white" style={{ background: "var(--violet-ink)", borderRadius: "var(--radius-md)", border: "none" }}>Return to Dashboard</button>
+      </div>
+    );
+  }
+
+  const safeCurrentQuestionIdx = Math.min(currentQuestionIdx, questions.length - 1);
 
   const isSubmitted =
     currentAssessment.status === "submitted" ||
@@ -336,9 +411,8 @@ export default function LiveExamInterface() {
     );
   }
 
-  const questions = currentAssessment.questions;
-  const currentQuestion = questions[currentQuestionIdx];
-  const progressPercent = ((currentQuestionIdx + 1) / questions.length) * 100;
+  const currentQuestion = questions[safeCurrentQuestionIdx];
+  const progressPercent = ((safeCurrentQuestionIdx + 1) / questions.length) * 100;
   const answeredCount = questions.filter((q) => activeSession.answers[q.id] !== undefined).length;
 
   return (
@@ -472,7 +546,7 @@ export default function LiveExamInterface() {
                     </div>
                   </div>
                 )}
-                <h2 className="text-xl md:text-2xl lg:text-3xl font-serif font-medium leading-relaxed" style={{ color: "var(--foreground)" }}>
+                <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold leading-relaxed" style={{ color: "var(--foreground)" }}>
                   {currentQuestion.prompt || currentQuestion.questionText}
                 </h2>
                 {(currentQuestion.type === "MULTI_SELECT" || currentQuestion.questionType === "MULTI_SELECT") && (
@@ -633,7 +707,7 @@ export default function LiveExamInterface() {
           style={{ background: "oklch(0.13 0.02 265)", borderLeft: "1px solid oklch(0.22 0.02 265)", boxShadow: "var(--shadow-dialog)" }}
         >
           <div className="p-8 pb-6 flex justify-between items-center" style={{ borderBottom: "1px solid oklch(0.25 0.02 265)" }}>
-            <h3 className="font-serif font-medium text-xl" style={{ color: "white" }}>Question Navigator</h3>
+            <h3 className="text-xl font-semibold" style={{ color: "white" }}>Question Navigator</h3>
             <button className="xl:hidden" style={{ color: "white" }} onClick={() => setIsSidebarOpen(false)}>
               <X className="w-6 h-6" />
             </button>

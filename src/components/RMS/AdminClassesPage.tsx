@@ -144,17 +144,11 @@ export function AdminClassesPage() {
   });
   const [assignTeacherId, setAssignTeacherId] = useState("");
 
-  const usersFetchedRef = useRef(false);
-
   useEffect(() => {
     dispatch(fetchClasses(undefined));
+    dispatch(fetchAllUsers());
     dispatch(getTenantInfo());
-    // Only fetch users if not already loaded
-    if (!usersFetchedRef.current && (!students || students.length === 0)) {
-      usersFetchedRef.current = true;
-      dispatch(fetchAllUsers());
-    }
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     if (currentSession && !sessionFilter) {
@@ -225,18 +219,22 @@ export function AdminClassesPage() {
     try {
       if (!selectedClass) return toast.error("Please select a class");
       if (!assignTeacherId) return toast.error("Please select a teacher");
+      const targetClassId = selectedClass.id;
       await dispatch(
         assignTeacherToClass({
-          classId: selectedClass.id,
+          classId: targetClassId,
           teacherId: assignTeacherId,
         }),
       ).unwrap();
       setAssignTeacherId("");
       setShowAssignModal(false);
       setSelectedClass(null);
+      // Re-fetch classes and users so teacher numbers on cards populate immediately
+      dispatch(fetchClasses(undefined));
+      dispatch(fetchAllUsers());
       // Refresh class details if viewing
-      if (showDetailsModal && selectedClass) {
-        dispatch(fetchClassDetails(selectedClass.id));
+      if (showDetailsModal && targetClassId) {
+        dispatch(fetchClassDetails(targetClassId));
       }
     } catch (e: any) {
       toast.error(e || "Failed to assign teacher");
@@ -318,6 +316,8 @@ export function AdminClassesPage() {
       await dispatch(
         removeStudentFromClass({ classId: selectedClass.id, studentId }),
       ).unwrap();
+      dispatch(fetchClasses(undefined));
+      dispatch(fetchAllUsers());
       dispatch(fetchClassDetails(selectedClass.id));
     } catch (e: any) {
       toast.error(e || "Failed to remove student");
@@ -330,6 +330,8 @@ export function AdminClassesPage() {
       await dispatch(
         removeTeacherFromClass({ classId: selectedClass.id, teacherId }),
       ).unwrap();
+      dispatch(fetchClasses(undefined));
+      dispatch(fetchAllUsers());
       dispatch(fetchClassDetails(selectedClass.id));
     } catch (e: any) {
       toast.error(e || "Failed to remove teacher");
@@ -347,6 +349,8 @@ export function AdminClassesPage() {
       ).unwrap();
       setAssigningSubjectId(null);
       setSubjectTeacherId("");
+      dispatch(fetchClasses(undefined));
+      dispatch(fetchAllUsers());
       if (selectedClass) {
         dispatch(fetchClassSubjects(selectedClass.id));
         dispatch(fetchClassDetails(selectedClass.id));
@@ -364,6 +368,8 @@ export function AdminClassesPage() {
       await dispatch(
         removeTeacherFromClassSubject({ classSubjectId, teacherId }),
       ).unwrap();
+      dispatch(fetchClasses(undefined));
+      dispatch(fetchAllUsers());
       if (selectedClass) {
         dispatch(fetchClassSubjects(selectedClass.id));
         dispatch(fetchClassDetails(selectedClass.id));
@@ -377,86 +383,94 @@ export function AdminClassesPage() {
     classAccents[idx % classAccents.length];
 
   // Helper to get actual student count
-  const getStudentCountForClass = (classId: string, backendCount?: number) => {
-    if (!students) return backendCount || 0;
+  const getStudentCountForClass = (classId: string, backendCount?: number, clsObj?: any) => {
+    let localCount = 0;
+    if (students && Array.isArray(students)) {
+      localCount = students.filter((s: any) => {
+        const studentObj = s.studentProfile || s.profile || s.user || s;
+        const roles = studentObj.roles || s.roles || studentObj.user?.roles || [];
+        const roleStr = String(studentObj.role || s.role || "").toLowerCase();
 
-    const localCount = students.filter((s: any) => {
-      // 1. First ensure they are NOT a teacher or admin by checking roles
-      const studentObj = s.studentProfile || s.profile || s.user || s;
-      const roles = studentObj.roles || s.roles || studentObj.user?.roles || [];
-      const roleStr = String(studentObj.role || s.role || "").toLowerCase();
+        const isTeacherOrAdmin =
+          (Array.isArray(roles) &&
+            roles.some((r: any) => {
+              const name = String(
+                r.role?.name || r.name || r || "",
+              ).toLowerCase();
+              return name === "teacher" || name === "admin" || name === "staff";
+            })) ||
+          roleStr === "teacher" ||
+          roleStr === "admin" ||
+          roleStr === "staff";
 
-      const isTeacherOrAdmin =
-        (Array.isArray(roles) &&
-          roles.some((r: any) => {
-            const name = String(
-              r.role?.name || r.name || r || "",
-            ).toLowerCase();
-            return name === "teacher" || name === "admin" || name === "staff";
-          })) ||
-        roleStr === "teacher" ||
-        roleStr === "admin" ||
-        roleStr === "staff";
+        if (isTeacherOrAdmin) return false;
 
-      if (isTeacherOrAdmin) return false;
+        const enrollments = Array.isArray(s.enrollments)
+          ? s.enrollments
+          : s.enrollment
+            ? [s.enrollment]
+            : [];
+        const profile = s.studentProfile || s.profile || {};
 
-      // 2. Check ALL possible class associations recursively
-      const enrollments = Array.isArray(s.enrollments)
-        ? s.enrollments
-        : s.enrollment
-          ? [s.enrollment]
-          : [];
-      const profile = s.studentProfile || s.profile || {};
+        const hasEnrollmentMatch = enrollments.some(
+          (e: any) => e.classId === classId || e.class?.id === classId,
+        );
+        if (hasEnrollmentMatch) return true;
 
-      const hasEnrollmentMatch = enrollments.some(
-        (e: any) => e.classId === classId || e.class?.id === classId,
-      );
-      if (hasEnrollmentMatch) return true;
+        return (
+          s.classId === classId ||
+          s.class?.id === classId ||
+          profile.classId === classId ||
+          profile.class?.id === classId
+        );
+      }).length;
+    }
 
-      // check direct property or profiles
-      return (
-        s.classId === classId ||
-        s.class?.id === classId ||
-        profile.classId === classId ||
-        profile.class?.id === classId
-      );
-    }).length;
+    let clsStudentCount = 0;
+    if (clsObj) {
+      const list = clsObj.enrollments || clsObj.students || clsObj.data?.enrollments || clsObj.data?.students || [];
+      if (Array.isArray(list)) clsStudentCount = list.length;
+    }
 
-    // Use the maximum of local and backend counts to ensure we don't undercount
-    // backendCount here will include the refined calculation from the adminSlice
-    return Math.max(localCount, backendCount || 0);
+    return Math.max(localCount, backendCount || 0, clsStudentCount);
   };
 
   // Helper to get actual teacher count
-  const getTeacherCountForClass = (classId: string, backendCount?: number) => {
-    const localCount = teachers
-      ? teachers.filter((t: any) => {
-          // Check various possible class assignment fields for teachers
-          const profile = t.teacherProfile || t.profile || {};
-          const assignments = Array.isArray(t.teacherAssignments)
-            ? t.teacherAssignments
-            : t.teacherAssignment
-              ? [t.teacherAssignment]
-              : [];
-          const classList = Array.isArray(t.classes) ? t.classes : [];
+  const getTeacherCountForClass = (classId: string, backendCount?: number, clsObj?: any) => {
+    let localCount = 0;
+    if (teachers && Array.isArray(teachers)) {
+      localCount = teachers.filter((t: any) => {
+        const profile = t.teacherProfile || t.profile || {};
+        const assignments = Array.isArray(t.teacherAssignments)
+          ? t.teacherAssignments
+          : t.teacherAssignment
+            ? [t.teacherAssignment]
+            : [];
+        const classList = Array.isArray(t.classes) ? t.classes : [];
 
-          return (
-            t.classId === classId ||
-            t.primaryClassId === classId ||
-            t.assignedClasses?.includes(classId) ||
-            classList.some(
-              (c: any) => c.id === classId || c.classId === classId,
-            ) ||
-            assignments.some((a: any) => a.classId === classId) ||
-            profile.classId === classId ||
-            (t.subjects &&
-              Array.isArray(t.subjects) &&
-              t.subjects.some((s: any) => s.classId === classId))
-          );
-        }).length
-      : 0;
+        return (
+          t.classId === classId ||
+          t.primaryClassId === classId ||
+          t.assignedClasses?.includes(classId) ||
+          classList.some(
+            (c: any) => c.id === classId || c.classId === classId,
+          ) ||
+          assignments.some((a: any) => a.classId === classId || a.class?.id === classId) ||
+          profile.classId === classId ||
+          (t.subjects &&
+            Array.isArray(t.subjects) &&
+            t.subjects.some((s: any) => s.classId === classId || s.class?.id === classId))
+        );
+      }).length;
+    }
 
-    return Math.max(localCount, backendCount || 0);
+    let clsTeacherCount = 0;
+    if (clsObj) {
+      const list = clsObj.teacherAssignments || clsObj.teachers || clsObj.classTeachers || clsObj.data?.teacherAssignments || clsObj.data?.teachers || [];
+      if (Array.isArray(list)) clsTeacherCount = list.length;
+    }
+
+    return Math.max(localCount, backendCount || 0, clsTeacherCount);
   };
 
   const handleExportRosters = () => {
@@ -663,19 +677,20 @@ export function AdminClassesPage() {
       </div>
 
       {/* Search and Filters */}
-      <div className="classes-filter-bar" style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
-        <div style={{ position: "relative", flex: "1 1 240px", minWidth: 0 }}>
+      <div className="classes-filter-bar flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5">
+        <div className="relative w-full sm:w-auto flex-1 min-w-0">
           <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--text-secondary)", pointerEvents: "none" }} />
           <Input
             placeholder="Search by class name..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
             style={{ paddingLeft: 36, height: 40, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }}
+            className="w-full"
           />
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div className="flex items-center gap-2.5 justify-between sm:justify-end">
           <Select value={sessionFilter} onValueChange={setSessionFilter}>
-            <SelectTrigger style={{ height: 40, width: 160, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }}>
+            <SelectTrigger style={{ height: 40, borderRadius: "var(--radius-md)", borderColor: "var(--border-fine)", fontSize: 13 }} className="w-full sm:w-[160px]">
               <SelectValue placeholder="Session" />
             </SelectTrigger>
             <SelectContent>
@@ -685,7 +700,7 @@ export function AdminClassesPage() {
               ))}
             </SelectContent>
           </Select>
-          <div style={{ display: "flex", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-md)", overflow: "hidden", background: "#ffffff" }}>
+          <div style={{ display: "flex", border: "1px solid var(--border-fine)", borderRadius: "var(--radius-md)", overflow: "hidden", background: "#ffffff", flexShrink: 0 }}>
             <button
               onClick={() => setViewMode("grid")}
               style={{ padding: "0 10px", background: viewMode === "grid" ? "var(--surface-muted)" : "transparent", transition: "background var(--dur-fast)" }}
@@ -711,7 +726,7 @@ export function AdminClassesPage() {
           </div>
         </div>
       ) : viewMode === "grid" ? (
-        <div className="classes-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+        <div className="classes-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.length === 0 ? (
             <div style={{ gridColumn: "1/-1", padding: "64px 0", textAlign: "center" }}>
               <div style={{ width: 48, height: 48, borderRadius: "var(--radius-lg)", background: "var(--surface-muted)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
@@ -723,10 +738,10 @@ export function AdminClassesPage() {
           ) : (
             paginatedClasses.map((cls: any, idx) => {
               const accent = getAccentByIndex(idx);
-              const bStudentCount = cls.studentCount ?? cls._count?.enrollments ?? cls._count?.students ?? 0;
-              const bTeacherCount = cls.teacherCount ?? cls._count?.teacherAssignments ?? cls._count?.teachers ?? 0;
-              const studentCount = getStudentCountForClass(cls.id, bStudentCount);
-              const teacherCount = getTeacherCountForClass(cls.id, bTeacherCount);
+              const bStudentCount = cls.studentCount ?? cls._count?.enrollments ?? cls._count?.students ?? (Array.isArray(cls.enrollments) ? cls.enrollments.length : Array.isArray(cls.students) ? cls.students.length : 0);
+              const bTeacherCount = cls.teacherCount ?? cls._count?.teacherAssignments ?? cls._count?.teachers ?? (Array.isArray(cls.teacherAssignments) ? cls.teacherAssignments.length : Array.isArray(cls.teachers) ? cls.teachers.length : 0);
+              const studentCount = getStudentCountForClass(cls.id, bStudentCount, cls);
+              const teacherCount = getTeacherCountForClass(cls.id, bTeacherCount, cls);
               const fillPct = cls.capacity ? Math.min((studentCount / cls.capacity) * 100, 100) : 0;
 
               return (
@@ -854,10 +869,10 @@ export function AdminClassesPage() {
               </thead>
               <tbody>
                 {paginatedClasses.map((cls: any, idx) => {
-                  const bStudentCount = cls.studentCount ?? cls._count?.enrollments ?? cls._count?.students ?? 0;
-                  const bTeacherCount = cls.teacherCount ?? cls._count?.teacherAssignments ?? cls._count?.teachers ?? 0;
-                  const studentCount = getStudentCountForClass(cls.id, bStudentCount);
-                  const teacherCount = getTeacherCountForClass(cls.id, bTeacherCount);
+                  const bStudentCount = cls.studentCount ?? cls._count?.enrollments ?? cls._count?.students ?? (Array.isArray(cls.enrollments) ? cls.enrollments.length : Array.isArray(cls.students) ? cls.students.length : 0);
+                  const bTeacherCount = cls.teacherCount ?? cls._count?.teacherAssignments ?? cls._count?.teachers ?? (Array.isArray(cls.teacherAssignments) ? cls.teacherAssignments.length : Array.isArray(cls.teachers) ? cls.teachers.length : 0);
+                  const studentCount = getStudentCountForClass(cls.id, bStudentCount, cls);
+                  const teacherCount = getTeacherCountForClass(cls.id, bTeacherCount, cls);
                   const accent = getAccentByIndex(idx);
                   return (
                     <tr

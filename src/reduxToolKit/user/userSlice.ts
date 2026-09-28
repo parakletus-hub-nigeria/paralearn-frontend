@@ -264,7 +264,8 @@ const userSlice = createSlice({
           lastName: user.lastName || state.user.lastName,
           schoolId: user.schoolId || state.user.schoolId,
           universityId: user.universityId || state.user.universityId,
-          roles: (user.roles && user.roles.length > 0) ? user.roles : state.user.roles,
+          roles:
+            user.roles && user.roles.length > 0 ? user.roles : state.user.roles,
           avatar: user.avatar || state.user.avatar,
         };
       }
@@ -286,7 +287,9 @@ const userSlice = createSlice({
         state.accessToken = action.payload.accessToken;
         state.user = action.payload.user;
         state.subdomain = action.payload.subdomain || state.subdomain;
-        state.institutionType = (action.payload.institutionType as "k12" | "university") || state.institutionType;
+        state.institutionType =
+          (action.payload.institutionType as "k12" | "university") ||
+          state.institutionType;
         state.success = true;
         state.error = null;
         // Persist user snapshot for reloads (roles-based guards)
@@ -591,7 +594,11 @@ const userSlice = createSlice({
         // Only merge into the logged-in user's state if the updated user IS
         // the currently authenticated user. Admins updating other users' profiles
         // must NOT overwrite the current session's roles/data.
-        if (action.payload?.id && state.user?.id && action.payload.id === state.user.id) {
+        if (
+          action.payload?.id &&
+          state.user?.id &&
+          action.payload.id === state.user.id
+        ) {
           state.user = {
             ...state.user,
             ...action.payload,
@@ -682,7 +689,11 @@ export {
   getTenantInfo,
   updateSchoolBranding,
 };
-export const { updateAccessToken, updateSubdomain, updateInstitutionType, hydrateUserState } =
-  userSlice.actions;
+export const {
+  updateAccessToken,
+  updateSubdomain,
+  updateInstitutionType,
+  hydrateUserState,
+} = userSlice.actions;
 const userReducer = userSlice.reducer;
 export default userReducer;

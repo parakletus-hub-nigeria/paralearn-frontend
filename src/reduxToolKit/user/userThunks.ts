@@ -967,7 +967,7 @@ export const changePassword = createAsyncThunk(
 // Get tenant/school settings
 export const getTenantInfo = createAsyncThunk(
   "user/getTenantInfo",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
       const response = await apiClient.get("/api/proxy/tenant/info");
 
@@ -977,11 +977,57 @@ export const getTenantInfo = createAsyncThunk(
 
       return response.data.data || response.data;
     } catch (error: any) {
+      const responseData = error.response?.data || {};
       const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
+        responseData?.message ||
+        responseData?.error ||
         error.message ||
         "Failed to fetch tenant information";
+      const errorCode = responseData?.code || responseData?.errorCode;
+      const isTenantLookupFailure =
+        error.response?.status === 404 &&
+        (errorCode === "TENANT_NOT_FOUND" ||
+          String(errorMessage).toLowerCase().includes("school not found") ||
+          String(errorMessage).toLowerCase().includes("tenant"));
+
+      if (isTenantLookupFailure) {
+        const state = getState() as any;
+        const existingTenant = state?.user?.tenantInfo;
+        const stateUser = state?.user?.user;
+        let storedUser: any = null;
+
+        if (typeof window !== "undefined") {
+          try {
+            const raw = localStorage.getItem("currentUser");
+            storedUser = raw ? JSON.parse(raw) : null;
+          } catch {}
+        }
+
+        const school = storedUser?.school || stateUser?.school;
+        const fallbackTenant =
+          existingTenant ||
+          (school
+            ? {
+                ...school,
+                schoolId: school.id || stateUser?.schoolId,
+                id: school.id || stateUser?.schoolId,
+              }
+            : stateUser?.schoolId
+            ? {
+                id: stateUser.schoolId,
+                schoolId: stateUser.schoolId,
+                subdomain: storedUser?.subdomain || state?.user?.subdomain,
+              }
+            : null);
+
+        if (fallbackTenant) {
+          console.warn(
+            "[Get Tenant Info] Using authenticated school fallback after tenant lookup failed:",
+            errorMessage,
+          );
+          return fallbackTenant;
+        }
+      }
 
       console.error("[Get Tenant Info Error]", errorMessage);
       return rejectWithValue(errorMessage);
@@ -1061,3 +1107,9 @@ export const fetchUniUserProfile = createAsyncThunk(
     }
   },
 );
+
+export {
+  startWhatsAppAuth,
+  checkWhatsAppStatus,
+  completeWhatsAppAuth,
+} from "./whatsappAuthThunks";

@@ -70,13 +70,31 @@ const createClientId = () => {
 };
 
 const getExamDeviceId = () => {
-  if (typeof window === "undefined") return createClientId();
-  const existing = localStorage.getItem(EXAM_DEVICE_ID_KEY);
-  if (existing) return existing;
-  const next = createClientId();
-  localStorage.setItem(EXAM_DEVICE_ID_KEY, next);
-  return next;
+  if (typeof window === "undefined") return "server";
+
+  try {
+    const existing = window.localStorage.getItem(EXAM_DEVICE_ID_KEY);
+    if (existing) return existing;
+
+    const generated =
+      typeof window.crypto?.randomUUID === "function"
+        ? window.crypto.randomUUID()
+        : `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    window.localStorage.setItem(EXAM_DEVICE_ID_KEY, generated);
+    return generated;
+  } catch {
+    return `volatile-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
 };
+
+export const buildExamDeviceMeta = () => ({
+  deviceId: getExamDeviceId(),
+  userAgent: window.navigator.userAgent,
+  platform: window.navigator.platform,
+  language: window.navigator.language,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+});
 
 // Fetch all available assessments for the student (K-12 System)
 // Uses the optimized student/published endpoint (returns all statuses in one call)
@@ -89,8 +107,77 @@ export const fetchStudentAssessments = createAsyncThunk(
       const rawData = res.data?.data || res.data || [];
       const rawCombined = Array.isArray(rawData) ? rawData : [];
 
-      // Handle grouped response structure (grouped by subject)
-      // Teacher endpoint returns: [ { name: "Subject", class: {...}, assessments: [...] }, ... ]
+      const getStatus = (assessment: any) => {
+        const submitted = assessment?.submissions?.some(
+          (submission: any) =>
+            ["submitted", "graded"].includes(submission.status) &&
+            !!submission.finishedAt,
+        );
+        if (submitted || assessment?.status === "submitted") return "submitted";
+        if (assessment?.status) return assessment.status;
+
+        const now = new Date();
+        const startsAt = assessment?.startsAt
+          ? new Date(assessment.startsAt)
+          : null;
+        const endsAt = assessment?.endsAt ? new Date(assessment.endsAt) : null;
+        if (endsAt && now > endsAt) return "ended";
+        if (!startsAt || now >= startsAt) return "started";
+        return "not_started";
+      };
+
+      const normalize = (assessment: any, group?: any) => {
+        const classSubjects = Array.isArray(assessment.classSubjects)
+          ? assessment.classSubjects
+          : [];
+        const firstClassSubject =
+          classSubjects[0]?.classSubject || classSubjects[0];
+
+        return {
+          ...assessment,
+          classId:
+            assessment.classId ||
+            group?.class?.id ||
+            assessment.class?.id ||
+            firstClassSubject?.classId ||
+            firstClassSubject?.class?.id,
+          subjectId:
+            assessment.subjectId ||
+            group?.id ||
+            group?.subjectId ||
+            assessment.subject?.id ||
+            firstClassSubject?.subjectId ||
+            firstClassSubject?.subject?.id,
+          subject: assessment.subject ||
+            firstClassSubject?.subject || {
+              id: group?.id || group?.subjectId,
+              name: group?.name || "Unknown Subject",
+              code: group?.code,
+            },
+          class:
+            assessment.class ||
+            firstClassSubject?.class ||
+            group?.class ||
+            assessment.subject?.class,
+          isPublished: true,
+          isOnline:
+            assessment.isOnline ??
+            (assessment.assessmentType === "online" ||
+              assessment.assessmentType === "cbt"),
+          durationMins:
+            assessment.durationMins ??
+            assessment.duration ??
+            assessment.durationMinutes ??
+            0,
+          questionCount:
+            assessment.questionCount ??
+            assessment.questionsCount ??
+            assessment._count?.questions ??
+            0,
+          status: getStatus(assessment),
+        };
+      };
+
       let assessments: any[] = [];
       const isGrouped = rawCombined.some(
         (item: any) => item.assessments && Array.isArray(item.assessments),
@@ -99,71 +186,17 @@ export const fetchStudentAssessments = createAsyncThunk(
       if (isGrouped) {
         rawCombined.forEach((group: any) => {
           if (group.assessments && Array.isArray(group.assessments)) {
-            group.assessments.forEach((assess: any) => {
-              // Calculate fallback status if missing
-              let status = assess.status;
-              if (!status) {
-                const now = new Date();
-                const startsAt = assess.startsAt ? new Date(assess.startsAt) : null;
-                const endsAt = assess.endsAt ? new Date(assess.endsAt) : null;
-                if (endsAt && now > endsAt) {
-                  status = "ended";
-                } else if (startsAt && now >= startsAt) {
-                  status = "started";
-                } else {
-                  status = "not_started";
-                }
-              }
-
-              assessments.push({
-                ...assess,
-                classId: group.class?.id || assess.classId,
-                subjectId: group.id || group.subjectId,
-                subject: {
-                  id: group.id || group.subjectId,
-                  name: group.name || "Unknown Subject",
-                  code: group.code,
-                },
-                class: group.class || { id: "unknown", name: "Unknown Class" },
-                isPublished: true,
-                isOnline: assess.isOnline ?? assess.assessmentType === "online",
-                status,
-              });
+            group.assessments.forEach((assessment: any) => {
+              assessments.push(normalize(assessment, group));
             });
           }
         });
       } else {
-        assessments = rawCombined.map((a: any) => {
-          // Calculate fallback status if missing
-          let status = a.status;
-          if (!status) {
-            const now = new Date();
-            const startsAt = a.startsAt ? new Date(a.startsAt) : null;
-            const endsAt = a.endsAt ? new Date(a.endsAt) : null;
-            if (endsAt && now > endsAt) {
-              status = "ended";
-            } else if (startsAt && now >= startsAt) {
-              status = "started";
-            } else {
-              status = "not_started";
-            }
-          }
-
-          return {
-            ...a,
-            isPublished: true,
-            isOnline: a.isOnline ?? a.assessmentType === "online",
-            status,
-          };
-        });
+        assessments = rawCombined.map((a: any) => normalize(a));
       }
 
       return assessments;
     } catch (error: any) {
-      console.error(
-        `[fetchStudentAssessments] Error:`,
-        error.response?.data || error.message,
-      );
       return rejectWithValue(
         error.response?.data?.message ||
           error.message ||
@@ -200,11 +233,7 @@ export const startAssessment = createAsyncThunk(
       const response = await apiClient.post(
         `/api/proxy/assessments/${id}/start`,
         {
-          deviceMeta: {
-            deviceId,
-            userAgent: window.navigator.userAgent,
-            platform: window.navigator.platform,
-          },
+          deviceMeta: buildExamDeviceMeta(),
           clientSubmissionId,
         },
       );
@@ -262,6 +291,21 @@ export const syncOfflineSubmissions = createAsyncThunk(
       }
       return rejectWithValue(
         error.message || "Failed to sync offline submissions",
+      );
+    }
+  },
+);
+
+// Fetch consolidated student dashboard overview
+export const fetchStudentDashboardOverview = createAsyncThunk(
+  "student/fetchDashboardOverview",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get("/api/proxy/student/dashboard-overview");
+      return response.data?.data || response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || error?.message || "Failed to fetch student dashboard overview",
       );
     }
   },

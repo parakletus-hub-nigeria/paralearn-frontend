@@ -24,6 +24,58 @@ const assessmentsApi = paraApi.injectEndpoints({
           : [{ type: "AssessmentList" as const }],
     }),
 
+    // GET /api/proxy/assessments — paginated with server-side filters
+    getAssessmentsPaginated: builder.query<
+      {
+        data: any[];
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+          hasNextPage: boolean;
+          hasPrevPage: boolean;
+        };
+      },
+      {
+        classId?: string;
+        subjectId?: string;
+        term?: string;
+        session?: string;
+        type?: string;
+        page?: number;
+        limit?: number;
+      } | void
+    >({
+      query: (params) => {
+        const q = new URLSearchParams();
+        if (params && params.classId) q.set("classId", params.classId);
+        if (params && params.subjectId) q.set("subjectId", params.subjectId);
+        if (params && params.term) q.set("term", params.term);
+        if (params && params.session) q.set("session", params.session);
+        if (params && params.type) q.set("type", params.type);
+        if (params && params.page) q.set("page", String(params.page));
+        if (params && params.limit) q.set("limit", String(params.limit));
+        const qs = q.toString();
+        return { url: `/api/proxy/assessments${qs ? `?${qs}` : ""}` };
+      },
+      transformResponse: (res: any) => {
+        if (res && Array.isArray(res.data) && res.pagination) return res;
+        const data = Array.isArray(res) ? res : [];
+        return {
+          data,
+          pagination: { total: data.length, page: 1, limit: data.length, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+        };
+      },
+      providesTags: (result) =>
+        result?.data
+          ? [
+              ...result.data.map((a: any) => ({ type: "Assessment" as const, id: a.id })),
+              { type: "AssessmentList" as const },
+            ]
+          : [{ type: "AssessmentList" as const }],
+    }),
+
     // GET /api/proxy/assessments/details/:id (updated to avoid :status collision)
     getAssessmentById: builder.query<any, string>({
       query: (id) => ({ url: `/api/proxy/assessments/details/${id}` }),
@@ -209,6 +261,7 @@ const assessmentsApi = paraApi.injectEndpoints({
 
 export const {
   useGetAssessmentsByStatusQuery,
+  useGetAssessmentsPaginatedQuery,
   useGetAssessmentByIdQuery,
   useGetAssessmentSubmissionsQuery,
   useGetAssessmentCategoriesQuery,

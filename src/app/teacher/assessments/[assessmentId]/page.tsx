@@ -1,14 +1,10 @@
-import ProtectedRoute from "@/components/protectedRoute/protectedRoute";
-import RoleGuard from "@/components/protectedRoute/RoleGuard";
-import { TeacherGradingPage } from "@/components/Teacher/TeacherGradingPage";
+import { redirect } from "next/navigation";
 
-export default function GradeAssessmentRedirect() {
-  return (
-    <ProtectedRoute>
-      <RoleGuard allow={["teacher", "admin", "principal", "vp"]} mode="block">
-        <TeacherGradingPage />
-      </RoleGuard>
-    </ProtectedRoute>
-  );
+type Props = {
+  params: Promise<{ assessmentId: string }>;
+};
+
+export default async function TeacherAssessmentEntryPage({ params }: Props) {
+  const { assessmentId } = await params;
+  redirect(`/teacher/assessments/${assessmentId}/grade`);
 }
-

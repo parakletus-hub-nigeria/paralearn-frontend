@@ -21,6 +21,19 @@ const subjectsApi = paraApi.injectEndpoints({
           : [{ type: "SubjectList" as const }],
     }),
 
+    // GET /api/proxy/subjects/lookup — lightweight selector (id, name, code)
+    getSubjectsLookup: builder.query<
+      { id: string; name: string; code?: string }[],
+      { classId?: string } | void
+    >({
+      query: (params) => {
+        const q = params && params.classId ? `?classId=${encodeURIComponent(params.classId)}` : "";
+        return { url: `/api/proxy/subjects/lookup${q}` };
+      },
+      transformResponse: (res: any) => (Array.isArray(res) ? res : []),
+      providesTags: [{ type: "SubjectLookup" as const }],
+    }),
+
     // GET /api/proxy/subjects/by-class/:classId ⭐ NEW — primary endpoint for class subject picker
     // Returns subjects with classSubjectId, subjectType, difficulty, isActive flattened
     getSubjectsByClass: builder.query<any[], string>({
@@ -173,6 +186,7 @@ const subjectsApi = paraApi.injectEndpoints({
 
 export const {
   useGetSubjectsQuery,
+  useGetSubjectsLookupQuery,
   useGetSubjectsByClassQuery,
   useGetSubjectsByTeacherQuery,
   useCreateSubjectMutation,
