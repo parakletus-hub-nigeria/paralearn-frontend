@@ -346,7 +346,8 @@ export const assignSubjectToClass = createAsyncThunk(
 
 // Update Grading Scale
 export interface GradeBoundary {
-  letter: string;
+  letter?: string;
+  grade?: string;
   min: number;
   max: number;
   description: string;
@@ -391,6 +392,8 @@ export const updateGradingScale = createAsyncThunk(
 
 // Consolidated Onboarding Setup - Creates session, classes, subjects, and grading scale in one call
 export interface OnboardingSetupInput {
+  currentSession: string;
+  currentTerm: string;
   session: {
     session: string;
     startsAt: string;
@@ -402,6 +405,7 @@ export interface OnboardingSetupInput {
     }>;
   };
   classes: Array<{
+    localId?: string;
     name: string;
     level: number;
     stream: string;
@@ -410,10 +414,14 @@ export interface OnboardingSetupInput {
   subjects: Array<{
     name: string;
     code: string;
-    classId: string;
+    classId?: string;
+    classIds?: string[];
     description?: string;
   }>;
-  gradingScale: GradeBoundary[];
+  gradingSystem?: string;
+  gradeBoundaries: GradeBoundary[];
+  settings?: Record<string, unknown>;
+  selectedReportCardTemplateIds?: string[];
 }
 
 export interface OnboardingSetupResponse {
