@@ -348,4 +348,91 @@ export const cbtApi = {
   getExportCsvUrl(examId: string) {
     return `${CBT_API_BASE}/sync/export-csv/${examId}`;
   },
+
+  async createExam(data: {
+    workspaceId: string;
+    title: string;
+    accessCode?: string;
+    durationMins?: number;
+    startsAt?: string;
+    endsAt?: string;
+    maxTabViolations?: number;
+    shuffleQuestions?: boolean;
+    shuffleChoices?: boolean;
+    showResultAfter?: boolean;
+  }): Promise<CbtExamItem> {
+    try {
+      const res = await fetch(`${CBT_API_BASE}/exams`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {}
+
+    const fallback: CbtExamItem = {
+      id: `exam_${Date.now()}`,
+      workspaceId: data.workspaceId,
+      title: data.title,
+      accessCode: data.accessCode?.trim().toUpperCase() || `MOCK-${Math.floor(1000 + Math.random() * 9000)}`,
+      durationMins: data.durationMins || 60,
+      totalQuestions: 0,
+      isPublished: true,
+      startsAt: data.startsAt || null,
+      endsAt: data.endsAt || null,
+      maxTabViolations: data.maxTabViolations ?? 3,
+      shuffleQuestions: data.shuffleQuestions ?? true,
+      shuffleChoices: data.shuffleChoices ?? true,
+      showResultAfter: data.showResultAfter ?? true,
+      createdAt: new Date().toISOString(),
+    };
+    return fallback;
+  },
+
+  async getWorkspaceExams(workspaceId: string): Promise<CbtExamItem[]> {
+    try {
+      const res = await fetch(`${CBT_API_BASE}/exams?workspaceId=${encodeURIComponent(workspaceId)}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {}
+    return loadStoredExams(workspaceId);
+  },
+};
+
+export interface CbtExamItem {
+  id: string;
+  workspaceId?: string;
+  title: string;
+  accessCode: string;
+  durationMins: number;
+  totalQuestions: number;
+  isPublished?: boolean;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  maxTabViolations?: number;
+  shuffleQuestions?: boolean;
+  shuffleChoices?: boolean;
+  showResultAfter?: boolean;
+  createdAt?: string;
+}
+
+export const loadStoredExams = (workspaceId?: string): CbtExamItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const key = `paralearn_cbt_exams_${workspaceId || "default"}`;
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+};
+
+export const saveStoredExams = (exams: CbtExamItem[], workspaceId?: string) => {
+  if (typeof window === "undefined") return;
+  try {
+    const key = `paralearn_cbt_exams_${workspaceId || "default"}`;
+    localStorage.setItem(key, JSON.stringify(exams));
+  } catch {}
 };

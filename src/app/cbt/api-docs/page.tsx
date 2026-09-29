@@ -40,7 +40,7 @@ export default function CbtApiDocsPage() {
             <div className="flex items-center gap-2">
               <span className="font-extrabold tracking-tight text-slate-900 text-sm">ParaLearn CBT API</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-violet-100 text-[#641bc4] border border-violet-200">
-                v1.0.0
+                v1.1.0
               </span>
             </div>
           </div>
@@ -109,6 +109,7 @@ export default function CbtApiDocsPage() {
               <a href="#submission" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">7. Auto-Grading & Slips</a>
               <a href="#webhooks" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">8. Webhook Verification</a>
               <a href="#errors" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">9. Errors & Status Codes</a>
+              <a href="#changelog" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-[#641bc4] font-semibold">10. Versioning & Changelog</a>
             </nav>
 
             <div className="p-4 rounded-xl border border-violet-100 bg-violet-50/50 space-y-2">
@@ -252,35 +253,83 @@ export default function CbtApiDocsPage() {
           </section>
 
           {/* Section 3: Exams */}
-          <section id="exams" className="space-y-4 scroll-mt-24">
+          <section id="exams" className="space-y-6 scroll-mt-24">
             <div className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-[#641bc4]" />
               <h2 className="text-2xl font-bold tracking-tight text-slate-900">3. Exams Management</h2>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Provision exams with custom delivery policies including room code generation, anti-cheat limits, question shuffling, and immediate result disclosure.
+              Provision exams with custom delivery policies including room code generation, anti-cheat limits, question shuffling, and optional <strong>date & time scheduling windows</strong> (<code>startsAt</code>, <code>endsAt</code>).
             </p>
 
+            {/* Endpoint 3.1: Create Exam with Scheduling */}
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
               <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2 font-mono text-xs font-bold">
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">POST</span>
                   <span className="text-slate-700">/exams</span>
                 </div>
-                <span className="text-xs text-slate-500">Create Exam</span>
+                <span className="text-xs text-slate-500">Create & Schedule Exam</span>
               </div>
               <div className="p-4 space-y-3 font-mono text-xs">
+                <p className="font-sans font-semibold text-slate-700">Request Body:</p>
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
   "workspaceId": "ws_sample_0001",
-  "title": "UTME 2026 Mock — General Science",
+  "title": "UTME 2026 Mock — Mathematics",
   "durationMins": 60,
-  "accessCode": "MOCK-SCI-26",
+  "accessCode": "MOCK-MTH-26",
+  "startsAt": "2026-10-02T09:00:00.000Z",
+  "endsAt": "2026-10-02T17:00:00.000Z",
   "maxTabViolations": 3,
   "shuffleQuestions": true,
   "shuffleChoices": true,
   "showResultAfter": true
 }`}
+                </pre>
+                <p className="font-sans font-semibold text-slate-700">Response (201 Created):</p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`{
+  "id": "exam_clx9921",
+  "workspaceId": "ws_sample_0001",
+  "title": "UTME 2026 Mock — Mathematics",
+  "accessCode": "MOCK-MTH-26",
+  "durationMins": 60,
+  "startsAt": "2026-10-02T09:00:00.000Z",
+  "endsAt": "2026-10-02T17:00:00.000Z",
+  "isPublished": true,
+  "createdAt": "2026-09-29T18:00:00.000Z"
+}`}
+                </pre>
+              </div>
+            </div>
+
+            {/* Endpoint 3.2: List Workspace Exams */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2 font-mono text-xs font-bold">
+                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">GET</span>
+                  <span className="text-slate-700">/exams?workspaceId=&#123;id&#125;</span>
+                </div>
+                <span className="text-xs text-slate-500">List All Exam Rooms</span>
+              </div>
+              <div className="p-4 space-y-3 font-mono text-xs">
+                <p className="font-sans font-semibold text-slate-700">Response (200 OK):</p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`[
+  {
+    "id": "exam_clx9921",
+    "title": "UTME 2026 Mock — Mathematics",
+    "accessCode": "MOCK-MTH-26",
+    "durationMins": 60,
+    "startsAt": "2026-10-02T09:00:00.000Z",
+    "endsAt": "2026-10-02T17:00:00.000Z",
+    "_count": {
+      "questions": 40,
+      "attempts": 14
+    }
+  }
+]`}
                 </pre>
               </div>
             </div>
@@ -534,6 +583,57 @@ function verifyWebhook(rawBody, signature, secret) {
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </section>
+
+          {/* Section 10: Versioning & Changelog */}
+          <section id="changelog" className="space-y-4 scroll-mt-24">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-[#641bc4]" />
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">10. API Versioning & Release Changelog</h2>
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              ParaLearn CBT uses semantic versioning (<code>MAJOR.MINOR.PATCH</code>). Breaking schema modifications increment the major version, while backwards-compatible endpoints and parameter additions increment minor versions.
+            </p>
+
+            <div className="space-y-4">
+              {/* v1.1.0 */}
+              <div className="border border-violet-200 bg-violet-50/30 rounded-xl p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-extrabold text-sm text-[#641bc4] bg-white px-2 py-0.5 rounded border border-violet-200">
+                      v1.1.0
+                    </span>
+                    <span className="font-bold text-xs text-slate-900">Multi-Exam Scheduling & Window Controls</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-slate-500">Current Stable</span>
+                </div>
+                <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside">
+                  <li>Added <code>startsAt</code> and <code>endsAt</code> ISO-8601 date/time window parameters on <code>POST /exams</code>.</li>
+                  <li>Added <code>GET /exams?workspaceId=&#123;id&#125;</code> endpoint for listing all examination rooms in an exam hall.</li>
+                  <li>Enabled independent examiners to manage and launch multiple distinct examinations concurrently.</li>
+                  <li>Integrated candidate roster management with 1-click WhatsApp and magic link PIN dissemination.</li>
+                </ul>
+              </div>
+
+              {/* v1.0.0 */}
+              <div className="border border-slate-200 bg-white rounded-xl p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-extrabold text-sm text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                      v1.0.0
+                    </span>
+                    <span className="font-bold text-xs text-slate-900">Initial Public Microservice Release</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-slate-400">September 2026</span>
+                </div>
+                <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside">
+                  <li>Core autonomous CBT workspace and standalone self-serve provisioning (30 free test credits).</li>
+                  <li>Low-latency candidate session runner (Redis buffered response ingestion &lt;5ms).</li>
+                  <li>Real-time anti-cheat telemetry and deterministic WAEC/NECO auto-grading.</li>
+                  <li>HMAC-SHA256 signed webhook dispatches (<code>exam.attempt.completed</code>).</li>
+                </ul>
+              </div>
             </div>
           </section>
         </div>
