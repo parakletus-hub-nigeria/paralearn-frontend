@@ -65,15 +65,18 @@ export default function CbtWorkspaceHeader() {
     if (typeof window !== "undefined") {
       localStorage.removeItem("paralearn_cbt_standalone_workspace");
       localStorage.removeItem("paralearn_cbt_user_type");
+      localStorage.removeItem("paralearn_cbt_examiner_session");
     }
-    await dispatch(logoutUser());
+    if (user) {
+      await dispatch(logoutUser());
+    }
     router.push("/cbt/auth");
   };
 
   const navLinks = [
-    { label: "Exams", href: "/RMS/cbt", icon: FileText },
-    { label: "Question Bank", href: "/RMS/cbt/question-bank", icon: Database },
-    { label: "Results", href: "/RMS/cbt/results", icon: BarChart3 },
+    { label: "Exams", href: isSchoolMode ? "/RMS/cbt" : "/cbt", icon: FileText },
+    { label: "Question Bank", href: isSchoolMode ? "/RMS/cbt/question-bank" : "/cbt", icon: Database },
+    { label: "Results", href: isSchoolMode ? "/RMS/cbt/results" : "/cbt", icon: BarChart3 },
   ];
 
   return (
@@ -81,7 +84,7 @@ export default function CbtWorkspaceHeader() {
       
       {/* Left: Brand & Workspace Switcher Context */}
       <div className="flex items-center gap-3.5">
-        <Link href="/RMS/cbt" className="flex items-center gap-2">
+        <Link href={isSchoolMode ? "/RMS/cbt" : "/cbt"} className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--violet-ink)] text-white flex items-center justify-center font-bold text-sm shadow-xs">
             PL
           </div>

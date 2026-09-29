@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { 
   ArrowLeft, 
   ShieldAlert, 
@@ -155,13 +156,17 @@ export default function CbtLiveMonitor({
   const flaggedCount = candidates.filter((c) => c.violations > 0).length;
   const lockedCount = candidates.filter((c) => c.status === "locked").length;
 
+  const pathname = usePathname();
+  const isSchoolContext = pathname?.startsWith("/RMS");
+  const backHref = isSchoolContext ? `/RMS/cbt/exams/${examId}` : `/cbt/exams/${examId}`;
+
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)]">
       
       {/* ── HEADER (56px) ────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 h-14 bg-white border-b border-[var(--border-fine)] px-4 sm:px-6 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
-          <Link href={`/RMS/cbt/exams/${examId}`}>
+          <Link href={backHref}>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--text-secondary)]">
               <ArrowLeft className="w-4 h-4" />
             </Button>

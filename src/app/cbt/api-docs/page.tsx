@@ -78,22 +78,17 @@ export default function CbtApiDocsPage() {
 
           <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-mono">
             <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-2xs flex items-center gap-2">
-              <span className="text-slate-400">Production Base URL:</span>
+              <span className="text-slate-400">Base API URL:</span>
               <code className="text-[#641bc4] font-bold">https://cbt-api.pln.ng</code>
             </div>
             <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-2xs flex items-center gap-2">
-              <span className="text-slate-400">Local Sandbox:</span>
-              <code className="text-slate-700 font-bold">http://localhost:4000</code>
+              <span className="text-slate-400">Protocol:</span>
+              <code className="text-slate-700 font-bold">HTTPS / TLS 1.3</code>
             </div>
-            <a
-              href="http://localhost:4000/api/docs"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#641bc4] hover:underline flex items-center gap-1 font-sans font-semibold"
-            >
-              <Terminal className="w-3.5 h-3.5" />
-              Open Interactive Swagger UI &rarr;
-            </a>
+            <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-2xs flex items-center gap-2">
+              <span className="text-slate-400">Response Format:</span>
+              <code className="text-emerald-700 font-bold">JSON (RFC 8259)</code>
+            </div>
           </div>
         </div>
       </section>
@@ -109,7 +104,7 @@ export default function CbtApiDocsPage() {
               <a href="#workspaces" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">2. Workspaces & Keys</a>
               <a href="#exams" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">3. Exams Management</a>
               <a href="#questions" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">4. Question Studio & LaTeX</a>
-              <a href="#sessions" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">5. Candidate Runner & Redis</a>
+              <a href="#sessions" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">5. Candidate Runner & Telemetry</a>
               <a href="#proctoring" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">6. Proctoring Telemetry</a>
               <a href="#submission" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">7. Auto-Grading & Slips</a>
               <a href="#webhooks" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">8. Webhook Verification</a>
@@ -140,16 +135,16 @@ export default function CbtApiDocsPage() {
               <h2 className="text-2xl font-bold tracking-tight text-slate-900">1. Authentication</h2>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Every request from an external application must include your secret API key in the authorization header. You receive this key upon creating an exam hall workspace.
+              Every request from an external application must include your secret API key in the authorization header. You receive this key upon creating or signing in to an exam hall workspace.
             </p>
             <div className="bg-slate-900 text-slate-100 rounded-xl p-4 font-mono text-xs overflow-x-auto shadow-inner">
-              <span className="text-slate-400"># Pass in Authorization header</span>
+              <span className="text-slate-400"># Pass in standard Authorization header:</span>
               <br />
-              <span className="text-emerald-400">Authorization:</span> Bearer pln_live_sk_7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c
+              <span className="text-emerald-400">Authorization:</span> Bearer pln_live_sk_sample_••••••••••••••••
+              <br /><br />
+              <span className="text-slate-400"># Or using the custom header:</span>
               <br />
-              <span className="text-slate-400"># Or using custom header:</span>
-              <br />
-              <span className="text-emerald-400">x-api-key:</span> pln_live_sk_7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c
+              <span className="text-emerald-400">x-api-key:</span> pln_live_sk_sample_••••••••••••••••
             </div>
           </section>
 
@@ -176,21 +171,21 @@ export default function CbtApiDocsPage() {
                 <p className="font-sans font-semibold text-slate-700">Request Body:</p>
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
-  "name": "Apex JAMB Academy",
-  "ownerName": "Dr. Tunde Fashola",
-  "email": "tunde@apexjamb.ng",
-  "webhookUrl": "https://api.apexjamb.ng/webhooks/cbt-results"
+  "name": "Standard Assessment Centre",
+  "ownerName": "Centre Administrator",
+  "email": "examiner@example.com",
+  "webhookUrl": "https://api.example.com/webhooks/cbt-results"
 }`}
                 </pre>
                 <p className="font-sans font-semibold text-slate-700">Response (201 Created):</p>
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
-  "id": "cly7q1m8x0001",
-  "name": "Apex JAMB Academy",
+  "id": "ws_sample_0001",
+  "name": "Standard Assessment Centre",
   "type": "STANDALONE_HALL",
   "credits": 30,
-  "apiKey": "pln_live_sk_7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c",
-  "webhookSecret": "pln_whsec_1234567890abcdef"
+  "apiKey": "pln_live_sk_sample_••••••••••••••••",
+  "webhookSecret": "pln_whsec_sample_••••••••••••••••"
 }`}
                 </pre>
               </div>
@@ -212,19 +207,19 @@ export default function CbtApiDocsPage() {
                 <p className="font-sans font-semibold text-slate-700">Request Body:</p>
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
-  "email": "tunde@apexjamb.ng",
-  "password": "optional_secure_password"
+  "email": "examiner@example.com",
+  "password": "your_secure_password"
 }`}
                 </pre>
                 <p className="font-sans font-semibold text-slate-700">Response (200 OK):</p>
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
-  "id": "cly7q1m8x0001",
-  "name": "Apex JAMB Academy",
-  "ownerName": "Dr. Tunde Fashola",
-  "ownerEmail": "tunde@apexjamb.ng",
+  "id": "ws_sample_0001",
+  "name": "Standard Assessment Centre",
+  "ownerName": "Centre Administrator",
+  "ownerEmail": "examiner@example.com",
   "credits": 30,
-  "apiKey": "pln_live_sk_7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c",
+  "apiKey": "pln_live_sk_sample_••••••••••••••••",
   "_count": {
     "exams": 4,
     "questions": 150
@@ -247,9 +242,9 @@ export default function CbtApiDocsPage() {
                 <p className="font-sans font-semibold text-slate-700">Request Body:</p>
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
-  "schoolId": "sch_greendale_001",
-  "schoolName": "Greendale International Academy",
-  "email": "principal@greendale.edu.ng"
+  "schoolId": "sch_sample_99182",
+  "schoolName": "Exemplar Academy",
+  "email": "admin@school.example.edu.ng"
 }`}
                 </pre>
               </div>
@@ -277,10 +272,10 @@ export default function CbtApiDocsPage() {
               <div className="p-4 space-y-3 font-mono text-xs">
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
-  "workspaceId": "cly7q1m8x0001",
-  "title": "JAMB UTME 2026 Mock — Physics",
+  "workspaceId": "ws_sample_0001",
+  "title": "UTME 2026 Mock — General Science",
   "durationMins": 60,
-  "accessCode": "JAMB-MOCK-26",
+  "accessCode": "MOCK-SCI-26",
   "maxTabViolations": 3,
   "shuffleQuestions": true,
   "shuffleChoices": true,
@@ -312,8 +307,8 @@ export default function CbtApiDocsPage() {
               <div className="p-4 space-y-3 font-mono text-xs">
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
-  "workspaceId": "cly7q1m8x0001",
-  "examId": "exam_clx9921",
+  "workspaceId": "ws_sample_0001",
+  "examId": "exam_sample_101",
   "questions": [
     {
       "prompt": "Calculate the kinetic energy: $E_k = \\\\frac{1}{2}mv^2$ for $m=2\\\\text{kg}, v=3\\\\text{m/s}$",
@@ -336,10 +331,10 @@ export default function CbtApiDocsPage() {
           <section id="sessions" className="space-y-4 scroll-mt-24">
             <div className="flex items-center gap-2">
               <Terminal className="w-5 h-5 text-[#641bc4]" />
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900">5. Candidate Runner & Live Buffering</h2>
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">5. Candidate Runner & Session Ingestion</h2>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
-              When a student starts an exam via <code>POST /attempts/start</code>, all correct answer keys are stripped from the response payload for strict security. Live keystrokes and answers are buffered in Redis hash tables (<span className="font-semibold text-emerald-600">&lt;5ms latency</span>) to prevent database saturation during high-volume mock examinations.
+              When a student starts an exam via <code>POST /attempts/start</code>, all correct answer keys are stripped from the response payload for strict security. Live answers are buffered in high-throughput in-memory caching (<span className="font-semibold text-emerald-600">&lt;5ms latency</span>) to prevent database contention during concurrent mock tests.
             </p>
 
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
@@ -354,20 +349,20 @@ export default function CbtApiDocsPage() {
                 <p className="font-sans font-semibold text-slate-700">Request Body:</p>
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
-  "accessCode": "JAMB-MOCK-26",
+  "accessCode": "MOCK-SCI-26",
   "candidatePin": "849201",
-  "candidateName": "Oluwaseun Adeleke",
-  "studentId": "ext_student_908"
+  "candidateName": "Sample Candidate",
+  "studentId": "std_demo_101"
 }`}
                 </pre>
-                <p className="font-sans font-semibold text-slate-700">Response (200 OK — Answer keys omitted):</p>
+                <p className="font-sans font-semibold text-slate-700">Response (200 OK — Correct answer keys omitted):</p>
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
   "isResumed": false,
-  "attemptId": "att_cly99182",
-  "examId": "exam_clx9921",
-  "examTitle": "JAMB UTME 2026 Mock — Physics",
-  "candidateName": "Oluwaseun Adeleke",
+  "attemptId": "att_sample_202",
+  "examId": "exam_sample_101",
+  "examTitle": "UTME 2026 Mock — General Science",
+  "candidateName": "Sample Candidate",
   "remainingSeconds": 3600,
   "violations": 0,
   "maxTabViolations": 3,
@@ -409,7 +404,7 @@ export default function CbtApiDocsPage() {
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
   "type": "TAB_SWITCH",
-  "meta": { "action": "window_blur", "timestamp": 1727632800000 }
+  "meta": { "action": "window_blur" }
 }`}
                 </pre>
               </div>
@@ -446,7 +441,7 @@ export default function CbtApiDocsPage() {
                 <p className="font-sans font-semibold text-slate-700">Response (200 OK):</p>
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
-  "attemptId": "att_cly99182",
+  "attemptId": "att_sample_202",
   "score": 36.0,
   "maxScore": 40.0,
   "percentage": 90.0,
@@ -535,7 +530,7 @@ function verifyWebhook(rawBody, signature, secret) {
                   <tr>
                     <td className="py-2.5 px-4 font-mono font-bold text-amber-600">429</td>
                     <td className="py-2.5 px-4 font-semibold">Too Many Requests</td>
-                    <td className="py-2.5 px-4 text-slate-600">Rate limit exceeded (&gt; 120 req/min for general API, &gt; 600 req/min for Redis answer buffering).</td>
+                    <td className="py-2.5 px-4 text-slate-600">Rate limit exceeded (&gt; 120 req/min for general API, &gt; 600 req/min for live response buffering).</td>
                   </tr>
                 </tbody>
               </table>

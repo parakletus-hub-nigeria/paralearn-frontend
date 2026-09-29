@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { 
   ArrowLeft, 
   Plus, 
@@ -132,6 +133,11 @@ export default function CbtQuestionStudio({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  const pathname = usePathname();
+  const isSchoolContext = pathname?.startsWith("/RMS");
+  const backHref = isSchoolContext ? "/RMS/cbt" : "/cbt";
+  const monitorHref = isSchoolContext ? `/RMS/cbt/exams/${examId}/monitor` : `/cbt/exams/${examId}/monitor`;
+
   const activeQuestion = questions[activeIdx] || questions[0];
 
   const totalMarks = useMemo(
@@ -242,7 +248,7 @@ export default function CbtQuestionStudio({
         
         {/* Left: Back & Exam Title */}
         <div className="flex items-center gap-3">
-          <Link href="/RMS/cbt">
+          <Link href={backHref}>
             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[var(--radius-md)] text-[var(--text-secondary)]">
               <ArrowLeft className="w-4 h-4" />
             </Button>
@@ -275,7 +281,7 @@ export default function CbtQuestionStudio({
           </Button>
 
           {/* Live Monitor Link */}
-          <Link href={`/RMS/cbt/exams/${examId}/monitor`}>
+          <Link href={monitorHref}>
             <Button
               variant="outline"
               size="sm"

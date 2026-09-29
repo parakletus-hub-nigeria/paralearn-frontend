@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, KeyRound, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,9 +64,9 @@ export default function TakeRootPage() {
 
         <div className="pt-4 border-t border-[var(--border-fine)] flex items-center justify-between text-xs text-[var(--text-secondary)]">
           <span>Are you an examiner?</span>
-          <a href="/RMS/cbt" className="font-semibold text-[var(--violet-ink)] hover:underline">
+          <Link href="/cbt" className="font-semibold text-[var(--violet-ink)] hover:underline">
             Manage Exams &rarr;
-          </a>
+          </Link>
         </div>
 
       </div>

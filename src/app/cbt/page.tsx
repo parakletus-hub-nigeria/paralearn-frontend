@@ -202,7 +202,7 @@ export default function CbtPortalPage() {
                 <h2 className="text-lg font-bold text-slate-900">Your Exam Rooms</h2>
                 <p className="text-xs text-slate-500">Share room access codes with candidates to begin live testing.</p>
               </div>
-              <Link href={`/RMS/cbt/exams/${exams[0].id}/monitor`}>
+              <Link href={`/cbt/exams/${exams[0].id}/monitor`}>
                 <Button variant="outline" size="sm" className="h-9 text-xs font-bold border-slate-200 text-slate-700 flex items-center gap-1.5">
                   <BarChart3 className="w-3.5 h-3.5 text-[#641bc4]" />
                   <span>Live Proctoring Monitor</span>

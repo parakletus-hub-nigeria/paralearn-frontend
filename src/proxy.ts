@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
- * Production only: cbt.pln.ng → app.pln.ng/RMS/cbt
+ * Production only: cbt.pln.ng → app.pln.ng/cbt
  *
- * In development, access the CBT portal directly at localhost:3000/RMS/cbt.
- * Production subdomain redirects are also handled at the nginx/CDN level
- * as the primary mechanism; this is a Next.js-layer fallback.
+ * Directs CBT subdomain traffic directly to the autonomous CBT workspace.
  */
 export function proxy(request: NextRequest) {
   // Skip entirely in development — avoid redirect loops with Turbopack
@@ -17,7 +15,7 @@ export function proxy(request: NextRequest) {
 
   if (!isCBT) return NextResponse.next();
 
-  return NextResponse.redirect("https://app.pln.ng/RMS/cbt");
+  return NextResponse.redirect("https://app.pln.ng/cbt");
 }
 
 export const config = {
