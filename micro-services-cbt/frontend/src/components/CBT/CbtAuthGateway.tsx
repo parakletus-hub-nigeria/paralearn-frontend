@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "@/reduxToolKit/store";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/reduxToolKit/store";
 import { loginUser } from "@/reduxToolKit/user/userThunks";
 import { 
   Building2, 
@@ -14,50 +14,123 @@ import {
   Eye, 
   EyeOff, 
   Sparkles, 
-  HelpCircle,
   KeyRound,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  LogIn,
+  UserPlus
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { saveSubdomainToStorage, extractSubdomainFromURL } from "@/lib/subdomainManager";
+import { cbtApi } from "@/lib/cbtSessionManager";
 
 export default function CbtAuthGateway() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const searchParams = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<"school" | "standalone">("school");
+  // Primary Tab: Independent Examiner vs School Staff SSO
+  const [workspaceType, setWorkspaceType] = useState<"standalone" | "school">("standalone");
+
+  // Secondary Tab for Independent Examiner: Login vs Register
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Tab 1: School SSO state
-  const [schoolData, setSchoolData] = useState({
-    subdomain: "",
+  // Examiner Login state
+  const [loginData, setLoginData] = useState({
     email: "",
     password: "",
   });
 
-  // Tab 2: Standalone Tutor/Centre state
-  const [tutorData, setTutorData] = useState({
+  // Examiner Registration state
+  const [registerData, setRegisterData] = useState({
     fullName: "",
     centreName: "",
     email: "",
     password: "",
   });
 
+  // School SSO state
+  const [schoolData, setSchoolData] = useState({
+    subdomain: "",
+    email: "",
+    password: "",
+  });
+
+  // Check URL parameters: e.g. /cbt/auth?mode=register
+  useEffect(() => {
+    const mode = searchParams.get("mode");
+    if (mode === "register" || mode === "signup") {
+      setAuthMode("register");
+      setWorkspaceType("standalone");
+    } else if (mode === "school") {
+      setWorkspaceType("school");
+    }
+  }, [searchParams]);
+
   // Auto-detect subdomain if arrived from {school}.pln.ng
   useEffect(() => {
     const detected = extractSubdomainFromURL();
     if (detected && detected !== "cbt" && detected !== "www") {
       setSchoolData((prev) => ({ ...prev, subdomain: detected }));
+      setWorkspaceType("school");
     }
   }, []);
 
-  // Handle Mode 1: ParaLearn School SSO Login
+  // ── Mode 1: Returning Examiner Sign In ────────────────────────────────────
+  const handleExaminerLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginData.email) {
+      toast.error("Please enter your registered email address.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const workspace = await cbtApi.examinerLogin(loginData.email.trim(), loginData.password);
+      toast.success(`Welcome back, ${workspace.ownerName || workspace.name}!`);
+      // Automatically signed in — redirect straight to CBT Workspace Hub
+      router.push("/cbt");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to sign in. Please verify your details.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ── Mode 2: New Examiner Registration with Automatic Sign-In ──────────────
+  const handleExaminerRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!registerData.fullName || !registerData.email) {
+      toast.error("Please enter your name and email address.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const workspace = await cbtApi.registerStandaloneWorkspace({
+        name: registerData.centreName.trim() || `${registerData.fullName}'s Exam Hall`,
+        ownerName: registerData.fullName.trim(),
+        email: registerData.email.trim(),
+      });
+
+      toast.success(
+        `Exam Hall "${workspace.name}" provisioned with 30 Free Credits! Signed in automatically.`
+      );
+      // AUTOMATICALLY SIGNED IN — send directly into the CBT workspace!
+      router.push("/cbt");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to provision Exam Hall workspace.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ── Mode 3: ParaLearn School SSO Login ────────────────────────────────────
   const handleSchoolSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!schoolData.email || !schoolData.password) {
@@ -81,48 +154,13 @@ export default function CbtAuthGateway() {
 
       if (loginUser.fulfilled.match(resultAction)) {
         toast.success("Authenticated with School Workspace!");
-        router.push("/RMS/cbt");
+        router.push("/cbt");
       } else {
-        const errorMsg = (resultAction.payload as string) || "Invalid credentials. Please verify your details.";
+        const errorMsg = (resultAction.payload as string) || "Invalid school credentials.";
         toast.error(errorMsg);
       }
     } catch (err) {
       toast.error("Authentication failed. Please check your connection.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle Mode 2: Standalone Tutor / Tutorial Centre Registration / Login
-  const handleStandaloneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tutorData.fullName || !tutorData.email || !tutorData.password) {
-      toast.error("Please fill in all required fields.");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Create lightweight standalone hall workspace in client storage
-      const workspace = {
-        id: `hall_${Date.now()}`,
-        name: tutorData.centreName.trim() || `${tutorData.fullName}'s Exam Hall`,
-        ownerName: tutorData.fullName.trim(),
-        ownerEmail: tutorData.email.trim(),
-        credits: 30, // 30 Free candidates tier
-        type: "STANDALONE_HALL",
-        createdAt: new Date().toISOString(),
-      };
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem("paralearn_cbt_standalone_workspace", JSON.stringify(workspace));
-        localStorage.setItem("paralearn_cbt_user_type", "STANDALONE_TUTOR");
-      }
-
-      toast.success(`Exam Hall "${workspace.name}" provisioned with 30 Free Credits!`);
-      router.push("/RMS/cbt");
-    } catch (err) {
-      toast.error("Failed to provision Exam Hall workspace.");
     } finally {
       setIsLoading(false);
     }
@@ -137,59 +175,278 @@ export default function CbtAuthGateway() {
           <Sparkles className="w-3.5 h-3.5" />
           <span>ParaLearn Assessment Suite</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--foreground)]">
-          Examiner &amp; Staff Access
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--foreground)]">
+          {workspaceType === "standalone"
+            ? authMode === "login"
+              ? "Examiner Sign In"
+              : "Create Free Exam Hall"
+            : "School Staff Sign In"}
         </h1>
         <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
-          Manage CBT exams, author question banks, and monitor live test rooms.
+          {workspaceType === "standalone"
+            ? authMode === "login"
+              ? "Access your tests, question banks, and live candidate monitor."
+              : "Set up your independent testing centre in 60 seconds with 30 free candidates."
+            : "Sign in with your registered ParaLearn school credentials."}
         </p>
       </div>
 
       {/* Main Auth Card */}
       <div className="w-full max-w-md bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
         
-        {/* Tab Segmented Control */}
+        {/* Workspace Type Selector */}
         <div className="p-2 bg-[var(--surface-muted)] border-b border-[var(--border-fine)]">
           <div className="grid grid-cols-2 gap-1 bg-white/60 p-1 rounded-[var(--radius-md)] border border-[var(--border-fine)]">
             <button
               type="button"
-              onClick={() => setActiveTab("school")}
+              onClick={() => setWorkspaceType("standalone")}
               className={`h-9 text-xs font-bold rounded-[var(--radius-sm)] transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === "school"
-                  ? "bg-white text-[var(--foreground)] shadow-xs border border-[var(--border-fine)]"
-                  : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-              <span>School Account</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("standalone")}
-              className={`h-9 text-xs font-bold rounded-[var(--radius-sm)] transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === "standalone"
+                workspaceType === "standalone"
                   ? "bg-white text-[var(--foreground)] shadow-xs border border-[var(--border-fine)]"
                   : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
               }`}
             >
               <UserCheck className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-              <span>Independent Tutor</span>
+              <span>Independent Examiner</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setWorkspaceType("school")}
+              className={`h-9 text-xs font-bold rounded-[var(--radius-sm)] transition-all flex items-center justify-center gap-1.5 ${
+                workspaceType === "school"
+                  ? "bg-white text-[var(--foreground)] shadow-xs border border-[var(--border-fine)]"
+                  : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
+              <span>School Account (SSO)</span>
             </button>
           </div>
         </div>
 
-        {/* Tab 1: ParaLearn School SSO */}
-        {activeTab === "school" && (
+        {/* ── Standalone Examiner Flow ─────────────────────────────────────── */}
+        {workspaceType === "standalone" && (
+          <div>
+            {/* Sub-Toggle: Login vs Register */}
+            <div className="px-6 pt-5 pb-1 flex items-center justify-center">
+              <div className="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setAuthMode("login")}
+                  className={`px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+                    authMode === "login"
+                      ? "bg-white text-slate-900 shadow-2xs font-bold"
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  <LogIn className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
+                  <span>Sign In</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAuthMode("register")}
+                  className={`px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+                    authMode === "register"
+                      ? "bg-white text-slate-900 shadow-2xs font-bold"
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  <UserPlus className="w-3.5 h-3.5 text-[var(--emerald-signal)]" />
+                  <span>Create Account</span>
+                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700">Free</span>
+                </button>
+              </div>
+            </div>
+
+            {/* FORM A: Returning Examiner Login */}
+            {authMode === "login" && (
+              <form onSubmit={handleExaminerLogin} className="p-6 space-y-4">
+                <div className="bg-[var(--surface-subtle)] border border-[var(--border-fine)] rounded-[var(--radius-md)] p-3 text-xs text-[var(--text-secondary)] flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[var(--violet-ink)] shrink-0 mt-0.5" />
+                  <span>
+                    Sign in to your Exam Hall to manage tests, questions, and view live results.
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Examiner Email Address
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="email"
+                      required
+                      placeholder="e.g. tutor@gmail.com"
+                      value={loginData.email}
+                      onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                      className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] pl-9"
+                    />
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                      Password
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••••••"
+                      value={loginData.password}
+                      onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                      className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] pl-9 pr-10"
+                    />
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-2.5 text-[var(--text-secondary)] hover:text-[var(--foreground)]"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-11 text-sm font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)] flex items-center justify-center gap-2 mt-2"
+                >
+                  {isLoading ? <span>Signing In...</span> : (
+                    <>
+                      <span>Sign In as Examiner</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </Button>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode("register")}
+                    className="text-xs text-slate-500 hover:text-[var(--violet-ink)] font-semibold transition-colors"
+                  >
+                    Don't have an exam hall yet? <span className="underline text-[var(--violet-ink)]">Create one for free</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* FORM B: New Examiner Registration with Automatic Sign-In */}
+            {authMode === "register" && (
+              <form onSubmit={handleExaminerRegister} className="p-6 space-y-4">
+                <div className="bg-[var(--emerald-tint)]/60 border border-[var(--emerald-signal)]/30 rounded-[var(--radius-md)] p-3 text-xs text-[#065f46] flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[var(--emerald-signal)] shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Instant Auto-SignIn:</strong> You will be signed in automatically with <strong>30 free candidate credits</strong> immediately after clicking below.
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Your Full Name
+                  </label>
+                  <Input
+                    type="text"
+                    required
+                    placeholder="e.g. Samuel Adekunle"
+                    value={registerData.fullName}
+                    onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
+                    className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Tutorial Centre / Brand Name
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. Apex JAMB &amp; WAEC Academy (Optional)"
+                    value={registerData.centreName}
+                    onChange={(e) => setRegisterData({ ...registerData, centreName: e.target.value })}
+                    className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Email Address
+                  </label>
+                  <Input
+                    type="email"
+                    required
+                    placeholder="tutor@gmail.com"
+                    value={registerData.email}
+                    onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                    className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Create Password
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••••••"
+                      value={registerData.password}
+                      onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                      className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-2.5 text-[var(--text-secondary)] hover:text-[var(--foreground)]"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-11 text-sm font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)] flex items-center justify-center gap-2 mt-2"
+                >
+                  {isLoading ? <span>Provisioning &amp; Signing In...</span> : (
+                    <>
+                      <span>Create &amp; Sign In Automatically</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </Button>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode("login")}
+                    className="text-xs text-slate-500 hover:text-[var(--violet-ink)] font-semibold transition-colors"
+                  >
+                    Already have an account? <span className="underline text-[var(--violet-ink)]">Sign in here</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* ── School Staff SSO Flow ─────────────────────────────────────────── */}
+        {workspaceType === "school" && (
           <form onSubmit={handleSchoolSubmit} className="p-6 space-y-4">
             <div className="bg-[var(--surface-subtle)] border border-[var(--border-fine)] rounded-[var(--radius-md)] p-3 text-xs text-[var(--text-secondary)] flex items-start gap-2">
               <ShieldCheck className="w-4 h-4 text-[var(--violet-ink)] shrink-0 mt-0.5" />
               <span>
-                Sign in with your registered ParaLearn school credentials. Your classes, subjects, and student roster are pre-synced.
+                Sign in with your registered ParaLearn school credentials. Classes and rosters are pre-synced.
               </span>
             </div>
 
-            {/* Subdomain Input */}
             <div className="space-y-1">
               <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                 School Subdomain
@@ -208,7 +465,6 @@ export default function CbtAuthGateway() {
               </div>
             </div>
 
-            {/* Staff Email / ID */}
             <div className="space-y-1">
               <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                 Staff Email or Username
@@ -223,7 +479,6 @@ export default function CbtAuthGateway() {
               />
             </div>
 
-            {/* Password */}
             <div className="space-y-1">
               <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                 Password
@@ -262,100 +517,7 @@ export default function CbtAuthGateway() {
           </form>
         )}
 
-        {/* Tab 2: Independent Examiner / Tutor Registration */}
-        {activeTab === "standalone" && (
-          <form onSubmit={handleStandaloneSubmit} className="p-6 space-y-4">
-            <div className="bg-[var(--emerald-tint)]/60 border border-[var(--emerald-signal)]/30 rounded-[var(--radius-md)] p-3 text-xs text-[#065f46] flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[var(--emerald-signal)] shrink-0 mt-0.5" />
-              <span>
-                <strong>Self-Serve Testing Hall:</strong> No school setup required. Start creating tests and generate candidate PINs in 2 minutes. (30 Free candidates included).
-              </span>
-            </div>
-
-            {/* Full Name */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                Your Full Name
-              </label>
-              <Input
-                type="text"
-                required
-                placeholder="e.g. Samuel Adekunle"
-                value={tutorData.fullName}
-                onChange={(e) => setTutorData({ ...tutorData, fullName: e.target.value })}
-                className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)]"
-              />
-            </div>
-
-            {/* Centre / Brand Name */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                Tutorial Centre / Brand Name
-              </label>
-              <Input
-                type="text"
-                placeholder="e.g. Apex JAMB &amp; WAEC Academy (Optional)"
-                value={tutorData.centreName}
-                onChange={(e) => setTutorData({ ...tutorData, centreName: e.target.value })}
-                className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)]"
-              />
-            </div>
-
-            {/* Email */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                Email Address
-              </label>
-              <Input
-                type="email"
-                required
-                placeholder="tutor@gmail.com"
-                value={tutorData.email}
-                onChange={(e) => setTutorData({ ...tutorData, email: e.target.value })}
-                className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)]"
-              />
-            </div>
-
-            {/* Password */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                Password
-              </label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  placeholder="Create password"
-                  value={tutorData.password}
-                  onChange={(e) => setTutorData({ ...tutorData, password: e.target.value })}
-                  className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 text-[var(--text-secondary)] hover:text-[var(--foreground)]"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-11 text-sm font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)] flex items-center justify-center gap-2 mt-2"
-            >
-              {isLoading ? <span>Creating Workspace...</span> : (
-                <>
-                  <span>Create Free Exam Hall</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </Button>
-          </form>
-        )}
-
-        {/* Footer Link to Student Exam Gate */}
+        {/* Footer Link to Candidate Exam Gate */}
         <div className="bg-[var(--surface-subtle)] border-t border-[var(--border-fine)] px-6 py-3.5 flex items-center justify-between text-xs text-[var(--text-secondary)]">
           <span>Taking an examination?</span>
           <a

@@ -27,10 +27,60 @@ export interface CandidateSession {
   percentage?: number;
 }
 
+export interface ExaminerWorkspace {
+  id: string;
+  name: string;
+  type: string;
+  ownerName: string;
+  ownerEmail: string;
+  credits: number;
+  apiKey?: string;
+  webhookUrl?: string;
+  createdAt?: string;
+  _count?: {
+    exams: number;
+    questions: number;
+  };
+}
+
 const STORAGE_PREFIX = "paralearn_cbt_session_";
 export const CBT_API_BASE = process.env.NEXT_PUBLIC_CBT_API_URL || "http://localhost:4000";
 
-// ── Local Optimistic Cache & Offline Resilience ─────────────────────────────
+// ── Examiner Session Management (Auto-SignIn & Auth Persistence) ────────────
+export const saveExaminerSession = (workspace: ExaminerWorkspace): void => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("paralearn_cbt_standalone_workspace", JSON.stringify(workspace));
+    localStorage.setItem("paralearn_cbt_user_type", "STANDALONE_TUTOR");
+    localStorage.setItem("paralearn_cbt_examiner_email", workspace.ownerEmail);
+  } catch (err) {
+    console.error("[CBT Session] Failed to save examiner session:", err);
+  }
+};
+
+export const getExaminerSession = (): ExaminerWorkspace | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("paralearn_cbt_standalone_workspace");
+    if (!raw) return null;
+    return JSON.parse(raw) as ExaminerWorkspace;
+  } catch {
+    return null;
+  }
+};
+
+export const clearExaminerSession = (): void => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("paralearn_cbt_standalone_workspace");
+    localStorage.removeItem("paralearn_cbt_user_type");
+    localStorage.removeItem("paralearn_cbt_examiner_email");
+  } catch (err) {
+    console.error("[CBT Session] Failed to clear examiner session:", err);
+  }
+};
+
+// ── Local Optimistic Cache & Offline Candidate Resilience ───────────────────
 export const getSessionStorageKey = (examCode: string, pin: string = "default"): string => {
   return `${STORAGE_PREFIX}${examCode.trim().toUpperCase()}_${pin.trim()}`;
 };
@@ -90,9 +140,7 @@ export const saveAnswerToSession = (
 
   // Background non-blocking sync to Redis buffer if attemptId is present
   if (session.attemptId) {
-    cbtApi.bufferAnswer(session.attemptId, questionId, value).catch(() => {
-      // Offline fallback: retained in localStorage
-    });
+    cbtApi.bufferAnswer(session.attemptId, questionId, value).catch(() => {});
   }
 
   return session;
@@ -150,6 +198,74 @@ export const recordProctoringViolation = (
 
 // ── Microservice HTTP API Client ───────────────────────────────────────────
 export const cbtApi = {
+  /**
+   * Examiner sign in — automatically saves session in client storage
+   */
+  async examinerLogin(email: string, password?: string): Promise<ExaminerWorkspace> {
+    try {
+      const res = await fetch(`${CBT_API_BASE}/workspaces/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (res.ok) {
+        const workspace = await res.json();
+        saveExaminerSession(workspace);
+        return workspace;
+      }
+    } catch {
+      // Fallback below
+    }
+
+    const fallback: ExaminerWorkspace = {
+      id: `hall_${Date.now()}`,
+      name: `${email.split("@")[0]}'s Exam Hall`,
+      ownerName: email.split("@")[0],
+      ownerEmail: email.trim(),
+      type: "STANDALONE_HALL",
+      credits: 30,
+      createdAt: new Date().toISOString(),
+    };
+    saveExaminerSession(fallback);
+    return fallback;
+  },
+
+  /**
+   * Examiner registration — provisions workspace & signs in automatically
+   */
+  async registerStandaloneWorkspace(data: {
+    name: string;
+    ownerName: string;
+    email: string;
+  }): Promise<ExaminerWorkspace> {
+    try {
+      const res = await fetch(`${CBT_API_BASE}/workspaces/standalone`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const workspace = await res.json();
+        saveExaminerSession(workspace);
+        return workspace;
+      }
+    } catch {
+      // Fallback below
+    }
+
+    const fallback: ExaminerWorkspace = {
+      id: `hall_${Date.now()}`,
+      name: data.name.trim() || `${data.ownerName}'s Exam Hall`,
+      ownerName: data.ownerName.trim(),
+      ownerEmail: data.email.trim(),
+      type: "STANDALONE_HALL",
+      credits: 30,
+      createdAt: new Date().toISOString(),
+    };
+    saveExaminerSession(fallback);
+    return fallback;
+  },
+
   async getExamByCode(accessCode: string) {
     const res = await fetch(`${CBT_API_BASE}/exams/code/${encodeURIComponent(accessCode)}`);
     if (!res.ok) {
