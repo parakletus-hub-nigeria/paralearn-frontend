@@ -56,12 +56,12 @@ const Footer = () => {
     }
   };
 
-  const footerLinks = {
+  const footerLinks: Record<string, Array<{ label: string; href: string; badge?: string }>> = {
     product: [
       { label: "Features", href: "/features" },
       { label: "Pricing", href: "/contact" },
-      // { label: "For Schools", href: "#schools" },
-      // { label: "CBT System", href: "#cbt" },
+      { label: "ParaLearn CBT", href: "/cbt" },
+      { label: "Exam Hall (PIN Gate)", href: "/take" },
     ],
     company: [
       { label: "About Us", href: "/about" },
@@ -70,10 +70,10 @@ const Footer = () => {
       { label: "Partners", href: "/partners" },
     ],
     resources: [
+      { label: "Developer API Docs", href: "/cbt/api-docs", badge: "v1.0" },
       { label: "Documentation", href: "/documentation" },
       { label: "Help Center", href: "/help" },
       { label: "Contact Support", href: "/support" },
-      // { label: "Community", href: "#community" },
     ],
     legal: [
       { label: "Privacy Policy", href: "/privacy" },
@@ -287,11 +287,16 @@ const Footer = () => {
                     <a
                       key={index}
                       href={link.href}
-                      className="text-sm text-slate-600 hover:text-primary transition-colors font-medium"
+                      className="text-sm text-slate-600 hover:text-primary transition-colors font-medium flex items-center gap-1.5"
                       target={isExternal ? "_blank" : undefined}
                       rel={isExternal ? "noopener noreferrer" : undefined}
                     >
-                      {link.label}
+                      <span>{link.label}</span>
+                      {link.badge && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-violet-100 text-[#641bc4] border border-violet-200">
+                          {link.badge}
+                        </span>
+                      )}
                     </a>
                   );
                 }
@@ -300,9 +305,14 @@ const Footer = () => {
                     key={index}
                     href={link.href}
                     onClick={(e) => handleLinkClick(e, link.href, link.label)}
-                    className="text-sm text-slate-600 hover:text-primary transition-colors font-medium cursor-pointer"
+                    className="text-sm text-slate-600 hover:text-primary transition-colors font-medium cursor-pointer flex items-center gap-1.5"
                   >
-                    {link.label}
+                    <span>{link.label}</span>
+                    {link.badge && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-violet-100 text-[#641bc4] border border-violet-200">
+                        {link.badge}
+                      </span>
+                    )}
                   </a>
                 );
               })}

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ParaLearn - CBT Microservice Architectural Proposal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  @page {
+    size: A4;
+    margin: 18mm 15mm 18mm 15mm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1e293b;
+    background-color: #ffffff;
+    line-height: 1.55;
+    font-size: 11pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .header {
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .logo-title h1 {
+    font-size: 20pt;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-title .subtitle {
+    font-size: 11.5pt;
+    font-weight: 600;
+    color: #2563eb;
+    margin-top: 3px;
+  }
+
+  .meta-box {
+    text-align: right;
+    font-size: 9pt;
+    color: #64748b;
+  }
+
+  .meta-box strong {
+    color: #334155;
+  }
+
+  .exec-summary {
+    background: #f8fafc;
+    border-left: 4px solid #2563eb;
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 24px;
+  }
+
+  .exec-summary h3 {
+    font-size: 11.5pt;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 6px;
+  }
+
+  .exec-summary p {
+    font-size: 10pt;
+    color: #334155;
+    line-height: 1.5;
+  }
+
+  h2 {
+    font-size: 13.5pt;
+    font-weight: 700;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 6px;
+    margin-top: 26px;
+    margin-bottom: 12px;
+    page-break-after: avoid;
+  }
+
+  h3 {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #1e293b;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+
+  p {
+    margin-bottom: 10px;
+    font-size: 10pt;
+    color: #334155;
+  }
+
+  ul, ol {
+    margin-left: 20px;
+    margin-bottom: 12px;
+  }
+
+  li {
+    font-size: 10pt;
+    color: #334155;
+    margin-bottom: 4px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 18px 0;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+
+  th {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+  }
+
+  td {
+    padding: 7px 10px;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .badge-p0 { background: #fee2e2; color: #b91c1c; }
+  .badge-p1 { background: #fef3c7; color: #b45309; }
+  .badge-p2 { background: #e0f2fe; color: #0369a1; }
+  .badge-core { background: #f1f5f9; color: #475569; }
+
+  .diagram-box {
+    background: #0f172a;
+    color: #f8fafc;
+    border-radius: 8px;
+    padding: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt;
+    line-height: 1.4;
+    margin: 14px 0;
+    page-break-inside: avoid;
+    overflow-x: auto;
+  }
+
+  .code-block {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #64748b;
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt;
+    line-height: 1.45;
+    color: #1e293b;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+
+  .grid-2 {
+    display: flex;
+    gap: 14px;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+
+  .card {
+    flex: 1;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 12px;
+    background: #ffffff;
+  }
+
+  .card-header {
+    font-weight: 700;
+    font-size: 10pt;
+    color: #0f172a;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card p {
+    font-size: 9pt;
+    margin-bottom: 0;
+    color: #475569;
+  }
+
+  .footer {
+    margin-top: 30px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 10px;
+    font-size: 8pt;
+    color: #94a3b8;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-title">
+      <h1>ParaLearn Engineering</h1>
+      <div class="subtitle">Decoupling CBT Engine into an Autonomous Microservice</div>
+    </div>
+    <div class="meta-box">
+      <div><strong>To:</strong> Chief Technology Officer (CTO)</div>
+      <div><strong>Target:</strong> cbt.pln.ng Architecture</div>
+      <div><strong>Date:</strong> September 2026</div>
+      <div><strong>Status:</strong> Architectural Proposal</div>
+    </div>
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="exec-summary">
+    <h3>Executive Summary</h3>
+    <p>
+      Following an architectural evaluation of the ParaLearn platform (NestJS backend &amp; Next.js frontend), we recommend extracting the <strong>Computer-Based Testing (CBT) engine as an autonomous microservice (<code>cbt.pln.ng</code>)</strong>. This move resolves critical high-concurrency exam spikes that currently threaten core school operations, while unlocking a high-growth self-serve market for tutorial centres (JAMB/WAEC prep), independent tutors, and testing institutes without requiring full School Information System (SIS) onboarding.
+    </p>
+  </div>
+
+  <!-- SECTION 1 -->
+  <h2>1. Strategic &amp; Operational Rationale</h2>
+  <ul>
+    <li><strong>Resource &amp; Traffic Asymmetry:</strong> During exam weeks, thousands of students simultaneously hit servers with start requests, answer updates, 20-second proctoring heartbeats, and auto-submits. Decoupling isolates connection pools and ensures report card generation, bursary billing, and admin tasks run unaffected.</li>
+    <li><strong>Product-Led Growth (PLG) &amp; TAM Expansion:</strong> Full school onboarding requires academic sessions, terms, classes, subject teachers, and grading scales—a major barrier for standalone examiners. Decoupling allows tutors to register in 30 seconds, create a test, and distribute PINs.</li>
+    <li><strong>Dual-Access Synergy:</strong> Existing ParaLearn schools retain Single Sign-On (SSO) and automatic score-sheet sync, while independent examiners get a lean, self-serve testing hall.</li>
+  </ul>
+
+  <!-- SECTION 2 -->
+  <h2>2. Platform Feature Audit &amp; Extraction Roadmap</h2>
+  <p>Overview of the current monolith domain boundaries and their target deployment profiles:</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Domain / Module</th>
+        <th>Current Monolith Path</th>
+        <th>Target Architecture</th>
+        <th>Priority</th>
+        <th>Primary Driver</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>CBT &amp; Proctoring</strong></td>
+        <td><code>src/assessments</code>, <code>src/proctoring</code></td>
+        <td><strong>Autonomous Microservice</strong></td>
+        <td><span class="badge badge-p0">P0 - Immediate</span></td>
+        <td>Extreme burst concurrency, independent B2B/B2C SaaS market.</td>
+      </tr>
+      <tr>
+        <td><strong>Result Processing &amp; PDFs</strong></td>
+        <td><code>src/reports</code>, <code>src/Queue</code>, <code>src/pdf</code></td>
+        <td><strong>Dedicated Worker Service</strong></td>
+        <td><span class="badge badge-p0">P0 - Immediate</span></td>
+        <td>CPU/RAM-heavy headless PDF booklet rendering (BullMQ + Puppeteer).</td>
+      </tr>
+      <tr>
+        <td><strong>AI Lesson Planner (SabiNote)</strong></td>
+        <td><code>src/llm</code>, <code>src/credits</code>, <code>sabinote</code></td>
+        <td><strong>Standalone EdTech SaaS</strong></td>
+        <td><span class="badge badge-p1">P1 - High</span></td>
+        <td>Already semi-decoupled; third-party LLM rate-limiting and credit billing.</td>
+      </tr>
+      <tr>
+        <td><strong>Finance &amp; Bursary</strong></td>
+        <td><code>src/fees</code>, <code>src/invoices</code></td>
+        <td><strong>Finance Microservice</strong></td>
+        <td><span class="badge badge-p2">P2 - Medium</span></td>
+        <td>Financial ledger immutability, payment gateway webhooks (Paystack).</td>
+      </tr>
+      <tr>
+        <td><strong>Core SIS (Classes, Roster, Terms)</strong></td>
+        <td><code>src/classes</code>, <code>src/users</code>, <code>src/academic</code></td>
+        <td><strong>Core Monolith</strong></td>
+        <td><span class="badge badge-core">Keep in Core</span></td>
+        <td>Central source of truth for institution structure and identity records.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 3 -->
+  <h2>3. Core Architectural Concept: The "Workspace" Abstraction</h2>
+  <p>
+    To cleanly support both ParaLearn institutional schools and independent tutors without maintaining duplicate codebases, the CBT service introduces an abstract <strong>Workspace</strong> model:
+  </p>
+
+  <div class="diagram-box">
+                                  cbt.pln.ng
+                                      │
+              ┌───────────────────────┴───────────────────────┐
+              ▼                                               ▼
+   [Mode A: ParaLearn School]                    [Mode B: Standalone Exam Hall]
+   • Auth: SSO via ParaLearn JWT                 • Auth: Self-Serve (Email / Google)
+   • Workspace: School Tenant                    • Workspace: Tutorial Centre / Tutor
+   • Roster: Synced from School Classes          • Roster: Ad-hoc PINs / Public Link
+   • Egress: Auto-feeds Term Report Cards        • Egress: Instant Results / CSV Export
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">Mode A: ParaLearn School User (SSO)</div>
+      <p>School admin or teacher logs in via ParaLearn credentials. The CBT backend verifies the JWT against the shared signing authority and maps the session to an <code>INSTITUTION</code> workspace with existing classes and subjects preloaded.</p>
+    </div>
+    <div class="card">
+      <div class="card-header">Mode B: Standalone Exam Hall (Self-Serve)</div>
+      <p>Independent tutors sign up directly with Email or Google OAuth. Creates a <code>STANDALONE_HALL</code> workspace. Zero SIS setup required—tutors immediately create question banks and launch tests.</p>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 4 -->
+  <h2>4. Frictionless Candidate Delivery: Roster vs. Exam PIN</h2>
+  <p>
+    Tutorial centres and walk-in lesson centers cannot manage permanent student accounts. The CBT microservice supports two distinct delivery strategies:
+  </p>
+  <ul>
+    <li><strong>Roster Model (Schools):</strong> Permanent student account (student ID + password). Results attach to academic transcripts and end-of-term report cards.</li>
+    <li><strong>Exam PIN &amp; Direct Link Model (Tutors &amp; Tutorial Centres):</strong> Tutors share a direct link (e.g. <code>cbt.pln.ng/take/JAMB-MOCK-26</code>). Candidates enter their <strong>Full Name + One-Time Access PIN</strong> and take the test immediately without account friction.</li>
+  </ul>
+
+  <!-- SECTION 5 -->
+  <h2>5. Decoupled Data Model (Prisma Schema Preview)</h2>
+  <div class="code-block">
+// ── Core Tenancy ────────────────────────────────────────────────────────────
+model CbtWorkspace {
+  id          String        @id @default(cuid())
+  name        String        // "Greenfield College" or "Success Point Tutors"
+  type        WorkspaceType // INSTITUTION | STANDALONE_HALL
+  externalId  String?       // Links to ParaLearn School.id (if INSTITUTION)
+  ownerId     String
+  exams       Exam[]
+}
+
+enum WorkspaceType {
+  INSTITUTION
+  STANDALONE_HALL
+}
+
+// ── Exam & Anti-Cheating Configuration ─────────────────────────────────────
+model Exam {
+  id               String       @id @default(cuid())
+  workspaceId      String
+  title            String
+  durationMins     Int
+  accessType       AccessType   // ROSTER_ONLY | PUBLIC_LINK | ACCESS_CODE
+  accessCode       String?      // e.g. "PHY-MOCK-01"
+  maxTabViolations Int          @default(3)
+  shuffleQuestions Boolean      @default(true)
+  shuffleChoices   Boolean      @default(true)
+  showResultAfter  Boolean      @default(true)
+  questions        Question[]
+  attempts         ExamAttempt[]
+}
+
+// ── Concurrency-Optimized Attempts ─────────────────────────────────────────
+model ExamAttempt {
+  id            String        @id @default(cuid())
+  examId        String
+  candidateName String
+  candidateId   String?       // Nullable for ad-hoc link takers
+  startedAt     DateTime      @default(now())
+  submittedAt   DateTime?
+  score         Float?
+  status        String        // IN_PROGRESS | SUBMITTED | DISQUALIFIED
+  antiCheatLogs Json?         // Tab switches, window blur events, device info
+  answers       AttemptAnswer[]
+}
+  </div>
+
+  <!-- SECTION 6 -->
+  <h2>6. High-Throughput Infrastructure &amp; Data Sync Contract</h2>
+  <ul>
+    <li><strong>Redis In-Memory State:</strong>
+      <ul>
+        <li><strong>Active Timers &amp; Locks:</strong> Prevents multi-device logins and synchronizes countdowns accurate to milliseconds.</li>
+        <li><strong>Ephemeral Answer Buffer:</strong> Caches in-progress candidate keystrokes and answers in Redis, eliminating thousands of database writes per minute. Answers are bulk-flushed to PostgreSQL only on final submission.</li>
+      </ul>
+    </li>
+    <li><strong>Inter-Service Communication:</strong>
+      <ul>
+        <li><strong>Ingress:</strong> Read-only gRPC or internal REST endpoints to pull class rosters from ParaLearn Core for school exams.</li>
+        <li><strong>Egress (Score Sync):</strong> When an institutional exam concludes, the CBT service emits an <code>exam.completed</code> event to BullMQ/Redis. ParaLearn Core consumes this and executes an atomic <code>POST /scores/batch-save</code> to update report cards automatically.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <!-- SECTION 7 -->
+  <h2>7. Phased Implementation Roadmap</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Phase</th>
+        <th>Timeline</th>
+        <th>Deliverables</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Phase 1: Foundation &amp; Schema</strong></td>
+        <td>Weeks 1–2</td>
+        <td>Spin up isolated service repository and PostgreSQL instance with <code>CbtWorkspace</code> schema. Build question authoring (MCQ, True/False, Theory) and bulk Excel import.</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 2: Dual-Auth &amp; Link Runner</strong></td>
+        <td>Weeks 3–4</td>
+        <td>Implement ParaLearn JWT SSO + self-serve Auth (Google/Email). Build candidate exam runner at <code>cbt.pln.ng/take/:code</code> with tab-detection anti-cheat and localStorage crash recovery.</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 3: Core Sync &amp; Migration</strong></td>
+        <td>Weeks 5–6</td>
+        <td>Implement asynchronous score-sync back to ParaLearn Core. Migrate existing frontend <code>/RMS/cbt</code> and <code>/student/exam</code> routes to target the new microservice gateway.</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 4: Monetization &amp; PLG Launch</strong></td>
+        <td>Week 7+</td>
+        <td>Introduce Paystack credit wallet (pay-per-candidate top-up) and freemium tier (first 30 candidates free) for standalone tutors.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 8 -->
+  <h2>8. Action Items for CTO Sign-Off</h2>
+  <ol>
+    <li><strong>Boundary Alignment:</strong> Confirm prioritization of CBT as Service #1, followed by Result Processing / PDF workers as Service #2.</li>
+    <li><strong>Repository Strategy:</strong> Decide between Monorepo (Nx / Turborepo housing Core and CBT) vs. Polyrepo (dedicated <code>paralearn-cbt</code> repository).</li>
+    <li><strong>Event Bus Choice:</strong> Approve using our existing Redis/BullMQ infrastructure for inter-service communication or upgrading to RabbitMQ.</li>
+  </ol>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>ParaLearn Architecture Proposal &bull; Confidential</div>
+    <div>cbt.pln.ng &bull; Microservice Strategy Document</div>
+  </div>
+
+</body>
+</html>
