@@ -49,28 +49,18 @@ import {
   cbtApi,
   loadStoredExams,
   saveStoredExams,
+  loadStoredCandidates,
+  purgeAllDemoData,
 } from "@/lib/cbtSessionManager";
-
-const DEFAULT_EXAMS: CbtExamItem[] = [
-  {
-    id: "jamb_mock_demo",
-    title: "JAMB UTME 2026 Mock — General Paper",
-    accessCode: "JAMB-MOCK-26",
-    durationMins: 60,
-    totalQuestions: 40,
-    isPublished: true,
-    startsAt: null,
-    endsAt: null,
-    createdAt: "2026-09-29T10:00:00.000Z",
-  },
-];
 
 export default function CbtPortalPage() {
   const router = useRouter();
   const [examCode, setExamCode] = useState("");
   const [examiner, setExaminer] = useState<ExaminerWorkspace | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [exams, setExams] = useState<CbtExamItem[]>(DEFAULT_EXAMS);
+  const [exams, setExams] = useState<CbtExamItem[]>([]);
+  const [candidatesCount, setCandidatesCount] = useState<number>(0);
+  const [completedCount, setCompletedCount] = useState<number>(0);
 
   // Create Exam Dialog State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -88,16 +78,22 @@ export default function CbtPortalPage() {
   const [newShowResults, setNewShowResults] = useState(true);
 
   useEffect(() => {
+    // Purge any legacy mock demo data from previous runs
+    purgeAllDemoData();
+
     const session = getExaminerSession();
     if (session) {
       setExaminer(session);
       const stored = loadStoredExams(session.id);
-      if (stored && stored.length > 0) {
-        setExams(stored);
-      } else {
-        setExams(DEFAULT_EXAMS);
-        saveStoredExams(DEFAULT_EXAMS, session.id);
-      }
+      setExams(stored);
+
+      const storedCandidates = loadStoredCandidates(session.id);
+      setCandidatesCount(storedCandidates.length);
+      setCompletedCount(storedCandidates.filter((c) => c.status === "COMPLETED").length);
+    } else {
+      setExams([]);
+      setCandidatesCount(0);
+      setCompletedCount(0);
     }
   }, []);
 
@@ -110,6 +106,9 @@ export default function CbtPortalPage() {
   const handleSignOut = () => {
     clearExaminerSession();
     setExaminer(null);
+    setExams([]);
+    setCandidatesCount(0);
+    setCompletedCount(0);
     toast.info("Signed out of Examiner Workspace.");
   };
 
@@ -175,10 +174,6 @@ export default function CbtPortalPage() {
   };
 
   const handleDeleteExam = (examId: string) => {
-    if (exams.length <= 1) {
-      toast.error("You must maintain at least one active examination room.");
-      return;
-    }
     const updated = exams.filter((e) => e.id !== examId);
     setExams(updated);
     if (examiner?.id) {
@@ -318,12 +313,20 @@ export default function CbtPortalPage() {
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Candidate Credits</span>
                 <span className="text-2xl font-black text-emerald-600 font-mono">{examiner.credits}</span>
               </div>
-              <Link href={`/cbt/exams/${exams[0]?.id || "jamb_mock_demo"}`}>
-                <Button className="h-10 px-4 text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white rounded-xl flex items-center gap-1.5 shadow-sm">
-                  <PlusCircle className="w-4 h-4" />
-                  <span>Author Questions</span>
-                </Button>
-              </Link>
+              <Button 
+                onClick={() => {
+                  if (exams.length > 0) {
+                    router.push(`/cbt/exams/${exams[0].id}`);
+                  } else {
+                    setIsCreateOpen(true);
+                    toast.info("Please create an examination room first to author questions.");
+                  }
+                }}
+                className="h-10 px-4 text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white rounded-xl flex items-center gap-1.5 shadow-sm"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>{exams.length > 0 ? "Author Questions" : "Create Exam"}</span>
+              </Button>
             </div>
           </div>
 
@@ -343,7 +346,7 @@ export default function CbtPortalPage() {
                   <Users className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#641bc4] transition-colors" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-extrabold text-slate-900 font-mono">48</p>
+                  <p className="text-2xl font-extrabold text-slate-900 font-mono">{candidatesCount}</p>
                   <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                     Roster &rarr;
                   </span>
@@ -353,7 +356,7 @@ export default function CbtPortalPage() {
 
             <div className="bg-white border border-[var(--border-fine)] rounded-xl p-4 shadow-2xs space-y-1">
               <span className="text-xs font-medium text-slate-500">Completed Sessions</span>
-              <p className="text-2xl font-extrabold text-slate-900 font-mono">14</p>
+              <p className="text-2xl font-extrabold text-slate-900 font-mono">{completedCount}</p>
             </div>
 
             <div className="bg-white border border-[var(--border-fine)] rounded-xl p-4 shadow-2xs space-y-1">
@@ -569,80 +572,100 @@ export default function CbtPortalPage() {
               </div>
             </div>
 
-            {/* Exam Rooms Cards */}
-            <div className="divide-y divide-slate-100">
-              {exams.map((exam) => {
-                const schedule = getExamScheduleStatus(exam.startsAt, exam.endsAt);
-                return (
-                  <div key={exam.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1.5">
+            {/* Exam Rooms Cards or Clean Slate Empty State */}
+            {exams.length === 0 ? (
+              <div className="text-center py-14 px-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <div className="space-y-1 max-w-sm mx-auto">
+                  <h3 className="text-base font-bold text-slate-900">No examinations created yet</h3>
+                  <p className="text-xs text-slate-500">
+                    Start by creating your first examination room to set up access codes, schedule testing windows, and author questions.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setIsCreateOpen(true)}
+                  size="sm"
+                  className="h-9 px-4 text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white rounded-xl shadow-xs inline-flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Your First Exam Room</span>
+                </Button>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {exams.map((exam) => {
+                  const schedule = getExamScheduleStatus(exam.startsAt, exam.endsAt);
+                  return (
+                    <div key={exam.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-extrabold text-sm sm:text-base text-slate-900">{exam.title}</span>
+                          <Badge className={`text-[10px] font-bold border ${schedule.badgeClass}`}>
+                            {schedule.label}
+                          </Badge>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 font-mono">
+                          <span>Room Code: <strong className="text-[#641bc4]">{exam.accessCode}</strong></span>
+                          <span>&bull;</span>
+                          <span>{exam.durationMins} mins</span>
+                          <span>&bull;</span>
+                          <span>{exam.totalQuestions || 0} questions</span>
+                          <span>&bull;</span>
+                          <span className="text-slate-600 font-sans text-[11px] flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-slate-400" />
+                            <span>{schedule.description}</span>
+                          </span>
+                        </div>
+                      </div>
+
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-extrabold text-sm sm:text-base text-slate-900">{exam.title}</span>
-                        <Badge className={`text-[10px] font-bold border ${schedule.badgeClass}`}>
-                          {schedule.label}
-                        </Badge>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 font-mono">
-                        <span>Room Code: <strong className="text-[#641bc4]">{exam.accessCode}</strong></span>
-                        <span>&bull;</span>
-                        <span>{exam.durationMins} mins</span>
-                        <span>&bull;</span>
-                        <span>{exam.totalQuestions || 0} questions</span>
-                        <span>&bull;</span>
-                        <span className="text-slate-600 font-sans text-[11px] flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-slate-400" />
-                          <span>{schedule.description}</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Copy Link */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyRoomLink(exam.accessCode)}
-                        className="h-8 text-xs font-semibold border-slate-200 text-slate-700 flex items-center gap-1.5"
-                      >
-                        {copiedCode === exam.accessCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedCode === exam.accessCode ? "Copied" : "Copy Student Link"}</span>
-                      </Button>
-
-                      {/* Author Questions */}
-                      <Link href={`/cbt/exams/${exam.id}`}>
+                        {/* Copy Link */}
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 text-xs font-semibold border-slate-200 text-[#641bc4] hover:bg-violet-50 flex items-center gap-1"
+                          onClick={() => copyRoomLink(exam.accessCode)}
+                          className="h-8 text-xs font-semibold border-slate-200 text-slate-700 flex items-center gap-1.5"
                         >
-                          <BookOpen className="w-3 h-3" />
-                          <span>Questions</span>
+                          {copiedCode === exam.accessCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedCode === exam.accessCode ? "Copied" : "Copy Student Link"}</span>
                         </Button>
-                      </Link>
 
-                      {/* Live Monitor */}
-                      <Link href={`/cbt/exams/${exam.id}/monitor`}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 text-xs font-semibold border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center gap-1"
-                        >
-                          <BarChart3 className="w-3 h-3 text-[#641bc4]" />
-                          <span>Monitor</span>
-                        </Button>
-                      </Link>
+                        {/* Author Questions */}
+                        <Link href={`/cbt/exams/${exam.id}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs font-semibold border-slate-200 text-[#641bc4] hover:bg-violet-50 flex items-center gap-1"
+                          >
+                            <BookOpen className="w-3 h-3" />
+                            <span>Questions</span>
+                          </Button>
+                        </Link>
 
-                      {/* Launch Test */}
-                      <Link href={`/take/${exam.accessCode}`}>
-                        <Button size="sm" className="h-8 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center gap-1">
-                          <span>Launch</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </Button>
-                      </Link>
+                        {/* Live Monitor */}
+                        <Link href={`/cbt/exams/${exam.id}/monitor`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs font-semibold border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center gap-1"
+                          >
+                            <BarChart3 className="w-3 h-3 text-[#641bc4]" />
+                            <span>Monitor</span>
+                          </Button>
+                        </Link>
 
-                      {/* Delete Exam */}
-                      {exams.length > 1 && (
+                        {/* Launch Test */}
+                        <Link href={`/take/${exam.accessCode}`}>
+                          <Button size="sm" className="h-8 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center gap-1">
+                            <span>Launch</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </Button>
+                        </Link>
+
+                        {/* Delete Exam */}
                         <button
                           onClick={() => handleDeleteExam(exam.id)}
                           className="p-1.5 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-1"
@@ -650,12 +673,12 @@ export default function CbtPortalPage() {
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
         </main>

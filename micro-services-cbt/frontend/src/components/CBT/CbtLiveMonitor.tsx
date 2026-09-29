@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 
+import { loadStoredCandidates } from "@/lib/cbtSessionManager";
+
 export interface CandidateLiveStatus {
   id: string;
   name: string;
@@ -35,64 +37,6 @@ export interface CandidateLiveStatus {
   lastActive: string;
 }
 
-const MOCK_LIVE_CANDIDATES: CandidateLiveStatus[] = [
-  {
-    id: "c1",
-    name: "Daniel Olawale",
-    pin: "849201",
-    answeredCount: 42,
-    totalQuestions: 50,
-    timeRemainingMins: 18,
-    violations: 0,
-    status: "active",
-    lastActive: "Just now",
-  },
-  {
-    id: "c2",
-    name: "Amina Bello",
-    pin: "732049",
-    answeredCount: 49,
-    totalQuestions: 50,
-    timeRemainingMins: 12,
-    violations: 2,
-    status: "flagged",
-    lastActive: "10s ago",
-  },
-  {
-    id: "c3",
-    name: "Chinedu Eze",
-    pin: "918342",
-    answeredCount: 14,
-    totalQuestions: 50,
-    timeRemainingMins: 45,
-    violations: 3,
-    status: "locked",
-    lastActive: "2m ago",
-  },
-  {
-    id: "c4",
-    name: "Sarah Johnson",
-    pin: "629104",
-    answeredCount: 50,
-    totalQuestions: 50,
-    timeRemainingMins: 0,
-    violations: 0,
-    status: "submitted",
-    lastActive: "Finished",
-  },
-  {
-    id: "c5",
-    name: "Ibrahim Musa",
-    pin: "518290",
-    answeredCount: 36,
-    totalQuestions: 50,
-    timeRemainingMins: 22,
-    violations: 1,
-    status: "active",
-    lastActive: "5s ago",
-  },
-];
-
 interface CbtLiveMonitorProps {
   examId: string;
   examTitle?: string;
@@ -101,13 +45,34 @@ interface CbtLiveMonitorProps {
 
 export default function CbtLiveMonitor({
   examId,
-  examTitle = "SS2 Physics Mid-Term Examination",
-  roomCode = "PHY-2026-T1",
+  examTitle = "Examination Room Monitor",
+  roomCode = "",
 }: CbtLiveMonitorProps) {
   
-  const [candidates, setCandidates] = useState<CandidateLiveStatus[]>(MOCK_LIVE_CANDIDATES);
+  const [candidates, setCandidates] = useState<CandidateLiveStatus[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "flagged" | "locked" | "active">("all");
+
+  useEffect(() => {
+    const stored = loadStoredCandidates();
+    const matching = stored.filter((c) => !roomCode || c.roomCode.toUpperCase() === roomCode.toUpperCase());
+    if (matching.length > 0) {
+      const liveList: CandidateLiveStatus[] = matching.map((c) => ({
+        id: c.id,
+        name: c.name,
+        pin: c.pin,
+        answeredCount: c.status === "COMPLETED" ? 40 : c.status === "IN_PROGRESS" ? 15 : 0,
+        totalQuestions: 40,
+        timeRemainingMins: c.status === "COMPLETED" ? 0 : 35,
+        violations: 0,
+        status: c.status === "COMPLETED" ? "submitted" : "active",
+        lastActive: c.status === "COMPLETED" ? "Finished" : "Just now",
+      }));
+      setCandidates(liveList);
+    } else {
+      setCandidates([]);
+    }
+  }, [roomCode]);
 
   // Force submit candidate attempt
   const handleForceSubmit = (candidateId: string) => {
@@ -280,119 +245,137 @@ export default function CbtLiveMonitor({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-fine)] text-xs font-medium">
-                {filteredCandidates.map((c) => {
-                  const pct = Math.round((c.answeredCount / c.totalQuestions) * 100);
-
-                  return (
-                    <tr key={c.id} className="hover:bg-[var(--surface-subtle)] transition-colors">
-                      
-                      {/* Name & PIN */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-sm text-[var(--foreground)]">{c.name}</div>
-                        <div className="font-mono text-[11px] text-[var(--text-secondary)]">PIN: {c.pin}</div>
-                      </td>
-
-                      {/* Progress Bar */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 bg-[var(--surface-muted)] h-2 rounded-full overflow-hidden border border-[var(--border-fine)]">
-                            <div
-                              className="bg-[var(--violet-ink)] h-full transition-all"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                          <span className="font-mono text-[11px] text-[var(--text-secondary)]">
-                            {c.answeredCount}/{c.totalQuestions} ({pct}%)
-                          </span>
+                {filteredCandidates.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-16 text-center">
+                      <div className="space-y-3 max-w-sm mx-auto">
+                        <div className="w-12 h-12 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
+                          <Users className="w-6 h-6" />
                         </div>
-                      </td>
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-sm text-[var(--foreground)]">No active candidates in hall</h4>
+                          <p className="text-xs text-[var(--text-secondary)]">
+                            Students sitting for this examination room will appear here in real-time with their progress, timer, and anti-cheat event stream.
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCandidates.map((c) => {
+                    const pct = Math.round((c.answeredCount / c.totalQuestions) * 100);
 
-                      {/* Time Left */}
-                      <td className="py-3.5 px-4 font-mono font-semibold">
-                        {c.status === "submitted" ? (
-                          <span className="text-[var(--text-secondary)]">Submitted</span>
-                        ) : (
-                          <span>{c.timeRemainingMins} mins</span>
-                        )}
-                      </td>
+                    return (
+                      <tr key={c.id} className="hover:bg-[var(--surface-subtle)] transition-colors">
+                        
+                        {/* Name & PIN */}
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-sm text-[var(--foreground)]">{c.name}</div>
+                          <div className="font-mono text-[11px] text-[var(--text-secondary)]">PIN: {c.pin}</div>
+                        </td>
 
-                      {/* Violations */}
-                      <td className="py-3.5 px-4">
-                        {c.violations === 0 ? (
-                          <span className="text-[var(--emerald-signal)] flex items-center gap-1 font-semibold">
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            <span>0 Clean</span>
-                          </span>
-                        ) : (
-                          <Badge className="bg-[var(--amber-tint)] text-[#92400e] border border-[var(--amber-signal)]/30 font-mono text-[10px]">
-                            ⚠️ {c.violations} Tab Switches
-                          </Badge>
-                        )}
-                      </td>
+                        {/* Progress Bar */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 bg-[var(--surface-muted)] h-2 rounded-full overflow-hidden border border-[var(--border-fine)]">
+                              <div
+                                className="bg-[var(--violet-ink)] h-full transition-all"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="font-mono text-[11px] text-[var(--text-secondary)]">
+                              {c.answeredCount}/{c.totalQuestions} ({pct}%)
+                            </span>
+                          </div>
+                        </td>
 
-                      {/* Status */}
-                      <td className="py-3.5 px-4">
-                        {c.status === "active" && (
-                          <Badge className="bg-[var(--emerald-tint)] text-[#065f46] font-semibold text-[10px] border-0">
-                            Active
-                          </Badge>
-                        )}
-                        {c.status === "flagged" && (
-                          <Badge className="bg-[var(--amber-tint)] text-[#92400e] font-semibold text-[10px] border-0">
-                            Flagged
-                          </Badge>
-                        )}
-                        {c.status === "locked" && (
-                          <Badge className="bg-[var(--crimson-tint)] text-[#991b1b] font-semibold text-[10px] border-0">
-                            Locked
-                          </Badge>
-                        )}
-                        {c.status === "submitted" && (
-                          <Badge className="bg-[var(--surface-muted)] text-[var(--text-secondary)] font-semibold text-[10px] border-0">
-                            Finished
-                          </Badge>
-                        )}
-                      </td>
+                        {/* Time Left */}
+                        <td className="py-3.5 px-4 font-mono font-semibold">
+                          {c.status === "submitted" ? (
+                            <span className="text-[var(--text-secondary)]">Submitted</span>
+                          ) : (
+                            <span>{c.timeRemainingMins} mins</span>
+                          )}
+                        </td>
 
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 text-right space-x-1.5">
-                        {c.status === "locked" ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleUnlockCandidate(c.id)}
-                            className="h-7 text-[11px] border-[var(--amber-signal)] text-[var(--amber-signal)] hover:bg-[var(--amber-tint)] font-semibold rounded-[var(--radius-md)]"
-                          >
-                            Forgive &amp; Unlock
-                          </Button>
-                        ) : c.status !== "submitted" ? (
-                          <>
+                        {/* Violations */}
+                        <td className="py-3.5 px-4">
+                          {c.violations === 0 ? (
+                            <span className="text-[var(--emerald-signal)] flex items-center gap-1 font-semibold">
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              <span>0 Clean</span>
+                            </span>
+                          ) : (
+                            <Badge className="bg-[var(--amber-tint)] text-[#92400e] border border-[var(--amber-signal)]/30 font-mono text-[10px]">
+                              ⚠️ {c.violations} Tab Switches
+                            </Badge>
+                          )}
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-3.5 px-4">
+                          {c.status === "active" && (
+                            <Badge className="bg-[var(--emerald-tint)] text-[#065f46] font-semibold text-[10px] border-0">
+                              Active
+                            </Badge>
+                          )}
+                          {c.status === "flagged" && (
+                            <Badge className="bg-[var(--amber-tint)] text-[#92400e] font-semibold text-[10px] border-0">
+                              Flagged
+                            </Badge>
+                          )}
+                          {c.status === "locked" && (
+                            <Badge className="bg-[var(--crimson-tint)] text-[#991b1b] font-semibold text-[10px] border-0">
+                              Locked
+                            </Badge>
+                          )}
+                          {c.status === "submitted" && (
+                            <Badge className="bg-[var(--surface-muted)] text-[var(--text-secondary)] font-semibold text-[10px] border-0">
+                              Finished
+                            </Badge>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3.5 px-4 text-right space-x-1.5">
+                          {c.status === "locked" ? (
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleAddFiveMins(c.id)}
-                              className="h-7 text-[11px] border-[var(--border-fine)] text-[var(--text-secondary)] hover:text-[var(--foreground)] rounded-[var(--radius-md)]"
+                              onClick={() => handleUnlockCandidate(c.id)}
+                              className="h-7 text-[11px] border-[var(--amber-signal)] text-[var(--amber-signal)] hover:bg-[var(--amber-tint)] font-semibold rounded-[var(--radius-md)]"
                             >
-                              +5 Mins
+                              Forgive &amp; Unlock
                             </Button>
+                          ) : c.status !== "submitted" ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleAddFiveMins(c.id)}
+                                className="h-7 text-[11px] border-[var(--border-fine)] text-[var(--text-secondary)] hover:text-[var(--foreground)] rounded-[var(--radius-md)]"
+                              >
+                                +5 Mins
+                              </Button>
 
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleForceSubmit(c.id)}
-                              className="h-7 text-[11px] border-[var(--crimson-signal)]/30 text-[var(--crimson-signal)] hover:bg-[var(--crimson-tint)] rounded-[var(--radius-md)]"
-                            >
-                              Force Submit
-                            </Button>
-                          </>
-                        ) : (
-                          <span className="text-[11px] text-[var(--text-secondary)]">No action needed</span>
-                        )}
-                      </td>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleForceSubmit(c.id)}
+                                className="h-7 text-[11px] border-[var(--crimson-signal)]/30 text-[var(--crimson-signal)] hover:bg-[var(--crimson-tint)] rounded-[var(--radius-md)]"
+                              >
+                                Force Submit
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-[var(--text-secondary)]">No action needed</span>
+                          )}
+                        </td>
 
-                    </tr>
-                  );
-                })}
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

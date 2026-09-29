@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { clearExaminerSession, purgeAllDemoData } from "@/lib/cbtSessionManager";
 
 interface StandaloneWorkspace {
   id: string;
@@ -63,11 +64,8 @@ export default function CbtWorkspaceHeader() {
     : standaloneWorkspace?.name || "Independent Exam Hall";
 
   const handleLogout = async () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("paralearn_cbt_standalone_workspace");
-      localStorage.removeItem("paralearn_cbt_user_type");
-      localStorage.removeItem("paralearn_cbt_examiner_session");
-    }
+    clearExaminerSession();
+    purgeAllDemoData();
     if (user) {
       await dispatch(logoutUser());
     }

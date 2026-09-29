@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { saveCandidateSession, loadCandidateSession } from "@/lib/cbtSessionManager";
+import { saveCandidateSession, loadCandidateSession, loadStoredExams } from "@/lib/cbtSessionManager";
 
 interface ExamMetadata {
   code: string;
@@ -130,6 +130,19 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
   });
 
   useEffect(() => {
+    // Check if exam metadata exists in stored exams
+    const storedExams = loadStoredExams();
+    const foundExam = storedExams.find((e) => e.accessCode.toUpperCase() === examCode.toUpperCase());
+    if (foundExam) {
+      setMetadata((prev) => ({
+        ...prev,
+        title: foundExam.title,
+        durationMins: foundExam.durationMins,
+        maxTabViolations: foundExam.maxTabViolations ?? 3,
+        questionCount: foundExam.totalQuestions || 0,
+      }));
+    }
+
     // Check if candidate already has an active session for this exam
     const existing = loadCandidateSession(examCode);
     if (existing && existing.status === "in_progress") {

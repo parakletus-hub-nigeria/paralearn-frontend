@@ -419,12 +419,33 @@ export interface CbtExamItem {
   createdAt?: string;
 }
 
+export interface CandidateRecord {
+  id: string;
+  name: string;
+  regNumber: string;
+  pin: string;
+  phone: string;
+  roomCode: string;
+  status: "ENROLLED" | "IN_PROGRESS" | "COMPLETED" | "FLAGGED";
+  score?: number;
+  grade?: string;
+  createdAt: string;
+}
+
 export const loadStoredExams = (workspaceId?: string): CbtExamItem[] => {
   if (typeof window === "undefined") return [];
   try {
     const key = `paralearn_cbt_exams_${workspaceId || "default"}`;
     const raw = localStorage.getItem(key);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed: CbtExamItem[] = JSON.parse(raw);
+      // Clean out demo exam if present to ensure clean slate
+      const cleaned = parsed.filter((e) => e.id !== "jamb_mock_demo" && e.accessCode !== "JAMB-MOCK-26");
+      if (cleaned.length !== parsed.length) {
+        saveStoredExams(cleaned, workspaceId);
+      }
+      return cleaned;
+    }
   } catch {}
   return [];
 };
@@ -436,3 +457,70 @@ export const saveStoredExams = (exams: CbtExamItem[], workspaceId?: string) => {
     localStorage.setItem(key, JSON.stringify(exams));
   } catch {}
 };
+
+export const loadStoredCandidates = (workspaceId?: string): CandidateRecord[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const key = `paralearn_cbt_candidates_${workspaceId || "default"}`;
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed: CandidateRecord[] = JSON.parse(raw);
+      // Filter out demo candidate IDs
+      const cleaned = parsed.filter((c) => !["c1", "c2", "c3", "c4", "c5", "c6"].includes(c.id));
+      if (cleaned.length !== parsed.length) {
+        saveStoredCandidates(cleaned, workspaceId);
+      }
+      return cleaned;
+    }
+  } catch {}
+  return [];
+};
+
+export const saveStoredCandidates = (candidates: CandidateRecord[], workspaceId?: string) => {
+  if (typeof window === "undefined") return;
+  try {
+    const key = `paralearn_cbt_candidates_${workspaceId || "default"}`;
+    localStorage.setItem(key, JSON.stringify(candidates));
+  } catch {}
+};
+
+export const loadStoredQuestions = (examId: string): any[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const key = `paralearn_cbt_questions_${examId}`;
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+};
+
+export const saveStoredQuestions = (questions: any[], examId: string) => {
+  if (typeof window === "undefined") return;
+  try {
+    const key = `paralearn_cbt_questions_${examId}`;
+    localStorage.setItem(key, JSON.stringify(questions));
+  } catch {}
+};
+
+/**
+ * Purge legacy demo accounts and mock data to guarantee a pristine, clean slate.
+ */
+export const purgeAllDemoData = () => {
+  if (typeof window === "undefined") return;
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.includes("jamb_mock_demo") ||
+        key.includes("JAMB-MOCK-26") ||
+        key === "paralearn_cbt_exams_default" ||
+        key === "paralearn_cbt_candidates_default"
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  } catch {}
+};
+

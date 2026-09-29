@@ -35,94 +35,20 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { getExaminerSession, ExaminerWorkspace } from "@/lib/cbtSessionManager";
-
-export interface CandidateRecord {
-  id: string;
-  name: string;
-  regNumber: string;
-  pin: string;
-  phone: string;
-  roomCode: string;
-  status: "ENROLLED" | "IN_PROGRESS" | "COMPLETED" | "FLAGGED";
-  score?: number;
-  grade?: string;
-  createdAt: string;
-}
-
-const INITIAL_CANDIDATES: CandidateRecord[] = [
-  {
-    id: "c1",
-    name: "Daniel Olawale",
-    regNumber: "PLN/26/001",
-    pin: "849201",
-    phone: "08031234567",
-    roomCode: "JAMB-MOCK-26",
-    status: "COMPLETED",
-    score: 88,
-    grade: "A1",
-    createdAt: "2026-09-29 09:30",
-  },
-  {
-    id: "c2",
-    name: "Amina Bello",
-    regNumber: "PLN/26/002",
-    pin: "732049",
-    phone: "08149876543",
-    roomCode: "JAMB-MOCK-26",
-    status: "IN_PROGRESS",
-    createdAt: "2026-09-29 10:15",
-  },
-  {
-    id: "c3",
-    name: "Chukwudi Eze",
-    regNumber: "PLN/26/003",
-    pin: "481920",
-    phone: "07065551234",
-    roomCode: "JAMB-MOCK-26",
-    status: "COMPLETED",
-    score: 74,
-    grade: "B2",
-    createdAt: "2026-09-29 09:30",
-  },
-  {
-    id: "c4",
-    name: "Blessing Adeyemi",
-    regNumber: "PLN/26/004",
-    pin: "619384",
-    phone: "08091112233",
-    roomCode: "JAMB-MOCK-26",
-    status: "ENROLLED",
-    createdAt: "2026-09-29 11:00",
-  },
-  {
-    id: "c5",
-    name: "Ibrahim Musa",
-    regNumber: "PLN/26/005",
-    pin: "520491",
-    phone: "08123456789",
-    roomCode: "JAMB-MOCK-26",
-    status: "ENROLLED",
-    createdAt: "2026-09-29 11:10",
-  },
-  {
-    id: "c6",
-    name: "Chioma Okeke",
-    regNumber: "PLN/26/006",
-    pin: "938210",
-    phone: "09087654321",
-    roomCode: "JAMB-MOCK-26",
-    status: "COMPLETED",
-    score: 92,
-    grade: "A1",
-    createdAt: "2026-09-29 08:45",
-  },
-];
+import { 
+  getExaminerSession, 
+  ExaminerWorkspace,
+  CandidateRecord,
+  loadStoredCandidates,
+  saveStoredCandidates,
+  loadStoredExams,
+  purgeAllDemoData,
+} from "@/lib/cbtSessionManager";
 
 export default function CandidatesPage() {
   const [examiner, setExaminer] = useState<ExaminerWorkspace | null>(null);
-  const [candidates, setCandidates] = useState<CandidateRecord[]>(INITIAL_CANDIDATES);
+  const [candidates, setCandidates] = useState<CandidateRecord[]>([]);
+  const [availableRoomCodes, setAvailableRoomCodes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [copiedPin, setCopiedPin] = useState<string | null>(null);
@@ -132,15 +58,32 @@ export default function CandidatesPage() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
-  const [newRoomCode, setNewRoomCode] = useState("JAMB-MOCK-26");
+  const [newRoomCode, setNewRoomCode] = useState("");
 
   // Print Slips Dialog State
   const [isPrintOpen, setIsPrintOpen] = useState(false);
 
   useEffect(() => {
+    purgeAllDemoData();
     const session = getExaminerSession();
     if (session) {
       setExaminer(session);
+      const stored = loadStoredCandidates(session.id);
+      setCandidates(stored);
+
+      const exams = loadStoredExams(session.id);
+      if (exams.length > 0) {
+        setAvailableRoomCodes(exams.map((e) => e.accessCode));
+        setNewRoomCode(exams[0].accessCode);
+      }
+    } else {
+      const stored = loadStoredCandidates();
+      setCandidates(stored);
+      const exams = loadStoredExams();
+      if (exams.length > 0) {
+        setAvailableRoomCodes(exams.map((e) => e.accessCode));
+        setNewRoomCode(exams[0].accessCode);
+      }
     }
   }, []);
 
@@ -187,16 +130,34 @@ export default function CandidatesPage() {
       regNumber: formattedReg,
       pin: randomPin,
       phone: newPhone.trim() || "08000000000",
-      roomCode: newRoomCode.trim().toUpperCase() || "JAMB-MOCK-26",
+      roomCode: newRoomCode.trim().toUpperCase() || (availableRoomCodes[0] || "EXAM-ROOM"),
       status: "ENROLLED",
       createdAt: "Just now",
     };
 
-    setCandidates([newCandidate, ...candidates]);
+    const updated = [newCandidate, ...candidates];
+    setCandidates(updated);
+    saveStoredCandidates(updated, examiner?.id);
     toast.success(`Candidate ${newName} enrolled with PIN: ${randomPin}`);
     setNewName("");
     setNewPhone("");
     setIsAddOpen(false);
+  };
+
+  const handleDeleteCandidate = (id: string) => {
+    const updated = candidates.filter((c) => c.id !== id);
+    setCandidates(updated);
+    saveStoredCandidates(updated, examiner?.id);
+    toast.info("Candidate removed from roster.");
+  };
+
+  const handleClearAllCandidates = () => {
+    if (candidates.length === 0) return;
+    if (confirm("Are you sure you want to clear all candidates? This will start with a fresh, clean slate.")) {
+      setCandidates([]);
+      saveStoredCandidates([], examiner?.id);
+      toast.success("Candidate roster cleared. Clean slate restored.");
+    }
   };
 
   const filteredCandidates = candidates.filter((c) => {
@@ -236,7 +197,7 @@ export default function CandidatesPage() {
                 {examiner.credits} Credits Available
               </Badge>
             )}
-            <Link href={`/take/JAMB-MOCK-26`} target="_blank">
+            <Link href={availableRoomCodes.length > 0 ? `/take/${availableRoomCodes[0]}` : `/take`} target="_blank">
               <Button variant="outline" size="sm" className="h-8 text-xs font-bold border-slate-200 flex items-center gap-1.5">
                 <span>Open Student Lobby</span>
                 <ExternalLink className="w-3 h-3 text-[#641bc4]" />
@@ -443,6 +404,19 @@ export default function CandidatesPage() {
                 </button>
               ))}
             </div>
+
+            {candidates.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAllCandidates}
+                className="h-8 text-xs text-slate-400 hover:text-red-600 hover:bg-red-50 px-2"
+                title="Clear all candidates to clean slate"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1" />
+                <span className="hidden sm:inline">Clear Roster</span>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -463,8 +437,32 @@ export default function CandidatesPage() {
               <tbody className="divide-y divide-slate-100">
                 {filteredCandidates.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-slate-400 font-medium">
-                      No candidates match your search filter.
+                    <td colSpan={6} className="py-16 text-center">
+                      <div className="space-y-3 max-w-sm mx-auto">
+                        <div className="w-12 h-12 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
+                          <Users className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-sm text-slate-900">
+                            {searchQuery || statusFilter !== "ALL" ? "No matching candidates" : "No candidates enrolled yet"}
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            {searchQuery || statusFilter !== "ALL"
+                              ? "Try adjusting your search query or status filter."
+                              : "Enrol candidates to generate 6-digit access PINs, printable photocard slips, and 1-click WhatsApp exam passes."}
+                          </p>
+                        </div>
+                        {!searchQuery && statusFilter === "ALL" && (
+                          <Button
+                            size="sm"
+                            onClick={() => setIsAddOpen(true)}
+                            className="h-8 text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white rounded-lg shadow-xs inline-flex items-center gap-1.5"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>Enrol First Candidate</span>
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -507,13 +505,13 @@ export default function CandidatesPage() {
                       <td className="py-3 px-4">
                         {candidate.status === "COMPLETED" && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             Finished
                           </span>
                         )}
                         {candidate.status === "IN_PROGRESS" && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-[#641bc4]">
-                            <Clock className="w-3 h-3 text-[#641bc4] animate-spin" />
+                            <Clock className="w-3.5 h-3.5 text-[#641bc4] animate-spin" />
                             Testing Now
                           </span>
                         )}
@@ -568,6 +566,15 @@ export default function CandidatesPage() {
                             <MessageCircle className="w-3.5 h-3.5 text-emerald-600 mr-1" />
                             <span>WhatsApp</span>
                           </Button>
+
+                          {/* Delete Candidate */}
+                          <button
+                            onClick={() => handleDeleteCandidate(candidate.id)}
+                            className="p-1.5 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-1"
+                            title="Remove candidate from roster"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>

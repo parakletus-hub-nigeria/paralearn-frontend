@@ -43,6 +43,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { 
+  loadStoredQuestions, 
+  saveStoredQuestions, 
+  loadStoredExams, 
+  saveStoredExams 
+} from "@/lib/cbtSessionManager";
+
 export interface StudioQuestion {
   id: string;
   prompt: string;
@@ -64,55 +71,15 @@ interface CbtQuestionStudioProps {
   initialQuestions?: StudioQuestion[];
 }
 
-const DEFAULT_STUDIO_QUESTIONS: StudioQuestion[] = [
-  {
-    id: "q1",
-    prompt: "What is the unit of electrical resistance in the International System of Units (SI)?",
-    type: "MCQ",
-    marks: 1.0,
-    options: [
-      { id: "o1", text: "Ohm (Ω)", isCorrect: true },
-      { id: "o2", text: "Ampere (A)", isCorrect: false },
-      { id: "o3", text: "Volt (V)", isCorrect: false },
-      { id: "o4", text: "Watt (W)", isCorrect: false },
-    ],
-    explanation: "Resistance is measured in Ohms (Ω), named after Georg Simon Ohm.",
-  },
-  {
-    id: "q2",
-    prompt: "Photosynthesis takes place primarily in the chloroplasts of plant cells.",
-    type: "TRUE_FALSE",
-    marks: 1.0,
-    options: [
-      { id: "o1", text: "True", isCorrect: true },
-      { id: "o2", text: "False", isCorrect: false },
-    ],
-    explanation: "Chloroplasts contain chlorophyll which absorbs solar radiation.",
-  },
-  {
-    id: "q3",
-    prompt: "Solve for x in the linear equation: 3x - 7 = 14.",
-    type: "MCQ",
-    marks: 2.0,
-    options: [
-      { id: "o1", text: "x = 7", isCorrect: true },
-      { id: "o2", text: "x = 21", isCorrect: false },
-      { id: "o3", text: "x = 5", isCorrect: false },
-      { id: "o4", text: "x = 3", isCorrect: false },
-    ],
-    explanation: "3x = 14 + 7 = 21; x = 21 / 3 = 7.",
-  },
-];
-
 export default function CbtQuestionStudio({
   examId,
-  initialTitle = "SS2 Physics Mid-Term Assessment",
-  initialCode = "PHY-2026-T1",
+  initialTitle = "Examination Assessment",
+  initialCode = "EXAM-ROOM",
   initialDurationMins = 60,
-  initialQuestions = DEFAULT_STUDIO_QUESTIONS,
+  initialQuestions,
 }: CbtQuestionStudioProps) {
   
-  const [questions, setQuestions] = useState<StudioQuestion[]>(initialQuestions);
+  const [questions, setQuestions] = useState<StudioQuestion[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [examTitle, setExamTitle] = useState(initialTitle);
   const [roomCode, setRoomCode] = useState(initialCode);
@@ -138,6 +105,30 @@ export default function CbtQuestionStudio({
   const backHref = isSchoolContext ? "/RMS/cbt" : "/cbt";
   const monitorHref = isSchoolContext ? `/RMS/cbt/exams/${examId}/monitor` : `/cbt/exams/${examId}/monitor`;
 
+  useEffect(() => {
+    // 1. Load exam metadata
+    const exams = loadStoredExams();
+    const curr = exams.find((e) => e.id === examId);
+    if (curr) {
+      setExamTitle(curr.title);
+      setRoomCode(curr.accessCode);
+      setDurationMins(curr.durationMins);
+    }
+    // 2. Load stored questions
+    if (initialQuestions && initialQuestions.length > 0) {
+      setQuestions(initialQuestions);
+    } else {
+      const stored = loadStoredQuestions(examId);
+      setQuestions(stored);
+    }
+  }, [examId, initialQuestions]);
+
+  const updateExamQuestionCount = (count: number) => {
+    const exams = loadStoredExams();
+    const updated = exams.map((e) => e.id === examId ? { ...e, totalQuestions: count } : e);
+    saveStoredExams(updated);
+  };
+
   const activeQuestion = questions[activeIdx] || questions[0];
 
   const totalMarks = useMemo(
@@ -159,7 +150,7 @@ export default function CbtQuestionStudio({
   const handleAddNewQuestion = (type: "MCQ" | "TRUE_FALSE" = "MCQ") => {
     const newQ: StudioQuestion = {
       id: `q_${Date.now()}`,
-      prompt: "New question prompt text...",
+      prompt: `New Question ${questions.length + 1}`,
       type,
       marks: 1.0,
       options:
@@ -176,22 +167,28 @@ export default function CbtQuestionStudio({
             ],
     };
 
-    setQuestions((prev) => [...prev, newQ]);
-    setActiveIdx(questions.length);
+    const updated = [...questions, newQ];
+    setQuestions(updated);
+    setActiveIdx(updated.length - 1);
+    saveStoredQuestions(updated, examId);
+    updateExamQuestionCount(updated.length);
     toast.success("Added new question to palette.");
   };
 
   // Update active question field
   const updateActiveQuestion = (field: keyof StudioQuestion, val: any) => {
+    if (!activeQuestion) return;
     setQuestions((prev) => {
       const copy = [...prev];
       copy[activeIdx] = { ...copy[activeIdx], [field]: val };
+      saveStoredQuestions(copy, examId);
       return copy;
     });
   };
 
   // Update choice text
   const updateOptionText = (optIdx: number, text: string) => {
+    if (!activeQuestion) return;
     const opts = [...activeQuestion.options];
     opts[optIdx] = { ...opts[optIdx], text };
     updateActiveQuestion("options", opts);
@@ -199,6 +196,7 @@ export default function CbtQuestionStudio({
 
   // Set single correct choice (MCQ / TF)
   const setCorrectChoice = (optIdx: number) => {
+    if (!activeQuestion) return;
     const opts = activeQuestion.options.map((o, i) => ({
       ...o,
       isCorrect: i === optIdx,
@@ -208,6 +206,7 @@ export default function CbtQuestionStudio({
 
   // Delete choice
   const deleteChoice = (optIdx: number) => {
+    if (!activeQuestion) return;
     if (activeQuestion.options.length <= 2) {
       toast.error("An assessment question requires at least 2 options.");
       return;
@@ -218,6 +217,7 @@ export default function CbtQuestionStudio({
 
   // Add choice
   const addChoice = () => {
+    if (!activeQuestion) return;
     if (activeQuestion.options.length >= 6) {
       toast.error("Maximum 6 options allowed per question.");
       return;
@@ -231,13 +231,18 @@ export default function CbtQuestionStudio({
 
   // Delete question
   const handleDeleteQuestion = (idx: number) => {
-    if (questions.length <= 1) {
-      toast.error("Exam must have at least one question.");
-      return;
-    }
-    setQuestions((prev) => prev.filter((_, i) => i !== idx));
-    setActiveIdx((prev) => (prev >= idx && prev > 0 ? prev - 1 : prev));
+    const updated = questions.filter((_, i) => i !== idx);
+    setQuestions(updated);
+    setActiveIdx((prev) => (prev >= idx && prev > 0 ? prev - 1 : 0));
+    saveStoredQuestions(updated, examId);
+    updateExamQuestionCount(updated.length);
     toast.info("Question deleted.");
+  };
+
+  const handleSaveQuestions = () => {
+    saveStoredQuestions(questions, examId);
+    updateExamQuestionCount(questions.length);
+    toast.success("Question changes saved successfully!");
   };
 
   return (
@@ -306,7 +311,7 @@ export default function CbtQuestionStudio({
           {/* Publish / Save Button */}
           <Button
             size="sm"
-            onClick={() => toast.success("Question changes saved successfully!")}
+            onClick={handleSaveQuestions}
             className="h-8 px-4 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-xs"
           >
             Save Changes
@@ -356,86 +361,133 @@ export default function CbtQuestionStudio({
 
           {/* Question List Scroll Area */}
           <div className="flex-1 overflow-y-auto p-2 space-y-1.5 divide-y divide-[var(--border-fine)]/60">
-            {questions.map((q, idx) => {
-              const isActive = idx === activeIdx;
-
-              return (
-                <div
-                  key={q.id}
-                  onClick={() => setActiveIdx(idx)}
-                  className={`p-2.5 rounded-[var(--radius-md)] cursor-pointer transition-all flex items-start justify-between gap-2 ${
-                    isActive
-                      ? "bg-[var(--violet-tint)] text-[var(--violet-ink)] font-semibold shadow-xs"
-                      : "hover:bg-[var(--surface-subtle)] text-[var(--foreground)]"
-                  }`}
+            {questions.length === 0 ? (
+              <div className="py-12 text-center text-xs text-[var(--text-secondary)] px-4 space-y-2">
+                <p>No questions yet.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAddNewQuestion("MCQ")}
+                  className="h-7 text-[11px] font-semibold"
                 >
-                  <div className="flex items-start gap-2 min-w-0">
-                    <span className="w-5 h-5 rounded-[var(--radius-xs)] bg-white border border-[var(--border-fine)] text-[11px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      {idx + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-xs truncate font-normal leading-tight">
-                        {q.prompt || "Untitled Question"}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 uppercase border-[var(--border-fine)]">
-                          {q.type}
-                        </Badge>
-                        <span className="text-[10px] text-[var(--text-secondary)] font-mono">
-                          {q.marks}m
-                        </span>
+                  <Plus className="w-3 h-3 mr-1" />
+                  <span>Add Question</span>
+                </Button>
+              </div>
+            ) : (
+              questions.map((q, idx) => {
+                const isActive = idx === activeIdx;
+
+                return (
+                  <div
+                    key={q.id}
+                    onClick={() => setActiveIdx(idx)}
+                    className={`p-2.5 rounded-[var(--radius-md)] cursor-pointer transition-all flex items-start justify-between gap-2 ${
+                      isActive
+                        ? "bg-[var(--violet-tint)] text-[var(--violet-ink)] font-semibold shadow-xs"
+                        : "hover:bg-[var(--surface-subtle)] text-[var(--foreground)]"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2 min-w-0">
+                      <span className="w-5 h-5 rounded-[var(--radius-xs)] bg-white border border-[var(--border-fine)] text-[11px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs truncate font-normal leading-tight">
+                          {q.prompt || "Untitled Question"}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 uppercase border-[var(--border-fine)]">
+                            {q.type}
+                          </Badge>
+                          <span className="text-[10px] text-[var(--text-secondary)] font-mono">
+                            {q.marks}m
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Delete button */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteQuestion(idx);
-                    }}
-                    className="text-[var(--text-secondary)] hover:text-[var(--crimson-signal)] p-1 opacity-40 hover:opacity-100"
-                    title="Delete Question"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              );
-            })}
+                    {/* Delete button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteQuestion(idx);
+                      }}
+                      className="text-[var(--text-secondary)] hover:text-[var(--crimson-signal)] p-1 opacity-40 hover:opacity-100"
+                      title="Delete Question"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
 
         </aside>
 
         {/* Right Pane: Question Editor Canvas */}
         <main className="flex-1 min-w-0 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-6 shadow-[var(--shadow-card)] space-y-6">
-          
-          {/* Header Row */}
-          <div className="flex items-center justify-between pb-4 border-b border-[var(--border-fine)]">
-            <div className="flex items-center gap-2.5">
-              <span className="font-bold text-base text-[var(--foreground)]">
-                Editing Question #{activeIdx + 1}
-              </span>
-              <Badge variant="outline" className="bg-[var(--surface-muted)] text-xs font-mono">
-                {activeQuestion.type}
-              </Badge>
+          {!activeQuestion ? (
+            <div className="py-20 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
+                <FileQuestion className="w-7 h-7" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="text-base font-bold text-[var(--foreground)]">No questions in this examination yet</h3>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                  Start authoring your assessment by creating an individual question or bulk-importing existing questions from Word, PDF, or Markdown.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <Button
+                  onClick={() => handleAddNewQuestion("MCQ")}
+                  size="sm"
+                  className="h-9 px-4 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-xs inline-flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add First Question</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsBulkOpen(true)}
+                  size="sm"
+                  className="h-9 px-4 text-xs font-bold border-[var(--border-fine)] rounded-[var(--radius-md)] inline-flex items-center gap-1.5"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Bulk Import</span>
+                </Button>
+              </div>
             </div>
+          ) : (
+            <>
+              {/* Header Row */}
+              <div className="flex items-center justify-between pb-4 border-b border-[var(--border-fine)]">
+                <div className="flex items-center gap-2.5">
+                  <span className="font-bold text-base text-[var(--foreground)]">
+                    Editing Question #{activeIdx + 1}
+                  </span>
+                  <Badge variant="outline" className="bg-[var(--surface-muted)] text-xs font-mono">
+                    {activeQuestion.type}
+                  </Badge>
+                </div>
 
-            {/* Marks Input */}
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase">
-                Marks:
-              </label>
-              <Input
-                type="number"
-                min="0.5"
-                step="0.5"
-                value={activeQuestion.marks}
-                onChange={(e) => updateActiveQuestion("marks", parseFloat(e.target.value) || 1)}
-                className="w-20 h-8 text-center font-mono text-xs font-bold rounded-[var(--radius-md)] border-[var(--border-fine)]"
-              />
-            </div>
-          </div>
+                {/* Marks Input */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase">
+                    Marks:
+                  </label>
+                  <Input
+                    type="number"
+                    min="0.5"
+                    step="0.5"
+                    value={activeQuestion.marks}
+                    onChange={(e) => updateActiveQuestion("marks", parseFloat(e.target.value) || 1)}
+                    className="w-20 h-8 text-center font-mono text-xs font-bold rounded-[var(--radius-md)] border-[var(--border-fine)]"
+                  />
+                </div>
+              </div>
 
           {/* Question Prompt Editor */}
           <div className="space-y-1.5">
@@ -537,6 +589,8 @@ export default function CbtQuestionStudio({
               className="h-10 text-sm font-normal border-[var(--border-fine)]"
             />
           </div>
+            </>
+          )}
 
         </main>
       </div>
