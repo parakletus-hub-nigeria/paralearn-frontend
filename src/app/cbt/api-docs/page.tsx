@@ -1,10 +1,25 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Key, Terminal, Zap, ShieldAlert, Webhook, FileText, CheckCircle2, Copy } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Key,
+  Terminal,
+  Zap,
+  ShieldAlert,
+  Webhook,
+  FileText,
+  CheckCircle2,
+  AlertTriangle,
+  Layers,
+  Database,
+  UserCheck,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Developer API Documentation | ParaLearn CBT",
-  description: "RESTful API documentation and SDK guide for integrating ParaLearn Computer-Based Testing into external applications.",
+  description:
+    "RESTful API documentation and integration guide for connecting external LMS, schools, and tutorial centres into ParaLearn Computer-Based Testing.",
 };
 
 export default function CbtApiDocsPage() {
@@ -93,11 +108,12 @@ export default function CbtApiDocsPage() {
               <a href="#authentication" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">1. Authentication</a>
               <a href="#workspaces" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">2. Workspaces & Keys</a>
               <a href="#exams" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">3. Exams Management</a>
-              <a href="#questions" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">4. Question Studio</a>
-              <a href="#sessions" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">5. Candidate Runner</a>
+              <a href="#questions" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">4. Question Studio & LaTeX</a>
+              <a href="#sessions" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">5. Candidate Runner & Redis</a>
               <a href="#proctoring" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">6. Proctoring Telemetry</a>
               <a href="#submission" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">7. Auto-Grading & Slips</a>
               <a href="#webhooks" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">8. Webhook Verification</a>
+              <a href="#errors" className="block py-1.5 px-2 rounded-md hover:bg-slate-100 text-slate-700">9. Errors & Status Codes</a>
             </nav>
 
             <div className="p-4 rounded-xl border border-violet-100 bg-violet-50/50 space-y-2">
@@ -138,22 +154,23 @@ export default function CbtApiDocsPage() {
           </section>
 
           {/* Section 2: Workspaces */}
-          <section id="workspaces" className="space-y-4 scroll-mt-24">
+          <section id="workspaces" className="space-y-6 scroll-mt-24">
             <div className="flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-[#641bc4]" />
               <h2 className="text-2xl font-bold tracking-tight text-slate-900">2. Workspaces & Developer Keys</h2>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Create an autonomous workspace for your academy or tutorial centre. Each standalone workspace receives <strong>30 free candidate testing credits</strong> automatically.
+              Create and manage autonomous workspaces for your academy, school, or tutorial centre. Each standalone workspace receives <strong>30 free candidate testing credits</strong> automatically upon creation.
             </p>
 
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+            {/* Endpoint 2.1: Register Standalone */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
               <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2 font-mono text-xs font-bold">
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">POST</span>
                   <span className="text-slate-700">/workspaces/standalone</span>
                 </div>
-                <span className="text-xs text-slate-500">Register Partner Workspace</span>
+                <span className="text-xs text-slate-500">Register Partner Exam Hall</span>
               </div>
               <div className="p-4 space-y-3 font-mono text-xs">
                 <p className="font-sans font-semibold text-slate-700">Request Body:</p>
@@ -170,9 +187,69 @@ export default function CbtApiDocsPage() {
 {`{
   "id": "cly7q1m8x0001",
   "name": "Apex JAMB Academy",
+  "type": "STANDALONE_HALL",
   "credits": 30,
   "apiKey": "pln_live_sk_7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c",
   "webhookSecret": "pln_whsec_1234567890abcdef"
+}`}
+                </pre>
+              </div>
+            </div>
+
+            {/* Endpoint 2.2: Examiner Sign In */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2 font-mono text-xs font-bold">
+                  <span className="px-2 py-0.5 bg-violet-100 text-[#641bc4] rounded">POST</span>
+                  <span className="text-slate-700">/workspaces/login</span>
+                </div>
+                <span className="text-xs text-slate-500">Examiner Sign In & Recovery</span>
+              </div>
+              <div className="p-4 space-y-3 font-mono text-xs">
+                <p className="font-sans text-xs text-slate-600">
+                  Authenticates an examiner using their registered email. Restores their API keys, credit balance, and exam counts. If the account is new, it automatically provisions a workspace with 30 free test credits.
+                </p>
+                <p className="font-sans font-semibold text-slate-700">Request Body:</p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`{
+  "email": "tunde@apexjamb.ng",
+  "password": "optional_secure_password"
+}`}
+                </pre>
+                <p className="font-sans font-semibold text-slate-700">Response (200 OK):</p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`{
+  "id": "cly7q1m8x0001",
+  "name": "Apex JAMB Academy",
+  "ownerName": "Dr. Tunde Fashola",
+  "ownerEmail": "tunde@apexjamb.ng",
+  "credits": 30,
+  "apiKey": "pln_live_sk_7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c",
+  "_count": {
+    "exams": 4,
+    "questions": 150
+  }
+}`}
+                </pre>
+              </div>
+            </div>
+
+            {/* Endpoint 2.3: School SIS SSO */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2 font-mono text-xs font-bold">
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">POST</span>
+                  <span className="text-slate-700">/workspaces/institution</span>
+                </div>
+                <span className="text-xs text-slate-500">ParaLearn School SIS SSO</span>
+              </div>
+              <div className="p-4 space-y-3 font-mono text-xs">
+                <p className="font-sans font-semibold text-slate-700">Request Body:</p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`{
+  "schoolId": "sch_greendale_001",
+  "schoolName": "Greendale International Academy",
+  "email": "principal@greendale.edu.ng"
 }`}
                 </pre>
               </div>
@@ -189,7 +266,7 @@ export default function CbtApiDocsPage() {
               Provision exams with custom delivery policies including room code generation, anti-cheat limits, question shuffling, and immediate result disclosure.
             </p>
 
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
               <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2 font-mono text-xs font-bold">
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">POST</span>
@@ -221,10 +298,10 @@ export default function CbtApiDocsPage() {
               <h2 className="text-2xl font-bold tracking-tight text-slate-900">4. Question Studio & LaTeX Ingestion</h2>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Questions support full Markdown and LaTeX mathematical notation (e.g. <code>$E = mc^2$</code>). You can inject questions in bulk or upload an <code>.xlsx</code> spreadsheet.
+              Questions support full Markdown and LaTeX mathematical notation (e.g. <code>$E = mc^2$</code>). You can inject questions in bulk or upload an <code>.xlsx</code> spreadsheet via <code>POST /questions/import-excel</code>.
             </p>
 
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
               <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2 font-mono text-xs font-bold">
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">POST</span>
@@ -264,6 +341,50 @@ export default function CbtApiDocsPage() {
             <p className="text-sm text-slate-600 leading-relaxed">
               When a student starts an exam via <code>POST /attempts/start</code>, all correct answer keys are stripped from the response payload for strict security. Live keystrokes and answers are buffered in Redis hash tables (<span className="font-semibold text-emerald-600">&lt;5ms latency</span>) to prevent database saturation during high-volume mock examinations.
             </p>
+
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2 font-mono text-xs font-bold">
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">POST</span>
+                  <span className="text-slate-700">/attempts/start</span>
+                </div>
+                <span className="text-xs text-slate-500">Initiate Candidate Session</span>
+              </div>
+              <div className="p-4 space-y-3 font-mono text-xs">
+                <p className="font-sans font-semibold text-slate-700">Request Body:</p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`{
+  "accessCode": "JAMB-MOCK-26",
+  "candidatePin": "849201",
+  "candidateName": "Oluwaseun Adeleke",
+  "studentId": "ext_student_908"
+}`}
+                </pre>
+                <p className="font-sans font-semibold text-slate-700">Response (200 OK — Answer keys omitted):</p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`{
+  "isResumed": false,
+  "attemptId": "att_cly99182",
+  "examId": "exam_clx9921",
+  "examTitle": "JAMB UTME 2026 Mock — Physics",
+  "candidateName": "Oluwaseun Adeleke",
+  "remainingSeconds": 3600,
+  "violations": 0,
+  "maxTabViolations": 3,
+  "questions": [
+    {
+      "id": "q_01",
+      "prompt": "Calculate kinetic energy: $E_k = \\\\frac{1}{2}mv^2$...",
+      "options": [
+        { "id": "opt_a", "keyLabel": "A", "text": "6 Joules" },
+        { "id": "opt_b", "keyLabel": "B", "text": "9 Joules" }
+      ]
+    }
+  ]
+}`}
+                </pre>
+              </div>
+            </div>
           </section>
 
           {/* Section 6: Proctoring */}
@@ -275,6 +396,24 @@ export default function CbtApiDocsPage() {
             <p className="text-sm text-slate-600 leading-relaxed">
               The client runner monitors browser window blur, tab switches, and fullscreen exits. Every event is dispatched to <code>POST /attempts/:id/telemetry</code>. If violations exceed <code>maxTabViolations</code>, the candidate is automatically disqualified and the session is locked.
             </p>
+
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2 font-mono text-xs font-bold">
+                  <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded">POST</span>
+                  <span className="text-slate-700">/attempts/:id/telemetry</span>
+                </div>
+                <span className="text-xs text-slate-500">Record Breach Event</span>
+              </div>
+              <div className="p-4 space-y-3 font-mono text-xs">
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`{
+  "type": "TAB_SWITCH",
+  "meta": { "action": "window_blur", "timestamp": 1727632800000 }
+}`}
+                </pre>
+              </div>
+            </div>
           </section>
 
           {/* Section 7: Auto-Grading */}
@@ -293,6 +432,30 @@ export default function CbtApiDocsPage() {
               <div className="p-2 rounded bg-blue-50 border border-blue-200"><strong>&ge; 65%</strong>: B3</div>
               <div className="p-2 rounded bg-indigo-50 border border-indigo-200"><strong>&ge; 60%</strong>: C4</div>
               <div className="p-2 rounded bg-slate-50 border border-slate-200"><strong>&lt; 40%</strong>: F9</div>
+            </div>
+
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs mt-4">
+              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2 font-mono text-xs font-bold">
+                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">POST</span>
+                  <span className="text-slate-700">/attempts/:id/submit</span>
+                </div>
+                <span className="text-xs text-slate-500">Finalize & Auto-Grade</span>
+              </div>
+              <div className="p-4 space-y-3 font-mono text-xs">
+                <p className="font-sans font-semibold text-slate-700">Response (200 OK):</p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`{
+  "attemptId": "att_cly99182",
+  "score": 36.0,
+  "maxScore": 40.0,
+  "percentage": 90.0,
+  "grade": "A1",
+  "status": "COMPLETED",
+  "completedAt": "2026-09-29T17:40:00.000Z"
+}`}
+                </pre>
+              </div>
             </div>
           </section>
 
@@ -316,6 +479,66 @@ function verifyWebhook(rawBody, signature, secret) {
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(\`sha256=\${hash}\`));
 }`}
               </pre>
+            </div>
+          </section>
+
+          {/* Section 9: Errors & Status Codes */}
+          <section id="errors" className="space-y-4 scroll-mt-24">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">9. Errors & HTTP Status Codes</h2>
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              ParaLearn CBT returns conventional HTTP status codes. Detailed error summaries are provided in standard RFC 7807 problem details format.
+            </p>
+
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <table className="w-full text-left text-xs font-sans">
+                <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
+                  <tr>
+                    <th className="py-2.5 px-4">Code</th>
+                    <th className="py-2.5 px-4">Status</th>
+                    <th className="py-2.5 px-4">Description</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  <tr>
+                    <td className="py-2.5 px-4 font-mono font-bold text-emerald-600">200 / 201</td>
+                    <td className="py-2.5 px-4 font-semibold">Success</td>
+                    <td className="py-2.5 px-4 text-slate-600">Request processed successfully.</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 px-4 font-mono font-bold text-amber-600">400</td>
+                    <td className="py-2.5 px-4 font-semibold">Bad Request</td>
+                    <td className="py-2.5 px-4 text-slate-600">Validation failure or missing required fields in payload.</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 px-4 font-mono font-bold text-red-600">401</td>
+                    <td className="py-2.5 px-4 font-semibold">Unauthorized</td>
+                    <td className="py-2.5 px-4 text-slate-600">API Key is missing or invalid. Check your <code>Authorization: Bearer</code> header.</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 px-4 font-mono font-bold text-rose-600">402</td>
+                    <td className="py-2.5 px-4 font-semibold">Payment Required</td>
+                    <td className="py-2.5 px-4 text-slate-600">Candidate testing credit exhausted. Top up your workspace credits.</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 px-4 font-mono font-bold text-red-600">403</td>
+                    <td className="py-2.5 px-4 font-semibold">Forbidden</td>
+                    <td className="py-2.5 px-4 text-slate-600">Attempt disqualified due to proctoring violations or session locked.</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 px-4 font-mono font-bold text-slate-600">404</td>
+                    <td className="py-2.5 px-4 font-semibold">Not Found</td>
+                    <td className="py-2.5 px-4 text-slate-600">Requested workspace, exam, question, or attempt was not found.</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 px-4 font-mono font-bold text-amber-600">429</td>
+                    <td className="py-2.5 px-4 font-semibold">Too Many Requests</td>
+                    <td className="py-2.5 px-4 text-slate-600">Rate limit exceeded (&gt; 120 req/min for general API, &gt; 600 req/min for Redis answer buffering).</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </section>
         </div>
