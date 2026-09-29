@@ -110,7 +110,9 @@ const Signin = () => {
     setWhatsAppStatus("Opening WhatsApp");
 
     try {
-      const startRes = await apiClient.post("/api/proxy/auth/whatsapp/start", {});
+      const startRes = await apiClient.post("/api/proxy/auth/whatsapp/start", {
+        expectedRole: loginMode,
+      });
       const startData = startRes.data?.data || startRes.data;
       const challengeId = startData?.challengeId;
       const clientSecret = startData?.clientSecret;
