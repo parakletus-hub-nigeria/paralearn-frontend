@@ -60,7 +60,7 @@ export default function CbtWorkspaceHeader() {
 
   const isSchoolMode = !standaloneWorkspace && !!user;
   const workspaceTitle = isSchoolMode
-    ? user?.schoolName || "School Workspace"
+    ? (user as any)?.schoolName || "School Workspace"
     : standaloneWorkspace?.name || "Independent Exam Hall";
 
   const handleLogout = async () => {
