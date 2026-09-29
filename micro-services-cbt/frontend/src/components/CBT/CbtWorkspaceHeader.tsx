@@ -19,7 +19,8 @@ import {
   PlusCircle,
   Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +76,7 @@ export default function CbtWorkspaceHeader() {
 
   const navLinks = [
     { label: "Exams", href: isSchoolMode ? "/RMS/cbt" : "/cbt", icon: FileText },
+    { label: "Candidates", href: isSchoolMode ? "/RMS/cbt/candidates" : "/cbt/candidates", icon: Users },
     { label: "Question Bank", href: isSchoolMode ? "/RMS/cbt/question-bank" : "/cbt", icon: Database },
     { label: "Results", href: isSchoolMode ? "/RMS/cbt/results" : "/cbt", icon: BarChart3 },
   ];

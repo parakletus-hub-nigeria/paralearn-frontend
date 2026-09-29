@@ -19,7 +19,8 @@ import {
   LogOut,
   ExternalLink,
   BookOpen,
-  Code2
+  Code2,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -178,10 +179,22 @@ export default function CbtPortalPage() {
               <span className="text-xs font-medium text-slate-500">Total Exams</span>
               <p className="text-2xl font-extrabold text-slate-900 font-mono">1</p>
             </div>
-            <div className="bg-white border border-[var(--border-fine)] rounded-xl p-4 shadow-2xs space-y-1">
-              <span className="text-xs font-medium text-slate-500">Questions in Bank</span>
-              <p className="text-2xl font-extrabold text-slate-900 font-mono">40</p>
-            </div>
+            <Link href="/cbt/candidates">
+              <div className="bg-white border border-[var(--border-fine)] hover:border-[#641bc4]/50 hover:shadow-xs transition-all rounded-xl p-4 shadow-2xs space-y-1 cursor-pointer group">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-500 group-hover:text-[#641bc4] transition-colors">
+                    Candidates
+                  </span>
+                  <Users className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#641bc4] transition-colors" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-extrabold text-slate-900 font-mono">48</p>
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                    Roster &rarr;
+                  </span>
+                </div>
+              </div>
+            </Link>
             <div className="bg-white border border-[var(--border-fine)] rounded-xl p-4 shadow-2xs space-y-1">
               <span className="text-xs font-medium text-slate-500">Completed Sessions</span>
               <p className="text-2xl font-extrabold text-slate-900 font-mono">14</p>

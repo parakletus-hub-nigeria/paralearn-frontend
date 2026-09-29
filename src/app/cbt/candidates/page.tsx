@@ -1,0 +1,639 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Users,
+  UserPlus,
+  FileSpreadsheet,
+  Printer,
+  Share2,
+  Copy,
+  Check,
+  Search,
+  KeyRound,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  ExternalLink,
+  MessageCircle,
+  Download,
+  Filter,
+  Trash2,
+  Info,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { getExaminerSession, ExaminerWorkspace } from "@/lib/cbtSessionManager";
+
+export interface CandidateRecord {
+  id: string;
+  name: string;
+  regNumber: string;
+  pin: string;
+  phone: string;
+  roomCode: string;
+  status: "ENROLLED" | "IN_PROGRESS" | "COMPLETED" | "FLAGGED";
+  score?: number;
+  grade?: string;
+  createdAt: string;
+}
+
+const INITIAL_CANDIDATES: CandidateRecord[] = [
+  {
+    id: "c1",
+    name: "Daniel Olawale",
+    regNumber: "PLN/26/001",
+    pin: "849201",
+    phone: "08031234567",
+    roomCode: "JAMB-MOCK-26",
+    status: "COMPLETED",
+    score: 88,
+    grade: "A1",
+    createdAt: "2026-09-29 09:30",
+  },
+  {
+    id: "c2",
+    name: "Amina Bello",
+    regNumber: "PLN/26/002",
+    pin: "732049",
+    phone: "08149876543",
+    roomCode: "JAMB-MOCK-26",
+    status: "IN_PROGRESS",
+    createdAt: "2026-09-29 10:15",
+  },
+  {
+    id: "c3",
+    name: "Chukwudi Eze",
+    regNumber: "PLN/26/003",
+    pin: "481920",
+    phone: "07065551234",
+    roomCode: "JAMB-MOCK-26",
+    status: "COMPLETED",
+    score: 74,
+    grade: "B2",
+    createdAt: "2026-09-29 09:30",
+  },
+  {
+    id: "c4",
+    name: "Blessing Adeyemi",
+    regNumber: "PLN/26/004",
+    pin: "619384",
+    phone: "08091112233",
+    roomCode: "JAMB-MOCK-26",
+    status: "ENROLLED",
+    createdAt: "2026-09-29 11:00",
+  },
+  {
+    id: "c5",
+    name: "Ibrahim Musa",
+    regNumber: "PLN/26/005",
+    pin: "520491",
+    phone: "08123456789",
+    roomCode: "JAMB-MOCK-26",
+    status: "ENROLLED",
+    createdAt: "2026-09-29 11:10",
+  },
+  {
+    id: "c6",
+    name: "Chioma Okeke",
+    regNumber: "PLN/26/006",
+    pin: "938210",
+    phone: "09087654321",
+    roomCode: "JAMB-MOCK-26",
+    status: "COMPLETED",
+    score: 92,
+    grade: "A1",
+    createdAt: "2026-09-29 08:45",
+  },
+];
+
+export default function CandidatesPage() {
+  const [examiner, setExaminer] = useState<ExaminerWorkspace | null>(null);
+  const [candidates, setCandidates] = useState<CandidateRecord[]>(INITIAL_CANDIDATES);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [copiedPin, setCopiedPin] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+
+  // New Candidate Form State
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newRoomCode, setNewRoomCode] = useState("JAMB-MOCK-26");
+
+  // Print Slips Dialog State
+  const [isPrintOpen, setIsPrintOpen] = useState(false);
+
+  useEffect(() => {
+    const session = getExaminerSession();
+    if (session) {
+      setExaminer(session);
+    }
+  }, []);
+
+  const handleCopyPin = (pin: string) => {
+    navigator.clipboard.writeText(pin);
+    setCopiedPin(pin);
+    toast.success(`PIN ${pin} copied to clipboard`);
+    setTimeout(() => setCopiedPin(null), 2000);
+  };
+
+  const handleCopyDirectLink = (candidate: CandidateRecord) => {
+    const url = `${window.location.origin}/take/${candidate.roomCode}?pin=${candidate.pin}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(candidate.id);
+    toast.success(`Candidate link with pre-filled PIN copied!`);
+    setTimeout(() => setCopiedLink(null), 2000);
+  };
+
+  const handleSendWhatsApp = (candidate: CandidateRecord) => {
+    const message = encodeURIComponent(
+      `Hello ${candidate.name}, here is your ParaLearn CBT Exam pass.\n\n` +
+      `Exam Room: ${candidate.roomCode}\n` +
+      `Your Access PIN: ${candidate.pin}\n` +
+      `Direct Link: ${window.location.origin}/take/${candidate.roomCode}\n\n` +
+      `Enter your 6-digit PIN at the lobby to begin. Good luck!`
+    );
+    window.open(`https://wa.me/${candidate.phone.replace(/[^0-9]/g, "")}?text=${message}`, "_blank");
+  };
+
+  const handleAddCandidate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) {
+      toast.error("Please provide the candidate's full name");
+      return;
+    }
+
+    const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
+    const nextIndex = candidates.length + 1;
+    const formattedReg = `PLN/26/${String(nextIndex).padStart(3, "0")}`;
+
+    const newCandidate: CandidateRecord = {
+      id: `c_${Date.now()}`,
+      name: newName.trim(),
+      regNumber: formattedReg,
+      pin: randomPin,
+      phone: newPhone.trim() || "08000000000",
+      roomCode: newRoomCode.trim().toUpperCase() || "JAMB-MOCK-26",
+      status: "ENROLLED",
+      createdAt: "Just now",
+    };
+
+    setCandidates([newCandidate, ...candidates]);
+    toast.success(`Candidate ${newName} enrolled with PIN: ${randomPin}`);
+    setNewName("");
+    setNewPhone("");
+    setIsAddOpen(false);
+  };
+
+  const filteredCandidates = candidates.filter((c) => {
+    const matchesSearch =
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.pin.includes(searchQuery) ||
+      c.regNumber.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "ALL" || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  return (
+    <div className="min-h-screen bg-[#fdfdff] text-[#0f172a] font-sans antialiased selection:bg-[#641bc4]/10 selection:text-[#641bc4]">
+      {/* ── HEADER ───────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#e2e8f0] px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/cbt"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#641bc4] transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Back to CBT Workspace
+            </Link>
+            <span className="text-slate-300">/</span>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold tracking-tight text-slate-900 text-sm">Candidates & PINs</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-violet-100 text-[#641bc4] border border-violet-200">
+                {candidates.length} Registered
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {examiner && (
+              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-mono text-xs px-2.5 py-1">
+                {examiner.credits} Credits Available
+              </Badge>
+            )}
+            <Link href={`/take/JAMB-MOCK-26`} target="_blank">
+              <Button variant="outline" size="sm" className="h-8 text-xs font-bold border-slate-200 flex items-center gap-1.5">
+                <span>Open Student Lobby</span>
+                <ExternalLink className="w-3 h-3 text-[#641bc4]" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* ── MAIN CONTENT ─────────────────────────────────────────────────── */}
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        
+        {/* Page Title & Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Candidate Access & PIN Dissemination
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Issue secure 6-digit access PINs, print examination passes, or dispatch direct test links to students.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Print Slips Modal Trigger */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPrintOpen(true)}
+              className="h-9 px-3.5 text-xs font-bold border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 rounded-xl shadow-2xs"
+            >
+              <Printer className="w-3.5 h-3.5 text-[#641bc4]" />
+              <span>Print Hall Slips</span>
+            </Button>
+
+            {/* Add Candidate Modal Trigger */}
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  size="sm"
+                  className="h-9 px-4 text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white flex items-center gap-1.5 rounded-xl shadow-sm"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Enrol Candidate</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-lg font-bold text-slate-900">Enrol New Candidate</DialogTitle>
+                  <DialogDescription className="text-xs text-slate-500">
+                    A unique 6-digit access PIN will be generated automatically for this student.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleAddCandidate} className="space-y-4 pt-2">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">Full Name</label>
+                    <Input
+                      placeholder="e.g. Oluwaseun Adeleke"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      required
+                      className="text-xs font-medium"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">Phone / WhatsApp Number</label>
+                    <Input
+                      placeholder="e.g. 08031234567"
+                      value={newPhone}
+                      onChange={(e) => setNewPhone(e.target.value)}
+                      className="text-xs font-medium"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">Target Exam Room Code</label>
+                    <Input
+                      placeholder="e.g. JAMB-MOCK-26"
+                      value={newRoomCode}
+                      onChange={(e) => setNewRoomCode(e.target.value.toUpperCase())}
+                      className="text-xs font-mono font-bold uppercase"
+                    />
+                  </div>
+
+                  <DialogFooter className="pt-3">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsAddOpen(false)}
+                      className="text-xs font-semibold"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      className="text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white px-5"
+                    >
+                      Issue PIN & Enrol
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* ── DISSEMINATION WORKFLOW EXPLAINER ───────────────────────────────── */}
+        <div className="bg-gradient-to-r from-violet-50/70 via-white to-slate-50 border border-violet-100 rounded-2xl p-5 shadow-2xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#641bc4]">
+            <Info className="w-4 h-4" />
+            <span>How Candidates Receive & Use Their Access Codes:</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-600">
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1.5">
+              <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-violet-100 text-[#641bc4] font-mono text-[10px] flex items-center justify-center font-bold">1</span>
+                Pre-Assigned PIN Slips
+              </span>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                Print physical photocard slips for the computer lab or click the WhatsApp button to blast the candidate their personalized 6-digit PIN.
+              </p>
+            </div>
+
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1.5">
+              <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-violet-100 text-[#641bc4] font-mono text-[10px] flex items-center justify-center font-bold">2</span>
+                1-Click Magic Link
+              </span>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                Share <code className="bg-slate-100 px-1 py-0.5 rounded text-[10px]">/take/ROOM?pin=XXXXXX</code> with the student. Clicking it auto-fills their credentials without typing.
+              </p>
+            </div>
+
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1.5">
+              <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-violet-100 text-[#641bc4] font-mono text-[10px] flex items-center justify-center font-bold">3</span>
+                Open Hall Self-Enrolment
+              </span>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                Write the Room Code on the whiteboard. Candidates enter their Name & Phone at the lobby and are auto-issued a PIN on the spot.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── METRICS TILES ─────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1">
+            <span className="text-xs font-medium text-slate-500">Total Enrolled</span>
+            <p className="text-2xl font-extrabold text-slate-900 font-mono">{candidates.length}</p>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1">
+            <span className="text-xs font-medium text-slate-500">Completed Sessions</span>
+            <p className="text-2xl font-extrabold text-emerald-600 font-mono">
+              {candidates.filter((c) => c.status === "COMPLETED").length}
+            </p>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1">
+            <span className="text-xs font-medium text-slate-500">Live in Hall</span>
+            <p className="text-2xl font-extrabold text-[#641bc4] font-mono">
+              {candidates.filter((c) => c.status === "IN_PROGRESS").length}
+            </p>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1">
+            <span className="text-xs font-medium text-slate-500">Unused Passes</span>
+            <p className="text-2xl font-extrabold text-amber-600 font-mono">
+              {candidates.filter((c) => c.status === "ENROLLED").length}
+            </p>
+          </div>
+        </div>
+
+        {/* ── FILTER & SEARCH BAR ───────────────────────────────────────────── */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="relative w-full sm:w-80">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
+              placeholder="Search by name, PIN, or reg no..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-xs font-medium"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs font-semibold text-slate-600">Status:</span>
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs font-semibold">
+              {["ALL", "ENROLLED", "IN_PROGRESS", "COMPLETED"].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-2.5 py-1 rounded-md transition-all ${
+                    statusFilter === s
+                      ? "bg-white text-slate-900 shadow-2xs font-bold"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {s === "ALL" ? "All" : s === "IN_PROGRESS" ? "Live" : s.charAt(0) + s.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── CANDIDATES TABLE ──────────────────────────────────────────────── */}
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
+                <tr>
+                  <th className="py-3 px-4">Candidate & Reg No</th>
+                  <th className="py-3 px-4">Exam Room</th>
+                  <th className="py-3 px-4">Access PIN</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Score & WAEC</th>
+                  <th className="py-3 px-4 text-right">Dissemination Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredCandidates.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400 font-medium">
+                      No candidates match your search filter.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCandidates.map((candidate) => (
+                    <tr key={candidate.id} className="hover:bg-slate-50/70 transition-colors">
+                      {/* Name & Reg */}
+                      <td className="py-3 px-4">
+                        <div className="font-extrabold text-slate-900 text-sm">{candidate.name}</div>
+                        <div className="font-mono text-[11px] text-slate-400">{candidate.regNumber} &bull; {candidate.phone}</div>
+                      </td>
+
+                      {/* Exam Room */}
+                      <td className="py-3 px-4">
+                        <span className="font-mono font-bold text-slate-700 px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
+                          {candidate.roomCode}
+                        </span>
+                      </td>
+
+                      {/* Access PIN */}
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-black text-[#641bc4] tracking-wider bg-violet-50 px-2.5 py-0.5 rounded-md border border-violet-100">
+                            {candidate.pin}
+                          </span>
+                          <button
+                            onClick={() => handleCopyPin(candidate.pin)}
+                            className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                            title="Copy PIN"
+                          >
+                            {copiedPin === candidate.pin ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3 px-4">
+                        {candidate.status === "COMPLETED" && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            Finished
+                          </span>
+                        )}
+                        {candidate.status === "IN_PROGRESS" && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-[#641bc4]">
+                            <Clock className="w-3 h-3 text-[#641bc4] animate-spin" />
+                            Testing Now
+                          </span>
+                        )}
+                        {candidate.status === "ENROLLED" && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            PIN Ready
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Score */}
+                      <td className="py-3 px-4">
+                        {candidate.score !== undefined ? (
+                          <div className="flex items-center gap-1.5 font-mono">
+                            <strong className="text-slate-900 font-bold">{candidate.score}%</strong>
+                            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px]">
+                              {candidate.grade}
+                            </Badge>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">Awaiting Exam</span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Copy Magic Link */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopyDirectLink(candidate)}
+                            className="h-8 px-2.5 text-[11px] font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+                            title="Copy link with auto-filled PIN"
+                          >
+                            {copiedLink === candidate.id ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600 mr-1" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5 mr-1 text-slate-400" />
+                            )}
+                            <span>{copiedLink === candidate.id ? "Copied" : "Copy Link"}</span>
+                          </Button>
+
+                          {/* WhatsApp Blast */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSendWhatsApp(candidate)}
+                            className="h-8 px-2.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
+                            title="Send PIN & Link via WhatsApp"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 text-emerald-600 mr-1" />
+                            <span>WhatsApp</span>
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+
+      {/* ── PRINTABLE EXAMINATION SLIPS MODAL ─────────────────────────────── */}
+      <Dialog open={isPrintOpen} onOpenChange={setIsPrintOpen}>
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center justify-between">
+              <span>Print Candidate Examination Hall Slips</span>
+              <Button
+                size="sm"
+                onClick={() => window.print()}
+                className="h-8 text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white flex items-center gap-1.5"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Print All Slips</span>
+              </Button>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Cut-out examination slips to distribute to students entering the computer testing hall.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-4">
+            {candidates.map((candidate) => (
+              <div
+                key={candidate.id}
+                className="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-white space-y-2.5 text-left"
+              >
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <div className="font-extrabold text-xs text-[#641bc4]">ParaLearn CBT Pass</div>
+                  <span className="font-mono text-[10px] text-slate-400">{candidate.regNumber}</span>
+                </div>
+
+                <div className="space-y-0.5">
+                  <span className="text-[10px] uppercase font-bold text-slate-400">Candidate Name</span>
+                  <div className="font-extrabold text-sm text-slate-900">{candidate.name}</div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block">Room Code</span>
+                    <span className="font-mono font-bold text-xs text-slate-800">{candidate.roomCode}</span>
+                  </div>
+                  <div className="bg-violet-50 p-2 rounded-lg border border-violet-100">
+                    <span className="text-[9px] uppercase font-bold text-[#641bc4] block">6-Digit PIN</span>
+                    <span className="font-mono font-black text-sm text-[#641bc4]">{candidate.pin}</span>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-100">
+                  Instructions: Go to <strong>cbt.pln.ng/take</strong> and enter your 6-digit PIN. Do not exit fullscreen.
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
