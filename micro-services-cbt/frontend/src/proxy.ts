@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(req: NextRequest) {
+/**
+ * Next.js Edge Proxy Handler
+ * 
+ * Manages subdomain routing for autonomous CBT workspaces (cbt.pln.ng, cbt.localhost)
+ * without rewriting static assets or PIN gate runner paths.
+ */
+export function proxy(req: NextRequest) {
   const url = req.nextUrl;
   const hostname = req.headers.get("host") || "";
 
