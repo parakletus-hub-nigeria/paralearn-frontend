@@ -4,6 +4,32 @@
  * paired with direct asynchronous synchronization to the autonomous CBT Microservice.
  */
 
+export type CbtQuestionType = "MCQ" | "SHORT_ESSAY" | "LONG_ESSAY" | "TRUE_FALSE";
+
+export interface RubricLevel {
+  label: string;
+  points: number;
+  descriptor: string;
+}
+
+export interface RubricCriterion {
+  id: string;
+  title: string;
+  maxMarks: number;
+  description: string;
+  levels?: RubricLevel[];
+}
+
+export interface ExamRubric {
+  id: string;
+  name: string;
+  source: "AUTO_GENERATED" | "CUSTOM_UPLOADED" | "MANUAL_STUDIO";
+  criteria: RubricCriterion[];
+  totalMarks: number;
+  uploadedFileName?: string;
+  createdAt?: string;
+}
+
 export interface CandidateSession {
   attemptId?: string;
   examId?: string;
@@ -22,9 +48,18 @@ export interface CandidateSession {
     questionIdx: number;
   }>;
   status: "in_progress" | "submitted" | "disqualified";
+  gradingStatus?: "AUTO_SCORED" | "PENDING_REVIEW" | "GRADED";
   score?: number;
   totalMarks?: number;
   percentage?: number;
+  mcqScore?: number;
+  essayScore?: number;
+  essayFeedback?: Record<string, {
+    score: number;
+    maxScore: number;
+    comment?: string;
+    rubricScores?: Record<string, number>;
+  }>;
 }
 
 export interface ExaminerWorkspace {
@@ -564,4 +599,23 @@ export const purgeAllDemoData = () => {
     keysToRemove.forEach((k) => localStorage.removeItem(k));
   } catch {}
 };
+
+export const loadStoredRubrics = (examId: string): ExamRubric[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const key = `paralearn_cbt_rubrics_${examId}`;
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+};
+
+export const saveStoredRubrics = (rubrics: ExamRubric[], examId: string) => {
+  if (typeof window === "undefined") return;
+  try {
+    const key = `paralearn_cbt_rubrics_${examId}`;
+    localStorage.setItem(key, JSON.stringify(rubrics));
+  } catch {}
+};
+
 

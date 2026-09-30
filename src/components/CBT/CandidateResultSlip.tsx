@@ -10,7 +10,10 @@ import {
   ShieldCheck, 
   AlertCircle,
   RotateCcw,
-  QrCode
+  QrCode,
+  FileText,
+  MessageSquare,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,10 +43,15 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
     router.replace(`/take/${encodeURIComponent(examCode)}`);
   };
 
-  const score = session?.score ?? 0;
-  const total = session?.totalMarks ?? 10;
-  const percentage = session?.percentage ?? (total > 0 ? Math.round((score / total) * 100) : 0);
+  const isPendingReview = session?.gradingStatus === "PENDING_REVIEW";
+  const isGraded = session?.gradingStatus === "GRADED";
   const isDisqualified = session?.status === "disqualified";
+
+  const mcqScore = session?.mcqScore ?? session?.score ?? 0;
+  const essayScore = session?.essayScore ?? 0;
+  const totalScore = isGraded ? (mcqScore + essayScore) : mcqScore;
+  const grandTotalMarks = session?.totalMarks ?? 20;
+  const percentage = session?.percentage ?? (grandTotalMarks > 0 ? Math.round((totalScore / grandTotalMarks) * 100) : 0);
 
   // Calculate grade
   const getGrade = (pct: number) => {
@@ -67,6 +75,8 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white shadow-xs border border-[var(--border-fine)] mb-1">
             {isDisqualified ? (
               <AlertCircle className="w-6 h-6 text-[var(--crimson-signal)]" />
+            ) : isPendingReview ? (
+              <Clock className="w-6 h-6 text-amber-600" />
             ) : (
               <Award className="w-6 h-6 text-[var(--violet-ink)]" />
             )}
@@ -78,6 +88,13 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
           <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
             Exam Room Code: <strong className="font-mono text-violet-700">{examCode.toUpperCase()}</strong>
           </p>
+
+          {isPendingReview && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-800 border border-amber-300 rounded-full text-xs font-semibold">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Provisional &bull; Essays Awaiting Examiner Grading</span>
+            </div>
+          )}
         </div>
 
         {/* Slip Content */}
@@ -110,7 +127,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
               <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Security Audit</span>
               <div className="font-medium text-xs text-[var(--emerald-signal)] flex items-center gap-1 mt-0.5">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>{session?.violations.length || 0} Malpractice Flags</span>
+                <span>{session?.violations?.length || 0} Malpractice Flags</span>
               </div>
             </div>
           </div>
@@ -123,6 +140,31 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
                 This attempt was flagged and locked due to exceeding allowed tab-switch and malpractice thresholds.
               </p>
             </div>
+          ) : isPendingReview ? (
+            <div className="bg-amber-50/50 border border-amber-200 rounded-[var(--radius-md)] p-6 text-center space-y-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-amber-800">
+                Objective MCQ Performance (Provisional)
+              </span>
+
+              <div className="flex items-baseline justify-center gap-2">
+                <span className="text-4xl sm:text-5xl font-extrabold font-mono text-amber-950 tracking-tight">
+                  {mcqScore}
+                </span>
+                <span className="text-sm font-mono text-amber-800">
+                  MCQ Marks Awarded
+                </span>
+              </div>
+
+              <div className="p-3 bg-white rounded-lg border border-amber-200 text-xs text-amber-900 text-left space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-amber-800">
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Theory &amp; Essay Questions Status:</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-amber-700">
+                  Your written short answers and long essay compositions are currently under review by your examiner using the ParaLearn AI evaluation engine. Your finalized composite grade will update automatically once verified.
+                </p>
+              </div>
+            </div>
           ) : (
             <div className="bg-[var(--surface-subtle)] border border-[var(--border-fine)] rounded-[var(--radius-md)] p-6 text-center space-y-3">
               <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
@@ -134,9 +176,22 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
                   {percentage}%
                 </span>
                 <span className="text-sm font-mono text-[var(--text-secondary)]">
-                  ({score} / {total} Marks)
+                  ({totalScore} / {grandTotalMarks} Marks)
                 </span>
               </div>
+
+              {isGraded && (
+                <div className="grid grid-cols-2 gap-2 text-xs font-mono py-1">
+                  <div className="bg-white p-2 rounded border border-slate-200">
+                    <span className="text-slate-500 block text-[10px]">Objective MCQ</span>
+                    <span className="font-bold text-slate-800">{mcqScore} Marks</span>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-slate-200">
+                    <span className="text-slate-500 block text-[10px]">Theory &amp; Essay</span>
+                    <span className="font-bold text-slate-800">{essayScore} Marks</span>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <Badge className={`${gradeInfo.tint} font-bold text-xs uppercase px-3 py-1 rounded-full border-0`}>
@@ -146,7 +201,32 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
             </div>
           )}
 
-          {/* Digital Signature & Verification Barcode Placeholder */}
+          {/* Examiner Constructive Feedback (If Graded) */}
+          {isGraded && session?.essayFeedback && Object.keys(session.essayFeedback).length > 0 && (
+            <div className="space-y-2 border-t border-[var(--border-fine)] pt-4">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-violet-600" />
+                <span>Examiner Feedback &amp; Rubric Evaluation</span>
+              </div>
+              <div className="space-y-2">
+                {Object.entries(session.essayFeedback).map(([qId, fb]) => (
+                  <div key={qId} className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
+                    <div className="flex justify-between font-bold text-slate-800">
+                      <span>Essay Assessment Breakdown</span>
+                      <span className="font-mono text-violet-700">{fb.score} / {fb.maxScore} Marks</span>
+                    </div>
+                    {fb.comment && (
+                      <p className="text-[11px] text-slate-600 italic">
+                        "{fb.comment}"
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Digital Signature & Verification Barcode */}
           <div className="pt-2 flex items-center justify-between text-xs text-[var(--text-secondary)] border-t border-[var(--border-fine)]">
             <div className="space-y-0.5">
               <div className="font-mono text-[11px] font-semibold text-[var(--foreground)]">

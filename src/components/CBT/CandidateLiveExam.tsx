@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Timer,
@@ -14,7 +14,13 @@ import {
   Wifi,
   Menu,
   X,
-  RotateCcw
+  RotateCcw,
+  BookOpen,
+  Award,
+  AlignLeft,
+  FileText,
+  Tag,
+  Check
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -31,24 +37,38 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   loadCandidateSession,
   saveAnswerToSession,
   toggleQuestionFlag,
   recordProctoringViolation,
   saveCandidateSession,
-  CandidateSession
+  CandidateSession,
+  CbtQuestionType,
+  ExamRubric
 } from "@/lib/cbtSessionManager";
 
 export interface QuestionItem {
   id: string;
   prompt: string;
-  type: "MCQ" | "TRUE_FALSE" | "MULTI_SELECT" | "ESSAY";
+  type: CbtQuestionType | "MULTI_SELECT";
   marks: number;
-  options: Array<{
+  section?: string;
+  options?: Array<{
     id: string;
     text: string;
     keyLabel?: string; // 'A', 'B', 'C', 'D'
+    isCorrect?: boolean;
   }>;
+  minWords?: number;
+  maxWords?: number;
+  rubric?: ExamRubric;
   explanation?: string;
 }
 
@@ -64,59 +84,56 @@ const DEFAULT_QUESTIONS: QuestionItem[] = [
     id: "q1",
     prompt: "What is the primary function of chlorophyll in green plants?",
     type: "MCQ",
+    section: "Section A: Multiple Choice",
     marks: 2.0,
     options: [
-      { id: "c1", text: "To absorb light energy for photosynthesis", keyLabel: "A" },
-      { id: "c2", text: "To absorb water directly from the atmosphere", keyLabel: "B" },
-      { id: "c3", text: "To release oxygen into the soil", keyLabel: "C" },
-      { id: "c4", text: "To store starch in the plant stem", keyLabel: "D" },
+      { id: "c1", text: "To absorb light energy for photosynthesis", keyLabel: "A", isCorrect: true },
+      { id: "c2", text: "To absorb water directly from the atmosphere", keyLabel: "B", isCorrect: false },
+      { id: "c3", text: "To release oxygen into the soil", keyLabel: "C", isCorrect: false },
+      { id: "c4", text: "To store starch in the plant stem", keyLabel: "D", isCorrect: false },
     ],
   },
   {
     id: "q2",
     prompt: "A body of mass 4 kg is moving with a constant velocity of 10 m/s. Calculate its momentum.",
     type: "MCQ",
+    section: "Section A: Multiple Choice",
     marks: 2.0,
     options: [
-      { id: "c1", text: "2.5 kg·m/s", keyLabel: "A" },
-      { id: "c2", text: "40 kg·m/s", keyLabel: "B" },
-      { id: "c3", text: "200 kg·m/s", keyLabel: "C" },
-      { id: "c4", text: "14 kg·m/s", keyLabel: "D" },
+      { id: "c1", text: "2.5 kg·m/s", keyLabel: "A", isCorrect: false },
+      { id: "c2", text: "40 kg·m/s", keyLabel: "B", isCorrect: true },
+      { id: "c3", text: "200 kg·m/s", keyLabel: "C", isCorrect: false },
+      { id: "c4", text: "14 kg·m/s", keyLabel: "D", isCorrect: false },
     ],
   },
   {
     id: "q3",
-    prompt: "Sound travels faster in solids than in gases due to higher density and molecular elasticity.",
-    type: "TRUE_FALSE",
-    marks: 1.0,
-    options: [
-      { id: "c1", text: "True", keyLabel: "A" },
-      { id: "c2", text: "False", keyLabel: "B" },
-    ],
+    prompt: "Briefly distinguish between speed and velocity. Provide one practical example demonstrating the distinction.",
+    type: "SHORT_ESSAY",
+    section: "Section B: Theory & Short Answer",
+    marks: 5.0,
+    minWords: 20,
+    maxWords: 100,
   },
   {
     id: "q4",
-    prompt: "Which of the following compounds is an unsaturated hydrocarbon?",
-    type: "MCQ",
-    marks: 2.0,
-    options: [
-      { id: "c1", text: "Methane (CH4)", keyLabel: "A" },
-      { id: "c2", text: "Ethane (C2H6)", keyLabel: "B" },
-      { id: "c3", text: "Ethene (C2H4)", keyLabel: "C" },
-      { id: "c4", text: "Propane (C3H8)", keyLabel: "D" },
-    ],
-  },
-  {
-    id: "q5",
-    prompt: "The Nigerian National Assembly consists of how many chambers?",
-    type: "MCQ",
-    marks: 1.0,
-    options: [
-      { id: "c1", text: "One chamber (Unicameral)", keyLabel: "A" },
-      { id: "c2", text: "Two chambers (Senate and House of Representatives)", keyLabel: "B" },
-      { id: "c3", text: "Three chambers", keyLabel: "C" },
-      { id: "c4", text: "Four chambers", keyLabel: "D" },
-    ],
+    prompt: "Critically evaluate the socioeconomic impact of renewable energy transitions in developing sub-Saharan African economies. Discuss both technological hurdles and long-term industrial benefits.",
+    type: "LONG_ESSAY",
+    section: "Section C: Extended Essay",
+    marks: 15.0,
+    minWords: 150,
+    maxWords: 800,
+    rubric: {
+      id: "rub_demo",
+      name: "Standard Academic Evaluation Rubric",
+      source: "MANUAL_STUDIO",
+      totalMarks: 15,
+      criteria: [
+        { id: "c1", title: "Thesis, Content & Technical Depth", maxMarks: 5, description: "Clear thesis, relevant real-world examples, and accurate socioeconomic concepts." },
+        { id: "c2", title: "Analytical Coherence & Structure", maxMarks: 5, description: "Logical organization, topic sentences, and balanced evaluation of opportunities vs challenges." },
+        { id: "c3", title: "Expression, Clarity & Grammar", maxMarks: 5, description: "Grammatical accuracy, authoritative vocabulary, and precise articulation." },
+      ],
+    },
   },
 ];
 
@@ -132,6 +149,7 @@ export default function CandidateLiveExam({
   const [activeQuestionIdx, setActiveQuestionIdx] = useState(0);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(3600);
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+  const [isRubricDialogOpen, setIsRubricDialogOpen] = useState(false);
   const [isMobilePaletteOpen, setIsMobilePaletteOpen] = useState(false);
 
   // Sync state
@@ -145,11 +163,20 @@ export default function CandidateLiveExam({
   const selectedAnswer = session?.answers[currentQ.id];
   const isFlagged = session?.flaggedQuestionIds.includes(currentQ.id) || false;
 
+  // Local draft state for essay inputs (for smooth typing without re-render delays)
+  const [essayDraft, setEssayDraft] = useState<string>("");
+  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync draft whenever current question changes
+  useEffect(() => {
+    const existing = session?.answers[currentQ.id];
+    setEssayDraft(typeof existing === "string" ? existing : "");
+  }, [currentQ.id, session?.answers]);
+
   // 1. Initialize or restore session
   useEffect(() => {
     let active = loadCandidateSession(examCode);
     if (!active) {
-      // Create session on the fly if user directly opened live route
       active = {
         examCode: examCode.toUpperCase(),
         candidateName: "Walk-in Candidate",
@@ -223,7 +250,6 @@ export default function CandidateLiveExam({
 
     const handleWindowBlur = () => {
       if (sessionRef.current) {
-        // Increment window blur telemetry
         recordProctoringViolation(
           examCode,
           sessionRef.current.candidatePin,
@@ -242,33 +268,26 @@ export default function CandidateLiveExam({
     };
   }, [examCode, activeQuestionIdx]);
 
-  // 4. Keyboard Navigation Hook (Linear-Style Speed)
+  // 4. Keyboard Navigation Hook (Linear-Style Speed for MCQ)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if student is in an open text input
+      // Don't intercept if student is in an open text input or textarea
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
 
-      const key = e.key.toUpperCase();
-
-      // 1. Next / Previous
-      if (key === "N" || e.key === "ArrowRight") {
-        e.preventDefault();
+      if (e.key === "ArrowRight" || e.key.toLowerCase() === "n") {
         goToNext();
-      } else if (key === "P" || e.key === "ArrowLeft") {
-        e.preventDefault();
+      } else if (e.key === "ArrowLeft" || e.key.toLowerCase() === "p") {
         goToPrev();
-      } else if (key === "F") {
-        e.preventDefault();
+      } else if (e.key.toLowerCase() === "f") {
         handleToggleFlag();
-      }
-
-      // 2. Choice selection: A, B, C, D
-      if (["A", "B", "C", "D"].includes(key) && currentQ.options) {
-        const keyIndex = ["A", "B", "C", "D"].indexOf(key);
-        if (currentQ.options[keyIndex]) {
-          e.preventDefault();
-          selectChoice(currentQ.options[keyIndex].id);
+      } else if (["a", "b", "c", "d"].includes(e.key.toLowerCase())) {
+        if (currentQ.type === "MCQ" && currentQ.options && currentQ.options.length > 0) {
+          const keyIndex = ["a", "b", "c", "d"].indexOf(e.key.toLowerCase());
+          if (currentQ.options[keyIndex]) {
+            e.preventDefault();
+            selectChoice(currentQ.options[keyIndex].id);
+          }
         }
       }
     };
@@ -286,6 +305,25 @@ export default function CandidateLiveExam({
       setSession(updated);
       setTimeout(() => setSyncStatus("synced"), 150);
     }
+  };
+
+  // Essay Text Autosave with Debounce (300ms)
+  const handleEssayChange = (text: string) => {
+    setEssayDraft(text);
+    setSyncStatus("saving");
+
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+
+    autosaveTimeoutRef.current = setTimeout(() => {
+      if (!sessionRef.current) return;
+      const updated = saveAnswerToSession(examCode, sessionRef.current.candidatePin, currentQ.id, text);
+      if (updated) {
+        setSession(updated);
+        setSyncStatus("synced");
+      }
+    }, 300);
   };
 
   const handleToggleFlag = () => {
@@ -306,31 +344,46 @@ export default function CandidateLiveExam({
     }
   };
 
+  // Check if exam contains essay questions
+  const hasEssayQuestions = useMemo(() => {
+    return questions.some((q) => q.type === "SHORT_ESSAY" || q.type === "LONG_ESSAY");
+  }, [questions]);
+
+  // Final Submit Handler
   const handleFinalSubmit = (reason: "manual" | "timeout" | "malpractice" = "manual") => {
     if (!session) return;
 
-    // Calculate score
-    let totalScore = 0;
-    let maxScore = 0;
+    let mcqScore = 0;
+    let mcqTotalMarks = 0;
+    let grandTotalMarks = 0;
 
     questions.forEach((q) => {
-      maxScore += q.marks;
-      const userChoice = session.answers[q.id];
-      // For MCQ/TF, first option is treated as correct in default mock
-      const correctOption = q.options[0]?.id;
-      if (userChoice && userChoice === correctOption) {
-        totalScore += q.marks;
+      grandTotalMarks += q.marks;
+      if (q.type === "MCQ" || q.type === "TRUE_FALSE") {
+        mcqTotalMarks += q.marks;
+        const userChoice = session.answers[q.id];
+        // Find correct option
+        const correctOpt = q.options?.find((o) => o.isCorrect) || q.options?.[0];
+        if (userChoice && correctOpt && userChoice === correctOpt.id) {
+          mcqScore += q.marks;
+        }
       }
     });
 
-    const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+    const isPendingReview = hasEssayQuestions;
+    const percentage = isPendingReview
+      ? (mcqTotalMarks > 0 ? Math.round((mcqScore / mcqTotalMarks) * 100) : 0)
+      : (grandTotalMarks > 0 ? Math.round((mcqScore / grandTotalMarks) * 100) : 0);
 
     const completedSession: CandidateSession = {
       ...session,
       status: reason === "malpractice" ? "disqualified" : "submitted",
-      score: totalScore,
-      totalMarks: maxScore,
-      percentage,
+      gradingStatus: isPendingReview ? "PENDING_REVIEW" : "AUTO_SCORED",
+      score: mcqScore,
+      totalMarks: grandTotalMarks,
+      mcqScore: mcqScore,
+      essayScore: 0,
+      percentage: percentage,
     };
 
     saveCandidateSession(completedSession);
@@ -354,9 +407,19 @@ export default function CandidateLiveExam({
   };
 
   // Counts
-  const answeredCount = Object.keys(session?.answers || {}).length;
+  const answeredCount = Object.keys(session?.answers || {}).filter(
+    (k) => session?.answers[k] && session.answers[k].toString().trim().length > 0
+  ).length;
   const unansweredCount = Math.max(0, questions.length - answeredCount);
   const flaggedCount = session?.flaggedQuestionIds.length || 0;
+
+  // Essay word count stats
+  const essayWordCount = useMemo(() => {
+    if (!essayDraft || !essayDraft.trim()) return 0;
+    return essayDraft.trim().split(/\s+/).filter(Boolean).length;
+  }, [essayDraft]);
+
+  const essayCharCount = essayDraft.length;
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)] select-none">
@@ -428,14 +491,42 @@ export default function CandidateLiveExam({
         <main className="flex-1 min-w-0 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-5 sm:p-8 shadow-[var(--shadow-card)] space-y-6">
           
           {/* Question Header & Meta */}
-          <div className="flex items-center justify-between pb-4 border-b border-[var(--border-fine)]">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between pb-4 border-b border-[var(--border-fine)] flex-wrap gap-2">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <span className="font-bold text-base sm:text-lg text-[var(--foreground)]">
                 Question {activeQuestionIdx + 1}
               </span>
+
+              {/* Format Badge */}
+              <Badge 
+                variant="outline"
+                className={`text-xs font-mono uppercase px-2 py-0.5 border ${
+                  currentQ.type === "LONG_ESSAY"
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : currentQ.type === "SHORT_ESSAY"
+                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                    : "bg-slate-100 text-slate-700 border-slate-200"
+                }`}
+              >
+                {currentQ.type === "LONG_ESSAY" ? "Extended Essay" : currentQ.type === "SHORT_ESSAY" ? "Short Answer" : currentQ.type}
+              </Badge>
+
               <span className="text-xs text-[var(--text-secondary)] font-mono">
                 ({currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"})
               </span>
+
+              {/* Rubric View Button for candidates */}
+              {currentQ.rubric && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsRubricDialogOpen(true)}
+                  className="h-7 px-2.5 text-xs font-semibold border-amber-200 text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-md flex items-center gap-1"
+                >
+                  <Award className="w-3.5 h-3.5 text-amber-600" />
+                  <span>View Scoring Rubric</span>
+                </Button>
+              )}
             </div>
 
             {/* Flag Review Toggle */}
@@ -455,49 +546,138 @@ export default function CandidateLiveExam({
             </Button>
           </div>
 
+          {/* Section Indicator */}
+          {currentQ.section && (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200/60 w-fit">
+              <Tag className="w-3.5 h-3.5 text-violet-600" />
+              <span>{currentQ.section}</span>
+            </div>
+          )}
+
           {/* Question Prompt */}
-          <div className="text-base sm:text-lg leading-relaxed text-[var(--foreground)] font-medium">
+          <div className="text-base sm:text-lg leading-relaxed text-[var(--foreground)] font-medium select-text">
             {currentQ.prompt}
           </div>
 
-          {/* Option Choices */}
-          <div className="space-y-3 pt-2">
-            {currentQ.options.map((opt, idx) => {
-              const isSelected = selectedAnswer === opt.id;
-              const keyLabel = opt.keyLabel || ["A", "B", "C", "D"][idx] || String(idx + 1);
+          {/* ── CONDITIONAL CANVAS: MCQs & TRUE/FALSE ── */}
+          {(currentQ.type === "MCQ" || currentQ.type === "TRUE_FALSE") && currentQ.options && (
+            <div className="space-y-3 pt-2">
+              {currentQ.options.map((opt, idx) => {
+                const isSelected = selectedAnswer === opt.id;
+                const keyLabel = opt.keyLabel || ["A", "B", "C", "D"][idx] || String(idx + 1);
 
-              return (
-                <div
-                  key={opt.id}
-                  onClick={() => selectChoice(opt.id)}
-                  className={`w-full min-h-[56px] p-3.5 sm:p-4 rounded-[var(--radius-md)] border text-left cursor-pointer transition-all flex items-center gap-3.5 ${
-                    isSelected
-                      ? "bg-[var(--violet-tint)] border-[var(--violet-ink)] text-[var(--foreground)] shadow-xs ring-1 ring-[var(--violet-ink)]"
-                      : "bg-white border-[var(--border-fine)] text-[var(--foreground)] hover:bg-[var(--surface-subtle)] hover:border-[var(--border-medium)]"
-                  }`}
-                >
-                  {/* Key Label Badge */}
-                  <span
-                    className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
+                return (
+                  <div
+                    key={opt.id}
+                    onClick={() => selectChoice(opt.id)}
+                    className={`w-full min-h-[56px] p-3.5 sm:p-4 rounded-[var(--radius-md)] border text-left cursor-pointer transition-all flex items-center gap-3.5 ${
                       isSelected
-                        ? "bg-[var(--violet-ink)] text-white"
-                        : "bg-[var(--surface-muted)] text-[var(--text-secondary)]"
+                        ? "bg-[var(--violet-tint)] border-[var(--violet-ink)] text-[var(--foreground)] shadow-xs ring-1 ring-[var(--violet-ink)]"
+                        : "bg-white border-[var(--border-fine)] text-[var(--foreground)] hover:bg-[var(--surface-subtle)] hover:border-[var(--border-medium)]"
                     }`}
                   >
-                    {keyLabel}
-                  </span>
+                    {/* Key Label Badge */}
+                    <span
+                      className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
+                        isSelected
+                          ? "bg-[var(--violet-ink)] text-white"
+                          : "bg-[var(--surface-muted)] text-[var(--text-secondary)]"
+                      }`}
+                    >
+                      {keyLabel}
+                    </span>
 
-                  {/* Choice Text */}
-                  <span className="flex-1 text-sm sm:text-base font-normal leading-snug">
-                    {opt.text}
-                  </span>
+                    {/* Choice Text */}
+                    <span className="flex-1 text-sm sm:text-base font-normal leading-snug">
+                      {opt.text}
+                    </span>
 
-                  {/* Keyboard shortcut hint */}
-                  <Kbd className="hidden sm:inline-flex opacity-40">{keyLabel}</Kbd>
+                    {/* Keyboard shortcut hint */}
+                    <Kbd className="hidden sm:inline-flex opacity-40">{keyLabel}</Kbd>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── CONDITIONAL CANVAS: SHORT ESSAY (20 - 100 words) ── */}
+          {currentQ.type === "SHORT_ESSAY" && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <AlignLeft className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Short Answer Response</span>
+                  {currentQ.minWords && currentQ.maxWords && (
+                    <span className="text-[11px] text-slate-400">
+                      (Guideline: {currentQ.minWords}–{currentQ.maxWords} words)
+                    </span>
+                  )}
+                </span>
+                <span className={`font-mono text-xs font-bold ${
+                  currentQ.minWords && essayWordCount < currentQ.minWords
+                    ? "text-amber-600"
+                    : currentQ.maxWords && essayWordCount > currentQ.maxWords
+                    ? "text-rose-600"
+                    : "text-emerald-700"
+                }`}>
+                  {essayWordCount} words &bull; {essayCharCount} characters
+                </span>
+              </div>
+
+              <textarea
+                rows={5}
+                value={essayDraft}
+                onChange={(e) => handleEssayChange(e.target.value)}
+                placeholder="Type your concise response here. Be precise and address key definitions, principles, or derivations..."
+                className="w-full p-4 text-sm sm:text-base font-normal leading-relaxed rounded-[var(--radius-md)] border border-slate-300 bg-white text-[var(--foreground)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none select-text resize-y"
+              />
+
+              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                <span>Autosaved continuously to session and cloud backup.</span>
+                {syncStatus === "saving" && <span className="text-amber-600 font-medium">Saving keystrokes...</span>}
+              </div>
+            </div>
+          )}
+
+          {/* ── CONDITIONAL CANVAS: LONG ESSAY (150 - 800 words) ── */}
+          {currentQ.type === "LONG_ESSAY" && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between text-xs text-slate-500 flex-wrap gap-2">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <FileText className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Comprehensive Essay Canvas</span>
+                  {currentQ.minWords && (
+                    <span className="text-[11px] text-slate-400">
+                      (Minimum required: {currentQ.minWords} words)
+                    </span>
+                  )}
+                </span>
+
+                <div className="flex items-center gap-3">
+                  <span className={`font-mono text-xs font-bold ${
+                    currentQ.minWords && essayWordCount < currentQ.minWords
+                      ? "text-amber-600"
+                      : "text-emerald-700"
+                  }`}>
+                    {essayWordCount} words &bull; {essayCharCount} chars
+                  </span>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+
+              <textarea
+                rows={12}
+                value={essayDraft}
+                onChange={(e) => handleEssayChange(e.target.value)}
+                placeholder="Craft your comprehensive essay here. Structure your arguments clearly with introductory thesis, body paragraphs, and concluding synthesis..."
+                className="w-full p-4 text-sm sm:text-base font-normal leading-relaxed rounded-[var(--radius-md)] border border-slate-300 bg-white text-[var(--foreground)] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none select-text resize-y"
+              />
+
+              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                <span>Your writing is automatically persisted across browser refreshes.</span>
+                {syncStatus === "saving" && <span className="text-blue-600 font-medium">Syncing essay...</span>}
+              </div>
+            </div>
+          )}
 
           {/* Bottom Navigation Toolbar */}
           <div className="pt-6 border-t border-[var(--border-fine)] flex items-center justify-between">
@@ -512,9 +692,15 @@ export default function CandidateLiveExam({
               <Kbd className="ml-2 hidden sm:inline-flex">P</Kbd>
             </Button>
 
-            <span className="text-xs text-[var(--text-secondary)] hidden sm:inline">
-              Use keyboard keys <Kbd>A</Kbd>-<Kbd>D</Kbd> to select
-            </span>
+            {currentQ.type === "MCQ" ? (
+              <span className="text-xs text-[var(--text-secondary)] hidden sm:inline">
+                Use keyboard keys <Kbd>A</Kbd>-<Kbd>D</Kbd> to select
+              </span>
+            ) : (
+              <span className="text-xs text-[var(--text-secondary)] hidden sm:inline">
+                Press Next to save &amp; continue
+              </span>
+            )}
 
             {activeQuestionIdx < questions.length - 1 ? (
               <Button
@@ -566,10 +752,11 @@ export default function CandidateLiveExam({
             </Button>
           </div>
 
-          {/* Palette Grid (5 columns, 44x44px target) */}
+          {/* Palette Grid (5 columns) */}
           <div className="flex-1 overflow-y-auto max-h-[380px] grid grid-cols-5 gap-2 pr-1">
             {questions.map((q, idx) => {
-              const isAnswered = !!session?.answers[q.id];
+              const answerVal = session?.answers[q.id];
+              const isAnswered = answerVal && answerVal.toString().trim().length > 0;
               const isCurrent = idx === activeQuestionIdx;
               const hasFlag = session?.flaggedQuestionIds.includes(q.id);
 
@@ -580,7 +767,7 @@ export default function CandidateLiveExam({
                     setActiveQuestionIdx(idx);
                     setIsMobilePaletteOpen(false);
                   }}
-                  className={`h-11 w-full rounded-[var(--radius-md)] font-mono text-xs font-bold relative transition-all flex items-center justify-center ${
+                  className={`h-11 w-full rounded-[var(--radius-md)] font-mono text-xs font-bold relative transition-all flex flex-col items-center justify-center ${
                     isCurrent
                       ? "ring-2 ring-[var(--violet-ink)] shadow-xs"
                       : ""
@@ -591,6 +778,11 @@ export default function CandidateLiveExam({
                   }`}
                 >
                   <span>{idx + 1}</span>
+                  {q.type !== "MCQ" && (
+                    <span className="text-[8px] uppercase tracking-tighter opacity-70">
+                      {q.type === "SHORT_ESSAY" ? "S" : q.type === "LONG_ESSAY" ? "L" : "TF"}
+                    </span>
+                  )}
 
                   {/* Flag indicator dot */}
                   {hasFlag && (
@@ -632,6 +824,57 @@ export default function CandidateLiveExam({
         </aside>
       </div>
 
+      {/* ── CANDIDATE SCORING RUBRIC DIALOG ──────────────────────────────── */}
+      <Dialog open={isRubricDialogOpen} onOpenChange={setIsRubricDialogOpen}>
+        <DialogContent className="max-w-lg bg-white border border-slate-200 rounded-xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Award className="w-5 h-5 text-amber-600" />
+              <span>{currentQ.rubric?.name || "Marking Rubric Criteria"}</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              This question will be scored by examiners according to the following academic rubric (Total: {currentQ.rubric?.totalMarks || currentQ.marks} Marks).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto">
+            {currentQ.rubric?.criteria?.map((crit, idx) => (
+              <div key={crit.id || idx} className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                <div className="flex items-center justify-between font-bold text-xs text-slate-800">
+                  <span>{crit.title}</span>
+                  <Badge variant="outline" className="font-mono text-amber-700 bg-amber-50 border-amber-200">
+                    Max: {crit.maxMarks} Marks
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {crit.description}
+                </p>
+                {crit.levels && crit.levels.length > 0 && (
+                  <div className="pt-2 grid grid-cols-2 gap-1.5 text-[11px]">
+                    {crit.levels.map((lvl, lIdx) => (
+                      <div key={lIdx} className="bg-white p-1.5 rounded border border-slate-200">
+                        <span className="font-semibold text-slate-700">{lvl.label} ({lvl.points}m): </span>
+                        <span className="text-slate-500">{lvl.descriptor}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button
+              size="sm"
+              onClick={() => setIsRubricDialogOpen(false)}
+              className="bg-slate-900 text-white"
+            >
+              Got it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ── SUBMIT CONFIRMATION ALERT DIALOG ─────────────────────────────── */}
       <AlertDialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
         <AlertDialogContent className="max-w-md bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-6">
@@ -643,6 +886,12 @@ export default function CandidateLiveExam({
               <p>
                 Are you sure you want to end your examination session? Once submitted, answers cannot be altered.
               </p>
+
+              {hasEssayQuestions && (
+                <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-md text-xs text-amber-800">
+                  <strong>Notice:</strong> This examination includes essay questions. Your objective questions will be scored immediately, while your essays will be submitted for examiner and AI evaluation.
+                </div>
+              )}
               
               <div className="bg-[var(--surface-muted)] p-3.5 rounded-[var(--radius-md)] border border-[var(--border-fine)] text-xs text-[var(--foreground)] grid grid-cols-3 gap-2 text-center font-mono">
                 <div>

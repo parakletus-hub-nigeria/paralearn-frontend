@@ -16,14 +16,23 @@ import {
   Search,
   PlusCircle,
   XCircle,
-  Eye
+  Eye,
+  Award,
+  Sparkles,
+  BookOpen
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 
-import { loadStoredCandidates } from "@/lib/cbtSessionManager";
+import { 
+  loadStoredCandidates, 
+  loadStoredQuestions, 
+  loadCandidateSession,
+  CandidateSession 
+} from "@/lib/cbtSessionManager";
+import CbtEssayGradingModal from "./CbtEssayGradingModal";
 
 export interface CandidateLiveStatus {
   id: string;
@@ -34,6 +43,9 @@ export interface CandidateLiveStatus {
   timeRemainingMins: number;
   violations: number;
   status: "active" | "flagged" | "locked" | "submitted";
+  gradingStatus?: "AUTO_SCORED" | "PENDING_REVIEW" | "GRADED";
+  score?: number;
+  totalMarks?: number;
   lastActive: string;
 }
 
@@ -51,34 +63,115 @@ export default function CbtLiveMonitor({
   
   const [candidates, setCandidates] = useState<CandidateLiveStatus[]>([]);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "flagged" | "locked" | "active">("all");
+  const [filter, setFilter] = useState<"all" | "flagged" | "locked" | "active" | "review">("all");
+
+  // Selected candidate and question for essay grading modal
+  const [gradingSession, setGradingSession] = useState<CandidateSession | null>(null);
+  const [gradingQuestion, setGradingQuestion] = useState<any | null>(null);
+
+  // Load questions to detect essay questions
+  const [questions, setQuestions] = useState<any[]>([]);
 
   useEffect(() => {
+    const qList = loadStoredQuestions(examId);
+    setQuestions(qList);
+
     const stored = loadStoredCandidates();
     const matching = stored.filter((c) => !roomCode || c.roomCode.toUpperCase() === roomCode.toUpperCase());
-    if (matching.length > 0) {
-      const liveList: CandidateLiveStatus[] = matching.map((c) => ({
-        id: c.id,
-        name: c.name,
-        pin: c.pin,
-        answeredCount: c.status === "COMPLETED" ? 40 : c.status === "IN_PROGRESS" ? 15 : 0,
-        totalQuestions: 40,
-        timeRemainingMins: c.status === "COMPLETED" ? 0 : 35,
-        violations: 0,
-        status: c.status === "COMPLETED" ? "submitted" : "active",
-        lastActive: c.status === "COMPLETED" ? "Finished" : "Just now",
-      }));
-      setCandidates(liveList);
-    } else {
-      setCandidates([]);
+    
+    // Also check active candidate session in this browser for instant test feedback
+    const activeAttempt = loadCandidateSession(roomCode);
+    const list: CandidateLiveStatus[] = [];
+
+    if (activeAttempt) {
+      const isFinished = activeAttempt.status === "submitted" || activeAttempt.status === "disqualified";
+      list.push({
+        id: `local_${activeAttempt.candidatePin}`,
+        name: activeAttempt.candidateName,
+        pin: activeAttempt.candidatePin,
+        answeredCount: Object.keys(activeAttempt.answers || {}).length,
+        totalQuestions: qList.length > 0 ? qList.length : 10,
+        timeRemainingMins: isFinished ? 0 : 45,
+        violations: activeAttempt.violations?.length || 0,
+        status: isFinished ? "submitted" : "active",
+        gradingStatus: activeAttempt.gradingStatus || (isFinished ? "PENDING_REVIEW" : undefined),
+        score: activeAttempt.score,
+        totalMarks: activeAttempt.totalMarks,
+        lastActive: isFinished ? "Submitted" : "Just now",
+      });
     }
-  }, [roomCode]);
+
+    if (matching.length > 0) {
+      matching.forEach((c) => {
+        if (!list.some((existing) => existing.pin === c.pin)) {
+          list.push({
+            id: c.id,
+            name: c.name,
+            pin: c.pin,
+            answeredCount: c.status === "COMPLETED" ? (qList.length || 40) : c.status === "IN_PROGRESS" ? 15 : 0,
+            totalQuestions: qList.length || 40,
+            timeRemainingMins: c.status === "COMPLETED" ? 0 : 35,
+            violations: 0,
+            status: c.status === "COMPLETED" ? "submitted" : "active",
+            gradingStatus: c.status === "COMPLETED" ? "PENDING_REVIEW" : undefined,
+            lastActive: c.status === "COMPLETED" ? "Finished" : "Just now",
+          });
+        }
+      });
+    }
+
+    setCandidates(list);
+  }, [roomCode, examId]);
+
+  // Open Essay Grading for a Candidate
+  const handleOpenEssayGrading = (candidatePin: string) => {
+    const session = loadCandidateSession(roomCode);
+    if (!session) {
+      // Mock session for candidate review
+      const mockSession: CandidateSession = {
+        examCode: roomCode,
+        candidateName: "Candidate " + candidatePin,
+        candidatePin: candidatePin,
+        startedAt: new Date().toISOString(),
+        durationMins: 60,
+        deadline: new Date().toISOString(),
+        answers: {
+          q_sample: "Photosynthesis is the fundamental biological process wherein plants synthesize glucose from carbon dioxide and water utilizing solar photons absorbed by chlorophyll pigments.",
+        },
+        flaggedQuestionIds: [],
+        violations: [],
+        status: "submitted",
+        gradingStatus: "PENDING_REVIEW",
+      };
+      setGradingSession(mockSession);
+      const essayQ = questions.find((q) => q.type === "SHORT_ESSAY" || q.type === "LONG_ESSAY") || {
+        id: "q_sample",
+        prompt: "Explain the biochemical process of photosynthesis and state the chemical equation.",
+        type: "SHORT_ESSAY",
+        marks: 5,
+        modelAnswer: "6CO2 + 6H2O -> C6H12O6 + 6O2",
+      };
+      setGradingQuestion(essayQ);
+      return;
+    }
+
+    const essayQ = questions.find((q) => q.type === "SHORT_ESSAY" || q.type === "LONG_ESSAY") || {
+      id: "q_sample",
+      prompt: "Explain the biochemical process of photosynthesis and state the chemical equation.",
+      type: "SHORT_ESSAY",
+      marks: 5,
+      modelAnswer: "6CO2 + 6H2O -> C6H12O6 + 6O2",
+    };
+
+    setGradingSession(session);
+    setGradingQuestion(essayQ);
+  };
 
   // Force submit candidate attempt
   const handleForceSubmit = (candidateId: string) => {
     setCandidates((prev) =>
       prev.map((c) =>
-        c.id === candidateId ? { ...c, status: "submitted", timeRemainingMins: 0 } : c
+        c.id === candidateId ? { ...c, status: "submitted", timeRemainingMins: 0, gradingStatus: "PENDING_REVIEW" } : c
       )
     );
     toast.success("Attempt force-submitted for grading.");
@@ -114,12 +207,14 @@ export default function CbtLiveMonitor({
     if (filter === "flagged") return matchesSearch && c.violations > 0;
     if (filter === "locked") return matchesSearch && c.status === "locked";
     if (filter === "active") return matchesSearch && c.status === "active";
+    if (filter === "review") return matchesSearch && (c.gradingStatus === "PENDING_REVIEW" || c.status === "submitted");
     return matchesSearch;
   });
 
   const activeCount = candidates.filter((c) => c.status === "active").length;
   const flaggedCount = candidates.filter((c) => c.violations > 0).length;
   const lockedCount = candidates.filter((c) => c.status === "locked").length;
+  const reviewCount = candidates.filter((c) => c.gradingStatus === "PENDING_REVIEW" || c.status === "submitted").length;
 
   const pathname = usePathname();
   const isSchoolContext = pathname?.startsWith("/RMS");
@@ -178,11 +273,11 @@ export default function CbtLiveMonitor({
           </div>
 
           <div className="bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-4 shadow-xs">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--crimson-signal)]">
-              Locked / Disqualified
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-700">
+              Essay Grading Queue
             </span>
-            <div className="text-2xl sm:text-3xl font-bold font-mono text-[var(--crimson-signal)] mt-1">
-              {lockedCount}
+            <div className="text-2xl sm:text-3xl font-bold font-mono text-blue-700 mt-1">
+              {reviewCount}
             </div>
           </div>
 
@@ -212,18 +307,18 @@ export default function CbtLiveMonitor({
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 w-full sm:w-auto">
-            {(["all", "active", "flagged", "locked"] as const).map((tab) => (
+          <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1">
+            {(["all", "active", "review", "flagged", "locked"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setFilter(tab)}
-                className={`h-8 px-3 rounded-[var(--radius-md)] text-xs font-semibold capitalize transition-all ${
+                className={`h-8 px-3 rounded-[var(--radius-md)] text-xs font-semibold capitalize transition-all shrink-0 ${
                   filter === tab
                     ? "bg-[var(--violet-ink)] text-white shadow-xs"
                     : "bg-[var(--surface-muted)] text-[var(--text-secondary)] hover:text-[var(--foreground)]"
                 }`}
               >
-                {tab}
+                {tab === "review" ? `Essay Queue (${reviewCount})` : tab}
               </button>
             ))}
           </div>
@@ -240,7 +335,7 @@ export default function CbtLiveMonitor({
                   <th className="py-3 px-4">Progress</th>
                   <th className="py-3 px-4">Time Left</th>
                   <th className="py-3 px-4">Violations</th>
-                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Grading Status</th>
                   <th className="py-3 px-4 text-right">Invigilator Actions</th>
                 </tr>
               </thead>
@@ -270,31 +365,32 @@ export default function CbtLiveMonitor({
                         
                         {/* Name & PIN */}
                         <td className="py-3.5 px-4">
-                          <div className="font-bold text-sm text-[var(--foreground)]">{c.name}</div>
+                          <div className="font-bold text-[var(--foreground)]">{c.name}</div>
                           <div className="font-mono text-[11px] text-[var(--text-secondary)]">PIN: {c.pin}</div>
                         </td>
 
-                        {/* Progress Bar */}
+                        {/* Progress */}
                         <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-24 bg-[var(--surface-muted)] h-2 rounded-full overflow-hidden border border-[var(--border-fine)]">
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[11px] font-mono">
+                              <span>{c.answeredCount}/{c.totalQuestions}</span>
+                              <span className="text-[var(--text-secondary)]">{pct}%</span>
+                            </div>
+                            <div className="w-28 bg-[var(--surface-muted)] h-1.5 rounded-full overflow-hidden">
                               <div
                                 className="bg-[var(--violet-ink)] h-full transition-all"
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
-                            <span className="font-mono text-[11px] text-[var(--text-secondary)]">
-                              {c.answeredCount}/{c.totalQuestions} ({pct}%)
-                            </span>
                           </div>
                         </td>
 
-                        {/* Time Left */}
-                        <td className="py-3.5 px-4 font-mono font-semibold">
+                        {/* Time */}
+                        <td className="py-3.5 px-4 font-mono">
                           {c.status === "submitted" ? (
                             <span className="text-[var(--text-secondary)]">Submitted</span>
                           ) : (
-                            <span>{c.timeRemainingMins} mins</span>
+                            <span className="text-[var(--foreground)] font-semibold">{c.timeRemainingMins}m remaining</span>
                           )}
                         </td>
 
@@ -312,33 +408,44 @@ export default function CbtLiveMonitor({
                           )}
                         </td>
 
-                        {/* Status */}
+                        {/* Status / Grading Status */}
                         <td className="py-3.5 px-4">
-                          {c.status === "active" && (
+                          {c.gradingStatus === "PENDING_REVIEW" ? (
+                            <Badge className="bg-amber-50 text-amber-800 border border-amber-300 font-semibold text-[10px]">
+                              Essays Pending Review
+                            </Badge>
+                          ) : c.gradingStatus === "GRADED" ? (
+                            <Badge className="bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold text-[10px]">
+                              Graded: {c.score}/{c.totalMarks || 100}m
+                            </Badge>
+                          ) : c.status === "active" ? (
                             <Badge className="bg-[var(--emerald-tint)] text-[#065f46] font-semibold text-[10px] border-0">
                               Active
                             </Badge>
-                          )}
-                          {c.status === "flagged" && (
-                            <Badge className="bg-[var(--amber-tint)] text-[#92400e] font-semibold text-[10px] border-0">
-                              Flagged
-                            </Badge>
-                          )}
-                          {c.status === "locked" && (
+                          ) : c.status === "locked" ? (
                             <Badge className="bg-[var(--crimson-tint)] text-[#991b1b] font-semibold text-[10px] border-0">
                               Locked
                             </Badge>
-                          )}
-                          {c.status === "submitted" && (
+                          ) : (
                             <Badge className="bg-[var(--surface-muted)] text-[var(--text-secondary)] font-semibold text-[10px] border-0">
-                              Finished
+                              Submitted
                             </Badge>
                           )}
                         </td>
 
                         {/* Actions */}
                         <td className="py-3.5 px-4 text-right space-x-1.5">
-                          {c.status === "locked" ? (
+                          {c.status === "submitted" || c.gradingStatus === "PENDING_REVIEW" ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenEssayGrading(c.pin)}
+                              className="h-7 text-[11px] border-violet-200 text-violet-700 bg-violet-50/60 hover:bg-violet-100 font-bold rounded-[var(--radius-md)] inline-flex items-center gap-1"
+                            >
+                              <Sparkles className="w-3 h-3 text-violet-600" />
+                              <span>{c.gradingStatus === "GRADED" ? "Edit Grade" : "Grade Essays"}</span>
+                            </Button>
+                          ) : c.status === "locked" ? (
                             <Button
                               size="sm"
                               variant="outline"
@@ -347,7 +454,7 @@ export default function CbtLiveMonitor({
                             >
                               Forgive &amp; Unlock
                             </Button>
-                          ) : c.status !== "submitted" ? (
+                          ) : (
                             <>
                               <Button
                                 size="sm"
@@ -367,8 +474,6 @@ export default function CbtLiveMonitor({
                                 Force Submit
                               </Button>
                             </>
-                          ) : (
-                            <span className="text-[11px] text-[var(--text-secondary)]">No action needed</span>
                           )}
                         </td>
 
@@ -404,22 +509,23 @@ export default function CbtLiveMonitor({
                         <div className="font-mono text-[11px] text-[var(--text-secondary)]">PIN: {c.pin}</div>
                       </div>
                       <div>
-                        {c.status === "active" && (
+                        {c.gradingStatus === "PENDING_REVIEW" ? (
+                          <Badge className="bg-amber-50 text-amber-800 border border-amber-300 font-semibold text-[10px]">
+                            Essays Pending
+                          </Badge>
+                        ) : c.gradingStatus === "GRADED" ? (
+                          <Badge className="bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold text-[10px]">
+                            Graded
+                          </Badge>
+                        ) : c.status === "active" ? (
                           <Badge className="bg-[var(--emerald-tint)] text-[#065f46] font-semibold text-[10px] border-0">
                             Active
                           </Badge>
-                        )}
-                        {c.status === "flagged" && (
-                          <Badge className="bg-[var(--amber-tint)] text-[#92400e] font-semibold text-[10px] border-0">
-                            Flagged
-                          </Badge>
-                        )}
-                        {c.status === "locked" && (
+                        ) : c.status === "locked" ? (
                           <Badge className="bg-[var(--crimson-tint)] text-[#991b1b] font-semibold text-[10px] border-0">
                             Locked
                           </Badge>
-                        )}
-                        {c.status === "submitted" && (
+                        ) : (
                           <Badge className="bg-[var(--surface-muted)] text-[var(--text-secondary)] font-semibold text-[10px] border-0">
                             Finished
                           </Badge>
@@ -443,24 +549,18 @@ export default function CbtLiveMonitor({
                       </div>
                     </div>
 
-                    {/* Violations */}
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500 font-medium">Malpractice Telemetry:</span>
-                      {c.violations === 0 ? (
-                        <span className="text-emerald-600 flex items-center gap-1 font-semibold text-[11px]">
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          <span>0 Clean</span>
-                        </span>
-                      ) : (
-                        <Badge className="bg-amber-50 text-amber-800 border-amber-200 font-mono text-[10px]">
-                          ⚠️ {c.violations} Tab Switches
-                        </Badge>
-                      )}
-                    </div>
-
                     {/* Invigilator Action Buttons */}
                     <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-                      {c.status === "locked" ? (
+                      {c.status === "submitted" || c.gradingStatus === "PENDING_REVIEW" ? (
+                        <Button
+                          size="sm"
+                          onClick={() => handleOpenEssayGrading(c.pin)}
+                          className="w-full h-8 text-xs font-bold bg-violet-700 hover:bg-violet-800 text-white rounded-lg flex items-center justify-center gap-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Grade Essays (AI Assist)</span>
+                        </Button>
+                      ) : c.status === "locked" ? (
                         <Button
                           size="sm"
                           variant="outline"
@@ -469,7 +569,7 @@ export default function CbtLiveMonitor({
                         >
                           Forgive &amp; Unlock
                         </Button>
-                      ) : c.status !== "submitted" ? (
+                      ) : (
                         <>
                           <Button
                             size="sm"
@@ -488,8 +588,6 @@ export default function CbtLiveMonitor({
                             Force Submit
                           </Button>
                         </>
-                      ) : (
-                        <span className="text-xs text-slate-400 italic mx-auto">No action needed</span>
                       )}
                     </div>
                   </div>
@@ -500,6 +598,36 @@ export default function CbtLiveMonitor({
         </div>
 
       </main>
+
+      {/* ── EXAMINER ESSAY GRADING MODAL ─────────────────────────────────── */}
+      {gradingSession && gradingQuestion && (
+        <CbtEssayGradingModal
+          isOpen={!!gradingSession}
+          onClose={() => setGradingSession(null)}
+          candidateSession={gradingSession}
+          questionId={gradingQuestion.id}
+          questionPrompt={gradingQuestion.prompt}
+          questionType={gradingQuestion.type || "SHORT_ESSAY"}
+          questionMarks={gradingQuestion.marks || 5}
+          modelAnswer={gradingQuestion.modelAnswer}
+          keyTerms={gradingQuestion.keyTerms}
+          rubric={gradingQuestion.rubric}
+          onGraded={(updatedSession) => {
+            setCandidates((prev) =>
+              prev.map((c) =>
+                c.pin === updatedSession.candidatePin
+                  ? {
+                      ...c,
+                      gradingStatus: "GRADED",
+                      score: updatedSession.score,
+                      totalMarks: updatedSession.totalMarks,
+                    }
+                  : c
+              )
+            );
+          }}
+        />
+      )}
 
     </div>
   );

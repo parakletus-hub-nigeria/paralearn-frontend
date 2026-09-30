@@ -19,7 +19,10 @@ import {
   BookOpen, 
   BrainCircuit, 
   FileUp, 
-  RotateCcw 
+  RotateCcw,
+  Award,
+  AlignLeft,
+  Radio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +46,7 @@ interface CbtAiQuestionModalProps {
 }
 
 export type DifficultyLevel = "simple" | "intermediate" | "hard" | "balanced";
+export type AssessmentFormatMode = "hybrid" | "pure_mcq" | "pure_essay";
 
 export default function CbtAiQuestionModal({
   isOpen,
@@ -50,7 +54,7 @@ export default function CbtAiQuestionModal({
   examTitle,
   onImportQuestions,
 }: CbtAiQuestionModalProps) {
-  // Mode: "setup" (configure upload/prompt) | "review" (inspect generated questions)
+  // Mode: "setup" (configure upload/prompt) | "generating" | "review" (inspect generated questions)
   const [step, setStep] = useState<"setup" | "generating" | "review">("setup");
   const [sourceType, setSourceType] = useState<"file" | "text">("file");
 
@@ -59,6 +63,7 @@ export default function CbtAiQuestionModal({
   const [notesText, setNotesText] = useState("");
   const [subject, setSubject] = useState(examTitle || "");
   const [difficulty, setDifficulty] = useState<DifficultyLevel>("balanced");
+  const [formatMode, setFormatMode] = useState<AssessmentFormatMode>("hybrid");
   const [questionCount, setQuestionCount] = useState<number>(10);
   
   // Generation feedback
@@ -100,10 +105,31 @@ export default function CbtAiQuestionModal({
     },
   ];
 
+  // Assessment Format descriptions
+  const formatOptions = [
+    {
+      id: "hybrid",
+      title: "Hybrid Assessment (Recommended)",
+      icon: <Layers className="w-4 h-4 text-violet-600" />,
+      description: "Blend of MCQs (~70%), Short Answers (~20%), and Long Essays (~10%) with automated rubrics.",
+    },
+    {
+      id: "pure_mcq",
+      title: "Pure Multiple Choice (MCQ)",
+      icon: <Radio className="w-4 h-4 text-emerald-600" />,
+      description: "100% Objective questions with single correct choice and psychometric distractors.",
+    },
+    {
+      id: "pure_essay",
+      title: "Pure Theory & Essays",
+      icon: <FileText className="w-4 h-4 text-blue-600" />,
+      description: "Short conceptual definitions and extended analytical essays with benchmark rubrics.",
+    },
+  ];
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      // Max 40MB
       if (file.size > 40 * 1024 * 1024) {
         toast.error("File is too large. Please select a file under 40MB.");
         return;
@@ -151,13 +177,12 @@ export default function CbtAiQuestionModal({
     setStep("generating");
     setLoadingMessage("Parsing document / media context with ParaLearn AI...");
 
-    // Stagger loading messages for friendly UX
     const timer1 = setTimeout(() => {
-      setLoadingMessage("Ingesting concepts and calibrating Bloom's taxonomy...");
+      setLoadingMessage("Ingesting concepts, calibrating rubrics & taxonomy...");
     }, 2500);
 
     const timer2 = setTimeout(() => {
-      setLoadingMessage("Synthesizing psychometric distractors & answer keys...");
+      setLoadingMessage("Synthesizing questions, model answers & scoring criteria...");
     }, 5500);
 
     try {
@@ -170,6 +195,7 @@ export default function CbtAiQuestionModal({
       }
       formData.append("subject", subject || examTitle || "Assessment");
       formData.append("difficulty", difficulty);
+      formData.append("formatMode", formatMode);
       formData.append("count", questionCount.toString());
 
       const res = await fetch("/api/cbt/ai/generate-questions", {
@@ -187,11 +213,17 @@ export default function CbtAiQuestionModal({
         id: q.id || `q_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         prompt: q.prompt,
         type: q.type || "MCQ",
-        marks: q.marks || 1.0,
+        section: q.section,
+        marks: q.marks || (q.type === "LONG_ESSAY" ? 15 : q.type === "SHORT_ESSAY" ? 5 : 1.0),
         options: q.options || [],
         explanation: q.explanation || "",
         difficulty: q.difficulty || difficulty,
         citation: q.citation || "",
+        minWords: q.minWords,
+        maxWords: q.maxWords,
+        modelAnswer: q.modelAnswer,
+        keyTerms: q.keyTerms,
+        rubric: q.rubric,
       }));
 
       if (questionsList.length === 0) {
@@ -255,97 +287,101 @@ export default function CbtAiQuestionModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[92vh] flex flex-col p-0 overflow-hidden rounded-2xl border-stone-200">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[90vh] bg-white border border-stone-200 rounded-2xl p-0 overflow-hidden flex flex-col shadow-2xl">
         
         {/* Header */}
-        <div className="px-4 sm:px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-sm shrink-0">
-              <Sparkles className="w-5 h-5" />
+        <DialogHeader className="p-6 border-b border-stone-100 bg-stone-50/50 flex flex-row items-center justify-between shrink-0">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-xs">
+                <Sparkles className="w-4 h-4" />
+              </span>
+              <DialogTitle className="text-base font-bold text-stone-900 tracking-tight">
+                Author Assessment with ParaLearn AI
+              </DialogTitle>
+              <Badge variant="outline" className="text-[10px] font-mono border-violet-200 text-violet-700 bg-violet-50">
+                Multimodal &bull; Hybrid Assessment
+              </Badge>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <DialogTitle className="text-sm sm:text-base font-bold text-stone-900">
-                  ParaLearn AI Studio
-                </DialogTitle>
-                <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 border-violet-200 text-[10px] font-mono uppercase tracking-wide">
-                  ParaLearn AI Engine
-                </Badge>
-              </div>
-              <DialogDescription className="text-xs text-stone-500">
-                Parse lecture notes, slide decks, or audio/video to generate tuned CBT questions.
-              </DialogDescription>
-            </div>
+            <DialogDescription className="text-xs text-stone-500">
+              Extract context from slides, notes, audio, or video and author MCQs, Short Essays, and Long Essays with automated rubrics.
+            </DialogDescription>
           </div>
-        </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="h-8 w-8 p-0 rounded-lg text-stone-400 hover:text-stone-700"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </DialogHeader>
 
-        {/* Body Content based on Step */}
+        {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6">
-          {step === "setup" && (
+          {step === "generating" ? (
+            <div className="py-20 text-center space-y-4 max-w-sm mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center mx-auto border border-violet-200 shadow-inner">
+                <Loader2 className="w-8 h-8 animate-spin" />
+              </div>
+              <div className="space-y-1.5">
+                <h4 className="text-sm font-bold text-stone-900">
+                  ParaLearn AI Assessment Engine
+                </h4>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  {loadingMessage}
+                </p>
+              </div>
+            </div>
+          ) : step === "setup" ? (
             <div className="space-y-6">
               
-              {/* Source Type Selector */}
+              {/* 1. Source Type Segmented Control */}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                  1. Choose Source Content Type
+                  1. Select Source Material Format
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 rounded-xl">
                   <button
                     type="button"
                     onClick={() => setSourceType("file")}
-                    className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all flex items-start gap-3 ${
+                    className={`py-2 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
                       sourceType === "file"
-                        ? "border-violet-600 bg-violet-50/40 ring-2 ring-violet-500/20"
-                        : "border-stone-200 hover:bg-stone-50"
+                        ? "bg-white text-stone-900 shadow-xs"
+                        : "text-stone-500 hover:text-stone-800"
                     }`}
                   >
-                    <div className="p-2 rounded-lg bg-violet-100 text-violet-700 shrink-0">
-                      <FileUp className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-stone-900">Upload Media / Document</h4>
-                      <p className="text-[11px] text-stone-500 leading-snug mt-0.5">
-                        PDF notes, PowerPoint slides, MP3 audio lectures, or MP4 class video.
-                      </p>
-                    </div>
+                    <FileUp className="w-4 h-4 text-violet-600" />
+                    <span>Upload Document, Slides, Audio or Video</span>
                   </button>
-
                   <button
                     type="button"
                     onClick={() => setSourceType("text")}
-                    className={`p-3.5 rounded-xl border text-left transition-all flex items-start gap-3 ${
+                    className={`py-2 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
                       sourceType === "text"
-                        ? "border-violet-600 bg-violet-50/40 ring-2 ring-violet-500/20"
-                        : "border-stone-200 hover:bg-stone-50"
+                        ? "bg-white text-stone-900 shadow-xs"
+                        : "text-stone-500 hover:text-stone-800"
                     }`}
                   >
-                    <div className="p-2 rounded-lg bg-indigo-100 text-indigo-700 shrink-0">
-                      <BookOpen className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-stone-900">Paste Lecture Notes</h4>
-                      <p className="text-[11px] text-stone-500 leading-snug mt-0.5">
-                        Paste summaries, transcripts, lesson plans, or markdown syllabi.
-                      </p>
-                    </div>
+                    <FileText className="w-4 h-4 text-indigo-600" />
+                    <span>Paste Text Notes or Lecture Transcript</span>
                   </button>
                 </div>
               </div>
 
-              {/* Source Input Area */}
+              {/* 2. File Upload / Text Area */}
               {sourceType === "file" ? (
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                    2. Attach File
+                    2. Upload Lecture Material
                   </label>
-                  
                   {!selectedFile ? (
                     <div
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={handleDrop}
                       onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-stone-200 hover:border-violet-400 bg-stone-50/50 hover:bg-violet-50/30 rounded-xl p-6 text-center cursor-pointer transition-all"
+                      className="border-2 border-dashed border-stone-200 hover:border-violet-400 bg-stone-50/50 hover:bg-violet-50/20 rounded-2xl p-8 text-center cursor-pointer transition-all"
                     >
                       <input
                         ref={fileInputRef}
@@ -358,7 +394,7 @@ export default function CbtAiQuestionModal({
                         <Upload className="w-6 h-6" />
                       </div>
                       <p className="text-xs font-bold text-stone-800">
-                        Click to upload or drag & drop lecture file
+                        Click to upload or drag &amp; drop lecture file
                       </p>
                       <p className="text-[11px] text-stone-500 mt-1 max-w-sm mx-auto">
                         Supports Documents (PDF, Word, TXT), Slides (PPTX), Audio (MP3, WAV), and Video (MP4) up to 40MB.
@@ -373,7 +409,7 @@ export default function CbtAiQuestionModal({
                             {selectedFile.name}
                           </p>
                           <p className="text-[11px] text-stone-500 font-mono">
-                            {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • {selectedFile.type || "Document"}
+                            {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB &bull; {selectedFile.type || "Document"}
                           </p>
                         </div>
                       </div>
@@ -395,7 +431,7 @@ export default function CbtAiQuestionModal({
                     2. Lecture Content or Transcript
                   </label>
                   <Textarea
-                    rows={6}
+                    rows={5}
                     placeholder="Paste lecture transcript, class notes, or topic overview here..."
                     value={notesText}
                     onChange={(e) => setNotesText(e.target.value)}
@@ -417,13 +453,46 @@ export default function CbtAiQuestionModal({
                 />
               </div>
 
+              {/* Assessment Format Mixture (Creative Freedom) */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+                  3. Assessment Question Format Composition
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {formatOptions.map((opt) => {
+                    const isSelected = formatMode === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setFormatMode(opt.id as AssessmentFormatMode)}
+                        className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                          isSelected
+                            ? "border-violet-600 bg-violet-50/60 ring-2 ring-violet-500/20 shadow-xs"
+                            : "border-stone-200 hover:bg-stone-50/70"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+                            {opt.icon}
+                            <span>{opt.title}</span>
+                          </span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-violet-600" />}
+                        </div>
+                        <p className="text-[10px] text-stone-500 leading-tight">
+                          {opt.description}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Difficulty Tuning Control */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                    3. Tune Difficulty Level (Bloom's Taxonomy)
-                  </label>
-                </div>
+                <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+                  4. Tune Difficulty Level (Bloom's Taxonomy)
+                </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {difficultyProfiles.map((p) => {
                     const isSelected = difficulty === p.id;
@@ -458,7 +527,7 @@ export default function CbtAiQuestionModal({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                    4. Number of Questions
+                    5. Number of Questions
                   </label>
                   <span className="text-xs font-mono font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-md border border-violet-200">
                     {questionCount} Questions
@@ -483,45 +552,19 @@ export default function CbtAiQuestionModal({
               </div>
 
             </div>
-          )}
-
-          {/* Generating Step */}
-          {step === "generating" && (
-            <div className="py-16 text-center space-y-6">
-              <div className="relative w-20 h-20 mx-auto">
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 animate-pulse opacity-20 blur-md" />
-                <div className="relative w-20 h-20 rounded-2xl bg-white border border-violet-200 flex items-center justify-center text-violet-600 shadow-lg">
-                  <BrainCircuit className="w-10 h-10 animate-spin text-violet-600 [animation-duration:6s]" />
-                </div>
-              </div>
-
-              <div className="space-y-2 max-w-sm mx-auto">
-                <h3 className="text-sm font-bold text-stone-900">
-                  ParaLearn Multimodal Ingestion
-                </h3>
-                <p className="text-xs text-stone-500 font-medium">
-                  {loadingMessage}
-                </p>
-              </div>
-
-              <div className="w-48 h-1.5 bg-stone-100 rounded-full mx-auto overflow-hidden">
-                <div className="w-full h-full bg-gradient-to-r from-violet-600 to-indigo-600 animate-[shimmer_1.5s_infinite]" />
-              </div>
-            </div>
-          )}
-
-          {/* Review Step */}
-          {step === "review" && (
+          ) : (
+            /* Review Step */
             <div className="space-y-4">
-              
-              {/* Review summary toolbar */}
-              <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-3 flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-stone-800">
                     {selectedQuestionIds.size} of {generatedQuestions.length} Selected
                   </span>
                   <Badge variant="outline" className="text-[10px] font-mono capitalize">
                     {difficulty} Mode
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px] font-mono uppercase bg-violet-50 text-violet-700 border-violet-200">
+                    {formatMode.replace("_", " ")}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
@@ -588,16 +631,41 @@ export default function CbtAiQuestionModal({
                         </div>
 
                         <div className="flex-1 space-y-2.5">
-                          <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
                             <span className="text-[11px] font-mono font-bold text-stone-400">
                               #{idx + 1}
                             </span>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {/* Format Badge */}
+                              <Badge 
+                                variant="outline" 
+                                className={`text-[10px] font-mono uppercase border ${
+                                  q.type === "LONG_ESSAY"
+                                    ? "bg-blue-50 text-blue-700 border-blue-200 font-bold"
+                                    : q.type === "SHORT_ESSAY"
+                                    ? "bg-amber-50 text-amber-700 border-amber-200 font-bold"
+                                    : "bg-slate-100 text-slate-700 border-slate-200"
+                                }`}
+                              >
+                                {q.type === "LONG_ESSAY" ? "Long Essay" : q.type === "SHORT_ESSAY" ? "Short Essay" : q.type}
+                              </Badge>
+
+                              {q.section && (
+                                <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-600 border-slate-200">
+                                  {q.section}
+                                </Badge>
+                              )}
+
+                              <Badge variant="outline" className="text-[10px] font-mono text-stone-700">
+                                {q.marks} Marks
+                              </Badge>
+
                               {q.citation && (
                                 <Badge variant="outline" className="text-[10px] font-mono bg-stone-100 text-stone-600 border-stone-200">
                                   Ref: {q.citation}
                                 </Badge>
                               )}
+
                               <Badge variant="outline" className={`text-[10px] font-mono capitalize border ${diffColor}`}>
                                 {q.difficulty}
                               </Badge>
@@ -609,29 +677,81 @@ export default function CbtAiQuestionModal({
                             {q.prompt}
                           </p>
 
-                          {/* Options */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
-                            {q.options.map((opt, oIdx) => (
-                              <div
-                                key={opt.id}
-                                className={`px-2.5 py-1.5 rounded-lg text-[11px] border flex items-center justify-between ${
-                                  opt.isCorrect
-                                    ? "bg-emerald-50/70 border-emerald-300 text-emerald-800 font-semibold"
-                                    : "bg-stone-50 border-stone-200 text-stone-600"
-                                }`}
-                              >
-                                <span className="truncate">
-                                  <span className="font-mono text-stone-400 mr-1.5">
-                                    {String.fromCharCode(65 + oIdx)}.
+                          {/* Options for MCQ / TRUE_FALSE */}
+                          {(q.type === "MCQ" || q.type === "TRUE_FALSE") && q.options && q.options.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                              {q.options.map((opt, oIdx) => (
+                                <div
+                                  key={opt.id}
+                                  className={`px-2.5 py-1.5 rounded-lg text-[11px] border flex items-center justify-between ${
+                                    opt.isCorrect
+                                      ? "bg-emerald-50/70 border-emerald-300 text-emerald-800 font-semibold"
+                                      : "bg-stone-50 border-stone-200 text-stone-600"
+                                  }`}
+                                >
+                                  <span className="truncate">
+                                    <span className="font-mono text-stone-400 mr-1.5">
+                                      {String.fromCharCode(65 + oIdx)}.
+                                    </span>
+                                    {opt.text}
                                   </span>
-                                  {opt.text}
-                                </span>
-                                {opt.isCorrect && (
-                                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-1" />
+                                  {opt.isCorrect && (
+                                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-1" />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Short Essay Details */}
+                          {q.type === "SHORT_ESSAY" && (
+                            <div className="p-2.5 rounded-lg bg-amber-50/50 border border-amber-200 text-xs space-y-1.5">
+                              <div className="flex items-center justify-between text-[11px] text-amber-900 font-semibold">
+                                <span>Word Guideline: {q.minWords || 20}–{q.maxWords || 100} words</span>
+                                {q.keyTerms && q.keyTerms.length > 0 && (
+                                  <span>Key Concepts: {q.keyTerms.join(", ")}</span>
                                 )}
                               </div>
-                            ))}
-                          </div>
+                              {q.modelAnswer && (
+                                <p className="text-[11px] text-slate-700 italic">
+                                  <strong>Benchmark Answer: </strong>{q.modelAnswer}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Long Essay Rubric Details */}
+                          {q.type === "LONG_ESSAY" && (
+                            <div className="p-3 rounded-lg bg-blue-50/50 border border-blue-200 text-xs space-y-2">
+                              <div className="flex items-center justify-between text-[11px] text-blue-900 font-bold">
+                                <span className="flex items-center gap-1">
+                                  <Award className="w-3.5 h-3.5 text-blue-600" />
+                                  <span>{q.rubric?.name || "Marking Rubric"}</span>
+                                </span>
+                                <span>Min: {q.minWords || 150} words &bull; Max: {q.maxWords || 800} words</span>
+                              </div>
+
+                              {q.rubric?.criteria && q.rubric.criteria.length > 0 && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                                  {q.rubric.criteria.map((crit, cIdx) => (
+                                    <div key={crit.id || cIdx} className="bg-white p-2 rounded border border-blue-200 text-[10px]">
+                                      <div className="flex justify-between font-bold text-slate-800">
+                                        <span>{crit.title}</span>
+                                        <span className="font-mono text-blue-700">{crit.maxMarks}m</span>
+                                      </div>
+                                      <p className="text-slate-500 line-clamp-1 mt-0.5">{crit.description}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {q.modelAnswer && (
+                                <p className="text-[11px] text-slate-700 italic">
+                                  <strong>Expected Arguments: </strong>{q.modelAnswer}
+                                </p>
+                              )}
+                            </div>
+                          )}
 
                           {/* Explanation */}
                           {q.explanation && (
@@ -652,7 +772,7 @@ export default function CbtAiQuestionModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 border-t border-stone-100 bg-stone-50/50 flex items-center justify-between">
+        <div className="px-6 py-3.5 border-t border-stone-100 bg-stone-50/50 flex items-center justify-between shrink-0">
           <Button
             type="button"
             variant="ghost"

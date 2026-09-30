@@ -26,7 +26,13 @@ import {
   Layers,
   MoreVertical,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BookOpen,
+  FileText,
+  Tag,
+  AlignLeft,
+  Award,
+  ListOrdered
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -59,20 +65,30 @@ import {
   loadStoredQuestions, 
   saveStoredQuestions, 
   loadStoredExams, 
-  saveStoredExams 
+  saveStoredExams,
+  CbtQuestionType,
+  ExamRubric,
+  loadStoredRubrics
 } from "@/lib/cbtSessionManager";
 import CbtAiQuestionModal from "./CbtAiQuestionModal";
+import CbtRubricUploadModal from "./CbtRubricUploadModal";
 
 export interface StudioQuestion {
   id: string;
   prompt: string;
-  type: "MCQ" | "TRUE_FALSE" | "MULTI_SELECT" | "ESSAY";
+  type: CbtQuestionType | "MULTI_SELECT";
   marks: number;
+  section?: string;
   options: Array<{
     id: string;
     text: string;
     isCorrect: boolean;
   }>;
+  minWords?: number;
+  maxWords?: number;
+  modelAnswer?: string;
+  keyTerms?: string[];
+  rubric?: ExamRubric;
   explanation?: string;
   difficulty?: "simple" | "intermediate" | "hard" | string;
   citation?: string;
@@ -100,6 +116,9 @@ export default function CbtQuestionStudio({
   const [roomCode, setRoomCode] = useState(initialCode);
   const [durationMins, setDurationMins] = useState(initialDurationMins);
   
+  // Palette category filter
+  const [paletteFilter, setPaletteFilter] = useState<"ALL" | "MCQ" | "SHORT_ESSAY" | "LONG_ESSAY">("ALL");
+
   // Delivery & Anti-Malpractice Settings
   const [settings, setSettings] = useState({
     maxTabViolations: 3,
@@ -109,11 +128,11 @@ export default function CbtQuestionStudio({
     requirePin: true,
   });
 
-  // Bulk Upload & AI Studio Modal State
+  // Modal States
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isRubricModalOpen, setIsRubricModalOpen] = useState(false);
   const [isMobilePaletteOpen, setIsMobilePaletteOpen] = useState(false);
-  const [bulkText, setBulkText] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -136,7 +155,14 @@ export default function CbtQuestionStudio({
       setQuestions(initialQuestions);
     } else {
       const stored = loadStoredQuestions(examId);
-      setQuestions(stored);
+      // Migrate legacy types if any
+      const normalized: StudioQuestion[] = stored.map((q: any) => ({
+        ...q,
+        type: q.type === "ESSAY" ? "LONG_ESSAY" : (q.type || "MCQ"),
+        options: q.options || [],
+        marks: q.marks || 1,
+      }));
+      setQuestions(normalized);
     }
   }, [examId, initialQuestions]);
 
@@ -153,6 +179,23 @@ export default function CbtQuestionStudio({
     [questions]
   );
 
+  // Question counts by format
+  const formatCounts = useMemo(() => {
+    const mcq = questions.filter((q) => q.type === "MCQ" || q.type === "TRUE_FALSE").length;
+    const shortEssay = questions.filter((q) => q.type === "SHORT_ESSAY").length;
+    const longEssay = questions.filter((q) => q.type === "LONG_ESSAY").length;
+    return { mcq, shortEssay, longEssay, total: questions.length };
+  }, [questions]);
+
+  // Filtered questions for palette
+  const filteredQuestions = useMemo(() => {
+    if (paletteFilter === "ALL") return questions;
+    if (paletteFilter === "MCQ") return questions.filter((q) => q.type === "MCQ" || q.type === "TRUE_FALSE");
+    if (paletteFilter === "SHORT_ESSAY") return questions.filter((q) => q.type === "SHORT_ESSAY");
+    if (paletteFilter === "LONG_ESSAY") return questions.filter((q) => q.type === "LONG_ESSAY");
+    return questions;
+  }, [questions, paletteFilter]);
+
   // Copy candidate share link
   const handleCopyShareLink = () => {
     if (typeof window === "undefined") return;
@@ -164,41 +207,141 @@ export default function CbtQuestionStudio({
   };
 
   // Add new blank question
-  const handleAddNewQuestion = (type: "MCQ" | "TRUE_FALSE" = "MCQ") => {
-    const newQ: StudioQuestion = {
-      id: `q_${Date.now()}`,
-      prompt: `New Question ${questions.length + 1}`,
-      type,
-      marks: 1.0,
-      options:
-        type === "TRUE_FALSE"
-          ? [
-              { id: `o_${Date.now()}_1`, text: "True", isCorrect: true },
-              { id: `o_${Date.now()}_2`, text: "False", isCorrect: false },
-            ]
-          : [
-              { id: `o_${Date.now()}_1`, text: "Option A", isCorrect: true },
-              { id: `o_${Date.now()}_2`, text: "Option B", isCorrect: false },
-              { id: `o_${Date.now()}_3`, text: "Option C", isCorrect: false },
-              { id: `o_${Date.now()}_4`, text: "Option D", isCorrect: false },
-            ],
-    };
+  const handleAddNewQuestion = (type: CbtQuestionType = "MCQ") => {
+    let newQ: StudioQuestion;
+    const newId = `q_${Date.now()}`;
+    const qNum = questions.length + 1;
+
+    if (type === "SHORT_ESSAY") {
+      newQ = {
+        id: newId,
+        prompt: `Short Answer Question ${qNum}: Define or succinctly explain...`,
+        type: "SHORT_ESSAY",
+        marks: 5.0,
+        section: "Section B: Theory & Short Answers",
+        options: [],
+        minWords: 20,
+        maxWords: 100,
+        modelAnswer: "",
+        keyTerms: [],
+      };
+    } else if (type === "LONG_ESSAY") {
+      newQ = {
+        id: newId,
+        prompt: `Comprehensive Essay Question ${qNum}: Critically evaluate, analyze, or compose...`,
+        type: "LONG_ESSAY",
+        marks: 15.0,
+        section: "Section C: Extended Essay",
+        options: [],
+        minWords: 150,
+        maxWords: 800,
+        modelAnswer: "",
+      };
+    } else if (type === "TRUE_FALSE") {
+      newQ = {
+        id: newId,
+        prompt: `Statement ${qNum} for evaluation:`,
+        type: "TRUE_FALSE",
+        marks: 1.0,
+        section: "Section A: Multiple Choice",
+        options: [
+          { id: `o_${Date.now()}_1`, text: "True", isCorrect: true },
+          { id: `o_${Date.now()}_2`, text: "False", isCorrect: false },
+        ],
+      };
+    } else {
+      // Standard MCQ
+      newQ = {
+        id: newId,
+        prompt: `Question ${qNum}: Choose the correct alternative.`,
+        type: "MCQ",
+        marks: 1.0,
+        section: "Section A: Multiple Choice",
+        options: [
+          { id: `o_${Date.now()}_1`, text: "Option A", isCorrect: true },
+          { id: `o_${Date.now()}_2`, text: "Option B", isCorrect: false },
+          { id: `o_${Date.now()}_3`, text: "Option C", isCorrect: false },
+          { id: `o_${Date.now()}_4`, text: "Option D", isCorrect: false },
+        ],
+      };
+    }
 
     const updated = [...questions, newQ];
     setQuestions(updated);
     setActiveIdx(updated.length - 1);
     saveStoredQuestions(updated, examId);
     updateExamQuestionCount(updated.length);
-    toast.success("Added new question to palette.");
+    toast.success(`Added new ${type.replace("_", " ")} to palette.`);
   };
 
-  // Import questions generated by Gemini AI
+  // Change type of current active question
+  const handleChangeQuestionType = (newType: CbtQuestionType) => {
+    if (!activeQuestion) return;
+    setQuestions((prev) => {
+      const copy = [...prev];
+      const curr = copy[activeIdx];
+      let updatedQ: StudioQuestion = { ...curr, type: newType };
+
+      if (newType === "MCQ" && (!curr.options || curr.options.length < 2)) {
+        updatedQ.options = [
+          { id: `o_${Date.now()}_1`, text: "Option A", isCorrect: true },
+          { id: `o_${Date.now()}_2`, text: "Option B", isCorrect: false },
+          { id: `o_${Date.now()}_3`, text: "Option C", isCorrect: false },
+          { id: `o_${Date.now()}_4`, text: "Option D", isCorrect: false },
+        ];
+        updatedQ.marks = 1.0;
+      } else if (newType === "TRUE_FALSE") {
+        updatedQ.options = [
+          { id: `o_${Date.now()}_1`, text: "True", isCorrect: true },
+          { id: `o_${Date.now()}_2`, text: "False", isCorrect: false },
+        ];
+        updatedQ.marks = 1.0;
+      } else if (newType === "SHORT_ESSAY") {
+        updatedQ.marks = updatedQ.marks && updatedQ.marks > 1 ? updatedQ.marks : 5.0;
+        updatedQ.minWords = updatedQ.minWords || 20;
+        updatedQ.maxWords = updatedQ.maxWords || 100;
+        if (!updatedQ.section) updatedQ.section = "Section B: Short Answers";
+      } else if (newType === "LONG_ESSAY") {
+        updatedQ.marks = updatedQ.marks && updatedQ.marks >= 10 ? updatedQ.marks : 15.0;
+        updatedQ.minWords = updatedQ.minWords || 150;
+        updatedQ.maxWords = updatedQ.maxWords || 800;
+        if (!updatedQ.section) updatedQ.section = "Section C: Long Essay";
+      }
+
+      copy[activeIdx] = updatedQ;
+      saveStoredQuestions(copy, examId);
+      return copy;
+    });
+    toast.info(`Converted question to ${newType.replace("_", " ")}`);
+  };
+
+  // Import questions generated by ParaLearn AI
   const handleImportAiQuestions = (newQuestions: StudioQuestion[]) => {
     const updated = [...questions, ...newQuestions];
     setQuestions(updated);
     setActiveIdx(questions.length); // Focus on first newly added question
     saveStoredQuestions(updated, examId);
     updateExamQuestionCount(updated.length);
+  };
+
+  // Apply custom or institutional rubric
+  const handleApplyRubric = (rubric: ExamRubric, applyToAllEssays: boolean) => {
+    setQuestions((prev) => {
+      const copy = prev.map((q, idx) => {
+        if (idx === activeIdx || (applyToAllEssays && (q.type === "LONG_ESSAY" || q.type === "SHORT_ESSAY"))) {
+          return {
+            ...q,
+            rubric: rubric,
+            marks: rubric.totalMarks > 0 ? rubric.totalMarks : q.marks,
+          };
+        }
+        return q;
+      });
+      saveStoredQuestions(copy, examId);
+      return copy;
+    });
+    setIsRubricModalOpen(false);
+    toast.success(`Attached rubric "${rubric.name}" (${rubric.totalMarks} marks) successfully!`);
   };
 
   // Update active question field
@@ -214,7 +357,7 @@ export default function CbtQuestionStudio({
 
   // Update choice text
   const updateOptionText = (optIdx: number, text: string) => {
-    if (!activeQuestion) return;
+    if (!activeQuestion || !activeQuestion.options) return;
     const opts = [...activeQuestion.options];
     opts[optIdx] = { ...opts[optIdx], text };
     updateActiveQuestion("options", opts);
@@ -222,7 +365,7 @@ export default function CbtQuestionStudio({
 
   // Set single correct choice (MCQ / TF)
   const setCorrectChoice = (optIdx: number) => {
-    if (!activeQuestion) return;
+    if (!activeQuestion || !activeQuestion.options) return;
     const opts = activeQuestion.options.map((o, i) => ({
       ...o,
       isCorrect: i === optIdx,
@@ -232,7 +375,7 @@ export default function CbtQuestionStudio({
 
   // Delete choice
   const deleteChoice = (optIdx: number) => {
-    if (!activeQuestion) return;
+    if (!activeQuestion || !activeQuestion.options) return;
     if (activeQuestion.options.length <= 2) {
       toast.error("An assessment question requires at least 2 options.");
       return;
@@ -244,13 +387,14 @@ export default function CbtQuestionStudio({
   // Add choice
   const addChoice = () => {
     if (!activeQuestion) return;
-    if (activeQuestion.options.length >= 6) {
+    const currentOpts = activeQuestion.options || [];
+    if (currentOpts.length >= 6) {
       toast.error("Maximum 6 options allowed per question.");
       return;
     }
     const opts = [
-      ...activeQuestion.options,
-      { id: `o_${Date.now()}`, text: `Option ${String.fromCharCode(65 + activeQuestion.options.length)}`, isCorrect: false },
+      ...currentOpts,
+      { id: `o_${Date.now()}`, text: `Option ${String.fromCharCode(65 + currentOpts.length)}`, isCorrect: false },
     ];
     updateActiveQuestion("options", opts);
   };
@@ -334,13 +478,25 @@ export default function CbtQuestionStudio({
             </Button>
           </div>
 
+          {/* Rubric Manager Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsRubricModalOpen(true)}
+            className="h-8 px-2.5 sm:px-3 text-xs font-semibold border-amber-200 text-amber-800 bg-amber-50/70 hover:bg-amber-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
+            title="Manage institutional marking rubrics"
+          >
+            <Award className="w-3.5 h-3.5 text-amber-600" />
+            <span className="hidden sm:inline">Rubrics</span>
+          </Button>
+
           {/* ParaLearn AI Generator Button (Visible across all screens) */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsAiModalOpen(true)}
             className="h-8 px-2.5 sm:px-3 text-xs font-bold border-violet-200 text-violet-700 bg-violet-50/70 hover:bg-violet-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
-            title="Generate with ParaLearn AI"
+            title="Generate MCQs and Essays with ParaLearn AI"
           >
             <Sparkles className="w-3.5 h-3.5 text-violet-600 animate-pulse" />
             <span>ParaLearn AI</span>
@@ -373,6 +529,10 @@ export default function CbtQuestionStudio({
                   <Layers className="w-4 h-4 mr-2 text-violet-600" />
                   <span>Question Palette ({questions.length})</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsRubricModalOpen(true)} className="text-xs font-medium cursor-pointer">
+                  <Award className="w-4 h-4 mr-2 text-amber-600" />
+                  <span>Marking Rubrics</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleCopyShareLink} className="text-xs font-medium cursor-pointer">
                   <Copy className="w-4 h-4 mr-2 text-slate-500" />
                   <span>Copy Student Link</span>
@@ -402,117 +562,168 @@ export default function CbtQuestionStudio({
       <div className="flex-1 flex max-w-7xl w-full mx-auto px-3 py-4 sm:p-6 gap-6 items-start">
         
         {/* Left Pane: Question Palette (Hidden on mobile < md, visible on desktop >= md) */}
-        <aside className="hidden md:flex w-72 sm:w-80 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] flex-col h-[calc(100vh-90px)] sticky top-18 overflow-hidden shrink-0">
+        <aside className="hidden md:flex w-72 sm:w-84 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] flex-col h-[calc(100vh-90px)] sticky top-18 overflow-hidden shrink-0">
           
           {/* Palette Top Toolbar */}
-          <div className="p-3.5 border-b border-[var(--border-fine)] bg-[var(--surface-muted)] flex items-center justify-between">
-            <div>
-              <span className="font-bold text-xs uppercase tracking-wider text-[var(--foreground)]">
-                Questions ({questions.length})
-              </span>
-              <div className="text-[11px] font-mono text-[var(--text-secondary)]">
-                Total: {totalMarks} Marks
+          <div className="p-3.5 border-b border-[var(--border-fine)] bg-[var(--surface-muted)] space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="font-bold text-xs uppercase tracking-wider text-[var(--foreground)]">
+                  Questions ({questions.length})
+                </span>
+                <div className="text-[11px] font-mono text-[var(--text-secondary)]">
+                  Total: {totalMarks} Marks
+                </div>
               </div>
+
+              {/* Add Dropdown Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="h-7 px-2.5 text-[11px] font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white shadow-2xs"
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    <span>Add</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 text-xs font-medium">
+                  <DropdownMenuItem onClick={() => handleAddNewQuestion("MCQ")} className="cursor-pointer">
+                    <Radio className="w-3.5 h-3.5 mr-2 text-violet-600" />
+                    <span>Multiple Choice (MCQ)</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleAddNewQuestion("SHORT_ESSAY")} className="cursor-pointer">
+                    <AlignLeft className="w-3.5 h-3.5 mr-2 text-amber-600" />
+                    <span>Short Essay (20-100w)</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleAddNewQuestion("LONG_ESSAY")} className="cursor-pointer">
+                    <FileText className="w-3.5 h-3.5 mr-2 text-blue-600" />
+                    <span>Long Essay / Theory</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleAddNewQuestion("TRUE_FALSE")} className="cursor-pointer">
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-emerald-600" />
+                    <span>True / False</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsAiModalOpen(true)}
-                className="h-7 px-2 text-[11px] font-semibold border-violet-200 text-violet-700 bg-violet-50/60 hover:bg-violet-100"
-                title="Generate with ParaLearn AI"
+            {/* Quick Format Filter Pills */}
+            <div className="flex items-center gap-1 text-[10px] overflow-x-auto pb-0.5">
+              <button
+                type="button"
+                onClick={() => setPaletteFilter("ALL")}
+                className={`px-2 py-0.5 rounded-full font-semibold transition-colors shrink-0 ${
+                  paletteFilter === "ALL"
+                    ? "bg-slate-900 text-white"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                }`}
               >
-                <Sparkles className="w-3 h-3 mr-1 text-violet-600" />
-                <span>AI</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsBulkOpen(true)}
-                className="h-7 px-2 text-[11px] font-semibold border-[var(--border-fine)]"
-                title="Bulk Upload"
+                All ({formatCounts.total})
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaletteFilter("MCQ")}
+                className={`px-2 py-0.5 rounded-full font-semibold transition-colors shrink-0 ${
+                  paletteFilter === "MCQ"
+                    ? "bg-violet-700 text-white"
+                    : "bg-white text-violet-700 border border-violet-200 hover:bg-violet-50"
+                }`}
               >
-                <Upload className="w-3 h-3 mr-1" />
-                <span>Import</span>
-              </Button>
-
-              <Button
-                size="sm"
-                onClick={() => handleAddNewQuestion("MCQ")}
-                className="h-7 px-2.5 text-[11px] font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white"
+                MCQ ({formatCounts.mcq})
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaletteFilter("SHORT_ESSAY")}
+                className={`px-2 py-0.5 rounded-full font-semibold transition-colors shrink-0 ${
+                  paletteFilter === "SHORT_ESSAY"
+                    ? "bg-amber-700 text-white"
+                    : "bg-white text-amber-700 border border-amber-200 hover:bg-amber-50"
+                }`}
               >
-                <Plus className="w-3 h-3 mr-1" />
-                <span>Add</span>
-              </Button>
+                Short ({formatCounts.shortEssay})
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaletteFilter("LONG_ESSAY")}
+                className={`px-2 py-0.5 rounded-full font-semibold transition-colors shrink-0 ${
+                  paletteFilter === "LONG_ESSAY"
+                    ? "bg-blue-700 text-white"
+                    : "bg-white text-blue-700 border border-blue-200 hover:bg-blue-50"
+                }`}
+              >
+                Long ({formatCounts.longEssay})
+              </button>
             </div>
           </div>
 
           {/* Question List Scroll Area */}
           <div className="flex-1 overflow-y-auto p-2 space-y-1.5 divide-y divide-[var(--border-fine)]/60">
-            {questions.length === 0 ? (
+            {filteredQuestions.length === 0 ? (
               <div className="py-12 text-center text-xs text-[var(--text-secondary)] px-4 space-y-3">
-                <p>No questions yet.</p>
-                <div className="flex flex-col gap-1.5 max-w-[160px] mx-auto">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddNewQuestion("MCQ")}
-                    className="h-7 text-[11px] font-semibold"
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    <span>Add Question</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsAiModalOpen(true)}
-                    className="h-7 text-[11px] font-semibold border-violet-200 text-violet-700 bg-violet-50/60 hover:bg-violet-100"
-                  >
-                    <Sparkles className="w-3 h-3 mr-1 text-violet-600" />
-                    <span>ParaLearn AI</span>
-                  </Button>
-                </div>
+                <p>No questions matching filter.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPaletteFilter("ALL")}
+                  className="h-7 text-[11px] font-semibold"
+                >
+                  Clear Filter
+                </Button>
               </div>
             ) : (
-              questions.map((q, idx) => {
-                const isActive = idx === activeIdx;
+              filteredQuestions.map((q) => {
+                const originalIdx = questions.findIndex((orig) => orig.id === q.id);
+                const isActive = originalIdx === activeIdx;
 
                 return (
                   <div
                     key={q.id}
-                    onClick={() => setActiveIdx(idx)}
-                    className={`p-2.5 rounded-[var(--radius-md)] cursor-pointer transition-all flex items-start justify-between gap-2 ${
+                    onClick={() => setActiveIdx(originalIdx)}
+                    className={`group p-2.5 rounded-[var(--radius-md)] cursor-pointer transition-all flex items-start justify-between gap-2 ${
                       isActive
-                        ? "bg-[var(--violet-tint)] text-[var(--violet-ink)] font-semibold shadow-xs"
+                        ? "bg-[var(--violet-tint)] text-[var(--violet-ink)] font-semibold shadow-2xs border border-[var(--violet-ink)]/20"
                         : "hover:bg-[var(--surface-subtle)] text-[var(--foreground)]"
                     }`}
                   >
                     <div className="flex items-start gap-2 min-w-0">
-                      <span className="w-5 h-5 rounded-[var(--radius-xs)] bg-white border border-[var(--border-fine)] text-[11px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">
-                        {idx + 1}
+                      <span className="w-5 h-5 rounded bg-white border border-[var(--border-fine)] text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-[var(--foreground)]">
+                        {originalIdx + 1}
                       </span>
                       <div className="min-w-0">
                         <p className="text-xs truncate font-normal leading-tight">
                           {q.prompt || "Untitled Question"}
                         </p>
-                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                          <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 uppercase border-[var(--border-fine)]">
-                            {q.type}
+                        
+                        {/* Tags and Marks */}
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          {/* Format Badge */}
+                          <Badge 
+                            variant="outline" 
+                            className={`text-[9px] font-mono px-1 py-0 uppercase border ${
+                              q.type === "LONG_ESSAY"
+                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                : q.type === "SHORT_ESSAY"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-slate-50 text-slate-700 border-slate-200"
+                            }`}
+                          >
+                            {q.type === "LONG_ESSAY" ? "LONG ESSAY" : q.type === "SHORT_ESSAY" ? "SHORT ESSAY" : q.type}
                           </Badge>
-                          {q.difficulty && (
-                            <Badge variant="outline" className={`text-[9px] font-mono px-1 py-0 uppercase border capitalize ${
-                              q.difficulty === "simple"
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                : q.difficulty === "hard"
-                                ? "bg-rose-50 text-rose-700 border-rose-200"
-                                : "bg-amber-50 text-amber-700 border-amber-200"
-                            }`}>
-                              {q.difficulty}
+
+                          {q.rubric && (
+                            <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 bg-amber-50 text-amber-800 border-amber-300">
+                              Rubric
                             </Badge>
                           )}
-                          <span className="text-[10px] text-[var(--text-secondary)] font-mono">
+
+                          {q.section && (
+                            <span className="text-[9px] text-slate-500 font-medium truncate max-w-[80px]">
+                              {q.section}
+                            </span>
+                          )}
+
+                          <span className="text-[10px] text-[var(--text-secondary)] font-mono ml-auto">
                             {q.marks}m
                           </span>
                         </div>
@@ -524,9 +735,9 @@ export default function CbtQuestionStudio({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteQuestion(idx);
+                        handleDeleteQuestion(originalIdx);
                       }}
-                      className="text-[var(--text-secondary)] hover:text-[var(--crimson-signal)] p-1 opacity-40 hover:opacity-100"
+                      className="text-[var(--text-secondary)] hover:text-[var(--crimson-signal)] p-1 opacity-40 hover:opacity-100 transition-opacity"
                       title="Delete Question"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -540,7 +751,7 @@ export default function CbtQuestionStudio({
         </aside>
 
         {/* Right Pane: Question Editor Canvas */}
-        <main className="flex-1 min-w-0 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-6 shadow-[var(--shadow-card)] space-y-6">
+        <main className="flex-1 min-w-0 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-5 sm:p-7 shadow-[var(--shadow-card)] space-y-6">
           {!activeQuestion ? (
             <div className="py-20 text-center space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
@@ -549,7 +760,7 @@ export default function CbtQuestionStudio({
               <div className="space-y-1.5 max-w-md mx-auto">
                 <h3 className="text-base font-bold text-[var(--foreground)]">No questions in this examination yet</h3>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                  Start authoring your assessment by creating an individual question, bulk-importing questions, or extracting directly from slides, notes, audio, or video with ParaLearn AI.
+                  Start authoring your assessment by creating MCQs, Short Essays, or Long Essays, or extract questions directly from documents, slides, audio, or video with ParaLearn AI.
                 </p>
               </div>
               <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
@@ -569,162 +780,369 @@ export default function CbtQuestionStudio({
                   <Sparkles className="w-4 h-4" />
                   <span>Generate with ParaLearn AI</span>
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsBulkOpen(true)}
-                  size="sm"
-                  className="h-9 px-4 text-xs font-bold border-[var(--border-fine)] rounded-[var(--radius-md)] inline-flex items-center gap-1.5"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span>Bulk Import</span>
-                </Button>
               </div>
             </div>
           ) : (
             <>
-              {/* Header Row */}
-              <div className="flex items-center justify-between pb-4 border-b border-[var(--border-fine)] flex-wrap gap-2">
+              {/* Header Row: Question # + Format Segmented Switcher + Marks */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[var(--border-fine)] gap-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="font-bold text-base text-[var(--foreground)]">
                     Editing Question #{activeIdx + 1}
                   </span>
-                  <Badge variant="outline" className="bg-[var(--surface-muted)] text-xs font-mono">
-                    {activeQuestion.type}
-                  </Badge>
-                  {activeQuestion.difficulty && (
-                    <Badge variant="outline" className={`text-xs font-mono capitalize border ${
-                      activeQuestion.difficulty === "simple"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        : activeQuestion.difficulty === "hard"
-                        ? "bg-rose-50 text-rose-700 border-rose-200"
-                        : "bg-amber-50 text-amber-700 border-amber-200"
-                    }`}>
-                      {activeQuestion.difficulty}
-                    </Badge>
-                  )}
-                  {activeQuestion.citation && (
-                    <Badge variant="outline" className="text-xs font-mono bg-stone-50 text-stone-600 border-stone-200">
-                      Ref: {activeQuestion.citation}
-                    </Badge>
-                  )}
+
+                  {/* Format Segmented Switcher */}
+                  <div className="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleChangeQuestionType("MCQ")}
+                      className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-all ${
+                        activeQuestion.type === "MCQ"
+                          ? "bg-white text-violet-700 shadow-2xs font-bold"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      MCQ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleChangeQuestionType("SHORT_ESSAY")}
+                      className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-all ${
+                        activeQuestion.type === "SHORT_ESSAY"
+                          ? "bg-white text-amber-700 shadow-2xs font-bold"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Short Essay
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleChangeQuestionType("LONG_ESSAY")}
+                      className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-all ${
+                        activeQuestion.type === "LONG_ESSAY"
+                          ? "bg-white text-blue-700 shadow-2xs font-bold"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Long Essay
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleChangeQuestionType("TRUE_FALSE")}
+                      className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-all ${
+                        activeQuestion.type === "TRUE_FALSE"
+                          ? "bg-white text-emerald-700 shadow-2xs font-bold"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      True/False
+                    </button>
+                  </div>
                 </div>
 
-                {/* Marks Input */}
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase">
-                    Marks:
-                  </label>
-                  <Input
-                    type="number"
-                    min="0.5"
-                    step="0.5"
-                    value={activeQuestion.marks}
-                    onChange={(e) => updateActiveQuestion("marks", parseFloat(e.target.value) || 1)}
-                    className="w-20 h-8 text-center font-mono text-xs font-bold rounded-[var(--radius-md)] border-[var(--border-fine)]"
-                  />
+                {/* Marks & Section Controls */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase">
+                      Marks:
+                    </label>
+                    <Input
+                      type="number"
+                      min="0.5"
+                      step="0.5"
+                      value={activeQuestion.marks}
+                      onChange={(e) => updateActiveQuestion("marks", parseFloat(e.target.value) || 1)}
+                      className="w-20 h-8 text-center font-mono text-xs font-bold rounded-[var(--radius-md)] border-[var(--border-fine)]"
+                    />
+                  </div>
                 </div>
               </div>
 
-          {/* Question Prompt Editor */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-              Question Prompt (Text or LaTeX Math formula)
-            </label>
-            <textarea
-              rows={4}
-              value={activeQuestion.prompt}
-              onChange={(e) => updateActiveQuestion("prompt", e.target.value)}
-              placeholder="Enter question text here..."
-              className="w-full p-3.5 text-sm sm:text-base font-normal leading-relaxed rounded-[var(--radius-md)] border border-[var(--border-fine)] bg-white text-[var(--foreground)] focus:border-[var(--violet-ink)] focus:ring-2 focus:ring-[var(--violet-ink)]/20 outline-none"
-            />
-          </div>
+              {/* Section Header Assignment */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs">
+                <div className="flex items-center gap-1.5 text-slate-600 font-semibold shrink-0">
+                  <Tag className="w-3.5 h-3.5 text-violet-600" />
+                  <span>Exam Section:</span>
+                </div>
+                <Input
+                  type="text"
+                  value={activeQuestion.section || ""}
+                  onChange={(e) => updateActiveQuestion("section", e.target.value)}
+                  placeholder="e.g. Section A: Objectives or Section B: Theory & Essays"
+                  className="h-8 text-xs font-medium border-slate-200 bg-white"
+                />
+                <div className="hidden lg:flex items-center gap-1 shrink-0 text-[10px] text-slate-500">
+                  <span className="cursor-pointer underline hover:text-violet-700" onClick={() => updateActiveQuestion("section", "Section A: Multiple Choice")}>Sec A</span>
+                  <span>&bull;</span>
+                  <span className="cursor-pointer underline hover:text-violet-700" onClick={() => updateActiveQuestion("section", "Section B: Short Answers")}>Sec B</span>
+                  <span>&bull;</span>
+                  <span className="cursor-pointer underline hover:text-violet-700" onClick={() => updateActiveQuestion("section", "Section C: Long Essay")}>Sec C</span>
+                </div>
+              </div>
 
-          {/* Answer Options Editor */}
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                Answer Choices (Select the radio icon to mark the correct answer)
-              </label>
-              {activeQuestion.type === "MCQ" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addChoice}
-                  className="h-7 text-xs font-semibold border-[var(--border-fine)]"
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  <span>Add Option</span>
-                </Button>
-              )}
-            </div>
+              {/* Question Prompt Editor */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center justify-between">
+                  <span>Question Statement / Problem Statement</span>
+                  <span className="font-normal text-[11px] text-slate-500 lowercase">Supports text and KaTeX math formulas</span>
+                </label>
+                <textarea
+                  rows={activeQuestion.type === "LONG_ESSAY" ? 5 : 3}
+                  value={activeQuestion.prompt}
+                  onChange={(e) => updateActiveQuestion("prompt", e.target.value)}
+                  placeholder="Enter question statement or case study prompt..."
+                  className="w-full p-3.5 text-sm sm:text-base font-normal leading-relaxed rounded-[var(--radius-md)] border border-[var(--border-fine)] bg-white text-[var(--foreground)] focus:border-[var(--violet-ink)] focus:ring-2 focus:ring-[var(--violet-ink)]/20 outline-none"
+                />
+              </div>
 
-            <div className="space-y-2.5">
-              {activeQuestion.options.map((opt, optIdx) => {
-                const letter = String.fromCharCode(65 + optIdx);
-
-                return (
-                  <div
-                    key={opt.id}
-                    className={`flex items-center gap-3 p-2.5 rounded-[var(--radius-md)] border transition-all ${
-                      opt.isCorrect
-                        ? "bg-[var(--emerald-tint)]/40 border-[#a7f3d0] ring-1 ring-[var(--emerald-signal)]/30"
-                        : "bg-white border-[var(--border-fine)]"
-                    }`}
-                  >
-                    {/* Correct choice radio button */}
-                    <button
-                      type="button"
-                      onClick={() => setCorrectChoice(optIdx)}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all ${
-                        opt.isCorrect
-                          ? "bg-[var(--emerald-signal)] text-white shadow-xs"
-                          : "bg-[var(--surface-muted)] text-[var(--text-secondary)] hover:bg-[var(--border-fine)]"
-                      }`}
-                      title={opt.isCorrect ? "Correct answer" : "Click to mark as correct"}
-                    >
-                      {opt.isCorrect ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : letter}
-                    </button>
-
-                    {/* Option Text Input */}
-                    <Input
-                      type="text"
-                      value={opt.text}
-                      onChange={(e) => updateOptionText(optIdx, e.target.value)}
-                      placeholder={`Option ${letter} text...`}
-                      className="h-10 text-sm font-normal border-[var(--border-fine)] bg-white"
-                    />
-
-                    {/* Delete option */}
+              {/* ── CONDITIONAL CANVAS: MCQs & TRUE/FALSE ── */}
+              {(activeQuestion.type === "MCQ" || activeQuestion.type === "TRUE_FALSE") && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                      Answer Choices (Click the badge to mark the correct choice)
+                    </label>
                     {activeQuestion.type === "MCQ" && (
-                      <button
-                        type="button"
-                        onClick={() => deleteChoice(optIdx)}
-                        className="text-[var(--text-secondary)] hover:text-[var(--crimson-signal)] p-1 opacity-50 hover:opacity-100"
-                        title="Remove Option"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={addChoice}
+                        className="h-7 text-xs font-semibold border-[var(--border-fine)]"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <Plus className="w-3 h-3 mr-1" />
+                        <span>Add Option</span>
+                      </Button>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Solution Notes / Explanation */}
-          <div className="space-y-1.5 pt-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
-              <HelpCircle className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-              <span>Explanation &amp; Solution Notes (Revealed after submission)</span>
-            </label>
-            <Input
-              type="text"
-              value={activeQuestion.explanation || ""}
-              onChange={(e) => updateActiveQuestion("explanation", e.target.value)}
-              placeholder="e.g. Apply formula v = u + at..."
-              className="h-10 text-sm font-normal border-[var(--border-fine)]"
-            />
-          </div>
+                  <div className="space-y-2.5">
+                    {activeQuestion.options?.map((opt, optIdx) => {
+                      const letter = String.fromCharCode(65 + optIdx);
+
+                      return (
+                        <div
+                          key={opt.id}
+                          className={`flex items-center gap-3 p-2.5 rounded-[var(--radius-md)] border transition-all ${
+                            opt.isCorrect
+                              ? "bg-[var(--emerald-tint)]/40 border-[#a7f3d0] ring-1 ring-[var(--emerald-signal)]/30"
+                              : "bg-white border-[var(--border-fine)]"
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setCorrectChoice(optIdx)}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all ${
+                              opt.isCorrect
+                                ? "bg-[var(--emerald-signal)] text-white shadow-xs"
+                                : "bg-[var(--surface-muted)] text-[var(--text-secondary)] hover:bg-[var(--border-fine)]"
+                            }`}
+                            title={opt.isCorrect ? "Correct answer" : "Click to mark as correct"}
+                          >
+                            {opt.isCorrect ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : letter}
+                          </button>
+
+                          <Input
+                            type="text"
+                            value={opt.text}
+                            onChange={(e) => updateOptionText(optIdx, e.target.value)}
+                            placeholder={`Option ${letter} text...`}
+                            className="h-10 text-sm font-normal border-[var(--border-fine)] bg-white"
+                          />
+
+                          {activeQuestion.type === "MCQ" && (
+                            <button
+                              type="button"
+                              onClick={() => deleteChoice(optIdx)}
+                              className="text-[var(--text-secondary)] hover:text-[var(--crimson-signal)] p-1 opacity-50 hover:opacity-100"
+                              title="Remove Option"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ── CONDITIONAL CANVAS: SHORT ESSAY ── */}
+              {activeQuestion.type === "SHORT_ESSAY" && (
+                <div className="space-y-4 pt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                        Minimum Words
+                      </label>
+                      <Input
+                        type="number"
+                        min="5"
+                        value={activeQuestion.minWords || 20}
+                        onChange={(e) => updateActiveQuestion("minWords", parseInt(e.target.value, 10) || 20)}
+                        className="h-9 text-xs font-mono font-medium"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                        Maximum Words
+                      </label>
+                      <Input
+                        type="number"
+                        min="20"
+                        value={activeQuestion.maxWords || 100}
+                        onChange={(e) => updateActiveQuestion("maxWords", parseInt(e.target.value, 10) || 100)}
+                        className="h-9 text-xs font-mono font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Benchmark Model Answer */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Teacher Reference / Model Answer</span>
+                      </span>
+                      <span className="font-normal text-[11px] text-slate-500">Benchmark for ParaLearn AI grading engine</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={activeQuestion.modelAnswer || ""}
+                      onChange={(e) => updateActiveQuestion("modelAnswer", e.target.value)}
+                      placeholder="e.g. Photosynthesis is the biochemical process whereby green plants convert light energy into chemical energy..."
+                      className="w-full p-3 text-xs sm:text-sm font-normal rounded-[var(--radius-md)] border border-slate-200 bg-amber-50/20 text-[var(--foreground)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none"
+                    />
+                  </div>
+
+                  {/* Key Terms / Required Concepts */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                      Essential Key Terms (Comma-separated concepts that should appear)
+                    </label>
+                    <Input
+                      type="text"
+                      value={activeQuestion.keyTerms?.join(", ") || ""}
+                      onChange={(e) => {
+                        const terms = e.target.value.split(",").map(t => t.trim()).filter(Boolean);
+                        updateActiveQuestion("keyTerms", terms);
+                      }}
+                      placeholder="e.g. Chloroplasts, Stomata, ATP, Light reactions"
+                      className="h-9 text-xs font-normal border-slate-200"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* ── CONDITIONAL CANVAS: LONG ESSAY ── */}
+              {activeQuestion.type === "LONG_ESSAY" && (
+                <div className="space-y-4 pt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                        Minimum Words
+                      </label>
+                      <Input
+                        type="number"
+                        min="50"
+                        value={activeQuestion.minWords || 150}
+                        onChange={(e) => updateActiveQuestion("minWords", parseInt(e.target.value, 10) || 150)}
+                        className="h-9 text-xs font-mono font-medium"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                        Maximum Words
+                      </label>
+                      <Input
+                        type="number"
+                        min="100"
+                        value={activeQuestion.maxWords || 800}
+                        onChange={(e) => updateActiveQuestion("maxWords", parseInt(e.target.value, 10) || 800)}
+                        className="h-9 text-xs font-mono font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Model Essay Outline */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Comprehensive Essay Outline &amp; Expected Arguments</span>
+                      </span>
+                      <span className="font-normal text-[11px] text-slate-500">Benchmark for AI &amp; examiner review</span>
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={activeQuestion.modelAnswer || ""}
+                      onChange={(e) => updateActiveQuestion("modelAnswer", e.target.value)}
+                      placeholder="Outline expected thesis, key body paragraphs, structural criteria, evidence, and critical evaluation points..."
+                      className="w-full p-3 text-xs sm:text-sm font-normal rounded-[var(--radius-md)] border border-slate-200 bg-blue-50/20 text-[var(--foreground)] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    />
+                  </div>
+
+                  {/* Attached Rubric Scheme Card */}
+                  <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-4 h-4 text-amber-600" />
+                        <span className="text-xs font-bold text-slate-900">
+                          {activeQuestion.rubric?.name || "Standard Evaluation Rubric"}
+                        </span>
+                        <Badge variant="outline" className="text-[10px] font-mono bg-white text-slate-700">
+                          {activeQuestion.rubric?.totalMarks || activeQuestion.marks} Total Marks
+                        </Badge>
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsRubricModalOpen(true)}
+                        className="h-7 text-xs font-semibold border-amber-300 text-amber-900 bg-white hover:bg-amber-50"
+                      >
+                        <Award className="w-3 h-3 mr-1 text-amber-600" />
+                        <span>{activeQuestion.rubric ? "Change Rubric Scheme" : "Attach Marking Rubric"}</span>
+                      </Button>
+                    </div>
+
+                    {/* Criteria List */}
+                    {activeQuestion.rubric?.criteria && activeQuestion.rubric.criteria.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {activeQuestion.rubric.criteria.map((crit, cIdx) => (
+                          <div key={crit.id || cIdx} className="bg-white p-2.5 rounded-md border border-slate-200 text-xs">
+                            <div className="flex items-center justify-between font-bold text-slate-800">
+                              <span>{crit.title}</span>
+                              <span className="font-mono text-amber-700">{crit.maxMarks}m</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                              {crit.description}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-500 italic">
+                        No custom rubric linked yet. Using default weighted grading. You can attach WAEC, Cambridge, or custom institutional rubrics above.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Solution Notes / Explanation */}
+              <div className="space-y-1.5 pt-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
+                  <HelpCircle className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
+                  <span>Explanation &amp; Solution Notes (Revealed after assessment review)</span>
+                </label>
+                <Input
+                  type="text"
+                  value={activeQuestion.explanation || ""}
+                  onChange={(e) => updateActiveQuestion("explanation", e.target.value)}
+                  placeholder="e.g. Highlighting core principles, formulas, and common student misconceptions..."
+                  className="h-10 text-sm font-normal border-[var(--border-fine)]"
+                />
+              </div>
             </>
           )}
 
@@ -753,42 +1171,31 @@ export default function CbtQuestionStudio({
               <Input
                 type="number"
                 min="5"
-                max="240"
+                max="360"
                 value={durationMins}
-                onChange={(e) => setDurationMins(parseInt(e.target.value) || 60)}
+                onChange={(e) => setDurationMins(parseInt(e.target.value, 10) || 60)}
                 className="h-10 font-mono font-bold"
               />
             </div>
 
-            {/* Room Code */}
+            {/* Anti-Malpractice Threshold */}
             <div className="space-y-1.5">
               <label className="font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                Room Access Code
-              </label>
-              <Input
-                type="text"
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                className="h-10 font-mono font-bold uppercase"
-              />
-            </div>
-
-            {/* Anti-Malpractice Violations */}
-            <div className="space-y-1.5">
-              <label className="font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                Max Allowed Tab Violations Before Auto-Submit
+                Max Allowed Tab-Switch Violations
               </label>
               <Input
                 type="number"
                 min="1"
                 max="10"
                 value={settings.maxTabViolations}
-                onChange={(e) => setSettings({ ...settings, maxTabViolations: parseInt(e.target.value) || 3 })}
+                onChange={(e) => setSettings({ ...settings, maxTabViolations: parseInt(e.target.value, 10) || 3 })}
                 className="h-10 font-mono font-bold"
               />
+              <p className="text-[11px] text-[var(--text-secondary)]">
+                Candidate is disqualified upon exceeding this count.
+              </p>
             </div>
 
-            {/* Checkbox Toggles */}
             <div className="space-y-3 pt-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -843,7 +1250,7 @@ export default function CbtQuestionStudio({
               <span className="font-bold">Click to upload .xlsx file</span> or drag and drop
             </div>
             <p className="text-[11px] text-[var(--text-secondary)]">
-              Columns: question, type, option_a, option_b, option_c, option_d, correct, marks
+              Columns: question, type, option_a, option_b, option_c, option_d, correct, marks, min_words, max_words
             </p>
           </div>
 
@@ -854,7 +1261,7 @@ export default function CbtQuestionStudio({
             <Button
               size="sm"
               onClick={() => {
-                toast.success("Imported 15 sample questions from spreadsheet!");
+                toast.success("Imported questions from spreadsheet!");
                 setIsBulkOpen(false);
               }}
               className="bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white"
@@ -984,17 +1391,6 @@ export default function CbtQuestionStudio({
                           <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 uppercase">
                             {q.type}
                           </Badge>
-                          {q.difficulty && (
-                            <Badge variant="outline" className={`text-[9px] font-mono px-1 py-0 uppercase capitalize ${
-                              q.difficulty === "simple"
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                : q.difficulty === "hard"
-                                ? "bg-rose-50 text-rose-700 border-rose-200"
-                                : "bg-amber-50 text-amber-700 border-amber-200"
-                            }`}>
-                              {q.difficulty}
-                            </Badge>
-                          )}
                           <span className="text-[10px] text-[var(--text-secondary)] font-mono">
                             {q.marks}m
                           </span>
@@ -1020,12 +1416,22 @@ export default function CbtQuestionStudio({
         </SheetContent>
       </Sheet>
 
-      {/* ── PARALEARN AI QUESTION MODAL ─────────────────────────────────── */}
+      {/* ── PARALEARN AI QUESTION GENERATION MODAL ───────────────────────── */}
       <CbtAiQuestionModal
         isOpen={isAiModalOpen}
         onClose={() => setIsAiModalOpen(false)}
         examTitle={examTitle}
         onImportQuestions={handleImportAiQuestions}
+      />
+
+      {/* ── CUSTOM RUBRIC UPLOAD & TEMPLATE MODAL ────────────────────────── */}
+      <CbtRubricUploadModal
+        isOpen={isRubricModalOpen}
+        onClose={() => setIsRubricModalOpen(false)}
+        examId={examId}
+        targetQuestionId={activeQuestion?.id}
+        questionTotalMarks={activeQuestion?.marks}
+        onApplyRubric={handleApplyRubric}
       />
 
     </div>

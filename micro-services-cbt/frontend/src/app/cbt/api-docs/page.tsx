@@ -40,7 +40,7 @@ export default function CbtApiDocsPage() {
             <div className="flex items-center gap-2">
               <span className="font-extrabold tracking-tight text-slate-900 text-sm">ParaLearn CBT API</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-violet-100 text-[#641bc4] border border-violet-200">
-                v1.2.0
+                v1.3.0
               </span>
             </div>
           </div>
@@ -420,6 +420,89 @@ export default function CbtApiDocsPage() {
       ]
     }
   ]
+}`}
+                </pre>
+              </div>
+            </div>
+
+            {/* Endpoint 4.3: Hybrid Question Types & Marking Rubrics */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2 font-mono text-xs font-bold">
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">SCHEMA</span>
+                  <span className="text-slate-700">Hybrid Assessment Taxonomy (v1.3.0)</span>
+                </div>
+                <span className="text-xs text-slate-500">MCQ &bull; Short Essay &bull; Long Essay</span>
+              </div>
+              <div className="p-4 space-y-3 font-mono text-xs">
+                <p className="font-sans text-xs text-slate-600 leading-relaxed">
+                  ParaLearn CBT supports mixing objective MCQs with Short Essays (20–100 words) and Extended Compositions (150–800 words), each backed by customizable weighted criteria, model benchmark solutions, and institutional rubrics (WAEC, Cambridge, STEM).
+                </p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`{
+  "type": "LONG_ESSAY", // "MCQ" | "SHORT_ESSAY" | "LONG_ESSAY" | "TRUE_FALSE"
+  "prompt": "Critically analyze the fiscal impact of subsidy removal...",
+  "marks": 15.0,
+  "section": "Section C: Extended Essay",
+  "minWords": 150,
+  "maxWords": 800,
+  "modelAnswer": "Comprehensive expected arguments, thesis points, and proofs...",
+  "rubric": {
+    "name": "Standard Essay Evaluation Scheme",
+    "totalMarks": 15,
+    "criteria": [
+      { "id": "c1", "title": "Thesis & Content Depth", "maxMarks": 5, "description": "Grasp of key concepts and empirical evidence." },
+      { "id": "c2", "title": "Structure & Logical Flow", "maxMarks": 5, "description": "Coherence, transitions, and paragraphing." },
+      { "id": "c3", "title": "Expression & Diction", "maxMarks": 5, "description": "Clarity of vocabulary, spelling, and grammar." }
+    ]
+  }
+}`}
+                </pre>
+              </div>
+            </div>
+
+            {/* Endpoint 4.4: 1-Click AI Essay Grading Assistance */}
+            <div className="border border-emerald-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <div className="bg-emerald-50/60 px-4 py-2.5 border-b border-emerald-100 flex items-center justify-between">
+                <div className="flex items-center gap-2 font-mono text-xs font-bold">
+                  <span className="px-2 py-0.5 bg-emerald-600 text-white rounded">POST</span>
+                  <span className="text-slate-800">/api/cbt/ai/grade-essay</span>
+                </div>
+                <span className="text-xs font-bold text-emerald-700">ParaLearn AI Essay Grading Engine</span>
+              </div>
+              <div className="p-4 space-y-3 font-mono text-xs">
+                <p className="font-sans text-xs text-slate-600 leading-relaxed">
+                  Evaluates a candidate&apos;s written response against the question prompt, teacher model answer, and rubric criteria, returning recommended numeric criteria scores, criterion observations, and overall constructive feedback that examiners can review, tweak, and approve.
+                </p>
+                <p className="font-sans font-semibold text-slate-700">Request Body:</p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`{
+  "questionPrompt": "Distinguish between speed and velocity with an example.",
+  "studentResponse": "Speed is a scalar quantity while velocity is a vector quantity that has direction...",
+  "modelAnswer": "Speed is distance/time; velocity is displacement/time with direction.",
+  "rubricCriteria": [
+    { "id": "c1", "title": "Definition & Scalar/Vector Distinction", "maxMarks": 3 },
+    { "id": "c2", "title": "Practical Application Example", "maxMarks": 2 }
+  ],
+  "maxMarks": 5.0
+}`}
+                </pre>
+                <p className="font-sans font-semibold text-slate-700">Response (200 OK):</p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
+{`{
+  "success": true,
+  "engine": "ParaLearn AI Grading Engine",
+  "evaluation": {
+    "criteriaScores": [
+      { "criterionId": "c1", "score": 3.0, "maxMarks": 3, "feedback": "Accurately noted scalar vs vector distinction." },
+      { "criterionId": "c2", "score": 1.5, "maxMarks": 2, "feedback": "Example was valid but lacked directional unit specification." }
+    ],
+    "totalScore": 4.5,
+    "maxScore": 5.0,
+    "overallComment": "Strong grasp of kinematics fundamentals with clear distinction of scalar and vector quantities.",
+    "strengths": ["Accurate scalar/vector definitions", "Good conceptual clarity"],
+    "areasForImprovement": ["Include explicit vector directions (e.g. 50 km/h North) in real-world examples"]
+  }
 }`}
                 </pre>
               </div>

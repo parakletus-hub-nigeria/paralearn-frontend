@@ -8,14 +8,38 @@ interface QuestionOption {
   isCorrect: boolean;
 }
 
+interface RawRubricLevel {
+  label: string;
+  points: number;
+  descriptor: string;
+}
+
+interface RawRubricCriterion {
+  id?: string;
+  title: string;
+  maxMarks: number;
+  description: string;
+  levels?: RawRubricLevel[];
+}
+
 interface RawGeneratedQuestion {
   prompt: string;
-  type?: "MCQ" | "TRUE_FALSE";
+  type?: "MCQ" | "TRUE_FALSE" | "SHORT_ESSAY" | "LONG_ESSAY";
   difficulty?: "simple" | "intermediate" | "hard";
+  section?: string;
   citation?: string;
   explanation?: string;
   marks?: number;
-  options: QuestionOption[];
+  options?: QuestionOption[];
+  minWords?: number;
+  maxWords?: number;
+  modelAnswer?: string;
+  keyTerms?: string[];
+  rubric?: {
+    name?: string;
+    totalMarks?: number;
+    criteria?: RawRubricCriterion[];
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -37,6 +61,7 @@ export async function POST(req: NextRequest) {
     const notesText = (formData.get("notes") as string) || "";
     const subject = (formData.get("subject") as string) || "General Subject";
     const difficulty = (formData.get("difficulty") as string) || "balanced"; // simple | intermediate | hard | balanced
+    const formatMode = (formData.get("formatMode") as string) || "hybrid"; // pure_mcq | hybrid | pure_essay
     const count = Math.min(Math.max(parseInt((formData.get("count") as string) || "10", 10), 1), 50);
 
     if (!file && (!notesText || notesText.trim().length === 0)) {
@@ -72,36 +97,82 @@ Generate a balanced distribution of questions across difficulty levels:
 Assign the appropriate difficulty field ('simple', 'intermediate', or 'hard') to each question.`;
     }
 
+    // Build Assessment Format Instruction
+    let formatInstruction = "";
+    if (formatMode === "pure_mcq") {
+      formatInstruction = `
+Format Requirement: Pure Multiple Choice Assessment
+- 100% of questions must be type "MCQ" (or occasionally "TRUE_FALSE" where conceptually elegant).
+- Every MCQ must have exactly 4 choices with exactly one choice marked isCorrect: true.
+- Default marks: 1.0 to 2.0.`;
+    } else if (formatMode === "pure_essay") {
+      formatInstruction = `
+Format Requirement: Pure Theory, Short & Long Essay Assessment
+- Generate a combination of:
+  1. "SHORT_ESSAY" (definitions, concise explanations, proofs, 20–100 words, 5 marks each).
+  2. "LONG_ESSAY" (comprehensive thesis, multi-perspective synthesis, case analysis, 150–800 words, 15 marks each).
+- For EVERY SHORT_ESSAY, provide 'modelAnswer' (standard benchmark solution) and 'keyTerms' (essential keywords array).
+- For EVERY LONG_ESSAY, provide 'modelAnswer' (comprehensive essay outline) AND an automated 'rubric' object containing 3 to 4 weighted criteria with titles, maxMarks, descriptions, and performance levels.`;
+    } else {
+      // Default: Hybrid Mix
+      formatInstruction = `
+Format Requirement: Hybrid Assessment (Creative Mix of MCQs, Short Essays, and Long Essays)
+Out of the total ${count} questions:
+1. Approximately 60-70% MUST be "MCQ" (Multiple choice with 4 options, 1 correct, 1-2 marks each).
+2. Approximately 20% MUST be "SHORT_ESSAY" (Concise conceptual/analytical questions, 20–100 words, 5 marks each). Must include 'modelAnswer', 'keyTerms', 'minWords' (20), 'maxWords' (100).
+3. Approximately 10-20% MUST be "LONG_ESSAY" (Deep synthesis, case study, or composition, 150–800 words, 15 marks each). Must include 'modelAnswer', 'minWords' (150), 'maxWords' (800), and an automated 'rubric' object with 3-4 scoring criteria.
+Organize questions into appropriate sections (e.g. "Section A: Multiple Choice", "Section B: Short Answers", "Section C: Extended Essay").`;
+    }
+
     const systemPrompt = `
 You are an expert psychometrician and academic exam author for the ParaLearn CBT Computer-Based Testing platform.
 Your task is to analyze the provided source material (lecture notes, document, presentation slides, or audio/video recording) and author ${count} high-quality, rigorous examination questions for the subject: "${subject}".
 
 ${difficultyInstruction}
+${formatInstruction}
 
-Rules for Question Authoring:
+General Rules:
 1. Grounding: Every question must be strictly derived from the provided content. Do not invent unrelated trivia.
-2. Question Format: Multiple Choice Questions (MCQ) with 4 distinct options (or True/False with 2 options if appropriate).
-3. Option Quality: Ensure exactly one option is marked as correct (isCorrect: true). The other options must have isCorrect: false. Never use lazy options like "All of the above" or "None of the above".
-4. Citations: Provide a concise 'citation' string identifying where in the material the answer is found (e.g., "Page 3", "Slide 12", "Section 2.1", or "Audio/Video ~03:45").
-5. Explanation: Provide a clear, educational explanation explaining why the correct answer is right and why the key distractors are incorrect.
-6. Language: Maintain standard academic English and clear pedagogical phrasing.
+2. Option Quality for MCQs: Exactly one option is marked as correct (isCorrect: true). The other options must have isCorrect: false. Never use lazy options like "All of the above" or "None of the above".
+3. Citations: Provide a concise 'citation' string identifying where in the material the answer is found (e.g., "Page 3", "Slide 12", "Section 2.1", or "Audio/Video ~03:45").
+4. Explanation: Provide a clear, educational explanation explaining why the correct answer is right and why key distractors are incorrect.
+5. Language: Maintain standard academic English and clear pedagogical phrasing.
 
 Return the result STRICTLY as a valid JSON object matching this schema:
 {
   "questions": [
     {
       "prompt": "string (the question statement)",
-      "type": "MCQ",
+      "type": "MCQ" | "SHORT_ESSAY" | "LONG_ESSAY" | "TRUE_FALSE",
+      "section": "string (e.g. 'Section A: Multiple Choice' or 'Section B: Theory')",
       "difficulty": "simple" | "intermediate" | "hard",
       "citation": "string (e.g. 'Slide 4' or '05:20')",
       "explanation": "string (brief justification)",
-      "marks": 1.0,
-      "options": [
+      "marks": number,
+      "options": [ // Required ONLY for MCQ / TRUE_FALSE
         { "text": "Option A text", "isCorrect": true },
-        { "text": "Option B text", "isCorrect": false },
-        { "text": "Option C text", "isCorrect": false },
-        { "text": "Option D text", "isCorrect": false }
-      ]
+        { "text": "Option B text", "isCorrect": false }
+      ],
+      "minWords": number, // For SHORT_ESSAY (e.g. 20) or LONG_ESSAY (e.g. 150)
+      "maxWords": number, // For SHORT_ESSAY (e.g. 100) or LONG_ESSAY (e.g. 800)
+      "modelAnswer": "string (benchmark answer for examiners and AI evaluation)",
+      "keyTerms": ["keyword1", "keyword2"], // For SHORT_ESSAY
+      "rubric": { // For LONG_ESSAY
+        "name": "string (e.g. 'Institutional Essay Scoring Scheme')",
+        "totalMarks": number,
+        "criteria": [
+          {
+            "id": "crit_1",
+            "title": "Content & Knowledge Depth",
+            "maxMarks": 5,
+            "description": "Factual accuracy, thesis mastery, and depth of explanation",
+            "levels": [
+              { "label": "Excellent", "points": 5, "descriptor": "Comprehensive, flawless understanding" },
+              { "label": "Satisfactory", "points": 3, "descriptor": "Adequate grasp with minor omissions" }
+            ]
+          }
+        ]
+      }
     }
   ]
 }
@@ -112,7 +183,7 @@ Return the result STRICTLY as a valid JSON object matching this schema:
       model: modelName,
       generationConfig: {
         responseMimeType: "application/json",
-        temperature: 0.2, // Low temperature for high factual accuracy and adherence to material
+        temperature: 0.2, // Low temperature for high factual accuracy
       },
     });
 
@@ -134,7 +205,6 @@ Return the result STRICTLY as a valid JSON object matching this schema:
       let mimeType = file.type || "application/octet-stream";
       const fileName = file.name.toLowerCase();
 
-      // Normalize common extension MIME types if browser didn't supply them accurately
       if (fileName.endsWith(".pdf")) mimeType = "application/pdf";
       else if (fileName.endsWith(".txt")) mimeType = "text/plain";
       else if (fileName.endsWith(".md")) mimeType = "text/markdown";
@@ -160,7 +230,7 @@ Return the result STRICTLY as a valid JSON object matching this schema:
     }
 
     promptParts.push({
-      text: `\nGenerate now the array of ${count} questions in accordance with the specified difficulty: "${difficulty}".`,
+      text: `\nGenerate now the array of ${count} questions in accordance with difficulty: "${difficulty}" and format mode: "${formatMode}".`,
     });
 
     // Generate content using Gemini 3
@@ -168,7 +238,6 @@ Return the result STRICTLY as a valid JSON object matching this schema:
     try {
       result = await model.generateContent(promptParts);
     } catch (err: any) {
-      // If the preview model is temporarily rate limited or unavailable, fallback to gemini-2.5-flash
       console.warn(`Primary model ${modelName} failed, falling back to gemini-2.5-flash:`, err?.message);
       const fallbackModel = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
@@ -187,7 +256,6 @@ Return the result STRICTLY as a valid JSON object matching this schema:
     try {
       parsedData = JSON.parse(rawResponseText);
     } catch (parseError) {
-      // Fallback regex cleaning if needed
       const cleaned = rawResponseText.replace(/```json/g, "").replace(/```/g, "").trim();
       parsedData = JSON.parse(cleaned);
     }
@@ -196,34 +264,72 @@ Return the result STRICTLY as a valid JSON object matching this schema:
 
     // Format and sanitize output to match CBT Studio standards
     const formattedQuestions = rawQuestions.map((q: any, idx: number) => {
-      const qType = q.type === "TRUE_FALSE" ? "TRUE_FALSE" : "MCQ";
-      const options = Array.isArray(q.options)
-        ? q.options.map((opt: any, oIdx: number) => ({
-            id: `opt_${Date.now()}_${idx}_${oIdx}`,
-            text: typeof opt === "string" ? opt : opt.text || `Option ${String.fromCharCode(65 + oIdx)}`,
-            isCorrect: typeof opt === "object" ? !!opt.isCorrect : oIdx === 0,
-          }))
-        : [
-            { id: `opt_${Date.now()}_${idx}_0`, text: "Option A", isCorrect: true },
-            { id: `opt_${Date.now()}_${idx}_1`, text: "Option B", isCorrect: false },
-            { id: `opt_${Date.now()}_${idx}_2`, text: "Option C", isCorrect: false },
-            { id: `opt_${Date.now()}_${idx}_3`, text: "Option D", isCorrect: false },
-          ];
+      const rawType = (q.type || "").toUpperCase();
+      let qType: "MCQ" | "SHORT_ESSAY" | "LONG_ESSAY" | "TRUE_FALSE" = "MCQ";
 
-      // Ensure at least one option is marked correct
-      if (!options.some((o) => o.isCorrect)) {
-        options[0].isCorrect = true;
+      if (rawType.includes("SHORT")) qType = "SHORT_ESSAY";
+      else if (rawType.includes("LONG") || rawType === "ESSAY") qType = "LONG_ESSAY";
+      else if (rawType.includes("TRUE") || rawType.includes("FALSE")) qType = "TRUE_FALSE";
+      else qType = "MCQ";
+
+      const defaultMarks = qType === "LONG_ESSAY" ? 15.0 : qType === "SHORT_ESSAY" ? 5.0 : 1.0;
+
+      let options = undefined;
+      if (qType === "MCQ" || qType === "TRUE_FALSE") {
+        options = Array.isArray(q.options)
+          ? q.options.map((opt: any, oIdx: number) => ({
+              id: `opt_${Date.now()}_${idx}_${oIdx}`,
+              text: typeof opt === "string" ? opt : opt.text || `Option ${String.fromCharCode(65 + oIdx)}`,
+              isCorrect: typeof opt === "object" ? !!opt.isCorrect : oIdx === 0,
+            }))
+          : [
+              { id: `opt_${Date.now()}_${idx}_0`, text: "Option A", isCorrect: true },
+              { id: `opt_${Date.now()}_${idx}_1`, text: "Option B", isCorrect: false },
+              { id: `opt_${Date.now()}_${idx}_2`, text: "Option C", isCorrect: false },
+              { id: `opt_${Date.now()}_${idx}_3`, text: "Option D", isCorrect: false },
+            ];
+
+        if (!options.some((o) => o.isCorrect)) {
+          options[0].isCorrect = true;
+        }
+      }
+
+      // Rubric normalization if present
+      let formattedRubric = undefined;
+      if (q.rubric && Array.isArray(q.rubric.criteria)) {
+        const critList = q.rubric.criteria.map((c: any, cIdx: number) => ({
+          id: c.id || `crit_${Date.now()}_${idx}_${cIdx}`,
+          title: c.title || `Criterion ${cIdx + 1}`,
+          maxMarks: typeof c.maxMarks === "number" ? c.maxMarks : 5,
+          description: c.description || "",
+          levels: c.levels || [],
+        }));
+        const totalRMarks = critList.reduce((sum: number, c: any) => sum + c.maxMarks, 0);
+
+        formattedRubric = {
+          id: `rub_${Date.now()}_${idx}`,
+          name: q.rubric.name || "Auto-Generated ParaLearn Rubric",
+          source: "AUTO_GENERATED",
+          criteria: critList,
+          totalMarks: totalRMarks > 0 ? totalRMarks : (q.marks || defaultMarks),
+        };
       }
 
       return {
         id: `pln_ai_q_${Date.now()}_${idx}`,
         prompt: q.prompt || q.question || `Question ${idx + 1}`,
         type: qType,
-        marks: q.marks || 1.0,
+        section: q.section || (qType === "LONG_ESSAY" ? "Section C: Long Essay" : qType === "SHORT_ESSAY" ? "Section B: Short Answers" : "Section A: Multiple Choice"),
+        marks: q.marks || (formattedRubric ? formattedRubric.totalMarks : defaultMarks),
         difficulty: q.difficulty || difficulty,
         citation: q.citation || "",
         explanation: q.explanation || "",
         options,
+        minWords: q.minWords || (qType === "LONG_ESSAY" ? 150 : qType === "SHORT_ESSAY" ? 20 : undefined),
+        maxWords: q.maxWords || (qType === "LONG_ESSAY" ? 800 : qType === "SHORT_ESSAY" ? 100 : undefined),
+        modelAnswer: q.modelAnswer || "",
+        keyTerms: Array.isArray(q.keyTerms) ? q.keyTerms : [],
+        rubric: formattedRubric,
       };
     });
 
@@ -232,6 +338,7 @@ Return the result STRICTLY as a valid JSON object matching this schema:
       engine: "ParaLearn AI Engine",
       modelUsed: modelName,
       difficulty,
+      formatMode,
       totalGenerated: formattedQuestions.length,
       questions: formattedQuestions,
     });
