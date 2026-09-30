@@ -30,11 +30,11 @@ export default function CbtApiDocsPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href="/"
+              href="/cbt"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#641bc4] transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Back to ParaLearn
+              Back to CBT Workspace
             </Link>
             <span className="text-slate-300">/</span>
             <div className="flex items-center gap-2">

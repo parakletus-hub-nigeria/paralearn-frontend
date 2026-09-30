@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/reduxToolKit/store";
@@ -9,6 +10,7 @@ import {
   Building2, 
   UserCheck, 
   ArrowRight, 
+  ArrowLeft,
   Lock, 
   Mail, 
   Eye, 
@@ -189,6 +191,17 @@ export default function CbtAuthGateway() {
               : "Set up your independent testing centre in 60 seconds with 30 free candidates."
             : "Sign in with your registered ParaLearn school credentials."}
         </p>
+      </div>
+
+      {/* Back to CBT Portal Link */}
+      <div className="w-full max-w-md mb-3 flex items-center justify-start">
+        <Link
+          href="/cbt"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#641bc4] transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to CBT Portal</span>
+        </Link>
       </div>
 
       {/* Main Auth Card */}
