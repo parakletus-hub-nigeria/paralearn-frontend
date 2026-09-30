@@ -76,7 +76,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
             Official Examination Result Slip
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
-            ParaLearn Assessment &bull; Room Code: <strong className="font-mono">{examCode.toUpperCase()}</strong>
+            Exam Room Code: <strong className="font-mono text-violet-700">{examCode.toUpperCase()}</strong>
           </p>
         </div>
 
@@ -183,6 +183,11 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
             </Button>
           </div>
 
+        </div>
+
+        {/* Footnote */}
+        <div className="bg-slate-50 border-t border-[var(--border-fine)] px-6 py-2.5 text-center text-[10px] text-[var(--text-secondary)] print:hidden">
+          Certified via <strong className="text-violet-700">ParaLearn CBT</strong> &bull; Digitally Signed Result Verification Token
         </div>
 
       </div>

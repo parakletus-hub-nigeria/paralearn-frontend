@@ -247,17 +247,21 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
               <span>{metadata.durationMins} Minutes</span>
             </div>
           </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-2">
+            <Laptop className="w-3.5 h-3.5 text-violet-600" />
+            <span>Exam Centre: <strong>{metadata.institutionName}</strong></span>
+          </div>
           
           <h1 className="text-xl sm:text-2xl font-bold font-sans tracking-tight text-[var(--foreground)]">
             {metadata.title}
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5">
-            {metadata.institutionName}
+            Room Code: <strong className="font-mono text-violet-700">{metadata.code}</strong> &bull; Duration: {metadata.durationMins} Mins
           </p>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleStartExam} className="p-6 sm:p-7 space-y-6">
+        <form onSubmit={handleStartExam} className="p-5 sm:p-7 space-y-6">
           
           {/* Candidate Name */}
           <div className="space-y-1.5">
@@ -360,7 +364,7 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
 
         {/* Footer info */}
         <div className="bg-[var(--surface-subtle)] border-t border-[var(--border-fine)] px-6 py-3 text-center text-[11px] text-[var(--text-secondary)]">
-          ParaLearn Assessment Engine &bull; Zero-Friction Standalone Testing
+          Powered by <strong className="text-violet-700">ParaLearn CBT</strong> &bull; Secure Standalone Assessment Engine
         </div>
       </div>
     </div>

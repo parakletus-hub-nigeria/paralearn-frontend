@@ -8,7 +8,7 @@
  * decision lives in exactly one place instead of drifting across four.
  */
 
-export type SiteKey = "paralearn" | "sabinote";
+export type SiteKey = "paralearn" | "sabinote" | "cbt";
 
 interface SiteEntry {
   key: SiteKey;
@@ -42,11 +42,23 @@ export const SITES: Record<SiteKey, SiteEntry> = {
       "SabiNote generates structured, NERDC curriculum-aligned lesson notes with AI, so teachers spend less time planning and more time teaching.",
     sameAs: [],
   },
+  cbt: {
+    key: "cbt",
+    name: "ParaLearn CBT",
+    baseUrl: process.env.NEXT_PUBLIC_CBT_URL || "https://cbt.pln.ng",
+    hosts: ["cbt.pln.ng", "cbt.paralearn.com", "cbt.paralearn.ng"],
+    description:
+      "ParaLearn CBT is an offline-resilient, high-concurrency Computer-Based Testing platform for schools, JAMB mock exams, WAEC preparation, and tutorial centres with AI question authoring, real-time proctoring telemetry, and instant grading.",
+    sameAs: [
+      "https://x.com/paralearn",
+      "https://www.linkedin.com/company/paralearn/",
+    ],
+  },
 };
 
 /**
  * Hostname (no port) -> which site's marketing surface should render, or null
- * for app/tenant hosts (school.pln.ng, app.pln.ng, cbt.pln.ng, localhost dev,
+ * for private app/tenant hosts (school.pln.ng, app.pln.ng, localhost dev,
  * etc.) that carry no public marketing content of their own.
  */
 export function siteForHost(hostname: string): SiteKey | null {

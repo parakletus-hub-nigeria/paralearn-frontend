@@ -1045,7 +1045,7 @@ export default function CbtPortalPage() {
         </div>
         <div className="flex items-center gap-6">
           <Link href="/cbt/api-docs" className="hover:text-[var(--violet-ink)]">
-            Developer API v1.1.0
+            Developer API v1.2.0
           </Link>
           <Link href="/cbt/auth" className="hover:text-[var(--violet-ink)]">
             Examiner Portal
@@ -1055,6 +1055,68 @@ export default function CbtPortalPage() {
           </Link>
         </div>
       </footer>
+
+      {/* ── JSON-LD STRUCTURED DATA FOR SEARCH ENGINES & LLMS ───────────── */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([
+            {
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "ParaLearn CBT - High-Concurrency Computer-Based Testing Platform",
+              "applicationCategory": "EducationalApplication",
+              "operatingSystem": "Web, iOS, Android, Desktop",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD",
+                "description": "30 Free Credits on registration for standalone tutorial centres, academies, and schools."
+              },
+              "description": "Offline-resilient computer-based testing (CBT) engine for schools, JAMB mock examinations, WAEC preparation, and tertiary assessments with real-time anti-cheat telemetry and automated grading.",
+              "url": "https://cbt.pln.ng"
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                {
+                  "@type": "Question",
+                  "name": "Can ParaLearn CBT operate offline or during unstable network connections?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes. ParaLearn CBT features an offline-resilient local sync layer with background retry queues. It continuously persists candidate progress and answers in browser storage and cookie layers, ensuring zero answer loss during internet drops."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "How does ParaLearn AI author questions from lecture notes or slides?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "ParaLearn AI multimodal ingestion extracts context and concepts directly from uploaded lecture notes (PDF, Word, TXT), presentation slide decks (PPTX), audio lectures (MP3, WAV), or classroom video recordings (MP4), calibrating question difficulty across Bloom's Taxonomy."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "How does anti-cheat invigilation and proctoring work on ParaLearn CBT?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "ParaLearn CBT monitors real-time browser visibility and window focus telemetry, flagging tab switches, screen minimization, and multi-monitor cheating. Configurable malpractice thresholds automatically lock or submit attempts."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Can an exam centre schedule multiple exams across different dates and times?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes. Examiners can schedule multiple concurrent or staggered exams with customized start/end dates, timers, access PINs, question/option shuffling, and live invigilator monitoring."
+                  }
+                }
+              ]
+            }
+          ])
+        }}
+      />
 
     </div>
   );

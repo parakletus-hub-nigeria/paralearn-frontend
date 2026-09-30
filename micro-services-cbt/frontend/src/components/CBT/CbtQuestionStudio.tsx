@@ -22,12 +22,23 @@ import {
   Radio,
   ExternalLink,
   MonitorCheck,
-  Sparkles
+  Sparkles,
+  Layers,
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -101,6 +112,7 @@ export default function CbtQuestionStudio({
   // Bulk Upload & AI Studio Modal State
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isMobilePaletteOpen, setIsMobilePaletteOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -285,70 +297,112 @@ export default function CbtQuestionStudio({
           </div>
         </div>
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2">
+        {/* Right: Actions (Adaptive Desktop & Mobile) */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
           
-          {/* 1-Click Copy Candidate Link */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopyShareLink}
-            className="h-8 px-3 text-xs font-semibold border-[var(--border-fine)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] rounded-[var(--radius-md)] flex items-center gap-1.5"
-          >
-            {copiedLink ? <Check className="w-3.5 h-3.5 text-[var(--emerald-signal)]" /> : <Copy className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{copiedLink ? "Copied Link!" : "Copy Link"}</span>
-          </Button>
-
-          {/* Live Monitor Link */}
-          <Link href={monitorHref}>
+          {/* Desktop Full Actions (>= lg) */}
+          <div className="hidden lg:flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-3 text-xs font-semibold border-[var(--emerald-signal)]/30 text-[var(--emerald-signal)] hover:bg-[var(--emerald-tint)]/40 rounded-[var(--radius-md)] flex items-center gap-1.5"
+              onClick={handleCopyShareLink}
+              className="h-8 px-3 text-xs font-semibold border-[var(--border-fine)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] rounded-[var(--radius-md)] flex items-center gap-1.5"
             >
-              <MonitorCheck className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Live Monitor</span>
+              {copiedLink ? <Check className="w-3.5 h-3.5 text-[var(--emerald-signal)]" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedLink ? "Copied Link!" : "Copy Link"}</span>
             </Button>
-          </Link>
 
-          {/* Gemini AI Generator Button */}
+            <Link href={monitorHref}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs font-semibold border-[var(--emerald-signal)]/30 text-[var(--emerald-signal)] hover:bg-[var(--emerald-tint)]/40 rounded-[var(--radius-md)] flex items-center gap-1.5"
+              >
+                <MonitorCheck className="w-3.5 h-3.5" />
+                <span>Live Monitor</span>
+              </Button>
+            </Link>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSettingsOpen(true)}
+              className="h-8 px-3 text-xs font-semibold border-[var(--border-fine)] rounded-[var(--radius-md)]"
+            >
+              <Sliders className="w-3.5 h-3.5 mr-1" />
+              <span>Settings</span>
+            </Button>
+          </div>
+
+          {/* ParaLearn AI Generator Button (Visible across all screens) */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsAiModalOpen(true)}
-            className="h-8 px-3 text-xs font-bold border-violet-200 text-violet-700 bg-violet-50/70 hover:bg-violet-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
+            className="h-8 px-2.5 sm:px-3 text-xs font-bold border-violet-200 text-violet-700 bg-violet-50/70 hover:bg-violet-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
+            title="Generate with ParaLearn AI"
           >
             <Sparkles className="w-3.5 h-3.5 text-violet-600 animate-pulse" />
-            <span className="hidden sm:inline">Gemini AI</span>
+            <span>ParaLearn AI</span>
           </Button>
 
-          {/* Settings Drawer Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsSettingsOpen(true)}
-            className="h-8 px-3 text-xs font-semibold border-[var(--border-fine)] rounded-[var(--radius-md)]"
-          >
-            <Sliders className="w-3.5 h-3.5 mr-1" />
-            <span className="hidden sm:inline">Settings</span>
-          </Button>
-
-          {/* Publish / Save Button */}
+          {/* Save Button (Primary action on all screens) */}
           <Button
             size="sm"
             onClick={handleSaveQuestions}
-            className="h-8 px-4 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-xs"
+            className="h-8 px-3 sm:px-4 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-xs shrink-0"
           >
-            Save Changes
+            Save
           </Button>
+
+          {/* Mobile Dropdown Menu (< lg) */}
+          <div className="lg:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-[var(--radius-md)] border-[var(--border-fine)] text-slate-600"
+                  title="More actions"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => setIsMobilePaletteOpen(true)} className="text-xs font-medium cursor-pointer">
+                  <Layers className="w-4 h-4 mr-2 text-violet-600" />
+                  <span>Question Palette ({questions.length})</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopyShareLink} className="text-xs font-medium cursor-pointer">
+                  <Copy className="w-4 h-4 mr-2 text-slate-500" />
+                  <span>Copy Student Link</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={monitorHref} className="text-xs font-medium cursor-pointer flex items-center">
+                    <MonitorCheck className="w-4 h-4 mr-2 text-emerald-600" />
+                    <span>Open Live Monitor</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setIsBulkOpen(true)} className="text-xs font-medium cursor-pointer">
+                  <Upload className="w-4 h-4 mr-2 text-slate-500" />
+                  <span>Bulk Import (.xlsx)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsSettingsOpen(true)} className="text-xs font-medium cursor-pointer">
+                  <Sliders className="w-4 h-4 mr-2 text-slate-500" />
+                  <span>Delivery Settings</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
       {/* ── 2-PANE STUDIO WORKSPACE ──────────────────────────────────────── */}
-      <div className="flex-1 flex max-w-7xl w-full mx-auto p-4 sm:p-6 gap-6 items-start">
+      <div className="flex-1 flex max-w-7xl w-full mx-auto px-3 py-4 sm:p-6 gap-6 items-start">
         
-        {/* Left Pane: Question Palette (300px, Sticky) */}
-        <aside className="w-72 sm:w-80 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] flex flex-col h-[calc(100vh-90px)] sticky top-18 overflow-hidden">
+        {/* Left Pane: Question Palette (Hidden on mobile < md, visible on desktop >= md) */}
+        <aside className="hidden md:flex w-72 sm:w-80 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] flex-col h-[calc(100vh-90px)] sticky top-18 overflow-hidden shrink-0">
           
           {/* Palette Top Toolbar */}
           <div className="p-3.5 border-b border-[var(--border-fine)] bg-[var(--surface-muted)] flex items-center justify-between">
@@ -367,7 +421,7 @@ export default function CbtQuestionStudio({
                 size="sm"
                 onClick={() => setIsAiModalOpen(true)}
                 className="h-7 px-2 text-[11px] font-semibold border-violet-200 text-violet-700 bg-violet-50/60 hover:bg-violet-100"
-                title="Generate with Gemini 3 AI"
+                title="Generate with ParaLearn AI"
               >
                 <Sparkles className="w-3 h-3 mr-1 text-violet-600" />
                 <span>AI</span>
@@ -417,7 +471,7 @@ export default function CbtQuestionStudio({
                     className="h-7 text-[11px] font-semibold border-violet-200 text-violet-700 bg-violet-50/60 hover:bg-violet-100"
                   >
                     <Sparkles className="w-3 h-3 mr-1 text-violet-600" />
-                    <span>Gemini AI Gen</span>
+                    <span>ParaLearn AI</span>
                   </Button>
                 </div>
               </div>
@@ -495,7 +549,7 @@ export default function CbtQuestionStudio({
               <div className="space-y-1.5 max-w-md mx-auto">
                 <h3 className="text-base font-bold text-[var(--foreground)]">No questions in this examination yet</h3>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                  Start authoring your assessment by creating an individual question, bulk-importing questions, or extracting directly from slides, notes, audio, or video with Gemini AI.
+                  Start authoring your assessment by creating an individual question, bulk-importing questions, or extracting directly from slides, notes, audio, or video with ParaLearn AI.
                 </p>
               </div>
               <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
@@ -513,7 +567,7 @@ export default function CbtQuestionStudio({
                   className="h-9 px-4 text-xs font-bold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-[var(--radius-md)] shadow-xs inline-flex items-center gap-1.5"
                 >
                   <Sparkles className="w-4 h-4" />
-                  <span>Generate with Gemini 3 AI</span>
+                  <span>Generate with ParaLearn AI</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -811,7 +865,162 @@ export default function CbtQuestionStudio({
         </DialogContent>
       </Dialog>
 
-      {/* ── GEMINI 3 MULTIMODAL AI QUESTION MODAL ───────────────────────── */}
+      {/* ── MOBILE BOTTOM FLOATING ACTION BAR (< md) ──────────────────────── */}
+      <div className="md:hidden fixed bottom-4 left-0 right-0 z-20 px-4 flex items-center justify-between pointer-events-none">
+        <div className="mx-auto flex items-center gap-1 bg-slate-900/95 backdrop-blur-md text-white p-1.5 rounded-full shadow-2xl pointer-events-auto border border-slate-700/60">
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={activeIdx === 0}
+            onClick={() => setActiveIdx((prev) => Math.max(0, prev - 1))}
+            className="h-8 w-8 text-slate-300 hover:text-white hover:bg-slate-800 rounded-full"
+            title="Previous question"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsMobilePaletteOpen(true)}
+            className="h-8 px-3 text-xs font-semibold text-white hover:bg-slate-800 rounded-full flex items-center gap-1.5"
+          >
+            <Layers className="w-3.5 h-3.5 text-violet-400" />
+            <span>Q {questions.length > 0 ? `${activeIdx + 1}/${questions.length}` : "0"}</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={questions.length === 0 || activeIdx >= questions.length - 1}
+            onClick={() => setActiveIdx((prev) => Math.min(questions.length - 1, prev + 1))}
+            className="h-8 w-8 text-slate-300 hover:text-white hover:bg-slate-800 rounded-full"
+            title="Next question"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+
+          <div className="h-4 w-px bg-slate-700 mx-0.5" />
+
+          <Button
+            size="sm"
+            onClick={() => handleAddNewQuestion("MCQ")}
+            className="h-8 px-2.5 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-full flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* ── MOBILE QUESTION PALETTE SHEET (< md) ─────────────────────────── */}
+      <Sheet open={isMobilePaletteOpen} onOpenChange={setIsMobilePaletteOpen}>
+        <SheetContent side="bottom" className="h-[80vh] bg-white border-t border-[var(--border-fine)] p-0 flex flex-col rounded-t-2xl">
+          <SheetHeader className="p-4 border-b border-[var(--border-fine)] flex flex-row items-center justify-between shrink-0">
+            <div>
+              <SheetTitle className="text-base font-bold text-[var(--foreground)]">
+                Question Palette ({questions.length})
+              </SheetTitle>
+              <SheetDescription className="text-xs text-[var(--text-secondary)] font-mono">
+                Total: {totalMarks} Marks
+              </SheetDescription>
+            </div>
+            <div className="flex items-center gap-1.5 pr-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsMobilePaletteOpen(false);
+                  setIsAiModalOpen(true);
+                }}
+                className="h-8 px-2.5 text-xs font-semibold border-violet-200 text-violet-700 bg-violet-50/60"
+              >
+                <Sparkles className="w-3.5 h-3.5 mr-1 text-violet-600" />
+                <span>AI</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  handleAddNewQuestion("MCQ");
+                }}
+                className="h-8 px-3 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                <span>Add</span>
+              </Button>
+            </div>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-y-auto p-3 space-y-1.5 divide-y divide-[var(--border-fine)]/60">
+            {questions.length === 0 ? (
+              <div className="py-12 text-center text-xs text-[var(--text-secondary)]">
+                No questions yet. Tap "+ Add" to create your first question.
+              </div>
+            ) : (
+              questions.map((q, idx) => {
+                const isActive = idx === activeIdx;
+                return (
+                  <div
+                    key={q.id}
+                    onClick={() => {
+                      setActiveIdx(idx);
+                      setIsMobilePaletteOpen(false);
+                    }}
+                    className={`p-3 rounded-lg cursor-pointer transition-all flex items-start justify-between gap-2 ${
+                      isActive
+                        ? "bg-[var(--violet-tint)] text-[var(--violet-ink)] font-semibold shadow-2xs"
+                        : "hover:bg-[var(--surface-subtle)] text-[var(--foreground)]"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <span className="w-6 h-6 rounded bg-white border border-[var(--border-fine)] text-xs font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs truncate font-normal leading-tight">
+                          {q.prompt || "Untitled Question"}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 uppercase">
+                            {q.type}
+                          </Badge>
+                          {q.difficulty && (
+                            <Badge variant="outline" className={`text-[9px] font-mono px-1 py-0 uppercase capitalize ${
+                              q.difficulty === "simple"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : q.difficulty === "hard"
+                                ? "bg-rose-50 text-rose-700 border-rose-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200"
+                            }`}>
+                              {q.difficulty}
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-[var(--text-secondary)] font-mono">
+                            {q.marks}m
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteQuestion(idx);
+                      }}
+                      className="text-[var(--text-secondary)] hover:text-rose-600 p-1.5"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── PARALEARN AI QUESTION MODAL ─────────────────────────────────── */}
       <CbtAiQuestionModal
         isOpen={isAiModalOpen}
         onClose={() => setIsAiModalOpen(false)}

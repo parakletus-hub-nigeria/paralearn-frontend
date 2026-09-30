@@ -62,7 +62,7 @@ export default function CbtAiQuestionModal({
   const [questionCount, setQuestionCount] = useState<number>(10);
   
   // Generation feedback
-  const [loadingMessage, setLoadingMessage] = useState("Extracting content and context with Gemini 3...");
+  const [loadingMessage, setLoadingMessage] = useState("Extracting content and context with ParaLearn AI...");
   const [generatedQuestions, setGeneratedQuestions] = useState<StudioQuestion[]>([]);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set());
 
@@ -149,7 +149,7 @@ export default function CbtAiQuestionModal({
     }
 
     setStep("generating");
-    setLoadingMessage("Parsing document / media context with Gemini 3...");
+    setLoadingMessage("Parsing document / media context with ParaLearn AI...");
 
     // Stagger loading messages for friendly UX
     const timer1 = setTimeout(() => {
@@ -202,7 +202,7 @@ export default function CbtAiQuestionModal({
       // Select all by default
       setSelectedQuestionIds(new Set(questionsList.map((q) => q.id)));
       setStep("review");
-      toast.success(`Generated ${questionsList.length} questions successfully with Gemini 3!`);
+      toast.success(`Generated ${questionsList.length} questions successfully with ParaLearn AI!`);
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "An error occurred during AI generation.");
@@ -256,21 +256,21 @@ export default function CbtAiQuestionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl border-stone-200">
+      <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[92vh] flex flex-col p-0 overflow-hidden rounded-2xl border-stone-200">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-sm shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-base font-bold text-stone-900">
-                  AI Question Studio
+                <DialogTitle className="text-sm sm:text-base font-bold text-stone-900">
+                  ParaLearn AI Studio
                 </DialogTitle>
                 <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 border-violet-200 text-[10px] font-mono uppercase tracking-wide">
-                  Powered by Gemini 3
+                  ParaLearn AI Engine
                 </Badge>
               </div>
               <DialogDescription className="text-xs text-stone-500">
@@ -290,11 +290,11 @@ export default function CbtAiQuestionModal({
                 <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
                   1. Choose Source Content Type
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setSourceType("file")}
-                    className={`p-3.5 rounded-xl border text-left transition-all flex items-start gap-3 ${
+                    className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all flex items-start gap-3 ${
                       sourceType === "file"
                         ? "border-violet-600 bg-violet-50/40 ring-2 ring-violet-500/20"
                         : "border-stone-200 hover:bg-stone-50"
@@ -464,13 +464,13 @@ export default function CbtAiQuestionModal({
                     {questionCount} Questions
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
                   {[5, 10, 15, 20, 25, 30].map((num) => (
                     <button
                       key={num}
                       type="button"
                       onClick={() => setQuestionCount(num)}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                      className={`py-1.5 text-xs font-bold rounded-lg border transition-all ${
                         questionCount === num
                           ? "bg-stone-900 text-white border-stone-900 shadow-xs"
                           : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
@@ -497,7 +497,7 @@ export default function CbtAiQuestionModal({
 
               <div className="space-y-2 max-w-sm mx-auto">
                 <h3 className="text-sm font-bold text-stone-900">
-                  Gemini 3 Multimodal Ingestion
+                  ParaLearn Multimodal Ingestion
                 </h3>
                 <p className="text-xs text-stone-500 font-medium">
                   {loadingMessage}

@@ -375,14 +375,14 @@ export default function CbtApiDocsPage() {
               </div>
             </div>
 
-            {/* Endpoint 4.2: Multimodal AI Question Extraction (Gemini 3) */}
+            {/* Endpoint 4.2: Multimodal AI Question Extraction (ParaLearn AI) */}
             <div className="border border-violet-200 rounded-xl overflow-hidden bg-white shadow-2xs">
               <div className="bg-violet-50/60 px-4 py-2.5 border-b border-violet-100 flex items-center justify-between">
                 <div className="flex items-center gap-2 font-mono text-xs font-bold">
                   <span className="px-2 py-0.5 bg-violet-600 text-white rounded">POST</span>
                   <span className="text-slate-800">/api/cbt/ai/generate-questions</span>
                 </div>
-                <span className="text-xs font-bold text-violet-700">Multimodal Gemini 3 AI Ingestion</span>
+                <span className="text-xs font-bold text-violet-700">ParaLearn Multimodal AI Ingestion</span>
               </div>
               <div className="p-4 space-y-3 font-mono text-xs">
                 <p className="font-sans text-xs text-slate-600 leading-relaxed">
@@ -400,12 +400,12 @@ export default function CbtApiDocsPage() {
                 <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
 {`{
   "success": true,
-  "modelUsed": "gemini-3-flash-preview",
+  "engine": "ParaLearn AI Engine",
   "difficulty": "balanced",
   "totalGenerated": 10,
   "questions": [
     {
-      "id": "gemini_q_17907502",
+      "id": "pln_ai_q_17907502",
       "prompt": "According to Newton's Second Law, if the net force acting on an object is doubled while its mass remains constant, the acceleration will:",
       "type": "MCQ",
       "marks": 1.0,
@@ -654,7 +654,7 @@ function verifyWebhook(rawBody, signature, secret) {
                     <span className="font-mono font-extrabold text-sm text-[#641bc4] bg-white px-2 py-0.5 rounded border border-violet-200">
                       v1.2.0
                     </span>
-                    <span className="font-bold text-xs text-slate-900">Multimodal Gemini 3 AI Question Generation</span>
+                    <span className="font-bold text-xs text-slate-900">Multimodal ParaLearn AI Question Generation</span>
                   </div>
                   <span className="text-[11px] font-mono text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Current Stable</span>
                 </div>
@@ -662,7 +662,7 @@ function verifyWebhook(rawBody, signature, secret) {
                   <li>Added <code>POST /api/cbt/ai/generate-questions</code> for multimodal ingestion of documents (PDF, Word, TXT), slides (PPTX), audio (MP3, WAV), and video (MP4).</li>
                   <li>Integrated Bloom&apos;s Taxonomy difficulty tuning: <code>simple</code> (recall), <code>intermediate</code> (application), <code>hard</code> (synthesis), or <code>balanced</code> mix.</li>
                   <li>Automated psychometric distractor formulation with grounded citations (page/slide numbers or video timestamps).</li>
-                  <li>Interactive AI Question Studio modal with preview, inline editing, and 1-click palette import.</li>
+                  <li>Interactive ParaLearn AI Question Studio modal with preview, inline editing, and 1-click palette import.</li>
                 </ul>
               </div>
 

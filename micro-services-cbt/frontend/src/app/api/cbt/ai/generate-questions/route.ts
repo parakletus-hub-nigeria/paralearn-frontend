@@ -216,7 +216,7 @@ Return the result STRICTLY as a valid JSON object matching this schema:
       }
 
       return {
-        id: `gemini_q_${Date.now()}_${idx}`,
+        id: `pln_ai_q_${Date.now()}_${idx}`,
         prompt: q.prompt || q.question || `Question ${idx + 1}`,
         type: qType,
         marks: q.marks || 1.0,
@@ -229,16 +229,17 @@ Return the result STRICTLY as a valid JSON object matching this schema:
 
     return NextResponse.json({
       success: true,
+      engine: "ParaLearn AI Engine",
       modelUsed: modelName,
       difficulty,
       totalGenerated: formattedQuestions.length,
       questions: formattedQuestions,
     });
   } catch (error: any) {
-    console.error("Gemini CBT Question Generation Error:", error);
+    console.error("ParaLearn AI CBT Question Generation Error:", error);
     return NextResponse.json(
       {
-        error: error?.message || "Failed to generate questions using Gemini AI.",
+        error: error?.message || "Failed to generate questions using ParaLearn AI Engine.",
       },
       { status: 500 }
     );

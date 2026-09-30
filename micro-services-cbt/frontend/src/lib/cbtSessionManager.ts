@@ -43,16 +43,29 @@ export interface ExaminerWorkspace {
   };
 }
 
+import Cookies from "js-cookie";
+
 const STORAGE_PREFIX = "paralearn_cbt_session_";
 export const CBT_API_BASE = process.env.NEXT_PUBLIC_CBT_API_URL || "http://localhost:4000";
 
-// ── Examiner Session Management (Auto-SignIn & Auth Persistence) ────────────
+export const CBT_COOKIE_SESSION = "pln_cbt_session";
+export const CBT_COOKIE_ATTEMPT = "pln_cbt_active_attempt";
+
+// ── Examiner Session Management (Auto-SignIn & Dual-Layer Cookie Persistence) ──
 export const saveExaminerSession = (workspace: ExaminerWorkspace): void => {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem("paralearn_cbt_standalone_workspace", JSON.stringify(workspace));
+    const raw = JSON.stringify(workspace);
+    localStorage.setItem("paralearn_cbt_standalone_workspace", raw);
     localStorage.setItem("paralearn_cbt_user_type", "STANDALONE_TUTOR");
     localStorage.setItem("paralearn_cbt_examiner_email", workspace.ownerEmail);
+
+    // Dual-layer Cookie persistence (7 days, Lax)
+    Cookies.set(CBT_COOKIE_SESSION, raw, {
+      expires: 7,
+      sameSite: "lax",
+      path: "/",
+    });
   } catch (err) {
     console.error("[CBT Session] Failed to save examiner session:", err);
   }
@@ -61,7 +74,16 @@ export const saveExaminerSession = (workspace: ExaminerWorkspace): void => {
 export const getExaminerSession = (): ExaminerWorkspace | null => {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem("paralearn_cbt_standalone_workspace");
+    let raw = localStorage.getItem("paralearn_cbt_standalone_workspace");
+    if (!raw) {
+      // Fallback to cookie
+      raw = Cookies.get(CBT_COOKIE_SESSION) || null;
+      if (raw) {
+        try {
+          localStorage.setItem("paralearn_cbt_standalone_workspace", raw);
+        } catch {}
+      }
+    }
     if (!raw) return null;
     return JSON.parse(raw) as ExaminerWorkspace;
   } catch {
@@ -75,6 +97,7 @@ export const clearExaminerSession = (): void => {
     localStorage.removeItem("paralearn_cbt_standalone_workspace");
     localStorage.removeItem("paralearn_cbt_user_type");
     localStorage.removeItem("paralearn_cbt_examiner_email");
+    Cookies.remove(CBT_COOKIE_SESSION, { path: "/" });
   } catch (err) {
     console.error("[CBT Session] Failed to clear examiner session:", err);
   }
@@ -95,6 +118,13 @@ export const saveCandidateSession = (session: CandidateSession): void => {
     if (session.attemptId) {
       localStorage.setItem("paralearn_cbt_active_attempt_id", session.attemptId);
     }
+
+    // Set crash-recovery cookie (24 hours)
+    Cookies.set(CBT_COOKIE_ATTEMPT, `${session.examCode.trim().toUpperCase()}:${session.candidatePin.trim()}`, {
+      expires: 1,
+      sameSite: "lax",
+      path: "/",
+    });
   } catch (err) {
     console.error("[CBT Session] Failed to save session locally:", err);
   }
@@ -103,8 +133,18 @@ export const saveCandidateSession = (session: CandidateSession): void => {
 export const loadCandidateSession = (examCode: string, pin?: string): CandidateSession | null => {
   if (typeof window === "undefined") return null;
   try {
-    const candidatePin = pin || localStorage.getItem("paralearn_cbt_active_pin") || "default";
-    const key = getSessionStorageKey(examCode, candidatePin);
+    let candidatePin = pin || localStorage.getItem("paralearn_cbt_active_pin");
+    if (!candidatePin) {
+      const attemptCookie = Cookies.get(CBT_COOKIE_ATTEMPT);
+      if (attemptCookie && attemptCookie.includes(":")) {
+        const parts = attemptCookie.split(":");
+        if (parts[0] === examCode.trim().toUpperCase()) {
+          candidatePin = parts[1];
+        }
+      }
+    }
+    const finalPin = candidatePin || "default";
+    const key = getSessionStorageKey(examCode, finalPin);
     const data = localStorage.getItem(key);
     if (!data) return null;
     return JSON.parse(data) as CandidateSession;
@@ -122,6 +162,7 @@ export const clearCandidateSession = (examCode: string, pin: string = "default")
     localStorage.removeItem("paralearn_cbt_active_exam");
     localStorage.removeItem("paralearn_cbt_active_pin");
     localStorage.removeItem("paralearn_cbt_active_attempt_id");
+    Cookies.remove(CBT_COOKIE_ATTEMPT, { path: "/" });
   } catch (err) {
     console.error("[CBT Session] Failed to clear session:", err);
   }

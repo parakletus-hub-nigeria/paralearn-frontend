@@ -537,6 +537,14 @@ export default function CandidateLiveExam({
           </div>
         </main>
 
+        {/* Mobile Backdrop Overlay (< lg) */}
+        {isMobilePaletteOpen && (
+          <div
+            onClick={() => setIsMobilePaletteOpen(false)}
+            className="fixed inset-0 bg-slate-900/40 z-30 lg:hidden backdrop-blur-2xs transition-opacity"
+          />
+        )}
+
         {/* Right Column: Question Palette Grid (300px, Sticky) */}
         <aside
           className={`fixed lg:static inset-y-0 right-0 z-40 w-72 sm:w-80 bg-white border-l lg:border border-[var(--border-fine)] lg:rounded-[var(--radius-lg)] p-5 shadow-[var(--shadow-dialog)] lg:shadow-[var(--shadow-card)] flex flex-col transition-transform ${
@@ -666,6 +674,11 @@ export default function CandidateLiveExam({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── FOOTER WATERMARK ─────────────────────────────────────────────── */}
+      <footer className="py-3 px-4 border-t border-[var(--border-fine)] bg-white/60 text-center text-[11px] text-[var(--text-secondary)]">
+        Powered by <strong className="text-violet-700">ParaLearn CBT</strong> &bull; High-Concurrency Assessment Engine
+      </footer>
 
     </div>
   );

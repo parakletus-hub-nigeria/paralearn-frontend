@@ -421,9 +421,9 @@ export default function CandidatesPage() {
           </div>
         </div>
 
-        {/* ── CANDIDATES TABLE ──────────────────────────────────────────────── */}
+        {/* ── CANDIDATES TABLE (Desktop) & CARDS (Mobile) ────────────────────── */}
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
                 <tr>
@@ -583,6 +583,135 @@ export default function CandidatesPage() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card List (< md) */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {filteredCandidates.length === 0 ? (
+              <div className="py-12 px-4 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
+                  <Users className="w-6 h-6" />
+                </div>
+                <h4 className="font-bold text-sm text-slate-900">
+                  {searchQuery || statusFilter !== "ALL" ? "No matching candidates" : "No candidates enrolled yet"}
+                </h4>
+                <p className="text-xs text-slate-500">
+                  {searchQuery || statusFilter !== "ALL"
+                    ? "Try adjusting your search query or status filter."
+                    : "Enrol candidates to generate 6-digit access PINs and passes."}
+                </p>
+                {!searchQuery && statusFilter === "ALL" && (
+                  <Button
+                    size="sm"
+                    onClick={() => setIsAddOpen(true)}
+                    className="h-8 text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white rounded-lg"
+                  >
+                    <UserPlus className="w-3.5 h-3.5 mr-1" />
+                    <span>Enrol First Candidate</span>
+                  </Button>
+                )}
+              </div>
+            ) : (
+              filteredCandidates.map((candidate) => (
+                <div key={candidate.id} className="p-4 space-y-3 bg-white">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-sm text-slate-900 truncate">{candidate.name}</h4>
+                      <p className="font-mono text-[11px] text-slate-500">
+                        {candidate.regNumber} &bull; {candidate.phone}
+                      </p>
+                    </div>
+                    <div className="shrink-0">
+                      {candidate.status === "COMPLETED" && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          Finished
+                        </span>
+                      )}
+                      {candidate.status === "IN_PROGRESS" && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-[#641bc4]">
+                          <Clock className="w-3 h-3 text-[#641bc4] animate-spin" />
+                          Testing
+                        </span>
+                      )}
+                      {candidate.status === "ENROLLED" && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          PIN Ready
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-semibold">Exam Room</span>
+                      <div className="font-mono font-bold text-slate-700 truncate">{candidate.roomCode}</div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-semibold">Access PIN</span>
+                      <div className="flex items-center gap-1.5 font-mono text-xs font-black text-[#641bc4]">
+                        <span>{candidate.pin}</span>
+                        <button
+                          onClick={() => handleCopyPin(candidate.pin)}
+                          className="p-1 rounded text-slate-400 hover:text-slate-700"
+                          title="Copy PIN"
+                        >
+                          {copiedPin === candidate.pin ? (
+                            <Check className="w-3 h-3 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {candidate.score !== undefined && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-slate-500">Score:</span>
+                      <strong className="text-slate-900 font-bold font-mono">{candidate.score}%</strong>
+                      <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px]">
+                        {candidate.grade}
+                      </Badge>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCopyDirectLink(candidate)}
+                      className="flex-1 h-8 text-[11px] font-semibold border-slate-200"
+                    >
+                      {copiedLink === candidate.id ? (
+                        <Check className="w-3 h-3 text-emerald-600 mr-1" />
+                      ) : (
+                        <Copy className="w-3 h-3 mr-1 text-slate-400" />
+                      )}
+                      <span>{copiedLink === candidate.id ? "Copied" : "Copy Link"}</span>
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSendWhatsApp(candidate)}
+                      className="flex-1 h-8 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
+                    >
+                      <MessageCircle className="w-3 h-3 text-emerald-600 mr-1" />
+                      <span>WhatsApp</span>
+                    </Button>
+
+                    <button
+                      onClick={() => handleDeleteCandidate(candidate.id)}
+                      className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Remove candidate"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </main>

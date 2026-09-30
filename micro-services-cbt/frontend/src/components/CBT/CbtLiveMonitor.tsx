@@ -230,9 +230,9 @@ export default function CbtLiveMonitor({
 
         </div>
 
-        {/* Live Candidate Table */}
+        {/* Live Candidate Table (Desktop) & Cards (Mobile) */}
         <div className="bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[var(--surface-muted)] border-b border-[var(--border-fine)] text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
@@ -378,6 +378,124 @@ export default function CbtLiveMonitor({
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Candidate Card Feed (< md) */}
+          <div className="md:hidden divide-y divide-[var(--border-fine)]">
+            {filteredCandidates.length === 0 ? (
+              <div className="py-12 px-4 text-center space-y-2">
+                <div className="w-12 h-12 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
+                  <Users className="w-6 h-6" />
+                </div>
+                <h4 className="font-bold text-sm text-[var(--foreground)]">No active candidates in hall</h4>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  Students taking this exam will appear here in real-time.
+                </p>
+              </div>
+            ) : (
+              filteredCandidates.map((c) => {
+                const pct = Math.round((c.answeredCount / c.totalQuestions) * 100);
+
+                return (
+                  <div key={c.id} className="p-4 space-y-3 bg-white">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-sm text-[var(--foreground)]">{c.name}</div>
+                        <div className="font-mono text-[11px] text-[var(--text-secondary)]">PIN: {c.pin}</div>
+                      </div>
+                      <div>
+                        {c.status === "active" && (
+                          <Badge className="bg-[var(--emerald-tint)] text-[#065f46] font-semibold text-[10px] border-0">
+                            Active
+                          </Badge>
+                        )}
+                        {c.status === "flagged" && (
+                          <Badge className="bg-[var(--amber-tint)] text-[#92400e] font-semibold text-[10px] border-0">
+                            Flagged
+                          </Badge>
+                        )}
+                        {c.status === "locked" && (
+                          <Badge className="bg-[var(--crimson-tint)] text-[#991b1b] font-semibold text-[10px] border-0">
+                            Locked
+                          </Badge>
+                        )}
+                        {c.status === "submitted" && (
+                          <Badge className="bg-[var(--surface-muted)] text-[var(--text-secondary)] font-semibold text-[10px] border-0">
+                            Finished
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Progress Bar & Time */}
+                    <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <span className="text-[var(--text-secondary)]">Answered: {c.answeredCount}/{c.totalQuestions} ({pct}%)</span>
+                        <span className="font-semibold text-slate-800">
+                          {c.status === "submitted" ? "Submitted" : `${c.timeRemainingMins}m left`}
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-[var(--violet-ink)] h-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Violations */}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-medium">Malpractice Telemetry:</span>
+                      {c.violations === 0 ? (
+                        <span className="text-emerald-600 flex items-center gap-1 font-semibold text-[11px]">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>0 Clean</span>
+                        </span>
+                      ) : (
+                        <Badge className="bg-amber-50 text-amber-800 border-amber-200 font-mono text-[10px]">
+                          ⚠️ {c.violations} Tab Switches
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Invigilator Action Buttons */}
+                    <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                      {c.status === "locked" ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUnlockCandidate(c.id)}
+                          className="w-full h-8 text-xs border-[var(--amber-signal)] text-[var(--amber-signal)] hover:bg-[var(--amber-tint)] font-semibold rounded-lg"
+                        >
+                          Forgive &amp; Unlock
+                        </Button>
+                      ) : c.status !== "submitted" ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAddFiveMins(c.id)}
+                            className="flex-1 h-8 text-xs border-[var(--border-fine)] text-[var(--foreground)] rounded-lg"
+                          >
+                            +5 Mins
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleForceSubmit(c.id)}
+                            className="flex-1 h-8 text-xs border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg"
+                          >
+                            Force Submit
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-slate-400 italic mx-auto">No action needed</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
