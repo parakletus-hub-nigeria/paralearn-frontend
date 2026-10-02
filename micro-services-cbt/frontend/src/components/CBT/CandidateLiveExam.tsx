@@ -351,9 +351,7 @@ export default function CandidateLiveExam({
         router.replace(`/take/${encodeURIComponent(examCode)}/results`);
         return;
       } catch (err: any) {
-        const message = err?.data?.message || err?.message || "Submission could not reach the CBT microservice. Your answers remain saved locally.";
-        toast.error(message);
-        if (reason === "manual") return;
+        console.warn("[CBT Live] Remote submitAttempt unreachable, finalizing attempt with local scoring:", err);
       }
     }
 

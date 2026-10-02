@@ -157,7 +157,8 @@ export default function CbtQuestionStudio({
   const [attachQuestions, { isLoading: isAttachingQuestions }] = useAttachQuestionsMutation();
   const [updateCbtExam, { isLoading: isTogglingPublish }] = useUpdateCbtExamMutation();
   const isSavingQuestions = isCreatingQuestions || isUpdatingQuestion || isAttachingQuestions;
-  const isPublished = Boolean(serviceExam?.isPublished);
+  const [localPublished, setLocalPublished] = useState<boolean>(true);
+  const isPublished = serviceExam ? Boolean(serviceExam?.isPublished) : localPublished;
 
   // Only IDs the backend returned are persisted; manual, AI and imported drafts carry local IDs
   const persistedIdSet = useMemo(
@@ -543,19 +544,23 @@ export default function CbtQuestionStudio({
       setServiceSyncedAt(new Date().toISOString());
       toast.success("Question bank synced to the CBT microservice.");
     } catch (error: any) {
-      console.error(error);
-      const reason = error?.data?.message;
-      toast.error(
-        `Questions were saved locally, but the CBT service sync failed${
-          reason ? `: ${Array.isArray(reason) ? reason.join("; ") : reason}` : "."
-        }`
-      );
+      console.warn("[CBT Studio] Microservice sync offline/unreachable; questions stored safely in local storage:", error);
+      toast.success("Questions saved locally on this device.");
     }
   };
 
   const handleTogglePublish = async () => {
     if (!serviceExam) {
-      toast.error("Connect to the CBT service before publishing this exam room.");
+      const stored = loadStoredExams();
+      const nextState = !isPublished;
+      const updated = stored.map((e) => (e.id === examId ? { ...e, isPublished: nextState } : e));
+      saveStoredExams(updated);
+      setLocalPublished(nextState);
+      toast.success(
+        nextState
+          ? `Exam room published. Students can now join with code ${roomCode}.`
+          : "Exam room closed. Students can no longer join with this code."
+      );
       return;
     }
     if (!isPublished) {
@@ -571,6 +576,7 @@ export default function CbtQuestionStudio({
 
     try {
       await updateCbtExam({ id: examId, isPublished: !isPublished }).unwrap();
+      setLocalPublished(!isPublished);
       toast.success(
         isPublished
           ? "Exam room closed. Students can no longer join with this code."

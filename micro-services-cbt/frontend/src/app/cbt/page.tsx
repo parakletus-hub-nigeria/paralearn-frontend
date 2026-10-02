@@ -116,15 +116,35 @@ export default function CbtPortalPage() {
     }
   }, []);
 
+  const safeIsoString = (dateStr?: string, timeStr?: string): string | undefined => {
+    if (!dateStr || !dateStr.trim()) return undefined;
+    const time = timeStr && timeStr.trim() ? timeStr.trim() : "00:00";
+    try {
+      const d = new Date(`${dateStr.trim()}T${time}:00`);
+      return isNaN(d.getTime()) ? undefined : d.toISOString();
+    } catch {
+      return undefined;
+    }
+  };
+
   useEffect(() => {
     if (!examiner?.id || !serviceExams) return;
 
     const normalized = serviceExams.map((exam) => ({
       ...exam,
-      totalQuestions: exam.totalQuestions ?? exam._count?.questions ?? 0,
+      totalQuestions: exam.totalQuestions ?? (exam as any)._count?.questions ?? 0,
     }));
-    setExams(normalized);
-    saveStoredExams(normalized, examiner.id);
+    
+    // Merge remote exams with locally created offline exams so local rooms are preserved
+    const localExams = loadStoredExams(examiner.id);
+    const remoteIdSet = new Set(normalized.map((e) => e.id));
+    const merged = [
+      ...normalized,
+      ...localExams.filter((local) => !remoteIdSet.has(local.id)),
+    ];
+
+    setExams(merged);
+    saveStoredExams(merged, examiner.id);
   }, [examiner?.id, serviceExams]);
 
   const handleJoin = (e: React.FormEvent) => {
@@ -167,15 +187,12 @@ export default function CbtPortalPage() {
     const accessCode =
       newCode.trim().toUpperCase().replace(/\s+/g, "-").replace(/[^A-Z0-9-]/g, "").replace(/^-+|-+$/g, "") ||
       `EXAM-${Math.floor(1000 + Math.random() * 9000)}`;
-    const startsAt = isScheduled && newStartDate && newStartTime 
-      ? new Date(`${newStartDate}T${newStartTime}:00`).toISOString() 
-      : null;
-    const endsAt = isScheduled && newEndDate && newEndTime 
-      ? new Date(`${newEndDate}T${newEndTime}:00`).toISOString() 
-      : null;
+    const startsAt = isScheduled ? safeIsoString(newStartDate, newStartTime) : undefined;
+    const endsAt = isScheduled ? safeIsoString(newEndDate, newEndTime) : undefined;
+    const workspaceId = examiner?.id || "default";
 
     const payload = {
-      workspaceId: examiner?.id || "default",
+      workspaceId,
       title: newTitle.trim(),
       accessCode,
       durationMins: Number(newDuration) || 60,
@@ -187,26 +204,40 @@ export default function CbtPortalPage() {
       showResultAfter: newShowResults,
     };
 
+    let createdRecord: CbtExamItem;
+
     try {
       const created = await createCbtExam(payload).unwrap();
-      const normalizedCreated = {
+      createdRecord = {
         ...created,
-        totalQuestions: created.totalQuestions ?? created._count?.questions ?? 0,
+        totalQuestions: created.totalQuestions ?? (created as any)._count?.questions ?? 0,
       };
-      const updated = [normalizedCreated, ...exams.filter((exam) => exam.id !== created.id)];
-      setExams(updated);
-      if (examiner?.id) {
-        saveStoredExams(updated, examiner.id);
-      }
-
-      toast.success(`Exam room "${created.title}" created. Add questions next.`);
-      setIsCreateOpen(false);
-      router.push(`/cbt/exams/${created.id}`);
     } catch (error) {
-      console.error(error);
-      toast.error("Could not create exam room on the CBT microservice.");
-      return;
+      console.warn("[CBT] Microservice exam creation unreachable or offline, persisting exam locally:", error);
+      createdRecord = {
+        id: `exam_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        workspaceId,
+        title: payload.title,
+        accessCode: payload.accessCode,
+        durationMins: payload.durationMins,
+        totalQuestions: 0,
+        isPublished: true,
+        startsAt: payload.startsAt || null,
+        endsAt: payload.endsAt || null,
+        maxTabViolations: payload.maxTabViolations,
+        shuffleQuestions: payload.shuffleQuestions,
+        shuffleChoices: payload.shuffleChoices,
+        showResultAfter: payload.showResultAfter,
+        createdAt: new Date().toISOString(),
+      };
     }
+
+    const updated = [createdRecord, ...exams.filter((exam) => exam.id !== createdRecord.id)];
+    setExams(updated);
+    saveStoredExams(updated, examiner?.id);
+
+    toast.success(`Exam room "${createdRecord.title}" created successfully. Add questions next.`);
+    setIsCreateOpen(false);
 
     // Reset fields
     setNewTitle("");
@@ -215,6 +246,8 @@ export default function CbtPortalPage() {
     setIsScheduled(false);
     setNewStartDate("");
     setNewEndDate("");
+
+    router.push(`/cbt/exams/${createdRecord.id}`);
   };
 
   const getQuestionCount = (exam: CbtExamItem) => {

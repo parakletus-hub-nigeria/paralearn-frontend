@@ -21,7 +21,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { saveCandidateSession, loadCandidateSession } from "@cbt/lib/cbtSessionManager";
+import { 
+  saveCandidateSession, 
+  loadCandidateSession, 
+  loadStoredExams, 
+  loadStoredQuestions 
+} from "@cbt/lib/cbtSessionManager";
 import {
   useGetExamByCodeQuery,
   useStartAttemptMutation,
@@ -147,8 +152,29 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
         requiresPin: remoteExam.accessType === "ROSTER_ONLY",
         maxTabViolations: remoteExam.maxTabViolations,
       });
+      return;
     }
-  }, [remoteExam]);
+
+    // Offline / Local fallback check
+    const stored = loadStoredExams();
+    const localExam = stored.find(
+      (e) => e.accessCode?.trim().toUpperCase() === normalizedExamCode
+    );
+    if (localExam) {
+      const storedQuestions = loadStoredQuestions(localExam.id);
+      setMetadata({
+        code: localExam.accessCode,
+        title: localExam.title,
+        institutionName: "ParaLearn Assessment Center",
+        durationMins: localExam.durationMins || 60,
+        questionCount: storedQuestions.length || localExam.totalQuestions || 0,
+        instructions:
+          "Answer all questions. Your responses are saved continuously and submitted when time expires.",
+        requiresPin: false,
+        maxTabViolations: localExam.maxTabViolations ?? 3,
+      });
+    }
+  }, [remoteExam, normalizedExamCode]);
 
   useEffect(() => {
     // Participant already started this exam on this device: reuse their issued PIN to resume
@@ -204,14 +230,42 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
     setIsVerifying(true);
 
     try {
-      const started = await startAttempt({
-        accessCode: metadata.code,
-        candidateName: candidateName.trim(),
-        candidatePin: candidatePin.trim() || undefined,
-        email: candidateEmail.trim() || undefined,
-        phone: candidatePhone.trim() || undefined,
-        userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-      }).unwrap();
+      let started: any;
+      try {
+        started = await startAttempt({
+          accessCode: metadata.code,
+          candidateName: candidateName.trim(),
+          candidatePin: candidatePin.trim() || undefined,
+          email: candidateEmail.trim() || undefined,
+          phone: candidatePhone.trim() || undefined,
+          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+        }).unwrap();
+      } catch (apiErr: any) {
+        console.warn("[Candidate Lobby] Microservice attempt start unreachable, generating local session:", apiErr);
+        const stored = loadStoredExams();
+        const localExam = stored.find((e) => e.accessCode?.trim().toUpperCase() === metadata.code.toUpperCase());
+        const storedQuestions = localExam ? loadStoredQuestions(localExam.id) : [];
+        const generatedPin = candidatePin.trim() || Math.floor(100000 + Math.random() * 900000).toString();
+        const durationMins = metadata.durationMins || 60;
+        const now = new Date();
+        const deadline = new Date(now.getTime() + durationMins * 60 * 1000).toISOString();
+
+        started = {
+          isResumed: false,
+          attemptId: `att_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          examId: localExam?.id || metadata.code,
+          examTitle: metadata.title,
+          candidateName: candidateName.trim(),
+          candidatePin: generatedPin,
+          durationMins: durationMins,
+          deadline: deadline,
+          remainingSeconds: durationMins * 60,
+          violations: 0,
+          maxTabViolations: metadata.maxTabViolations || 3,
+          questions: storedQuestions,
+          restoredAnswers: {},
+        };
+      }
 
       const now = new Date();
       const restoredAnswers = Object.fromEntries(

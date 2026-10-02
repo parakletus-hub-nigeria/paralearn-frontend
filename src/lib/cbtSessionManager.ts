@@ -449,10 +449,10 @@ export const cbtApi = {
     } catch {}
 
     const fallback: CbtExamItem = {
-      id: `exam_${Date.now()}`,
+      id: `exam_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       workspaceId: data.workspaceId,
       title: data.title,
-      accessCode: data.accessCode?.trim().toUpperCase() || `MOCK-${Math.floor(1000 + Math.random() * 9000)}`,
+      accessCode: data.accessCode?.trim().toUpperCase() || `EXAM-${Math.floor(1000 + Math.random() * 9000)}`,
       durationMins: data.durationMins || 60,
       totalQuestions: 0,
       isPublished: true,
@@ -464,6 +464,8 @@ export const cbtApi = {
       showResultAfter: data.showResultAfter ?? true,
       createdAt: new Date().toISOString(),
     };
+    const existing = loadStoredExams(data.workspaceId);
+    saveStoredExams([fallback, ...existing], data.workspaceId);
     return fallback;
   },
 
@@ -511,8 +513,23 @@ export interface CandidateRecord {
 export const loadStoredExams = (workspaceId?: string): CbtExamItem[] => {
   if (typeof window === "undefined") return [];
   try {
-    const key = `paralearn_cbt_exams_${workspaceId || "default"}`;
-    const raw = localStorage.getItem(key);
+    const activeWs = workspaceId || getExaminerSession()?.id || "default";
+    let raw = localStorage.getItem(`paralearn_cbt_exams_${activeWs}`);
+    if (!raw && activeWs !== "default") {
+      raw = localStorage.getItem("paralearn_cbt_exams_default");
+    }
+    if (!raw) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith("paralearn_cbt_exams_")) {
+          const val = localStorage.getItem(k);
+          if (val && val !== "[]") {
+            raw = val;
+            break;
+          }
+        }
+      }
+    }
     if (raw) {
       const parsed: CbtExamItem[] = JSON.parse(raw);
       // Clean out demo exam if present to ensure clean slate
@@ -529,16 +546,22 @@ export const loadStoredExams = (workspaceId?: string): CbtExamItem[] => {
 export const saveStoredExams = (exams: CbtExamItem[], workspaceId?: string) => {
   if (typeof window === "undefined") return;
   try {
-    const key = `paralearn_cbt_exams_${workspaceId || "default"}`;
-    localStorage.setItem(key, JSON.stringify(exams));
+    const activeWs = workspaceId || getExaminerSession()?.id || "default";
+    localStorage.setItem(`paralearn_cbt_exams_${activeWs}`, JSON.stringify(exams));
+    if (activeWs !== "default") {
+      localStorage.setItem("paralearn_cbt_exams_default", JSON.stringify(exams));
+    }
   } catch {}
 };
 
 export const loadStoredCandidates = (workspaceId?: string): CandidateRecord[] => {
   if (typeof window === "undefined") return [];
   try {
-    const key = `paralearn_cbt_candidates_${workspaceId || "default"}`;
-    const raw = localStorage.getItem(key);
+    const activeWs = workspaceId || getExaminerSession()?.id || "default";
+    let raw = localStorage.getItem(`paralearn_cbt_candidates_${activeWs}`);
+    if (!raw && activeWs !== "default") {
+      raw = localStorage.getItem("paralearn_cbt_candidates_default");
+    }
     if (raw) {
       const parsed: CandidateRecord[] = JSON.parse(raw);
       // Filter out demo candidate IDs
@@ -555,8 +578,11 @@ export const loadStoredCandidates = (workspaceId?: string): CandidateRecord[] =>
 export const saveStoredCandidates = (candidates: CandidateRecord[], workspaceId?: string) => {
   if (typeof window === "undefined") return;
   try {
-    const key = `paralearn_cbt_candidates_${workspaceId || "default"}`;
-    localStorage.setItem(key, JSON.stringify(candidates));
+    const activeWs = workspaceId || getExaminerSession()?.id || "default";
+    localStorage.setItem(`paralearn_cbt_candidates_${activeWs}`, JSON.stringify(candidates));
+    if (activeWs !== "default") {
+      localStorage.setItem("paralearn_cbt_candidates_default", JSON.stringify(candidates));
+    }
   } catch {}
 };
 
