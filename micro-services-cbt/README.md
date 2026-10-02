@@ -28,6 +28,9 @@ deployment while sharing the host's build, UI kit (`@/components/ui`) and Redux 
 - `src/proxy.ts` in the host mounts `cbtProxy` from `frontend/src/proxy.ts`, which rewrites
   `cbt.pln.ng/*` to `/cbt/*` and lets `/take/*` and `/api/*` pass through.
 - The host store registers `cbtMicroserviceApi` from `frontend/src/store`.
+- AI question generation and essay grading (`app/api/cbt/ai/*`) use their own Gemini key,
+  `CBT_GEMINI_API_KEY` (plus optional `CBT_GEMINI_MODEL`), separate from the main app's key. Both are
+  server-side only; never prefix them with `NEXT_PUBLIC_`.
 
 ```
 frontend/src/

@@ -496,8 +496,12 @@ export default function CbtQuestionStudio({
     }
 
     try {
-      const existingQuestions = questions.filter((q) => !q.id.startsWith("q_"));
-      const newQuestions = questions.filter((q) => q.id.startsWith("q_"));
+      // Only IDs the backend returned are persisted; manual, AI and imported drafts carry local IDs
+      const persistedIdSet = new Set(
+        (serviceExam?.questions || []).map((item) => item.question?.id || item.questionId)
+      );
+      const existingQuestions = questions.filter((q) => persistedIdSet.has(q.id));
+      const newQuestions = questions.filter((q) => !persistedIdSet.has(q.id));
 
       await Promise.all(
         existingQuestions.map((q) =>
@@ -512,25 +516,35 @@ export default function CbtQuestionStudio({
         )
       );
 
-      let persistedIds = existingQuestions.map((q) => q.id);
+      // Swap each draft's local ID for its server ID (bulk create returns questions in input order)
+      const serverIdByLocalId = new Map<string, string>();
       if (newQuestions.length > 0) {
         const created = await bulkCreateQuestions({
           workspaceId,
-          examId,
           questions: newQuestions.map((q) => toServiceQuestionPayload(q, workspaceId)),
         }).unwrap();
-        persistedIds = [...persistedIds, ...(created.questions || []).map((q) => q.id)];
+        (created.questions || []).forEach((serverQuestion, idx) => {
+          serverIdByLocalId.set(newQuestions[idx].id, serverQuestion.id);
+        });
       }
 
-      if (persistedIds.length > 0) {
-        await attachQuestions({ examId, questionIds: persistedIds }).unwrap();
-      }
+      const syncedQuestions = questions.map((q) => ({ ...q, id: serverIdByLocalId.get(q.id) || q.id }));
+      setQuestions(syncedQuestions);
+      saveStoredQuestions(syncedQuestions, examId);
+
+      // Attach replaces the exam's question list, so this also applies studio order and deletions
+      await attachQuestions({ examId, questionIds: syncedQuestions.map((q) => q.id) }).unwrap();
 
       setServiceSyncedAt(new Date().toISOString());
       toast.success("Question bank synced to the CBT microservice.");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Questions were saved locally, but the CBT service sync failed.");
+      const reason = error?.data?.message;
+      toast.error(
+        `Questions were saved locally, but the CBT service sync failed${
+          reason ? `: ${Array.isArray(reason) ? reason.join("; ") : reason}` : "."
+        }`
+      );
     }
   };
 

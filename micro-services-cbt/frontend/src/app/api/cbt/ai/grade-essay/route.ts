@@ -12,10 +12,10 @@ interface RubricCriterionPayload {
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.CBT_GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured on the server." },
+        { error: "CBT_GEMINI_API_KEY is not configured on the server." },
         { status: 500 }
       );
     }
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const modelName = process.env.GEMINI_MODEL || "gemini-3-flash-preview";
+    const modelName = process.env.CBT_GEMINI_MODEL || "gemini-3-flash-preview";
     const genAI = new GoogleGenerativeAI(apiKey);
 
     const criteriaList: RubricCriterionPayload[] = Array.isArray(rubricCriteria) && rubricCriteria.length > 0
