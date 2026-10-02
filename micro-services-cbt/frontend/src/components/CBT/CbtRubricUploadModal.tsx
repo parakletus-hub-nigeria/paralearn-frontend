@@ -26,7 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { RubricCriterion, ExamRubric } from "@/lib/cbtSessionManager";
+import { RubricCriterion, ExamRubric } from "@cbt/lib/cbtSessionManager";
 
 interface CbtRubricUploadModalProps {
   isOpen: boolean;

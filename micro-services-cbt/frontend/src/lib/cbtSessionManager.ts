@@ -33,6 +33,7 @@ export interface ExamRubric {
 export interface CandidateSession {
   attemptId?: string;
   examId?: string;
+  examTitle?: string;
   examCode: string;
   candidateName: string;
   candidatePin: string;
@@ -42,6 +43,19 @@ export interface CandidateSession {
   deadline: string;
   answers: Record<string, string | string[]>;
   flaggedQuestionIds: string[];
+  questions?: Array<{
+    id: string;
+    prompt: string;
+    type: CbtQuestionType | "MULTI_SELECT" | "ESSAY";
+    marks: number;
+    section?: string;
+    options?: Array<{
+      id: string;
+      text: string;
+      keyLabel?: string;
+    }>;
+  }>;
+  maxTabViolations?: number;
   violations: Array<{
     type: string;
     timestamp: string;
@@ -278,32 +292,18 @@ export const cbtApi = {
    * Examiner sign in — automatically saves session in client storage
    */
   async examinerLogin(email: string, password?: string): Promise<ExaminerWorkspace> {
-    try {
-      const res = await fetch(`${CBT_API_BASE}/workspaces/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (res.ok) {
-        const workspace = await res.json();
-        saveExaminerSession(workspace);
-        return workspace;
-      }
-    } catch {
-      // Fallback below
+    const res = await fetch(`${CBT_API_BASE}/workspaces/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: "Examiner sign-in failed" }));
+      throw new Error(err.message || "Examiner sign-in failed.");
     }
-
-    const fallback: ExaminerWorkspace = {
-      id: `hall_${Date.now()}`,
-      name: `${email.split("@")[0]}'s Exam Hall`,
-      ownerName: email.split("@")[0],
-      ownerEmail: email.trim(),
-      type: "STANDALONE_HALL",
-      credits: 30,
-      createdAt: new Date().toISOString(),
-    };
-    saveExaminerSession(fallback);
-    return fallback;
+    const workspace = await res.json();
+    saveExaminerSession(workspace);
+    return workspace;
   },
 
   /**
@@ -314,32 +314,18 @@ export const cbtApi = {
     ownerName: string;
     email: string;
   }): Promise<ExaminerWorkspace> {
-    try {
-      const res = await fetch(`${CBT_API_BASE}/workspaces/standalone`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        const workspace = await res.json();
-        saveExaminerSession(workspace);
-        return workspace;
-      }
-    } catch {
-      // Fallback below
+    const res = await fetch(`${CBT_API_BASE}/workspaces/standalone`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: "Workspace registration failed" }));
+      throw new Error(err.message || "Workspace registration failed.");
     }
-
-    const fallback: ExaminerWorkspace = {
-      id: `hall_${Date.now()}`,
-      name: data.name.trim() || `${data.ownerName}'s Exam Hall`,
-      ownerName: data.ownerName.trim(),
-      ownerEmail: data.email.trim(),
-      type: "STANDALONE_HALL",
-      credits: 30,
-      createdAt: new Date().toISOString(),
-    };
-    saveExaminerSession(fallback);
-    return fallback;
+    const workspace = await res.json();
+    saveExaminerSession(workspace);
+    return workspace;
   },
 
   async getExamByCode(accessCode: string) {
@@ -437,44 +423,25 @@ export const cbtApi = {
     shuffleChoices?: boolean;
     showResultAfter?: boolean;
   }): Promise<CbtExamItem> {
-    try {
-      const res = await fetch(`${CBT_API_BASE}/exams`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {}
-
-    const fallback: CbtExamItem = {
-      id: `exam_${Date.now()}`,
-      workspaceId: data.workspaceId,
-      title: data.title,
-      accessCode: data.accessCode?.trim().toUpperCase() || `MOCK-${Math.floor(1000 + Math.random() * 9000)}`,
-      durationMins: data.durationMins || 60,
-      totalQuestions: 0,
-      isPublished: true,
-      startsAt: data.startsAt || null,
-      endsAt: data.endsAt || null,
-      maxTabViolations: data.maxTabViolations ?? 3,
-      shuffleQuestions: data.shuffleQuestions ?? true,
-      shuffleChoices: data.shuffleChoices ?? true,
-      showResultAfter: data.showResultAfter ?? true,
-      createdAt: new Date().toISOString(),
-    };
-    return fallback;
+    const res = await fetch(`${CBT_API_BASE}/exams`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: "Could not create exam" }));
+      throw new Error(err.message || "Could not create exam.");
+    }
+    return res.json();
   },
 
   async getWorkspaceExams(workspaceId: string): Promise<CbtExamItem[]> {
-    try {
-      const res = await fetch(`${CBT_API_BASE}/exams?workspaceId=${encodeURIComponent(workspaceId)}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {}
-    return loadStoredExams(workspaceId);
+    const res = await fetch(`${CBT_API_BASE}/exams?workspaceId=${encodeURIComponent(workspaceId)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: "Could not load workspace exams" }));
+      throw new Error(err.message || "Could not load workspace exams.");
+    }
+    return res.json();
   },
 };
 

@@ -1,4 +1,4 @@
-import CbtQuestionStudio from "@/components/CBT/CbtQuestionStudio";
+import CbtQuestionStudio from "@cbt/components/CBT/CbtQuestionStudio";
 
 interface PageProps {
   params: Promise<{

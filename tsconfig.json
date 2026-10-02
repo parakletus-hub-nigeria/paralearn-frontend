@@ -27,6 +27,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@cbt/*": [
+        "./micro-services-cbt/frontend/src/*"
       ]
     }
   },

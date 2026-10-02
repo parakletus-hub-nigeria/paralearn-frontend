@@ -1,4 +1,4 @@
-import CandidateLiveExam from "@/components/CBT/CandidateLiveExam";
+import CandidateLiveExam from "@cbt/components/CBT/CandidateLiveExam";
 
 interface PageProps {
   params: Promise<{

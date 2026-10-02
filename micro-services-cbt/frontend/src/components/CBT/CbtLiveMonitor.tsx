@@ -31,7 +31,7 @@ import {
   loadStoredQuestions, 
   loadCandidateSession,
   CandidateSession 
-} from "@/lib/cbtSessionManager";
+} from "@cbt/lib/cbtSessionManager";
 import CbtEssayGradingModal from "./CbtEssayGradingModal";
 
 export interface CandidateLiveStatus {
@@ -90,8 +90,10 @@ export default function CbtLiveMonitor({
         name: activeAttempt.candidateName,
         pin: activeAttempt.candidatePin,
         answeredCount: Object.keys(activeAttempt.answers || {}).length,
-        totalQuestions: qList.length > 0 ? qList.length : 10,
-        timeRemainingMins: isFinished ? 0 : 45,
+        totalQuestions: activeAttempt.questions?.length || qList.length,
+        timeRemainingMins: isFinished
+          ? 0
+          : Math.max(0, Math.ceil((new Date(activeAttempt.deadline).getTime() - Date.now()) / 60000)),
         violations: activeAttempt.violations?.length || 0,
         status: isFinished ? "submitted" : "active",
         gradingStatus: activeAttempt.gradingStatus || (isFinished ? "PENDING_REVIEW" : undefined),
@@ -108,9 +110,9 @@ export default function CbtLiveMonitor({
             id: c.id,
             name: c.name,
             pin: c.pin,
-            answeredCount: c.status === "COMPLETED" ? (qList.length || 40) : c.status === "IN_PROGRESS" ? 15 : 0,
-            totalQuestions: qList.length || 40,
-            timeRemainingMins: c.status === "COMPLETED" ? 0 : 35,
+            answeredCount: c.status === "COMPLETED" ? qList.length : 0,
+            totalQuestions: qList.length,
+            timeRemainingMins: 0,
             violations: 0,
             status: c.status === "COMPLETED" ? "submitted" : "active",
             gradingStatus: c.status === "COMPLETED" ? "PENDING_REVIEW" : undefined,
@@ -127,41 +129,15 @@ export default function CbtLiveMonitor({
   const handleOpenEssayGrading = (candidatePin: string) => {
     const session = loadCandidateSession(roomCode);
     if (!session) {
-      // Mock session for candidate review
-      const mockSession: CandidateSession = {
-        examCode: roomCode,
-        candidateName: "Candidate " + candidatePin,
-        candidatePin: candidatePin,
-        startedAt: new Date().toISOString(),
-        durationMins: 60,
-        deadline: new Date().toISOString(),
-        answers: {
-          q_sample: "Photosynthesis is the fundamental biological process wherein plants synthesize glucose from carbon dioxide and water utilizing solar photons absorbed by chlorophyll pigments.",
-        },
-        flaggedQuestionIds: [],
-        violations: [],
-        status: "submitted",
-        gradingStatus: "PENDING_REVIEW",
-      };
-      setGradingSession(mockSession);
-      const essayQ = questions.find((q) => q.type === "SHORT_ESSAY" || q.type === "LONG_ESSAY") || {
-        id: "q_sample",
-        prompt: "Explain the biochemical process of photosynthesis and state the chemical equation.",
-        type: "SHORT_ESSAY",
-        marks: 5,
-        modelAnswer: "6CO2 + 6H2O -> C6H12O6 + 6O2",
-      };
-      setGradingQuestion(essayQ);
+      toast.error(`No locally recoverable submission found for PIN ${candidatePin}.`);
       return;
     }
 
-    const essayQ = questions.find((q) => q.type === "SHORT_ESSAY" || q.type === "LONG_ESSAY") || {
-      id: "q_sample",
-      prompt: "Explain the biochemical process of photosynthesis and state the chemical equation.",
-      type: "SHORT_ESSAY",
-      marks: 5,
-      modelAnswer: "6CO2 + 6H2O -> C6H12O6 + 6O2",
-    };
+    const essayQ = questions.find((q) => q.type === "SHORT_ESSAY" || q.type === "LONG_ESSAY" || q.type === "ESSAY");
+    if (!essayQ) {
+      toast.info("This exam does not have an essay question available for manual review.");
+      return;
+    }
 
     setGradingSession(session);
     setGradingQuestion(essayQ);
@@ -358,7 +334,7 @@ export default function CbtLiveMonitor({
                   </tr>
                 ) : (
                   filteredCandidates.map((c) => {
-                    const pct = Math.round((c.answeredCount / c.totalQuestions) * 100);
+                    const pct = c.totalQuestions > 0 ? Math.round((c.answeredCount / c.totalQuestions) * 100) : 0;
 
                     return (
                       <tr key={c.id} className="hover:bg-[var(--surface-subtle)] transition-colors">
@@ -499,7 +475,7 @@ export default function CbtLiveMonitor({
               </div>
             ) : (
               filteredCandidates.map((c) => {
-                const pct = Math.round((c.answeredCount / c.totalQuestions) * 100);
+                const pct = c.totalQuestions > 0 ? Math.round((c.answeredCount / c.totalQuestions) * 100) : 0;
 
                 return (
                   <div key={c.id} className="p-4 space-y-3 bg-white">

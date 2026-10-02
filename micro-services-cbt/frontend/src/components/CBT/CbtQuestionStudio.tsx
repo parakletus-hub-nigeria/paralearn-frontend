@@ -69,9 +69,16 @@ import {
   CbtQuestionType,
   ExamRubric,
   loadStoredRubrics
-} from "@/lib/cbtSessionManager";
+} from "@cbt/lib/cbtSessionManager";
 import CbtAiQuestionModal from "./CbtAiQuestionModal";
 import CbtRubricUploadModal from "./CbtRubricUploadModal";
+import {
+  CbtQuestionType as ServiceQuestionType,
+  useAttachQuestionsMutation,
+  useBulkCreateQuestionsMutation,
+  useGetCbtExamQuery,
+  useUpdateQuestionMutation,
+} from "@cbt/store/cbtMicroserviceApi";
 
 export interface StudioQuestion {
   id: string;
@@ -135,13 +142,67 @@ export default function CbtQuestionStudio({
   const [isMobilePaletteOpen, setIsMobilePaletteOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [serviceSyncedAt, setServiceSyncedAt] = useState<string | null>(null);
 
   const pathname = usePathname();
   const isSchoolContext = pathname?.startsWith("/RMS");
   const backHref = isSchoolContext ? "/RMS/cbt" : "/cbt";
   const monitorHref = isSchoolContext ? `/RMS/cbt/exams/${examId}/monitor` : `/cbt/exams/${examId}/monitor`;
+  const { data: serviceExam, isFetching: isLoadingExam, error: examLoadError } = useGetCbtExamQuery(examId, {
+    skip: !examId,
+  });
+  const [bulkCreateQuestions, { isLoading: isCreatingQuestions }] = useBulkCreateQuestionsMutation();
+  const [updateQuestion, { isLoading: isUpdatingQuestion }] = useUpdateQuestionMutation();
+  const [attachQuestions, { isLoading: isAttachingQuestions }] = useAttachQuestionsMutation();
+  const isSavingQuestions = isCreatingQuestions || isUpdatingQuestion || isAttachingQuestions;
+
+  const normalizeTypeForService = (type: StudioQuestion["type"]): ServiceQuestionType => {
+    if (type === "SHORT_ESSAY" || type === "LONG_ESSAY") return "ESSAY";
+    if (type === "MULTI_SELECT") return "MULTI_SELECT";
+    return type;
+  };
+
+  const normalizeQuestionFromService = (q: any): StudioQuestion => ({
+    id: q.id,
+    prompt: q.prompt || "",
+    type: q.type === "ESSAY" ? "LONG_ESSAY" : (q.type || "MCQ"),
+    marks: q.marks || 1,
+    options: Array.isArray(q.options) ? q.options : [],
+    explanation: q.explanation || "",
+    section: q.section,
+  });
+
+  const toServiceQuestionPayload = (q: StudioQuestion, workspaceId: string) => ({
+    workspaceId,
+    prompt: q.prompt.trim(),
+    type: normalizeTypeForService(q.type),
+    marks: Number(q.marks) || 1,
+    options: (q.options || []).map((option, index) => ({
+      id: option.id || `opt_${index + 1}`,
+      text: option.text || "",
+      isCorrect: Boolean(option.isCorrect),
+      keyLabel: String.fromCharCode(65 + index),
+    })),
+    explanation: q.explanation || q.modelAnswer || "",
+  });
 
   useEffect(() => {
+    if (serviceExam) {
+      setExamTitle(serviceExam.title || initialTitle);
+      setRoomCode(serviceExam.accessCode || initialCode);
+      setDurationMins(serviceExam.durationMins || initialDurationMins);
+      const serviceQuestions = (serviceExam.questions || [])
+        .slice()
+        .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+        .map((item) => normalizeQuestionFromService(item.question));
+
+      setQuestions(serviceQuestions);
+      saveStoredQuestions(serviceQuestions, examId);
+      updateExamQuestionCount(serviceQuestions.length);
+      setServiceSyncedAt(new Date().toISOString());
+      return;
+    }
+
     // 1. Load exam metadata
     const exams = loadStoredExams();
     const curr = exams.find((e) => e.id === examId);
@@ -164,7 +225,7 @@ export default function CbtQuestionStudio({
       }));
       setQuestions(normalized);
     }
-  }, [examId, initialQuestions]);
+  }, [examId, initialQuestions, serviceExam]);
 
   const updateExamQuestionCount = (count: number) => {
     const exams = loadStoredExams();
@@ -210,12 +271,11 @@ export default function CbtQuestionStudio({
   const handleAddNewQuestion = (type: CbtQuestionType = "MCQ") => {
     let newQ: StudioQuestion;
     const newId = `q_${Date.now()}`;
-    const qNum = questions.length + 1;
 
     if (type === "SHORT_ESSAY") {
       newQ = {
         id: newId,
-        prompt: `Short Answer Question ${qNum}: Define or succinctly explain...`,
+        prompt: "",
         type: "SHORT_ESSAY",
         marks: 5.0,
         section: "Section B: Theory & Short Answers",
@@ -228,7 +288,7 @@ export default function CbtQuestionStudio({
     } else if (type === "LONG_ESSAY") {
       newQ = {
         id: newId,
-        prompt: `Comprehensive Essay Question ${qNum}: Critically evaluate, analyze, or compose...`,
+        prompt: "",
         type: "LONG_ESSAY",
         marks: 15.0,
         section: "Section C: Extended Essay",
@@ -240,7 +300,7 @@ export default function CbtQuestionStudio({
     } else if (type === "TRUE_FALSE") {
       newQ = {
         id: newId,
-        prompt: `Statement ${qNum} for evaluation:`,
+        prompt: "",
         type: "TRUE_FALSE",
         marks: 1.0,
         section: "Section A: Multiple Choice",
@@ -253,15 +313,15 @@ export default function CbtQuestionStudio({
       // Standard MCQ
       newQ = {
         id: newId,
-        prompt: `Question ${qNum}: Choose the correct alternative.`,
+        prompt: "",
         type: "MCQ",
         marks: 1.0,
         section: "Section A: Multiple Choice",
         options: [
-          { id: `o_${Date.now()}_1`, text: "Option A", isCorrect: true },
-          { id: `o_${Date.now()}_2`, text: "Option B", isCorrect: false },
-          { id: `o_${Date.now()}_3`, text: "Option C", isCorrect: false },
-          { id: `o_${Date.now()}_4`, text: "Option D", isCorrect: false },
+          { id: `o_${Date.now()}_1`, text: "", isCorrect: true },
+          { id: `o_${Date.now()}_2`, text: "", isCorrect: false },
+          { id: `o_${Date.now()}_3`, text: "", isCorrect: false },
+          { id: `o_${Date.now()}_4`, text: "", isCorrect: false },
         ],
       };
     }
@@ -271,7 +331,7 @@ export default function CbtQuestionStudio({
     setActiveIdx(updated.length - 1);
     saveStoredQuestions(updated, examId);
     updateExamQuestionCount(updated.length);
-    toast.success(`Added new ${type.replace("_", " ")} to palette.`);
+    toast.success(`Added new ${type.replace("_", " ")} to palette. Save to sync it to the CBT service.`);
   };
 
   // Change type of current active question
@@ -284,10 +344,10 @@ export default function CbtQuestionStudio({
 
       if (newType === "MCQ" && (!curr.options || curr.options.length < 2)) {
         updatedQ.options = [
-          { id: `o_${Date.now()}_1`, text: "Option A", isCorrect: true },
-          { id: `o_${Date.now()}_2`, text: "Option B", isCorrect: false },
-          { id: `o_${Date.now()}_3`, text: "Option C", isCorrect: false },
-          { id: `o_${Date.now()}_4`, text: "Option D", isCorrect: false },
+          { id: `o_${Date.now()}_1`, text: "", isCorrect: true },
+          { id: `o_${Date.now()}_2`, text: "", isCorrect: false },
+          { id: `o_${Date.now()}_3`, text: "", isCorrect: false },
+          { id: `o_${Date.now()}_4`, text: "", isCorrect: false },
         ];
         updatedQ.marks = 1.0;
       } else if (newType === "TRUE_FALSE") {
@@ -394,7 +454,7 @@ export default function CbtQuestionStudio({
     }
     const opts = [
       ...currentOpts,
-      { id: `o_${Date.now()}`, text: `Option ${String.fromCharCode(65 + currentOpts.length)}`, isCorrect: false },
+      { id: `o_${Date.now()}`, text: "", isCorrect: false },
     ];
     updateActiveQuestion("options", opts);
   };
@@ -409,10 +469,69 @@ export default function CbtQuestionStudio({
     toast.info("Question deleted.");
   };
 
-  const handleSaveQuestions = () => {
+  const handleSaveQuestions = async () => {
+    const workspaceId = serviceExam?.workspaceId || serviceExam?.workspace?.id;
+    const invalidQuestion = questions.find((q) => !q.prompt.trim());
+    if (invalidQuestion) {
+      toast.error("Please enter a prompt for every question before saving.");
+      return;
+    }
+
+    const invalidChoiceQuestion = questions.find(
+      (q) =>
+        (q.type === "MCQ" || q.type === "TRUE_FALSE" || q.type === "MULTI_SELECT") &&
+        (!q.options?.length || q.options.some((option) => !option.text.trim()))
+    );
+    if (invalidChoiceQuestion) {
+      toast.error("Please complete every option text before saving.");
+      return;
+    }
+
     saveStoredQuestions(questions, examId);
     updateExamQuestionCount(questions.length);
-    toast.success("Question changes saved successfully!");
+
+    if (!workspaceId) {
+      toast.warning("Saved locally. Sign in and open a backend exam room to sync questions.");
+      return;
+    }
+
+    try {
+      const existingQuestions = questions.filter((q) => !q.id.startsWith("q_"));
+      const newQuestions = questions.filter((q) => q.id.startsWith("q_"));
+
+      await Promise.all(
+        existingQuestions.map((q) =>
+          updateQuestion({
+            id: q.id,
+            prompt: q.prompt.trim(),
+            type: normalizeTypeForService(q.type),
+            marks: Number(q.marks) || 1,
+            options: toServiceQuestionPayload(q, workspaceId).options,
+            explanation: q.explanation || q.modelAnswer || "",
+          }).unwrap()
+        )
+      );
+
+      let persistedIds = existingQuestions.map((q) => q.id);
+      if (newQuestions.length > 0) {
+        const created = await bulkCreateQuestions({
+          workspaceId,
+          examId,
+          questions: newQuestions.map((q) => toServiceQuestionPayload(q, workspaceId)),
+        }).unwrap();
+        persistedIds = [...persistedIds, ...(created.questions || []).map((q) => q.id)];
+      }
+
+      if (persistedIds.length > 0) {
+        await attachQuestions({ examId, questionIds: persistedIds }).unwrap();
+      }
+
+      setServiceSyncedAt(new Date().toISOString());
+      toast.success("Question bank synced to the CBT microservice.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Questions were saved locally, but the CBT service sync failed.");
+    }
   };
 
   return (
@@ -506,9 +625,10 @@ export default function CbtQuestionStudio({
           <Button
             size="sm"
             onClick={handleSaveQuestions}
+            disabled={isSavingQuestions}
             className="h-8 px-3 sm:px-4 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-xs shrink-0"
           >
-            Save
+            {isSavingQuestions ? "Syncing" : "Save"}
           </Button>
 
           {/* Mobile Dropdown Menu (< lg) */}
@@ -557,6 +677,28 @@ export default function CbtQuestionStudio({
           </div>
         </div>
       </header>
+
+      <div className="border-b border-[var(--border-fine)] bg-white/80 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[11px]">
+          <div className="flex items-center gap-2 text-slate-600">
+            <span className={`h-2 w-2 rounded-full ${examLoadError ? "bg-amber-500" : "bg-emerald-500"}`} />
+            <span className="font-semibold">
+              {isLoadingExam
+                ? "Loading backend exam room..."
+                : examLoadError
+                ? "Offline draft mode. Changes will stay local until the CBT service is reachable."
+                : serviceSyncedAt
+                ? "Synced with CBT microservice"
+                : "Ready to sync with CBT microservice"}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 text-slate-500 font-mono">
+            <span>{questions.length} questions</span>
+            <span>{totalMarks} marks</span>
+            <span>{durationMins} mins</span>
+          </div>
+        </div>
+      </div>
 
       {/* ── 2-PANE STUDIO WORKSPACE ──────────────────────────────────────── */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto px-3 py-4 sm:p-6 gap-6 items-start">

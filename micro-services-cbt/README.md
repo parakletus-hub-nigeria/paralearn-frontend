@@ -1,94 +1,42 @@
-# ParaLearn Autonomous CBT Microservice (`micro-services-cbt`)
+# ParaLearn Standalone CBT (`micro-services-cbt`)
 
-This repository contains the standalone, autonomous Computer-Based Testing (CBT) microservice for **ParaLearn**. It provides a dual-access architecture serving both institutional schools via SSO and independent exam halls (tutorial centres, private tutors, and academies) with free credits.
+Frontend for the standalone CBT product served at **cbt.pln.ng**. It is separate from the internal
+school CBT (`/RMS/cbt`, `src/components/RMS/CBT`), which runs on the ParaLearn core backend and must not
+import anything from here.
 
----
+The backend lives in its own repository, `paralearn-cbt-backend` (NestJS + Prisma + Redis), and is reached
+through `NEXT_PUBLIC_CBT_API_URL`. Its API reference is `API_DOCUMENTATION.md` in that repository.
 
-## Architecture Overview
+## Flow
+
+1. An examiner workspace (`/cbt`) creates an exam, adds questions, publishes it and shares the room code.
+2. A participant opens `cbt.pln.ng/take`, enters the room code, and lands in the lobby.
+3. In the lobby they enter their name (plus optional email/phone). They are not a ParaLearn user: the
+   backend records them as a walk-in participant on that exam and issues a participant ID for rejoining.
+   Exams with `accessType: ROSTER_ONLY` instead require the PIN the examiner issued.
+4. The participant sits the exam (`/take/:code/live`) and gets a result slip (`/take/:code/results`).
+
+## How it is served
+
+The code lives here but runs inside the main ParaLearn Next.js server, so cbt.pln.ng behaves like its own
+deployment while sharing the host's build, UI kit (`@/components/ui`) and Redux store.
+
+- `@cbt/*` (tsconfig path) resolves to `micro-services-cbt/frontend/src/*`.
+- Host route files under `src/app/cbt`, `src/app/take` and `src/app/api/cbt` are one-line re-exports of
+  the pages here. Route segment config (e.g. `maxDuration`) stays in the host file, since Next.js reads it
+  statically.
+- `src/proxy.ts` in the host mounts `cbtProxy` from `frontend/src/proxy.ts`, which rewrites
+  `cbt.pln.ng/*` to `/cbt/*` and lets `/take/*` and `/api/*` pass through.
+- The host store registers `cbtMicroserviceApi` from `frontend/src/store`.
 
 ```
-micro-services-cbt/
-├── frontend/                                   # Standalone Next.js 16 UI
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── cbt/                            # CBT Hub Overview & Workspace Gateway
-│   │   │   │   ├── auth/page.tsx               # Dual-Auth (ParaLearn SSO vs Standalone Hall)
-│   │   │   │   └── exams/[examId]/page.tsx     # 2-Pane Question Studio & Exam Manager
-│   │   │   └── take/                           # Candidate Assessment Experience
-│   │   │       ├── page.tsx                    # Direct Room Access Code Gate
-│   │   │       └── [examCode]/
-│   │   │           ├── page.tsx                # Candidate Lobby & 6-cell PIN Input
-│   │   │           ├── live/page.tsx           # Live Runner (Keyboard hotkeys, Geist Mono timer)
-│   │   │           └── results/page.tsx        # Candidate Result Slip & Performance Breakdown
-│   │   ├── components/CBT/                     # Clear Register Design System CBT Components
-│   │   └── lib/cbtSessionManager.ts            # Offline persistence & cbtApi HTTP client
-│
-└── backend/                                    # Autonomous NestJS 11 Microservice
-    ├── prisma/
-    │   └── schema.prisma                       # Autonomous Multi-Tenant CBT Schema
-    ├── src/
-    │   ├── main.ts                             # Swagger, ValidationPipe, CORS, Port 4000
-    │   ├── app.module.ts                       # Root Module connecting all subsystems
-    │   ├── prisma/                             # PrismaService & lifecycle hooks
-    │   ├── redis/                              # Sub-ms countdown timers & ephemeral answer buffer
-    │   ├── workspaces/                         # Multi-tenant workspace abstraction & credit billing
-    │   ├── exams/                              # Exam management, room codes, live invigilation board
-    │   ├── questions/                          # Question bank studio, bulk creation & XLSX parser
-    │   ├── attempts/                           # Live test sessions, Redis buffering, auto-grading
-    │   └── sync/                               # ParaLearn Core RMS term report card sync & CSV export
-    ├── dist/                                   # Verified production build output (Exit Code 0)
-    ├── package.json
-    ├── tsconfig.json
-    └── .env / .env.example
+frontend/src/
+├── app/            # Page and route implementations (cbt/, take/, api/cbt/ai/)
+├── components/CBT/ # Standalone CBT screens and modals
+├── lib/            # cbtSessionManager: local session persistence for participants and examiners
+├── store/          # cbtMicroserviceApi: RTK Query client for the CBT backend
+└── proxy.ts        # cbt.pln.ng subdomain routing
 ```
 
----
-
-## Quickstart
-
-### 1. Backend Service
-```bash
-cd backend
-
-# Install dependencies (already installed)
-npm install
-
-# Run database migrations / client generation
-npm run prisma:generate
-
-# Start in development mode (runs on http://localhost:4000)
-npm run start:dev
-
-# Interactive API Swagger docs:
-http://localhost:4000/api/docs
-```
-
-### 2. Frontend Candidate Runner & Educator Studio
-```bash
-# Set environment variable pointing to the CBT backend:
-NEXT_PUBLIC_CBT_API_URL=http://localhost:4000
-
-# Access Candidate Room Gate:
-http://localhost:3000/take
-
-# Access CBT Educator Hub & Dual-Auth:
-http://localhost:3000/cbt
-http://localhost:3000/cbt/auth
-```
-
----
-
-## Key Features
-
-1. **Dual Workspace Model**:
-   - `INSTITUTION`: Linked to ParaLearn School via SSO. Scores auto-export into Term Report Cards.
-   - `STANDALONE_HALL`: Self-serve accounts for JAMB/WAEC tutors with 30 free test credits.
-2. **Sub-Millisecond Timers & Keystroke Buffering**:
-   - Live answers are buffered in Redis hash tables (<5ms latency), avoiding database bottlenecks during high-concurrency exams.
-   - Graceful in-memory fallback if Redis is temporarily unreachable.
-3. **Deterministic Auto-Grading**:
-   - Instant calculation for MCQ, True/False, and Multi-Select questions with standard Nigerian WAEC grades (`A1` through `F9`).
-4. **Anti-Cheat Malpractice Proctoring**:
-   - Tracks tab switching, browser blur, and window resizing with automatic candidate disqualification if limits are exceeded.
-5. **Bulk Question Excel Importer**:
-   - Native `.xlsx` spreadsheet upload parsing prompts, options, answers, marks, and explanations directly into exams.
+To add a page: create it under `frontend/src/app/...`, then add a host route file at the matching path in
+`src/app/...` containing `export { default } from "@cbt/app/...";`.

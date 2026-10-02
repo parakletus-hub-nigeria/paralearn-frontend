@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Users,
@@ -44,12 +45,28 @@ import {
   saveStoredCandidates,
   loadStoredExams,
   purgeAllDemoData,
-} from "@/lib/cbtSessionManager";
+} from "@cbt/lib/cbtSessionManager";
+import {
+  CandidateRecord as RemoteCandidateRecord,
+  useListCandidatesQuery,
+  useListWorkspaceExamsQuery,
+  useUpsertCandidateMutation,
+} from "@cbt/store/cbtMicroserviceApi";
+
+const mapCandidateStatus = (status: RemoteCandidateRecord["status"]): CandidateRecord["status"] => {
+  if (status === "STARTED") return "IN_PROGRESS";
+  if (status === "SUBMITTED") return "COMPLETED";
+  if (status === "DISQUALIFIED") return "FLAGGED";
+  return "ENROLLED";
+};
 
 export default function CandidatesPage() {
+  const searchParams = useSearchParams();
+  const requestedExamId = searchParams.get("examId") || "";
   const [examiner, setExaminer] = useState<ExaminerWorkspace | null>(null);
   const [candidates, setCandidates] = useState<CandidateRecord[]>([]);
   const [availableRoomCodes, setAvailableRoomCodes] = useState<string[]>([]);
+  const [selectedExamId, setSelectedExamId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [copiedPin, setCopiedPin] = useState<string | null>(null);
@@ -60,6 +77,17 @@ export default function CandidatesPage() {
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newRoomCode, setNewRoomCode] = useState("");
+  const [upsertCandidate, { isLoading: isSavingCandidate }] = useUpsertCandidateMutation();
+  const { data: workspaceExams = [] } = useListWorkspaceExamsQuery(examiner?.id || "", {
+    skip: !examiner?.id,
+  });
+  const selectedExam = workspaceExams.find((exam) => exam.id === selectedExamId);
+  const activeExamId = selectedExamId || workspaceExams[0]?.id || "";
+  const activeRoomCode = selectedExam?.accessCode || workspaceExams[0]?.accessCode || newRoomCode;
+  const { data: remoteCandidates = [], isFetching: isLoadingCandidates } = useListCandidatesQuery(
+    { examId: activeExamId, search: searchQuery || undefined },
+    { skip: !activeExamId }
+  );
 
   // Print Slips Dialog State
   const [isPrintOpen, setIsPrintOpen] = useState(false);
@@ -88,6 +116,38 @@ export default function CandidatesPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (workspaceExams.length === 0) return;
+    setAvailableRoomCodes(workspaceExams.map((exam) => exam.accessCode));
+    const requestedExam = workspaceExams.find((exam) => exam.id === requestedExamId);
+    if (requestedExam && selectedExamId !== requestedExam.id) {
+      setSelectedExamId(requestedExam.id);
+      setNewRoomCode(requestedExam.accessCode);
+      return;
+    }
+
+    if (!selectedExamId) {
+      setSelectedExamId(workspaceExams[0].id);
+      setNewRoomCode(workspaceExams[0].accessCode);
+    }
+  }, [requestedExamId, selectedExamId, workspaceExams]);
+
+  useEffect(() => {
+    if (!activeExamId || !activeRoomCode || isLoadingCandidates) return;
+    const mapped = remoteCandidates.map((candidate) => ({
+      id: candidate.id,
+      name: candidate.candidateName,
+      regNumber: candidate.studentId || candidate.metadata?.regNumber || `PIN-${candidate.candidatePin}`,
+      pin: candidate.candidatePin,
+      phone: candidate.phone || "",
+      roomCode: activeRoomCode,
+      status: mapCandidateStatus(candidate.status),
+      createdAt: candidate.createdAt || "",
+    })) as CandidateRecord[];
+    setCandidates(mapped);
+    saveStoredCandidates(mapped, examiner?.id);
+  }, [activeExamId, activeRoomCode, examiner?.id, isLoadingCandidates, remoteCandidates]);
+
   const handleCopyPin = (pin: string) => {
     navigator.clipboard.writeText(pin);
     setCopiedPin(pin);
@@ -114,10 +174,15 @@ export default function CandidatesPage() {
     window.open(`https://wa.me/${candidate.phone.replace(/[^0-9]/g, "")}?text=${message}`, "_blank");
   };
 
-  const handleAddCandidate = (e: React.FormEvent) => {
+  const handleAddCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) {
       toast.error("Please provide the candidate's full name");
+      return;
+    }
+
+    if (!activeExamId) {
+      toast.error("Create or select an exam before enrolling candidates.");
       return;
     }
 
@@ -125,24 +190,37 @@ export default function CandidatesPage() {
     const nextIndex = candidates.length + 1;
     const formattedReg = `PLN/26/${String(nextIndex).padStart(3, "0")}`;
 
-    const newCandidate: CandidateRecord = {
-      id: `c_${Date.now()}`,
-      name: newName.trim(),
-      regNumber: formattedReg,
-      pin: randomPin,
-      phone: newPhone.trim() || "08000000000",
-      roomCode: newRoomCode.trim().toUpperCase() || (availableRoomCodes[0] || "EXAM-ROOM"),
-      status: "ENROLLED",
-      createdAt: "Just now",
-    };
+    try {
+      const created = await upsertCandidate({
+        examId: activeExamId,
+        candidateName: newName.trim(),
+        candidatePin: randomPin,
+        phone: newPhone.trim() || undefined,
+        studentId: formattedReg,
+        metadata: { regNumber: formattedReg },
+      }).unwrap();
 
-    const updated = [newCandidate, ...candidates];
-    setCandidates(updated);
-    saveStoredCandidates(updated, examiner?.id);
-    toast.success(`Candidate ${newName} enrolled with PIN: ${randomPin}`);
-    setNewName("");
-    setNewPhone("");
-    setIsAddOpen(false);
+      const newCandidate: CandidateRecord = {
+        id: created.id,
+        name: created.candidateName,
+        regNumber: created.studentId || formattedReg,
+        pin: created.candidatePin,
+        phone: created.phone || "",
+        roomCode: activeRoomCode || newRoomCode.trim().toUpperCase(),
+        status: mapCandidateStatus(created.status),
+        createdAt: created.createdAt || "Just now",
+      };
+
+      const updated = [newCandidate, ...candidates.filter((candidate) => candidate.id !== newCandidate.id)];
+      setCandidates(updated);
+      saveStoredCandidates(updated, examiner?.id);
+      toast.success(`Candidate ${newName} enrolled with PIN: ${randomPin}`);
+      setNewName("");
+      setNewPhone("");
+      setIsAddOpen(false);
+    } catch (err: any) {
+      toast.error(err?.data?.message || err?.message || "Could not enroll candidate on the CBT microservice.");
+    }
   };
 
   const handleDeleteCandidate = (id: string) => {
@@ -278,11 +356,32 @@ export default function CandidatesPage() {
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-700">Target Exam Room Code</label>
                     <Input
-                      placeholder="e.g. JAMB-MOCK-26"
+                      placeholder="Exam room code"
                       value={newRoomCode}
                       onChange={(e) => setNewRoomCode(e.target.value.toUpperCase())}
+                      disabled={workspaceExams.length > 0}
                       className="text-xs font-mono font-bold uppercase"
                     />
+                    {workspaceExams.length > 0 && (
+                      <div className="grid grid-cols-1 gap-1 pt-1">
+                        <label className="text-[11px] font-semibold text-slate-500">Select Exam</label>
+                        <select
+                          value={activeExamId}
+                          onChange={(e) => {
+                            const exam = workspaceExams.find((item) => item.id === e.target.value);
+                            setSelectedExamId(e.target.value);
+                            if (exam) setNewRoomCode(exam.accessCode);
+                          }}
+                          className="h-9 rounded-md border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-[#641bc4] focus:ring-2 focus:ring-[#641bc4]/15"
+                        >
+                          {workspaceExams.map((exam) => (
+                            <option key={exam.id} value={exam.id}>
+                              {exam.title} ({exam.accessCode})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   <DialogFooter className="pt-3">
@@ -298,9 +397,10 @@ export default function CandidatesPage() {
                     <Button
                       type="submit"
                       size="sm"
+                      disabled={isSavingCandidate}
                       className="text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white px-5"
                     >
-                      Issue PIN & Enrol
+                      {isSavingCandidate ? "Issuing..." : "Issue PIN & Enrol"}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -423,6 +523,11 @@ export default function CandidatesPage() {
 
         {/* ── CANDIDATES TABLE (Desktop) & CARDS (Mobile) ────────────────────── */}
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+          {isLoadingCandidates && (
+            <div className="border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-500">
+              Syncing candidate roster from CBT microservice...
+            </div>
+          )}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">

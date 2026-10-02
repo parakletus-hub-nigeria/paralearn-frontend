@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
- * Next.js Edge Proxy Handler
+ * CBT Subdomain Proxy
  * 
  * Manages subdomain routing for autonomous CBT workspaces (cbt.pln.ng, cbt.localhost)
  * without rewriting static assets or PIN gate runner paths.
+ * Mounted by the host app's src/proxy.ts, which owns the matcher config.
  */
-export function proxy(req: NextRequest) {
+export function cbtProxy(req: NextRequest) {
   const url = req.nextUrl;
   const hostname = req.headers.get("host") || "";
 
@@ -51,18 +52,3 @@ export function proxy(req: NextRequest) {
 
   return NextResponse.next();
 }
-
-export default proxy;
-
-export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - api routes
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
-  ],
-};

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import CbtAuthGateway from "@/components/CBT/CbtAuthGateway";
+import CbtAuthGateway from "@cbt/components/CBT/CbtAuthGateway";
 
 export const metadata = {
   title: "Examiner Access & Sign In | ParaLearn CBT",

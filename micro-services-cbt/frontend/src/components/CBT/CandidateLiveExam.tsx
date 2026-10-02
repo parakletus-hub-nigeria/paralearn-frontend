@@ -52,7 +52,11 @@ import {
   CandidateSession,
   CbtQuestionType,
   ExamRubric
-} from "@/lib/cbtSessionManager";
+} from "@cbt/lib/cbtSessionManager";
+import {
+  useBufferAnswerMutation,
+  useSubmitAttemptMutation,
+} from "@cbt/store/cbtMicroserviceApi";
 
 export interface QuestionItem {
   id: string;
@@ -78,71 +82,14 @@ interface CandidateLiveExamProps {
   questions?: QuestionItem[];
 }
 
-// Sample fallback questions if testing without backend payload
-const DEFAULT_QUESTIONS: QuestionItem[] = [
-  {
-    id: "q1",
-    prompt: "What is the primary function of chlorophyll in green plants?",
-    type: "MCQ",
-    section: "Section A: Multiple Choice",
-    marks: 2.0,
-    options: [
-      { id: "c1", text: "To absorb light energy for photosynthesis", keyLabel: "A", isCorrect: true },
-      { id: "c2", text: "To absorb water directly from the atmosphere", keyLabel: "B", isCorrect: false },
-      { id: "c3", text: "To release oxygen into the soil", keyLabel: "C", isCorrect: false },
-      { id: "c4", text: "To store starch in the plant stem", keyLabel: "D", isCorrect: false },
-    ],
-  },
-  {
-    id: "q2",
-    prompt: "A body of mass 4 kg is moving with a constant velocity of 10 m/s. Calculate its momentum.",
-    type: "MCQ",
-    section: "Section A: Multiple Choice",
-    marks: 2.0,
-    options: [
-      { id: "c1", text: "2.5 kg·m/s", keyLabel: "A", isCorrect: false },
-      { id: "c2", text: "40 kg·m/s", keyLabel: "B", isCorrect: true },
-      { id: "c3", text: "200 kg·m/s", keyLabel: "C", isCorrect: false },
-      { id: "c4", text: "14 kg·m/s", keyLabel: "D", isCorrect: false },
-    ],
-  },
-  {
-    id: "q3",
-    prompt: "Briefly distinguish between speed and velocity. Provide one practical example demonstrating the distinction.",
-    type: "SHORT_ESSAY",
-    section: "Section B: Theory & Short Answer",
-    marks: 5.0,
-    minWords: 20,
-    maxWords: 100,
-  },
-  {
-    id: "q4",
-    prompt: "Critically evaluate the socioeconomic impact of renewable energy transitions in developing sub-Saharan African economies. Discuss both technological hurdles and long-term industrial benefits.",
-    type: "LONG_ESSAY",
-    section: "Section C: Extended Essay",
-    marks: 15.0,
-    minWords: 150,
-    maxWords: 800,
-    rubric: {
-      id: "rub_demo",
-      name: "Standard Academic Evaluation Rubric",
-      source: "MANUAL_STUDIO",
-      totalMarks: 15,
-      criteria: [
-        { id: "c1", title: "Thesis, Content & Technical Depth", maxMarks: 5, description: "Clear thesis, relevant real-world examples, and accurate socioeconomic concepts." },
-        { id: "c2", title: "Analytical Coherence & Structure", maxMarks: 5, description: "Logical organization, topic sentences, and balanced evaluation of opportunities vs challenges." },
-        { id: "c3", title: "Expression, Clarity & Grammar", maxMarks: 5, description: "Grammatical accuracy, authoritative vocabulary, and precise articulation." },
-      ],
-    },
-  },
-];
-
 export default function CandidateLiveExam({
   examCode,
   examTitle = "Online Assessment Examination",
-  questions = DEFAULT_QUESTIONS,
+  questions: initialQuestions = [],
 }: CandidateLiveExamProps) {
   const router = useRouter();
+  const [bufferAnswer] = useBufferAnswerMutation();
+  const [submitAttempt] = useSubmitAttemptMutation();
 
   // Session state from local storage
   const [session, setSession] = useState<CandidateSession | null>(null);
@@ -159,9 +106,23 @@ export default function CandidateLiveExam({
   const sessionRef = useRef<CandidateSession | null>(null);
   sessionRef.current = session;
 
+  const questions = useMemo<QuestionItem[]>(() => {
+    const delivered = session?.questions;
+    if (delivered && delivered.length > 0) {
+      return delivered.map((q) => ({
+        ...q,
+        type: q.type === "ESSAY" ? "LONG_ESSAY" : q.type,
+        options: q.options || [],
+      })) as QuestionItem[];
+    }
+    return initialQuestions;
+  }, [initialQuestions, session?.questions]);
+
+  const resolvedExamTitle = session?.examTitle || examTitle;
+  const maxTabViolations = session?.maxTabViolations ?? 3;
   const currentQ = questions[activeQuestionIdx] || questions[0];
-  const selectedAnswer = session?.answers[currentQ.id];
-  const isFlagged = session?.flaggedQuestionIds.includes(currentQ.id) || false;
+  const selectedAnswer = currentQ ? session?.answers[currentQ.id] : undefined;
+  const isFlagged = currentQ ? session?.flaggedQuestionIds.includes(currentQ.id) || false : false;
 
   // Local draft state for essay inputs (for smooth typing without re-render delays)
   const [essayDraft, setEssayDraft] = useState<string>("");
@@ -169,27 +130,18 @@ export default function CandidateLiveExam({
 
   // Sync draft whenever current question changes
   useEffect(() => {
+    if (!currentQ) return;
     const existing = session?.answers[currentQ.id];
     setEssayDraft(typeof existing === "string" ? existing : "");
-  }, [currentQ.id, session?.answers]);
+  }, [currentQ?.id, session?.answers]);
 
   // 1. Initialize or restore session
   useEffect(() => {
-    let active = loadCandidateSession(examCode);
+    const active = loadCandidateSession(examCode);
     if (!active) {
-      active = {
-        examCode: examCode.toUpperCase(),
-        candidateName: "Walk-in Candidate",
-        candidatePin: "DEFAULT",
-        startedAt: new Date().toISOString(),
-        durationMins: 60,
-        deadline: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-        answers: {},
-        flaggedQuestionIds: [],
-        violations: [],
-        status: "in_progress",
-      };
-      saveCandidateSession(active);
+      toast.error("No active CBT attempt was found. Please start from the exam lobby.");
+      router.replace(`/take/${encodeURIComponent(examCode)}`);
+      return;
     }
 
     if (active.status === "submitted" || active.status === "disqualified") {
@@ -237,12 +189,12 @@ export default function CandidateLiveExam({
 
         if (updated) setSession(updated);
 
-        toast.error(`Malpractice Alert: Tab switch detected! (Violation ${violationCount} of 3)`, {
+        toast.error(`Malpractice Alert: Tab switch detected! (Violation ${violationCount} of ${maxTabViolations})`, {
           duration: 4000,
           icon: <ShieldAlert className="w-5 h-5 text-[var(--crimson-signal)]" />,
         });
 
-        if (violationCount >= 3) {
+        if (violationCount >= maxTabViolations) {
           handleFinalSubmit("malpractice");
         }
       }
@@ -266,11 +218,12 @@ export default function CandidateLiveExam({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("blur", handleWindowBlur);
     };
-  }, [examCode, activeQuestionIdx]);
+  }, [examCode, activeQuestionIdx, maxTabViolations]);
 
   // 4. Keyboard Navigation Hook (Linear-Style Speed for MCQ)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!currentQ) return;
       // Don't intercept if student is in an open text input or textarea
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
@@ -298,11 +251,18 @@ export default function CandidateLiveExam({
 
   // Actions
   const selectChoice = (choiceId: string) => {
-    if (!session) return;
+    if (!session || !currentQ) return;
     setSyncStatus("saving");
     const updated = saveAnswerToSession(examCode, session.candidatePin, currentQ.id, choiceId);
     if (updated) {
       setSession(updated);
+      if (updated.attemptId) {
+        bufferAnswer({
+          attemptId: updated.attemptId,
+          questionId: currentQ.id,
+          selectedVal: choiceId,
+        }).catch(() => {});
+      }
       setTimeout(() => setSyncStatus("synced"), 150);
     }
   };
@@ -318,16 +278,24 @@ export default function CandidateLiveExam({
 
     autosaveTimeoutRef.current = setTimeout(() => {
       if (!sessionRef.current) return;
+      if (!currentQ) return;
       const updated = saveAnswerToSession(examCode, sessionRef.current.candidatePin, currentQ.id, text);
       if (updated) {
         setSession(updated);
+        if (updated.attemptId) {
+          bufferAnswer({
+            attemptId: updated.attemptId,
+            questionId: currentQ.id,
+            selectedVal: text,
+          }).catch(() => {});
+        }
         setSyncStatus("synced");
       }
     }, 300);
   };
 
   const handleToggleFlag = () => {
-    if (!session) return;
+    if (!session || !currentQ) return;
     const { session: updated } = toggleQuestionFlag(examCode, session.candidatePin, currentQ.id);
     if (updated) setSession(updated);
   };
@@ -350,8 +318,44 @@ export default function CandidateLiveExam({
   }, [questions]);
 
   // Final Submit Handler
-  const handleFinalSubmit = (reason: "manual" | "timeout" | "malpractice" = "manual") => {
+  const handleFinalSubmit = async (reason: "manual" | "timeout" | "malpractice" = "manual") => {
     if (!session) return;
+
+    if (session.attemptId) {
+      try {
+        const resultSlip = await submitAttempt({
+          attemptId: session.attemptId,
+          finalAnswers: session.answers,
+          autoSubmitted: reason === "timeout" || reason === "malpractice",
+        }).unwrap();
+
+        const completedSession: CandidateSession = {
+          ...session,
+          status: reason === "malpractice" ? "disqualified" : "submitted",
+          gradingStatus: "AUTO_SCORED",
+          score: resultSlip.score,
+          totalMarks: resultSlip.totalMarks,
+          percentage: resultSlip.percentage,
+        };
+
+        saveCandidateSession(completedSession);
+
+        if (reason === "timeout") {
+          toast.warning("Time limit expired. Your exam was automatically submitted.");
+        } else if (reason === "malpractice") {
+          toast.error("Exam locked due to repeated malpractice violations.");
+        } else {
+          toast.success("Examination submitted successfully.");
+        }
+
+        router.replace(`/take/${encodeURIComponent(examCode)}/results`);
+        return;
+      } catch (err: any) {
+        const message = err?.data?.message || err?.message || "Submission could not reach the CBT microservice. Your answers remain saved locally.";
+        toast.error(message);
+        if (reason === "manual") return;
+      }
+    }
 
     let mcqScore = 0;
     let mcqTotalMarks = 0;
@@ -421,6 +425,26 @@ export default function CandidateLiveExam({
 
   const essayCharCount = essayDraft.length;
 
+  if (!session || questions.length === 0 || !currentQ) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-6 text-center">
+        <div className="max-w-md rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-6 shadow-[var(--shadow-card)]">
+          <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-[var(--amber-signal)]" />
+          <h1 className="text-lg font-bold text-[var(--foreground)]">Exam session unavailable</h1>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+            This page needs a live CBT attempt from the microservice. Return to the lobby and start the exam again.
+          </p>
+          <Button
+            onClick={() => router.replace(`/take/${encodeURIComponent(examCode)}`)}
+            className="mt-5 bg-[var(--violet-ink)] text-white hover:bg-[var(--violet-hover)]"
+          >
+            Return to Lobby
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)] select-none">
       
@@ -429,7 +453,7 @@ export default function CandidateLiveExam({
         {/* Left: Exam Info & Progress */}
         <div className="flex items-center gap-3">
           <div className="font-bold text-sm sm:text-base tracking-tight truncate max-w-[180px] sm:max-w-md">
-            {examTitle}
+            {resolvedExamTitle}
           </div>
           <Badge 
             variant="outline"

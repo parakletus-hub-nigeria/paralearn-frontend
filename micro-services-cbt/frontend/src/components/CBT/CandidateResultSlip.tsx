@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { loadCandidateSession, clearCandidateSession, CandidateSession } from "@/lib/cbtSessionManager";
+import { loadCandidateSession, clearCandidateSession, CandidateSession } from "@cbt/lib/cbtSessionManager";
+import { useGetResultSlipQuery } from "@cbt/store/cbtMicroserviceApi";
 
 interface CandidateResultSlipProps {
   examCode: string;
@@ -26,6 +27,9 @@ interface CandidateResultSlipProps {
 export default function CandidateResultSlip({ examCode }: CandidateResultSlipProps) {
   const router = useRouter();
   const [session, setSession] = useState<CandidateSession | null>(null);
+  const { data: remoteSlip } = useGetResultSlipQuery(session?.attemptId || "", {
+    skip: !session?.attemptId,
+  });
 
   useEffect(() => {
     const loaded = loadCandidateSession(examCode);
@@ -45,13 +49,13 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
 
   const isPendingReview = session?.gradingStatus === "PENDING_REVIEW";
   const isGraded = session?.gradingStatus === "GRADED";
-  const isDisqualified = session?.status === "disqualified";
+  const isDisqualified = (remoteSlip?.status || session?.status) === "DISQUALIFIED" || session?.status === "disqualified";
 
-  const mcqScore = session?.mcqScore ?? session?.score ?? 0;
+  const mcqScore = remoteSlip?.score ?? session?.mcqScore ?? session?.score ?? 0;
   const essayScore = session?.essayScore ?? 0;
   const totalScore = isGraded ? (mcqScore + essayScore) : mcqScore;
-  const grandTotalMarks = session?.totalMarks ?? 20;
-  const percentage = session?.percentage ?? (grandTotalMarks > 0 ? Math.round((totalScore / grandTotalMarks) * 100) : 0);
+  const grandTotalMarks = remoteSlip?.totalMarks ?? session?.totalMarks ?? 20;
+  const percentage = remoteSlip?.percentage ?? session?.percentage ?? (grandTotalMarks > 0 ? Math.round((totalScore / grandTotalMarks) * 100) : 0);
 
   // Calculate grade
   const getGrade = (pct: number) => {
@@ -105,7 +109,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
             <div>
               <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Candidate Name</span>
               <div className="font-bold text-sm text-[var(--foreground)] mt-0.5 truncate">
-                {session?.candidateName || "Walk-in Candidate"}
+                {remoteSlip?.candidateName || session?.candidateName || "Candidate"}
               </div>
             </div>
 
@@ -119,7 +123,9 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
             <div>
               <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Submission Time</span>
               <div className="font-medium text-xs text-[var(--foreground)] mt-0.5">
-                {new Date().toLocaleDateString()} {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {remoteSlip?.submittedAt
+                  ? `${new Date(remoteSlip.submittedAt).toLocaleDateString()} ${new Date(remoteSlip.submittedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                  : `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
               </div>
             </div>
 
@@ -127,7 +133,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
               <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Security Audit</span>
               <div className="font-medium text-xs text-[var(--emerald-signal)] flex items-center gap-1 mt-0.5">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>{session?.violations?.length || 0} Malpractice Flags</span>
+                <span>{remoteSlip?.violations ?? session?.violations?.length ?? 0} Malpractice Flags</span>
               </div>
             </div>
           </div>
@@ -195,7 +201,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
 
               <div>
                 <Badge className={`${gradeInfo.tint} font-bold text-xs uppercase px-3 py-1 rounded-full border-0`}>
-                  Grade: {gradeInfo.letter} ({gradeInfo.desc})
+                  Grade: {remoteSlip?.grade || gradeInfo.letter} ({remoteSlip?.grade ? "Official" : gradeInfo.desc})
                 </Badge>
               </div>
             </div>

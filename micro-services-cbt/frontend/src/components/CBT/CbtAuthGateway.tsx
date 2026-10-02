@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { saveSubdomainToStorage, extractSubdomainFromURL } from "@/lib/subdomainManager";
-import { cbtApi } from "@/lib/cbtSessionManager";
+import { cbtApi } from "@cbt/lib/cbtSessionManager";
 
 export default function CbtAuthGateway() {
   const router = useRouter();

@@ -32,7 +32,7 @@ import {
   ExamRubric,
   CandidateSession,
   saveCandidateSession
-} from "@/lib/cbtSessionManager";
+} from "@cbt/lib/cbtSessionManager";
 
 interface CbtEssayGradingModalProps {
   isOpen: boolean;

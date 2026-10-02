@@ -10,6 +10,7 @@ import sabiStandaloneAuthReducer from "./sabiStandaloneAuth/sabiStandaloneAuthSl
 import { paraApi } from "./api";
 import { uniApi } from "./api/uniBaseApi";
 import { superAdminApi } from "./api/superAdminBaseApi";
+import { cbtMicroserviceApi } from "@cbt/store/cbtMicroserviceApi";
 import { RESET_STORE } from "./constants";
 
 const appReducer = combineReducers({
@@ -24,6 +25,7 @@ const appReducer = combineReducers({
   [paraApi.reducerPath]: paraApi.reducer,
   [uniApi.reducerPath]: uniApi.reducer,
   [superAdminApi.reducerPath]: superAdminApi.reducer,
+  [cbtMicroserviceApi.reducerPath]: cbtMicroserviceApi.reducer,
 });
 
 // Passing undefined to each slice reducer causes it to return its initialState,
@@ -46,6 +48,7 @@ export const store = configureStore({
       paraApi.middleware,
       uniApi.middleware,
       superAdminApi.middleware,
+      cbtMicroserviceApi.middleware,
     ),
 });
 

@@ -1,4 +1,4 @@
-import CandidateResultSlip from "@/components/CBT/CandidateResultSlip";
+import CandidateResultSlip from "@cbt/components/CBT/CandidateResultSlip";
 
 interface PageProps {
   params: Promise<{

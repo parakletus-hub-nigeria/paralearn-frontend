@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { clearExaminerSession, purgeAllDemoData } from "@/lib/cbtSessionManager";
+import { clearExaminerSession, purgeAllDemoData } from "@cbt/lib/cbtSessionManager";
 
 interface StandaloneWorkspace {
   id: string;

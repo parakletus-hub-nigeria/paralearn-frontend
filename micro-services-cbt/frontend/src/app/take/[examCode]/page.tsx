@@ -1,4 +1,4 @@
-import CandidateLobby from "@/components/CBT/CandidateLobby";
+import CandidateLobby from "@cbt/components/CBT/CandidateLobby";
 
 interface PageProps {
   params: Promise<{
