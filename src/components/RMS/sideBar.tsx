@@ -546,12 +546,11 @@ const SidebarContentContainer = ({
         {/* Page content */}
         <div
           style={{
-            padding: "32px 40px",
             width: "100%",
             maxWidth: 1600,
             margin: "0 auto",
           }}
-          className="px-4 py-4 sm:px-6 sm:py-6 md:px-10 md:py-8"
+          className="pt-16 pb-6 px-3.5 sm:px-6 sm:py-6 md:px-10 md:py-8"
         >
           {children}
         </div>

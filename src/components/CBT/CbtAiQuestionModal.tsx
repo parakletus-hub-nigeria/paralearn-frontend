@@ -203,10 +203,19 @@ export default function CbtAiQuestionModal({
         body: formData,
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(
+          res.status === 404
+            ? "Question generator API route not found. Please restart your Next.js server."
+            : `Server returned an unparseable response (HTTP ${res.status}).`
+        );
+      }
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to generate questions.");
+        throw new Error(data.error || `Server responded with status ${res.status}.`);
       }
 
       const questionsList: StudioQuestion[] = (data.questions || []).map((q: any) => ({
@@ -291,13 +300,13 @@ export default function CbtAiQuestionModal({
       <DialogContent className="max-w-3xl max-h-[90vh] bg-white border border-stone-200 rounded-2xl p-0 overflow-hidden flex flex-col shadow-2xl">
         
         {/* Header */}
-        <DialogHeader className="p-6 border-b border-stone-100 bg-stone-50/50 flex flex-row items-center justify-between shrink-0">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-xs">
+        <DialogHeader className="p-4 sm:p-6 border-b border-stone-100 bg-stone-50/50 flex flex-row items-center justify-between shrink-0 gap-2">
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
                 <Sparkles className="w-4 h-4" />
               </span>
-              <DialogTitle className="text-base font-bold text-stone-900 tracking-tight">
+              <DialogTitle className="text-sm sm:text-base font-bold text-stone-900 tracking-tight">
                 Author Assessment with ParaLearn AI
               </DialogTitle>
               <Badge variant="outline" className="text-[10px] font-mono border-violet-200 text-violet-700 bg-violet-50">
@@ -312,14 +321,14 @@ export default function CbtAiQuestionModal({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-8 w-8 p-0 rounded-lg text-stone-400 hover:text-stone-700"
+            className="h-8 w-8 p-0 rounded-lg text-stone-400 hover:text-stone-700 shrink-0"
           >
             <X className="w-4 h-4" />
           </Button>
         </DialogHeader>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {step === "generating" ? (
             <div className="py-20 text-center space-y-4 max-w-sm mx-auto">
               <div className="w-16 h-16 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center mx-auto border border-violet-200 shadow-inner">
@@ -342,7 +351,7 @@ export default function CbtAiQuestionModal({
                 <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
                   1. Select Source Material Format
                 </label>
-                <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 rounded-xl">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 p-1 bg-stone-100 rounded-xl">
                   <button
                     type="button"
                     onClick={() => setSourceType("file")}

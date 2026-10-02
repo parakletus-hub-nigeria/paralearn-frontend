@@ -12,10 +12,18 @@ interface RubricCriterionPayload {
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.CBT_GEMINI_API_KEY;
+    const rawApiKey =
+      process.env.CBT_GEMINI_API_KEY ||
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY ||
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = rawApiKey ? rawApiKey.trim().replace(/^["']|["']$/g, "") : "";
     if (!apiKey) {
       return NextResponse.json(
-        { error: "CBT_GEMINI_API_KEY is not configured on the server." },
+        {
+          error:
+            "GEMINI_API_KEY (or CBT_GEMINI_API_KEY) is not configured on the server. Please define GEMINI_API_KEY or GOOGLE_API_KEY in your .env.local file or hosting environment variables.",
+        },
         { status: 500 }
       );
     }
@@ -104,15 +112,27 @@ Return the result STRICTLY as valid JSON matching this schema:
     try {
       result = await model.generateContent([{ text: systemPrompt }]);
     } catch (err: any) {
-      console.warn("Primary grading model failed, using fallback gemini-2.5-flash:", err?.message);
-      const fallback = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.1,
-        },
-      });
-      result = await fallback.generateContent([{ text: systemPrompt }]);
+      console.warn(`Primary grading model failed (${err?.message}), using fallback gemini-3.8-flash...`);
+      try {
+        const fallback = genAI.getGenerativeModel({
+          model: "gemini-3.8-flash",
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.1,
+          },
+        });
+        result = await fallback.generateContent([{ text: systemPrompt }]);
+      } catch (fbErr: any) {
+        console.warn(`Secondary grading model failed (${fbErr?.message}), using fallback gemini-flash-latest...`);
+        const tertiary = genAI.getGenerativeModel({
+          model: "gemini-flash-latest",
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.1,
+          },
+        });
+        result = await tertiary.generateContent([{ text: systemPrompt }]);
+      }
     }
 
     const responseText = (await result.response).text();

@@ -169,15 +169,15 @@ export default function CbtAuthGateway() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-4 sm:p-6 font-sans text-[var(--foreground)]">
+    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-3 sm:p-6 font-sans text-[var(--foreground)]">
       
       {/* Brand Header */}
-      <div className="mb-6 text-center space-y-1">
+      <div className="mb-6 text-center space-y-1 px-2 max-w-sm">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--violet-tint)] text-[var(--violet-ink)] text-xs font-semibold">
           <Sparkles className="w-3.5 h-3.5" />
           <span>ParaLearn Assessment Suite</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--foreground)]">
+        <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-[var(--foreground)]">
           {workspaceType === "standalone"
             ? authMode === "login"
               ? "Examiner Sign In"
@@ -213,27 +213,27 @@ export default function CbtAuthGateway() {
             <button
               type="button"
               onClick={() => setWorkspaceType("standalone")}
-              className={`h-9 text-xs font-bold rounded-[var(--radius-sm)] transition-all flex items-center justify-center gap-1.5 ${
+              className={`h-9 px-1 text-xs font-bold rounded-[var(--radius-sm)] transition-all flex items-center justify-center gap-1.5 min-w-0 ${
                 workspaceType === "standalone"
                   ? "bg-white text-[var(--foreground)] shadow-xs border border-[var(--border-fine)]"
                   : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
               }`}
             >
-              <UserCheck className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-              <span>Independent Examiner</span>
+              <UserCheck className="w-3.5 h-3.5 text-[var(--violet-ink)] shrink-0" />
+              <span className="truncate">Independent</span>
             </button>
 
             <button
               type="button"
               onClick={() => setWorkspaceType("school")}
-              className={`h-9 text-xs font-bold rounded-[var(--radius-sm)] transition-all flex items-center justify-center gap-1.5 ${
+              className={`h-9 px-1 text-xs font-bold rounded-[var(--radius-sm)] transition-all flex items-center justify-center gap-1.5 min-w-0 ${
                 workspaceType === "school"
                   ? "bg-white text-[var(--foreground)] shadow-xs border border-[var(--border-fine)]"
                   : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
               }`}
             >
-              <Building2 className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-              <span>School Account (SSO)</span>
+              <Building2 className="w-3.5 h-3.5 text-[var(--violet-ink)] shrink-0" />
+              <span className="truncate">School (SSO)</span>
             </button>
           </div>
         </div>

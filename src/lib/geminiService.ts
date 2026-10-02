@@ -21,7 +21,8 @@ export const generateQuestions = async (
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const modelName = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+  const model = genAI.getGenerativeModel({ model: modelName });
 
   const systemPrompt = `
     You are an expert teacher's assistant. Generate ${count} ${difficulty} level questions based on the following topic/prompt: "${prompt}".
@@ -44,7 +45,14 @@ export const generateQuestions = async (
   `;
 
   try {
-    const result = await model.generateContent(systemPrompt);
+    let result;
+    try {
+      result = await model.generateContent(systemPrompt);
+    } catch (primaryErr) {
+      console.warn(`Primary model ${modelName} failed, falling back to gemini-flash-latest...`);
+      const fallbackModel = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+      result = await fallbackModel.generateContent(systemPrompt);
+    }
     const response = await result.response;
     const text = response.text();
     
@@ -54,6 +62,6 @@ export const generateQuestions = async (
     return JSON.parse(cleanedText) as GeneratedQuestion[];
   } catch (error: any) {
     console.error("Gemini Generation Error:", error);
-    throw new Error("Failed to generate questions. Please check your API key and try again.");
+    throw new Error(error?.message || "Failed to generate questions. Please verify your API key and network connection.");
   }
 };

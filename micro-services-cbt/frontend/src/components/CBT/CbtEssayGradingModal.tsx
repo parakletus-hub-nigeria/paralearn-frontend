@@ -218,16 +218,16 @@ export default function CbtEssayGradingModal({
       <DialogContent className="max-w-3xl max-h-[90vh] bg-white border border-slate-200 rounded-2xl p-0 overflow-hidden flex flex-col shadow-2xl">
         
         {/* Header */}
-        <DialogHeader className="p-6 border-b border-slate-100 bg-slate-50/70 flex flex-row items-center justify-between shrink-0">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
+        <DialogHeader className="p-4 sm:p-6 border-b border-slate-100 bg-slate-50/70 flex flex-row items-center justify-between shrink-0 gap-2">
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0">
                 <Award className="w-4 h-4 text-amber-600" />
               </span>
-              <DialogTitle className="text-base font-bold text-slate-900 tracking-tight">
+              <DialogTitle className="text-sm sm:text-base font-bold text-slate-900 tracking-tight truncate">
                 Examiner Essay Evaluation &amp; Grading
               </DialogTitle>
-              <Badge variant="outline" className="text-[10px] font-mono bg-white text-slate-700">
+              <Badge variant="outline" className="text-[10px] font-mono bg-white text-slate-700 truncate">
                 {candidateSession.candidateName} &bull; PIN: {candidateSession.candidatePin}
               </Badge>
             </div>
@@ -239,14 +239,14 @@ export default function CbtEssayGradingModal({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-slate-700"
+            className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-slate-700 shrink-0"
           >
             <X className="w-4 h-4" />
           </Button>
         </DialogHeader>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
           
           {/* Question Prompt Card */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
@@ -436,18 +436,18 @@ export default function CbtEssayGradingModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between shrink-0">
+        <div className="px-4 py-3.5 sm:px-6 sm:py-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between shrink-0 gap-2">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-9 px-4 text-xs font-semibold text-slate-600"
+            className="h-9 px-3 sm:px-4 text-xs font-semibold text-slate-600"
           >
             Cancel
           </Button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="text-right hidden sm:block">
               <span className="text-[10px] text-slate-500 uppercase font-semibold block">Total Awarded</span>
               <span className="text-sm font-mono font-bold text-slate-900">
@@ -459,10 +459,10 @@ export default function CbtEssayGradingModal({
               type="button"
               size="sm"
               onClick={handleApproveAndSave}
-              className="h-9 px-5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs flex items-center gap-1.5"
+              className="h-9 px-3.5 sm:px-5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs flex items-center gap-1.5"
             >
               <Check className="w-4 h-4 stroke-[3]" />
-              <span>Approve &amp; Finalize Grade</span>
+              <span>Approve &amp; Finalize</span>
             </Button>
           </div>
         </div>
