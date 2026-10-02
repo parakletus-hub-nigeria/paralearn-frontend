@@ -77,6 +77,7 @@ import {
   useAttachQuestionsMutation,
   useBulkCreateQuestionsMutation,
   useGetCbtExamQuery,
+  useUpdateCbtExamMutation,
   useUpdateQuestionMutation,
 } from "@cbt/store/cbtMicroserviceApi";
 
@@ -154,7 +155,15 @@ export default function CbtQuestionStudio({
   const [bulkCreateQuestions, { isLoading: isCreatingQuestions }] = useBulkCreateQuestionsMutation();
   const [updateQuestion, { isLoading: isUpdatingQuestion }] = useUpdateQuestionMutation();
   const [attachQuestions, { isLoading: isAttachingQuestions }] = useAttachQuestionsMutation();
+  const [updateCbtExam, { isLoading: isTogglingPublish }] = useUpdateCbtExamMutation();
   const isSavingQuestions = isCreatingQuestions || isUpdatingQuestion || isAttachingQuestions;
+  const isPublished = Boolean(serviceExam?.isPublished);
+
+  // Only IDs the backend returned are persisted; manual, AI and imported drafts carry local IDs
+  const persistedIdSet = useMemo(
+    () => new Set((serviceExam?.questions || []).map((item) => item.question?.id || item.questionId)),
+    [serviceExam]
+  );
 
   const normalizeTypeForService = (type: StudioQuestion["type"]): ServiceQuestionType => {
     if (type === "SHORT_ESSAY" || type === "LONG_ESSAY") return "ESSAY";
@@ -496,10 +505,6 @@ export default function CbtQuestionStudio({
     }
 
     try {
-      // Only IDs the backend returned are persisted; manual, AI and imported drafts carry local IDs
-      const persistedIdSet = new Set(
-        (serviceExam?.questions || []).map((item) => item.question?.id || item.questionId)
-      );
       const existingQuestions = questions.filter((q) => persistedIdSet.has(q.id));
       const newQuestions = questions.filter((q) => !persistedIdSet.has(q.id));
 
@@ -545,6 +550,35 @@ export default function CbtQuestionStudio({
           reason ? `: ${Array.isArray(reason) ? reason.join("; ") : reason}` : "."
         }`
       );
+    }
+  };
+
+  const handleTogglePublish = async () => {
+    if (!serviceExam) {
+      toast.error("Connect to the CBT service before publishing this exam room.");
+      return;
+    }
+    if (!isPublished) {
+      if (persistedIdSet.size === 0) {
+        toast.error("Save at least one question before publishing.");
+        return;
+      }
+      if (questions.some((q) => !persistedIdSet.has(q.id))) {
+        toast.error("Some questions aren't saved yet. Press Save, then publish.");
+        return;
+      }
+    }
+
+    try {
+      await updateCbtExam({ id: examId, isPublished: !isPublished }).unwrap();
+      toast.success(
+        isPublished
+          ? "Exam room closed. Students can no longer join with this code."
+          : `Exam room published. Students can now join with code ${roomCode}.`
+      );
+    } catch (error: any) {
+      const reason = error?.data?.message;
+      toast.error(`Couldn't update the exam room${reason ? `: ${Array.isArray(reason) ? reason.join("; ") : reason}` : "."}`);
     }
   };
 
@@ -706,10 +740,39 @@ export default function CbtQuestionStudio({
                 : "Ready to sync with CBT microservice"}
             </span>
           </div>
-          <div className="flex items-center gap-3 text-slate-500 font-mono">
-            <span>{questions.length} questions</span>
-            <span>{totalMarks} marks</span>
-            <span>{durationMins} mins</span>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-3 text-slate-500 font-mono">
+              <span>{questions.length} questions</span>
+              <span>{totalMarks} marks</span>
+              <span>{durationMins} mins</span>
+            </div>
+            {serviceExam && (
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className={
+                    isPublished
+                      ? "text-[10px] font-semibold border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "text-[10px] font-semibold border-amber-200 bg-amber-50 text-amber-800"
+                  }
+                >
+                  {isPublished ? "Published · students can join" : "Draft · students can't join yet"}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant={isPublished ? "outline" : "default"}
+                  onClick={handleTogglePublish}
+                  disabled={isTogglingPublish || isSavingQuestions}
+                  className={
+                    isPublished
+                      ? "h-7 px-2.5 text-[11px] font-semibold border-[var(--border-fine)] rounded-[var(--radius-md)]"
+                      : "h-7 px-2.5 text-[11px] font-bold bg-[var(--emerald-signal)] hover:bg-emerald-700 text-white rounded-[var(--radius-md)]"
+                  }
+                >
+                  {isTogglingPublish ? "Updating..." : isPublished ? "Unpublish" : "Publish"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

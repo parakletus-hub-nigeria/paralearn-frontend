@@ -163,7 +163,10 @@ export default function CbtPortalPage() {
       return;
     }
 
-    const accessCode = newCode.trim().toUpperCase() || `EXAM-${Math.floor(1000 + Math.random() * 9000)}`;
+    // Room codes go into share links, so keep them URL-safe: letters, digits and hyphens
+    const accessCode =
+      newCode.trim().toUpperCase().replace(/\s+/g, "-").replace(/[^A-Z0-9-]/g, "").replace(/^-+|-+$/g, "") ||
+      `EXAM-${Math.floor(1000 + Math.random() * 9000)}`;
     const startsAt = isScheduled && newStartDate && newStartTime 
       ? new Date(`${newStartDate}T${newStartTime}:00`).toISOString() 
       : null;
@@ -523,7 +526,7 @@ export default function CbtPortalPage() {
                         <Input
                           placeholder="e.g. JAMB-MTH-26"
                           value={newCode}
-                          onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                          onChange={(e) => setNewCode(e.target.value.toUpperCase().replace(/\s+/g, "-").replace(/[^A-Z0-9-]/g, ""))}
                           className="text-xs font-mono font-bold uppercase"
                         />
                       </div>
