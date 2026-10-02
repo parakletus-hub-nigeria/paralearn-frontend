@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -60,7 +60,7 @@ const mapCandidateStatus = (status: RemoteCandidateRecord["status"]): CandidateR
   return "ENROLLED";
 };
 
-export default function CandidatesPage() {
+function CandidatesPageContent() {
   const searchParams = useSearchParams();
   const requestedExamId = searchParams.get("examId") || "";
   const [examiner, setExaminer] = useState<ExaminerWorkspace | null>(null);
@@ -877,5 +877,20 @@ export default function CandidatesPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// useSearchParams (for ?examId=) needs a Suspense boundary or the static build fails
+export default function CandidatesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full border-2 border-[var(--border-fine)] border-t-[var(--violet-ink)] animate-spin" />
+        </div>
+      }
+    >
+      <CandidatesPageContent />
+    </Suspense>
   );
 }
