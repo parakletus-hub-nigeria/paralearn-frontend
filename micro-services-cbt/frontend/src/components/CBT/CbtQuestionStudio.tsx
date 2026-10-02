@@ -66,6 +66,7 @@ import {
   saveStoredQuestions, 
   loadStoredExams, 
   saveStoredExams,
+  getExaminerSession,
   CbtQuestionType,
   ExamRubric,
   loadStoredRubrics
@@ -76,6 +77,7 @@ import {
   CbtQuestionType as ServiceQuestionType,
   useAttachQuestionsMutation,
   useBulkCreateQuestionsMutation,
+  useCreateCbtExamMutation,
   useGetCbtExamQuery,
   useUpdateCbtExamMutation,
   useUpdateQuestionMutation,
@@ -156,6 +158,7 @@ export default function CbtQuestionStudio({
   const [updateQuestion, { isLoading: isUpdatingQuestion }] = useUpdateQuestionMutation();
   const [attachQuestions, { isLoading: isAttachingQuestions }] = useAttachQuestionsMutation();
   const [updateCbtExam, { isLoading: isTogglingPublish }] = useUpdateCbtExamMutation();
+  const [createCbtExam] = useCreateCbtExamMutation();
   const isSavingQuestions = isCreatingQuestions || isUpdatingQuestion || isAttachingQuestions;
   const [localPublished, setLocalPublished] = useState<boolean>(true);
   const isPublished = serviceExam ? Boolean(serviceExam?.isPublished) : localPublished;
@@ -480,7 +483,16 @@ export default function CbtQuestionStudio({
   };
 
   const handleSaveQuestions = async () => {
-    const workspaceId = serviceExam?.workspaceId || serviceExam?.workspace?.id;
+    const storedExams = loadStoredExams();
+    const storedExam = storedExams.find((e) => e.id === examId);
+    const examinerSession = getExaminerSession();
+    const workspaceId =
+      serviceExam?.workspaceId ||
+      serviceExam?.workspace?.id ||
+      storedExam?.workspaceId ||
+      examinerSession?.id ||
+      "default";
+
     const invalidQuestion = questions.find((q) => !q.prompt.trim());
     if (invalidQuestion) {
       toast.error("Please enter a prompt for every question before saving.");
@@ -500,12 +512,28 @@ export default function CbtQuestionStudio({
     saveStoredQuestions(questions, examId);
     updateExamQuestionCount(questions.length);
 
-    if (!workspaceId) {
-      toast.warning("Saved locally. Sign in and open a backend exam room to sync questions.");
-      return;
-    }
-
     try {
+      // Auto-sync exam shell to cloud/backend if not synced yet
+      if (!serviceExam && storedExam) {
+        try {
+          await createCbtExam({
+            id: storedExam.id,
+            workspaceId,
+            title: storedExam.title || examTitle,
+            accessCode: storedExam.accessCode || roomCode,
+            durationMins: storedExam.durationMins || durationMins,
+            totalQuestions: questions.length,
+            maxTabViolations: settings.maxTabViolations,
+            shuffleQuestions: settings.shuffleQuestions,
+            shuffleChoices: settings.shuffleChoices,
+            showResultAfter: settings.showInstantResults,
+            isPublished: true,
+          }).unwrap();
+        } catch (err) {
+          console.warn("[CBT Studio] Cloud sync of exam shell will retry:", err);
+        }
+      }
+
       const existingQuestions = questions.filter((q) => persistedIdSet.has(q.id));
       const newQuestions = questions.filter((q) => !persistedIdSet.has(q.id));
 
@@ -542,9 +570,9 @@ export default function CbtQuestionStudio({
       await attachQuestions({ examId, questionIds: syncedQuestions.map((q) => q.id) }).unwrap();
 
       setServiceSyncedAt(new Date().toISOString());
-      toast.success("Question bank synced to the CBT microservice.");
+      toast.success("Question bank synced to ParaLearn Cloud.");
     } catch (error: any) {
-      console.warn("[CBT Studio] Microservice sync offline/unreachable; questions stored safely in local storage:", error);
+      console.warn("[CBT Studio] Cloud sync offline/unreachable; questions stored safely in local storage:", error);
       toast.success("Questions saved locally on this device.");
     }
   };

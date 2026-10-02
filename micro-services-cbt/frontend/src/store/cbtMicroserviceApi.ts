@@ -132,8 +132,27 @@ export interface CandidateRecord {
   createdAt?: string;
 }
 
-const rawBaseUrl = process.env.NEXT_PUBLIC_CBT_API_URL || "http://localhost:4000";
-export const CBT_MICROSERVICE_BASE_URL = rawBaseUrl.replace(/\/+$/, "");
+export const getCbtBaseUrl = (): string => {
+  if (typeof window !== "undefined") {
+    const isLocalhost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+    const envUrl = process.env.NEXT_PUBLIC_CBT_API_URL;
+    if (!envUrl || envUrl.includes("localhost") || envUrl.includes("127.0.0.1")) {
+      if (!isLocalhost) {
+        return "/api/cbt";
+      }
+    }
+    return (envUrl || "/api/cbt").replace(/\/+$/, "");
+  }
+  const envUrl = process.env.NEXT_PUBLIC_CBT_API_URL;
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+    return envUrl.replace(/\/+$/, "");
+  }
+  return "http://localhost:3000/api/cbt";
+};
+
+export const CBT_MICROSERVICE_BASE_URL = getCbtBaseUrl();
 
 export const cbtMicroserviceApi = createApi({
   reducerPath: "cbtMicroserviceApi",

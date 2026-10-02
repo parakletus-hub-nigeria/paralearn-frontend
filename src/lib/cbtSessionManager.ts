@@ -80,8 +80,27 @@ export interface ExaminerWorkspace {
 
 import Cookies from "js-cookie";
 
-const STORAGE_PREFIX = "paralearn_cbt_session_";
-export const CBT_API_BASE = process.env.NEXT_PUBLIC_CBT_API_URL || "http://localhost:4000";
+export const getCbtApiBase = (): string => {
+  if (typeof window !== "undefined") {
+    const isLocalhost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+    const envUrl = process.env.NEXT_PUBLIC_CBT_API_URL;
+    if (!envUrl || envUrl.includes("localhost") || envUrl.includes("127.0.0.1")) {
+      if (!isLocalhost) {
+        return "/api/cbt";
+      }
+    }
+    return (envUrl || "/api/cbt").replace(/\/+$/, "");
+  }
+  const envUrl = process.env.NEXT_PUBLIC_CBT_API_URL;
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+    return envUrl.replace(/\/+$/, "");
+  }
+  return "http://localhost:3000/api/cbt";
+};
+
+export const CBT_API_BASE = getCbtApiBase();
 
 export const CBT_COOKIE_SESSION = "pln_cbt_session";
 export const CBT_COOKIE_ATTEMPT = "pln_cbt_active_attempt";
