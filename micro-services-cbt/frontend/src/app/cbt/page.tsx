@@ -144,13 +144,16 @@ export default function CbtPortalPage() {
       ...localExams.filter((local) => !remoteIdSet.has(local.id)),
     ];
 
-    const isInternship =
+    const isRelevantHall =
       examiner.id === "ws_parakletus_internship" ||
+      examiner.id === "ws_sweep_prod" ||
       examiner.id === "default" ||
       examiner.name?.toLowerCase().includes("internship") ||
-      examiner.ownerEmail?.toLowerCase().includes("internship");
+      examiner.name?.toLowerCase().includes("sweep") ||
+      examiner.ownerEmail?.toLowerCase().includes("internship") ||
+      examiner.ownerEmail?.toLowerCase().includes("sweep");
 
-    if (isInternship && !merged.some((e) => e.accessCode?.trim().toUpperCase() === "BUSI-7642")) {
+    if (isRelevantHall && !merged.some((e) => e.accessCode?.trim().toUpperCase() === "BUSI-7642")) {
       merged = [
         {
           id: "exam_busi_7642",

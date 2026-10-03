@@ -143,9 +143,9 @@ const DEFAULT_WORKSPACES: StoredWorkspace[] = [
   },
   {
     id: "ws_sweep_prod",
-    name: "SWEEP Assessment Integration",
+    name: "SWEEP ACADEMY",
     type: "STANDALONE_HALL",
-    ownerName: "SWEEP Integration",
+    ownerName: "SWEEP Academy",
     ownerEmail: "sweep@pln.ng",
     credits: 999999,
     apiKey:
@@ -333,7 +333,9 @@ export const cbtServerStore = {
         e.workspaceId === workspaceId ||
         workspaceId === "default" ||
         workspaceId === BUSI_WORKSPACE.id ||
-        workspaceId.toLowerCase().includes("internship")
+        workspaceId === "ws_sweep_prod" ||
+        workspaceId.toLowerCase().includes("internship") ||
+        workspaceId.toLowerCase().includes("sweep")
     );
   },
 
