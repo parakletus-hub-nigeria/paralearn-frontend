@@ -10,6 +10,28 @@ interface RouteParams {
   }>;
 }
 
+function redactWorkspace(ws: any) {
+  const maskToken = (token?: string) => {
+    if (!token) return undefined;
+    if (token.length <= 12) return "••••••••";
+    return `${token.substring(0, 10)}••••••••${token.substring(token.length - 4)}`;
+  };
+
+  return {
+    id: ws.id,
+    name: ws.name,
+    type: ws.type,
+    ownerName: ws.ownerName,
+    ownerEmail: ws.ownerEmail,
+    credits: ws.credits,
+    apiKeyMasked: maskToken(ws.apiKey),
+    hasApiKey: Boolean(ws.apiKey),
+    hasWebhookSecret: Boolean(ws.webhookSecret),
+    webhookUrl: ws.webhookUrl || null,
+    createdAt: ws.createdAt,
+  };
+}
+
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
   const searchParams = request.nextUrl.searchParams;
@@ -21,13 +43,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     if (!ws) {
       return NextResponse.json({ message: "Workspace not found" }, { status: 404 });
     }
-    return NextResponse.json(ws);
+    return NextResponse.json(redactWorkspace(ws));
   }
 
   // 1b. /api/cbt/workspaces
   if (path[0] === "workspaces" && path.length === 1) {
     const ws = cbtServerStore.getWorkspace("default");
-    return NextResponse.json(ws ? [ws] : []);
+    return NextResponse.json(ws ? [redactWorkspace(ws)] : []);
   }
 
   // 2. /api/cbt/exams
@@ -109,21 +131,53 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ message: "Attempt not found" }, { status: 404 });
     }
     const exam = cbtServerStore.getExamById(att.examId);
+    const score = att.score ?? 0;
+    const totalMarks = att.totalMarks || exam?.totalMarks || 1;
+    const percentage = att.percentage ?? Math.round((score / totalMarks) * 100);
+    const grade = att.grade || computeWaecGrade(percentage);
+
+    const startedTime = new Date(att.startedAt).getTime();
+    const completedTime = att.submittedAt ? new Date(att.submittedAt).getTime() : Date.now();
+    const timeSpentMins = Math.max(1, Math.round((completedTime - startedTime) / (60 * 1000)));
+
     return NextResponse.json({
       attemptId: att.id,
       externalAttemptId: att.externalAttemptId || null,
       studentId: att.studentId || null,
+      examId: att.examId,
+      examCode: att.examCode,
+      examTitle: exam?.title || "CBT Assessment",
       candidateName: att.candidateName,
       candidatePin: att.candidatePin,
-      examTitle: exam?.title || "CBT Assessment",
-      examCode: att.examCode,
-      score: att.score || 0,
-      totalMarks: att.totalMarks || 10,
-      percentage: att.percentage || 0,
-      grade: att.grade || (att.percentage !== undefined ? computeWaecGrade(att.percentage) : "A1"),
+      email: att.email || null,
       status: att.status.toUpperCase(),
-      violations: att.violations,
-      completedAt: att.submittedAt || new Date().toISOString(),
+      score,
+      totalMarks,
+      percentage,
+      grade,
+      isPassed: percentage >= 50,
+      durationMins: att.durationMins || exam?.durationMins || 60,
+      timeSpentMins,
+      violations: att.violations || 0,
+      startedAt: att.startedAt,
+      submittedAt: att.submittedAt || null,
+      completedAt: att.submittedAt || null,
+      resultSlip: {
+        durationMins: att.durationMins || exam?.durationMins || 60,
+        violations: att.violations || 0,
+        breakdown: {
+          totalQuestions: exam?.totalQuestions || exam?.questionIds?.length || 0,
+          correctCount: Math.round(score),
+          wrongCount: Math.max(0, (exam?.totalQuestions || 0) - Math.round(score)),
+          mcqScore: score,
+          essayScore: 0.0,
+        },
+      },
+      metadata: {
+        ...att.metadata,
+        sweepLearnerId: att.studentId || null,
+        sweepAttemptId: att.externalAttemptId || null,
+      },
     });
   }
 
@@ -362,7 +416,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!ws) {
       return NextResponse.json({ message: "Workspace not found" }, { status: 404 });
     }
-    return NextResponse.json(ws);
+    return NextResponse.json(redactWorkspace(ws));
   }
 
   return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });

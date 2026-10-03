@@ -135,8 +135,8 @@ const initDatabase = (): CbtDatabase => {
         ownerName: "ParaLearn Admin",
         ownerEmail: "admin@pln.ng",
         credits: 99999,
-        apiKey: process.env.CBT_WORKSPACE_API_KEY || "pln_live_sk_paralearn_cbt_prod",
-        webhookSecret: process.env.CBT_WEBHOOK_SECRET || "pln_whsec_paralearn_cbt_prod",
+        apiKey: process.env.CBT_WORKSPACE_API_KEY || "pln_live_sk_def_c71a39f048d21b75e92c4a8f",
+        webhookSecret: process.env.CBT_WEBHOOK_SECRET || "pln_whsec_def_58b29c1e07f43a6d812e9b0c",
         webhookUrl: process.env.CBT_WEBHOOK_URL || undefined,
         createdAt: "2026-01-01T00:00:00.000Z",
       },
@@ -147,9 +147,9 @@ const initDatabase = (): CbtDatabase => {
         ownerName: "SWEEP Integration",
         ownerEmail: "sweep@pln.ng",
         credits: 999999,
-        apiKey: process.env.SWEEP_CBT_API_KEY || "pln_live_sk_sweep_prod_89f2a1b4",
-        webhookSecret: process.env.SWEEP_CBT_WEBHOOK_SECRET || "pln_whsec_sweep_prod_7c3e1a90",
-        webhookUrl: process.env.SWEEP_WEBHOOK_URL || undefined,
+        apiKey: process.env.SWEEP_CBT_API_KEY || "pln_live_sk_swp_16a28285697747567c3b838c7de52a4892be574d",
+        webhookSecret: process.env.SWEEP_CBT_WEBHOOK_SECRET || "pln_whsec_swp_e40c3e7ff4d07d241380e63c7d1c955a6da8fe84",
+        webhookUrl: process.env.SWEEP_WEBHOOK_URL || "https://<your-sweep-domain>/courses/paralearn/webhook/",
         createdAt: "2026-01-01T00:00:00.000Z",
       },
     },
@@ -166,9 +166,17 @@ const initDatabase = (): CbtDatabase => {
       if (raw) {
         const parsed = JSON.parse(raw);
         const mergedWorkspaces = { ...defaultDb.workspaces, ...(parsed.workspaces || {}) };
-        // Ensure credentials exist for every workspace
+        // Ensure credentials exist and invalidate previous exposed credentials
         Object.keys(mergedWorkspaces).forEach((k) => {
           const ws = mergedWorkspaces[k];
+          if (k === "ws_sweep_prod") {
+            if (!ws.apiKey || ws.apiKey === "pln_live_sk_sweep_prod_89f2a1b4") {
+              ws.apiKey = defaultDb.workspaces.ws_sweep_prod.apiKey;
+            }
+            if (!ws.webhookSecret || ws.webhookSecret === "pln_whsec_sweep_prod_7c3e1a90") {
+              ws.webhookSecret = defaultDb.workspaces.ws_sweep_prod.webhookSecret;
+            }
+          }
           if (!ws.apiKey) {
             ws.apiKey = defaultDb.workspaces[k]?.apiKey || `pln_live_sk_${k}_key`;
           }
@@ -750,7 +758,14 @@ export const cbtServerStore = {
 
   getAttempt(attemptId: string): StoredAttempt | null {
     const db = initDatabase();
-    return db.attempts[attemptId] || null;
+    if (!attemptId) return null;
+    return (
+      db.attempts[attemptId] ||
+      Object.values(db.attempts).find(
+        (a) => a.id === attemptId || (a.externalAttemptId && a.externalAttemptId === attemptId)
+      ) ||
+      null
+    );
   },
 
   listCandidates(examId: string): StoredCandidate[] {
