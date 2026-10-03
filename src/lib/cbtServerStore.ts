@@ -320,7 +320,11 @@ export const cbtServerStore = {
   // ── Exams ───────────────────────────────────────────────────────────────
   async listExams(workspaceId?: string): Promise<StoredExam[]> {
     await ensureDefaultWorkspacesAndExams();
-    const all = await kvAdapter.hlist<StoredExam>(NS.exam);
+    const rawAll = await kvAdapter.hlist<StoredExam>(NS.exam);
+    const all = rawAll.filter(
+      (e): e is StoredExam =>
+        typeof e === "object" && e !== null && typeof (e as any).title === "string"
+    );
     const busiPresent = all.some((e) => e.accessCode?.trim().toUpperCase() === "BUSI-7642");
     const combined = busiPresent ? all : [BUSI_EXAM, ...all];
     if (!workspaceId) return combined;

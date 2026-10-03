@@ -109,10 +109,18 @@ async function hget<T>(ns: string, id: string): Promise<T | null> {
 async function hlist<T>(ns: string): Promise<T[]> {
   const ks = await keys(`${ns}:*`);
   if (!ks.length) return [];
-  const results = await Promise.all(ks.map((k) => get<T>(k)));
+  // Exclude index subkeys such as :code:, :email:, :apikey:
+  const itemKeys = ks.filter(
+    (k) =>
+      !k.includes(":code:") &&
+      !k.includes(":email:") &&
+      !k.includes(":apikey:")
+  );
+  if (!itemKeys.length) return [];
+  const results = await Promise.all(itemKeys.map((k) => get<T>(k)));
   const list: T[] = [];
   for (const item of results) {
-    if (item !== null && item !== undefined) {
+    if (item !== null && item !== undefined && typeof item === "object") {
       list.push(item);
     }
   }
