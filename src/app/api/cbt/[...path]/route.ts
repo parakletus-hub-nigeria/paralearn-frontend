@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cbtServerStore } from "@/lib/cbtServerStore";
+import crypto from "crypto";
+import { cbtServerStore, computeWaecGrade } from "@/lib/cbtServerStore";
 
 export const dynamic = "force-dynamic";
 
@@ -94,16 +95,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const exam = cbtServerStore.getExamById(att.examId);
     return NextResponse.json({
       attemptId: att.id,
+      externalAttemptId: att.externalAttemptId || null,
+      studentId: att.studentId || null,
       candidateName: att.candidateName,
       candidatePin: att.candidatePin,
-      examTitle: att.examTitle || exam?.title || "CBT Assessment",
+      examTitle: exam?.title || "CBT Assessment",
       examCode: att.examCode,
       score: att.score || 0,
       totalMarks: att.totalMarks || 10,
       percentage: att.percentage || 0,
+      grade: att.grade || (att.percentage !== undefined ? computeWaecGrade(att.percentage) : "A1"),
       status: att.status.toUpperCase(),
       violations: att.violations,
-      completedAt: new Date().toISOString(),
+      completedAt: att.submittedAt || new Date().toISOString(),
     });
   }
 
@@ -183,6 +187,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       email: body.email,
       phone: body.phone,
       studentId: body.studentId,
+      externalAttemptId: body.externalAttemptId || body.attemptId,
+      metadata: body.metadata,
     });
     if (!res) {
       return NextResponse.json({ message: "Exam room not found or closed" }, { status: 404 });
@@ -190,6 +196,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       isResumed: res.isResumed,
       attemptId: res.attempt.id,
+      externalAttemptId: res.attempt.externalAttemptId || null,
+      studentId: res.attempt.studentId || null,
       examId: res.exam.id,
       examTitle: res.exam.title,
       candidateName: res.attempt.candidateName,
@@ -221,16 +229,73 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   // 10. /api/cbt/attempts/:id/submit
   if (path[0] === "attempts" && path[2] === "submit" && path[1]) {
     const attemptId = decodeURIComponent(path[1]);
-    const att = cbtServerStore.submitAttempt(attemptId, body.finalAnswers);
-    if (!att) {
+    const res = cbtServerStore.submitAttempt(attemptId, body.finalAnswers);
+    if (!res) {
       return NextResponse.json({ message: "Attempt not found" }, { status: 404 });
     }
+
+    // Trigger external HMAC-signed webhook if workspace has webhookUrl
+    if (res.webhookUrl) {
+      const rawPayload = JSON.stringify(res.webhookPayload);
+      const secret = res.webhookSecret || process.env.CBT_WEBHOOK_SECRET || "pln_whsec_default";
+      const signature = "sha256=" + crypto.createHmac("sha256", secret).update(rawPayload).digest("hex");
+
+      fetch(res.webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-cbt-event": res.webhookPayload.event,
+          "x-cbt-event-id": res.webhookPayload.eventId,
+          "x-cbt-timestamp": res.webhookPayload.timestamp,
+          "x-cbt-signature": signature,
+        },
+        body: rawPayload,
+        signal: AbortSignal.timeout(10000),
+      }).catch((err) => {
+        console.warn("[CBT Webhook] Webhook dispatch error:", err);
+      });
+    }
+
     return NextResponse.json({
-      score: att.score,
-      totalMarks: att.totalMarks,
-      percentage: att.percentage,
-      status: att.status.toUpperCase(),
+      score: res.attempt.score,
+      totalMarks: res.attempt.totalMarks,
+      percentage: res.attempt.percentage,
+      grade: res.attempt.grade,
+      status: res.attempt.status.toUpperCase(),
+      attemptId: res.attempt.id,
+      externalAttemptId: res.attempt.externalAttemptId || null,
+      resultSlip: res.webhookPayload.resultSlip,
     });
+  }
+
+  // 11. /api/cbt/candidates/bulk
+  if (path[0] === "candidates" && path[1] === "bulk") {
+    const examId = body.examId;
+    if (!examId) {
+      return NextResponse.json({ message: "examId is required" }, { status: 400 });
+    }
+    const candidates = Array.isArray(body.candidates) ? body.candidates : [];
+    const results = cbtServerStore.bulkProvisionCandidates(examId, candidates, request.nextUrl.origin);
+    return NextResponse.json(results, { status: 201 });
+  }
+
+  // 12. /api/cbt/candidates
+  if (path[0] === "candidates" && path.length === 1) {
+    if (!body.examId || !body.candidateName) {
+      return NextResponse.json({ message: "examId and candidateName are required" }, { status: 400 });
+    }
+    const candidate = cbtServerStore.provisionCandidate({
+      examId: body.examId,
+      candidateName: body.candidateName,
+      candidatePin: body.candidatePin,
+      studentId: body.studentId,
+      externalAttemptId: body.externalAttemptId,
+      email: body.email,
+      phone: body.phone,
+      metadata: body.metadata,
+      baseUrl: request.nextUrl.origin,
+    });
+    return NextResponse.json(candidate, { status: 201 });
   }
 
   return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });

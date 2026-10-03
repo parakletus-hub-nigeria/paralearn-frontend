@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   ShieldCheck, 
   Wifi, 
@@ -113,6 +113,7 @@ function CandidatePinInput({
 
 export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const normalizedExamCode = examCode.trim().toUpperCase();
   const {
     data: remoteExam,
@@ -127,8 +128,26 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
   const [candidateEmail, setCandidateEmail] = useState("");
   const [candidatePhone, setCandidatePhone] = useState("");
   const [candidatePin, setCandidatePin] = useState("");
+  const [studentId, setStudentId] = useState("");
+  const [externalAttemptId, setExternalAttemptId] = useState("");
   const [isResuming, setIsResuming] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+
+  // Parse URL launch parameters (e.g. ?pin=849201&name=Amara&studentId=...&attemptId=...)
+  useEffect(() => {
+    if (!searchParams) return;
+    const queryPin = searchParams.get("pin");
+    const queryName = searchParams.get("name");
+    const queryEmail = searchParams.get("email");
+    const queryStudentId = searchParams.get("studentId");
+    const queryAttemptId = searchParams.get("attemptId");
+
+    if (queryPin) setCandidatePin(queryPin.trim().toUpperCase());
+    if (queryName) setCandidateName(queryName.trim());
+    if (queryEmail) setCandidateEmail(queryEmail.trim());
+    if (queryStudentId) setStudentId(queryStudentId.trim());
+    if (queryAttemptId) setExternalAttemptId(queryAttemptId.trim());
+  }, [searchParams]);
 
   // System Diagnostics
   const [diagnostics, setDiagnostics] = useState({
@@ -238,6 +257,8 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
           candidatePin: candidatePin.trim() || undefined,
           email: candidateEmail.trim() || undefined,
           phone: candidatePhone.trim() || undefined,
+          studentId: studentId.trim() || undefined,
+          externalAttemptId: externalAttemptId.trim() || undefined,
           userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
         }).unwrap();
       } catch (apiErr: any) {
@@ -252,11 +273,12 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
 
         started = {
           isResumed: false,
-          attemptId: `att_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          attemptId: externalAttemptId.trim() || `att_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
           examId: localExam?.id || metadata.code,
           examTitle: metadata.title,
           candidateName: candidateName.trim(),
           candidatePin: generatedPin,
+          studentId: studentId.trim() || undefined,
           durationMins: durationMins,
           deadline: deadline,
           remainingSeconds: durationMins * 60,
@@ -285,6 +307,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
         examCode: metadata.code,
         candidateName: started.candidateName,
         candidatePin: started.candidatePin,
+        studentId: started.studentId || studentId.trim() || undefined,
         startedAt: now.toISOString(),
         durationMins: started.durationMins,
         deadline: started.deadline,

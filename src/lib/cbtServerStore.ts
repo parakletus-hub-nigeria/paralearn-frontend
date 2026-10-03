@@ -48,6 +48,7 @@ export interface StoredWorkspace {
   credits: number;
   apiKey?: string;
   webhookUrl?: string;
+  webhookSecret?: string;
   createdAt: string;
 }
 
@@ -57,9 +58,13 @@ export interface StoredCandidate {
   candidateName: string;
   candidatePin: string;
   studentId?: string | null;
+  externalAttemptId?: string | null;
   email?: string | null;
   phone?: string | null;
   status: "REGISTERED" | "STARTED" | "SUBMITTED" | "DISQUALIFIED";
+  score?: number;
+  totalMarks?: number;
+  percentage?: number;
   metadata?: Record<string, any> | null;
   createdAt: string;
 }
@@ -73,7 +78,9 @@ export interface StoredAttempt {
   email?: string;
   phone?: string;
   studentId?: string;
+  externalAttemptId?: string;
   startedAt: string;
+  submittedAt?: string;
   deadline: string;
   durationMins: number;
   remainingSeconds: number;
@@ -83,6 +90,8 @@ export interface StoredAttempt {
   score?: number;
   totalMarks?: number;
   percentage?: number;
+  grade?: string;
+  metadata?: Record<string, any>;
 }
 
 interface CbtDatabase {
@@ -99,6 +108,9 @@ const globalForCbt = globalThis as unknown as {
 };
 
 const getStoreFilePath = (): string => {
+  if (process.env.CBT_STORE_PATH) {
+    return process.env.CBT_STORE_PATH;
+  }
   try {
     const cwdFile = path.join(process.cwd(), ".cbt-store.json");
     // Test write
@@ -166,6 +178,18 @@ const persistDatabase = () => {
   }
 };
 
+export function computeWaecGrade(percentage: number): string {
+  if (percentage >= 75) return "A1";
+  if (percentage >= 70) return "B2";
+  if (percentage >= 65) return "B3";
+  if (percentage >= 60) return "C4";
+  if (percentage >= 55) return "C5";
+  if (percentage >= 50) return "C6";
+  if (percentage >= 45) return "D7";
+  if (percentage >= 40) return "E8";
+  return "F9";
+}
+
 export const cbtServerStore = {
   // ── Workspaces ──────────────────────────────────────────────────────────
   getWorkspace(id: string): StoredWorkspace | null {
@@ -195,8 +219,15 @@ export const cbtServerStore = {
       ownerName: data.ownerName || existing?.ownerName || data.ownerEmail.split("@")[0],
       ownerEmail: data.ownerEmail.trim().toLowerCase(),
       credits: data.credits ?? existing?.credits ?? 50,
-      apiKey: data.apiKey || existing?.apiKey,
+      apiKey:
+        data.apiKey ||
+        existing?.apiKey ||
+        `pln_live_sk_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`,
       webhookUrl: data.webhookUrl || existing?.webhookUrl,
+      webhookSecret:
+        data.webhookSecret ||
+        existing?.webhookSecret ||
+        `pln_whsec_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`,
       createdAt: existing?.createdAt || new Date().toISOString(),
     };
     db.workspaces[id] = workspace;
@@ -335,6 +366,97 @@ export const cbtServerStore = {
     return results;
   },
 
+  // ── Candidate Provisioning ──────────────────────────────────────────────
+  provisionCandidate(data: {
+    examId: string;
+    candidateName: string;
+    candidatePin?: string;
+    studentId?: string | null;
+    externalAttemptId?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    metadata?: Record<string, any> | null;
+    baseUrl?: string;
+  }): StoredCandidate & { launchUrl: string; accessCode: string } {
+    const db = initDatabase();
+    const exam = db.exams[data.examId] || Object.values(db.exams).find((e) => e.accessCode === data.examId);
+    if (!exam) {
+      throw new Error(`Exam ${data.examId} not found.`);
+    }
+
+    let pin = data.candidatePin?.trim().toUpperCase();
+    if (!pin) {
+      let attempts = 0;
+      do {
+        pin = Math.floor(100000 + Math.random() * 900000).toString();
+        attempts++;
+      } while (
+        attempts < 100 &&
+        Object.values(db.candidates).some((c) => c.examId === exam.id && c.candidatePin === pin)
+      );
+    }
+
+    const existing = Object.values(db.candidates).find(
+      (c) => c.examId === exam.id && (c.candidatePin === pin || (data.studentId && c.studentId === data.studentId))
+    );
+
+    const candId = existing?.id || `cand_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const candidate: StoredCandidate = {
+      id: candId,
+      examId: exam.id,
+      candidateName: data.candidateName.trim(),
+      candidatePin: pin,
+      studentId: data.studentId || existing?.studentId || null,
+      externalAttemptId: data.externalAttemptId || existing?.externalAttemptId || null,
+      email: data.email || existing?.email || null,
+      phone: data.phone || existing?.phone || null,
+      status: existing?.status || "REGISTERED",
+      metadata: data.metadata || existing?.metadata || null,
+      createdAt: existing?.createdAt || new Date().toISOString(),
+    };
+
+    db.candidates[candId] = candidate;
+    persistDatabase();
+
+    const domain = (data.baseUrl || "https://pln.ng").replace(/\/+$/, "");
+    const search = new URLSearchParams();
+    search.set("pin", candidate.candidatePin);
+    search.set("name", candidate.candidateName);
+    if (candidate.studentId) search.set("studentId", candidate.studentId);
+    if (candidate.externalAttemptId) search.set("attemptId", candidate.externalAttemptId);
+
+    const launchUrl = `${domain}/take/${exam.accessCode}?${search.toString()}`;
+    return { ...candidate, accessCode: exam.accessCode, launchUrl };
+  },
+
+  bulkProvisionCandidates(
+    examId: string,
+    candidates: Array<{
+      candidateName: string;
+      candidatePin?: string;
+      studentId?: string | null;
+      externalAttemptId?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      metadata?: Record<string, any> | null;
+    }>,
+    baseUrl?: string
+  ): Array<StoredCandidate & { launchUrl: string; accessCode: string }> {
+    return candidates.map((cand) =>
+      this.provisionCandidate({
+        examId,
+        candidateName: cand.candidateName,
+        candidatePin: cand.candidatePin,
+        studentId: cand.studentId,
+        externalAttemptId: cand.externalAttemptId,
+        email: cand.email,
+        phone: cand.phone,
+        metadata: cand.metadata,
+        baseUrl,
+      })
+    );
+  },
+
   // ── Attempts & Candidates ────────────────────────────────────────────────
   startAttempt(payload: {
     accessCode: string;
@@ -343,16 +465,28 @@ export const cbtServerStore = {
     email?: string;
     phone?: string;
     studentId?: string;
+    externalAttemptId?: string;
+    metadata?: Record<string, any>;
   }): { attempt: StoredAttempt; exam: StoredExam; questions: StoredQuestion[]; isResumed: boolean } | null {
     const db = initDatabase();
     const exam = this.getExamByCode(payload.accessCode);
     if (!exam) return null;
 
-    const pin = payload.candidatePin?.trim() || Math.floor(100000 + Math.random() * 900000).toString();
+    const pin = payload.candidatePin?.trim().toUpperCase() || Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Check for existing attempt with same exam & pin
+    // Check pre-registered candidate
+    const preRegistered = Object.values(db.candidates).find(
+      (c) => c.examId === exam.id && (c.candidatePin === pin || (payload.studentId && c.studentId === payload.studentId))
+    );
+
+    const resolvedStudentId = payload.studentId || preRegistered?.studentId || null;
+    const resolvedExternalAttemptId = payload.externalAttemptId || preRegistered?.externalAttemptId || null;
+
+    // Check for existing attempt with same exam & pin or externalAttemptId
     for (const att of Object.values(db.attempts)) {
-      if (att.examId === exam.id && att.candidatePin === pin && att.status === "in_progress") {
+      const matchByPin = att.examId === exam.id && att.candidatePin === pin;
+      const matchByExternalId = Boolean(resolvedExternalAttemptId && att.externalAttemptId === resolvedExternalAttemptId);
+      if ((matchByPin || matchByExternalId) && att.status === "in_progress") {
         const questions = (exam.questionIds || []).map((id) => db.questions[id]).filter(Boolean);
         return { attempt: att, exam, questions, isResumed: true };
       }
@@ -369,9 +503,10 @@ export const cbtServerStore = {
       examCode: exam.accessCode,
       candidateName: payload.candidateName,
       candidatePin: pin,
-      email: payload.email,
-      phone: payload.phone,
-      studentId: payload.studentId,
+      email: payload.email || preRegistered?.email || undefined,
+      phone: payload.phone || preRegistered?.phone || undefined,
+      studentId: resolvedStudentId || undefined,
+      externalAttemptId: resolvedExternalAttemptId || undefined,
       startedAt: now.toISOString(),
       deadline,
       durationMins,
@@ -379,23 +514,32 @@ export const cbtServerStore = {
       answers: {},
       violations: 0,
       status: "in_progress",
+      metadata: payload.metadata || preRegistered?.metadata || {},
     };
 
     db.attempts[attemptId] = attempt;
 
-    // Track candidate in roster
-    const candId = `cand_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
-    db.candidates[candId] = {
-      id: candId,
-      examId: exam.id,
-      candidateName: payload.candidateName,
-      candidatePin: pin,
-      email: payload.email,
-      phone: payload.phone,
-      studentId: payload.studentId,
-      status: "STARTED",
-      createdAt: now.toISOString(),
-    };
+    if (preRegistered) {
+      preRegistered.status = "STARTED";
+      if (resolvedExternalAttemptId && !preRegistered.externalAttemptId) {
+        preRegistered.externalAttemptId = resolvedExternalAttemptId;
+      }
+    } else {
+      const candId = `cand_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
+      db.candidates[candId] = {
+        id: candId,
+        examId: exam.id,
+        candidateName: payload.candidateName,
+        candidatePin: pin,
+        email: payload.email,
+        phone: payload.phone,
+        studentId: resolvedStudentId,
+        externalAttemptId: resolvedExternalAttemptId,
+        status: "STARTED",
+        metadata: payload.metadata || null,
+        createdAt: now.toISOString(),
+      };
+    }
 
     persistDatabase();
     const questions = (exam.questionIds || []).map((id) => db.questions[id]).filter(Boolean);
@@ -426,7 +570,15 @@ export const cbtServerStore = {
     return { violations: att.violations, disqualified };
   },
 
-  submitAttempt(attemptId: string, finalAnswers?: Record<string, any>): StoredAttempt | null {
+  submitAttempt(
+    attemptId: string,
+    finalAnswers?: Record<string, any>
+  ): {
+    attempt: StoredAttempt;
+    webhookPayload: any;
+    webhookUrl?: string;
+    webhookSecret?: string;
+  } | null {
     const db = initDatabase();
     const att = db.attempts[attemptId];
     if (!att) return null;
@@ -434,11 +586,14 @@ export const cbtServerStore = {
       att.answers = { ...att.answers, ...finalAnswers };
     }
     att.status = "submitted";
+    att.submittedAt = new Date().toISOString();
 
     // Auto-score MCQs
     const exam = db.exams[att.examId];
     let score = 0;
     let totalMarks = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
 
     if (exam && exam.questionIds) {
       exam.questionIds.forEach((qId) => {
@@ -450,6 +605,9 @@ export const cbtServerStore = {
             const correctOpt = q.options?.find((o) => o.isCorrect);
             if (userChoice && correctOpt && userChoice === correctOpt.id) {
               score += q.marks || 1;
+              correctCount++;
+            } else {
+              wrongCount++;
             }
           }
         }
@@ -459,9 +617,71 @@ export const cbtServerStore = {
     att.score = score;
     att.totalMarks = totalMarks > 0 ? totalMarks : 1;
     att.percentage = Math.round((score / att.totalMarks) * 100);
+    att.grade = computeWaecGrade(att.percentage);
+
+    // Update candidate in roster
+    const cand = Object.values(db.candidates).find(
+      (c) =>
+        c.examId === att.examId &&
+        (c.candidatePin === att.candidatePin || (att.studentId && c.studentId === att.studentId))
+    );
+    if (cand) {
+      cand.status = "SUBMITTED";
+      cand.score = att.score;
+      cand.totalMarks = att.totalMarks;
+      cand.percentage = att.percentage;
+    }
 
     persistDatabase();
-    return att;
+
+    const ws = exam ? db.workspaces[exam.workspaceId] : null;
+    const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const timestamp = new Date().toISOString();
+
+    const webhookPayload = {
+      event: "exam.attempt.completed",
+      eventId,
+      timestamp,
+      workspaceId: exam?.workspaceId || "default",
+      examId: att.examId,
+      examCode: att.examCode,
+      attemptId: att.id,
+      externalAttemptId: att.externalAttemptId || null,
+      studentId: att.studentId || null,
+      candidateName: att.candidateName,
+      candidatePin: att.candidatePin,
+      email: att.email || null,
+      status: "SUBMITTED",
+      score: att.score,
+      totalMarks: att.totalMarks,
+      percentage: att.percentage,
+      grade: att.grade,
+      startedAt: att.startedAt,
+      submittedAt: att.submittedAt,
+      resultSlip: {
+        durationMins: att.durationMins,
+        violations: att.violations,
+        breakdown: {
+          totalQuestions: exam?.totalQuestions || exam?.questionIds?.length || 0,
+          correctCount,
+          wrongCount,
+          mcqScore: att.score,
+          essayScore: 0.0,
+        },
+      },
+      metadata: {
+        ...att.metadata,
+        sweepLearnerId: att.studentId || null,
+        sweepAttemptId: att.externalAttemptId || null,
+      },
+    };
+
+    return {
+      attempt: att,
+      webhookPayload,
+      webhookUrl: ws?.webhookUrl,
+      webhookSecret: ws?.webhookSecret,
+    };
   },
 
   getAttempt(attemptId: string): StoredAttempt | null {
