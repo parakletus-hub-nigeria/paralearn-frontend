@@ -347,6 +347,7 @@ export const cbtServerStore = {
   },
 
   async getExamByCode(code: string): Promise<StoredExam | null> {
+    if (!code || typeof code !== "string") return null;
     await ensureDefaultWorkspacesAndExams();
     const cleanCode = code.trim().toUpperCase();
     if (cleanCode === "BUSI-7642" || cleanCode === BUSI_EXAM.accessCode) {
