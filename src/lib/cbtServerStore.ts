@@ -1,5 +1,17 @@
-import fs from "fs";
-import path from "path";
+/**
+ * cbtServerStore.ts  (KV-backed rewrite)
+ *
+ * All reads/writes now go through kvAdapter which:
+ *   - Uses Upstash Redis when UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set
+ *   - Falls back to a process-level in-memory Map for local development
+ *
+ * This makes the CBT system work correctly on serverless platforms (Vercel)
+ * where each function invocation is stateless.
+ */
+
+import { kvAdapter } from "./cbtKvAdapter";
+
+// ── Interfaces (unchanged from original) ─────────────────────────────────────
 
 export interface StoredOption {
   id: string;
@@ -94,125 +106,75 @@ export interface StoredAttempt {
   metadata?: Record<string, any>;
 }
 
-interface CbtDatabase {
-  workspaces: Record<string, StoredWorkspace>;
-  exams: Record<string, StoredExam>;
-  questions: Record<string, StoredQuestion>;
-  candidates: Record<string, StoredCandidate>;
-  attempts: Record<string, StoredAttempt>;
-}
-
-// Global in-memory cache
-const globalForCbt = globalThis as unknown as {
-  __cbtDatabase?: CbtDatabase;
+// ── KV namespace prefixes ─────────────────────────────────────────────────────
+const NS = {
+  workspace: "cbt:ws",
+  workspaceByEmail: "cbt:ws:email",
+  workspaceByApiKey: "cbt:ws:apikey",
+  exam: "cbt:exam",
+  examByCode: "cbt:exam:code",
+  examsByWorkspace: "cbt:exams:ws",
+  question: "cbt:q",
+  questionsByExam: "cbt:qs:exam",
+  candidate: "cbt:cand",
+  candidatesByExam: "cbt:cands:exam",
+  attempt: "cbt:att",
+  attemptsByExam: "cbt:atts:exam",
 };
 
-const getStoreFilePath = (): string => {
-  if (process.env.CBT_STORE_PATH) {
-    return process.env.CBT_STORE_PATH;
-  }
-  try {
-    const cwdFile = path.join(process.cwd(), ".cbt-store.json");
-    // Test write
-    fs.accessSync(process.cwd(), fs.constants.W_OK);
-    return cwdFile;
-  } catch {
-    return path.join("/tmp", "paralearn-cbt-store.json");
-  }
-};
+// ── Default workspaces seeded on first access ────────────────────────────────
+const DEFAULT_WORKSPACES: StoredWorkspace[] = [
+  {
+    id: "default",
+    name: "ParaLearn Assessment Center",
+    type: "STANDALONE_HALL",
+    ownerName: "ParaLearn Admin",
+    ownerEmail: "admin@pln.ng",
+    credits: 99999,
+    apiKey:
+      process.env.CBT_WORKSPACE_API_KEY ||
+      "pln_live_sk_def_c71a39f048d21b75e92c4a8f",
+    webhookSecret:
+      process.env.CBT_WEBHOOK_SECRET ||
+      "pln_whsec_def_58b29c1e07f43a6d812e9b0c",
+    webhookUrl: process.env.CBT_WEBHOOK_URL || undefined,
+    createdAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    id: "ws_sweep_prod",
+    name: "SWEEP Assessment Integration",
+    type: "STANDALONE_HALL",
+    ownerName: "SWEEP Integration",
+    ownerEmail: "sweep@pln.ng",
+    credits: 999999,
+    apiKey:
+      process.env.SWEEP_CBT_API_KEY ||
+      "pln_live_sk_swp_16a28285697747567c3b838c7de52a4892be574d",
+    webhookSecret:
+      process.env.SWEEP_CBT_WEBHOOK_SECRET ||
+      "pln_whsec_swp_e40c3e7ff4d07d241380e63c7d1c955a6da8fe84",
+    webhookUrl:
+      process.env.SWEEP_WEBHOOK_URL ||
+      "https://<your-sweep-domain>/courses/paralearn/webhook/",
+    createdAt: "2026-01-01T00:00:00.000Z",
+  },
+];
 
-const initDatabase = (): CbtDatabase => {
-  if (globalForCbt.__cbtDatabase) {
-    return globalForCbt.__cbtDatabase;
-  }
-
-  const defaultDb: CbtDatabase = {
-    workspaces: {
-      default: {
-        id: "default",
-        name: "ParaLearn Assessment Center",
-        type: "STANDALONE_HALL",
-        ownerName: "ParaLearn Admin",
-        ownerEmail: "admin@pln.ng",
-        credits: 99999,
-        apiKey: process.env.CBT_WORKSPACE_API_KEY || "pln_live_sk_def_c71a39f048d21b75e92c4a8f",
-        webhookSecret: process.env.CBT_WEBHOOK_SECRET || "pln_whsec_def_58b29c1e07f43a6d812e9b0c",
-        webhookUrl: process.env.CBT_WEBHOOK_URL || undefined,
-        createdAt: "2026-01-01T00:00:00.000Z",
-      },
-      ws_sweep_prod: {
-        id: "ws_sweep_prod",
-        name: "SWEEP Assessment Integration",
-        type: "STANDALONE_HALL",
-        ownerName: "SWEEP Integration",
-        ownerEmail: "sweep@pln.ng",
-        credits: 999999,
-        apiKey: process.env.SWEEP_CBT_API_KEY || "pln_live_sk_swp_16a28285697747567c3b838c7de52a4892be574d",
-        webhookSecret: process.env.SWEEP_CBT_WEBHOOK_SECRET || "pln_whsec_swp_e40c3e7ff4d07d241380e63c7d1c955a6da8fe84",
-        webhookUrl: process.env.SWEEP_WEBHOOK_URL || "https://<your-sweep-domain>/courses/paralearn/webhook/",
-        createdAt: "2026-01-01T00:00:00.000Z",
-      },
-    },
-    exams: {},
-    questions: {},
-    candidates: {},
-    attempts: {},
-  };
-
-  try {
-    const filePath = getStoreFilePath();
-    if (fs.existsSync(filePath)) {
-      const raw = fs.readFileSync(filePath, "utf-8");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const mergedWorkspaces = { ...defaultDb.workspaces, ...(parsed.workspaces || {}) };
-        // Ensure credentials exist and invalidate previous exposed credentials
-        Object.keys(mergedWorkspaces).forEach((k) => {
-          const ws = mergedWorkspaces[k];
-          if (k === "ws_sweep_prod") {
-            if (!ws.apiKey || ws.apiKey === "pln_live_sk_sweep_prod_89f2a1b4") {
-              ws.apiKey = defaultDb.workspaces.ws_sweep_prod.apiKey;
-            }
-            if (!ws.webhookSecret || ws.webhookSecret === "pln_whsec_sweep_prod_7c3e1a90") {
-              ws.webhookSecret = defaultDb.workspaces.ws_sweep_prod.webhookSecret;
-            }
-          }
-          if (!ws.apiKey) {
-            ws.apiKey = defaultDb.workspaces[k]?.apiKey || `pln_live_sk_${k}_key`;
-          }
-          if (!ws.webhookSecret) {
-            ws.webhookSecret = defaultDb.workspaces[k]?.webhookSecret || `pln_whsec_${k}_secret`;
-          }
-        });
-
-        globalForCbt.__cbtDatabase = {
-          workspaces: mergedWorkspaces,
-          exams: parsed.exams || {},
-          questions: parsed.questions || {},
-          candidates: parsed.candidates || {},
-          attempts: parsed.attempts || {},
-        };
-        return globalForCbt.__cbtDatabase;
+// ── Helper: seed default workspaces if not present ───────────────────────────
+async function ensureDefaultWorkspaces() {
+  for (const ws of DEFAULT_WORKSPACES) {
+    const existing = await kvAdapter.hget<StoredWorkspace>(NS.workspace, ws.id);
+    if (!existing) {
+      await kvAdapter.hset(NS.workspace, ws.id, ws);
+      await kvAdapter.set(`${NS.workspaceByEmail}:${ws.ownerEmail.toLowerCase()}`, ws.id);
+      if (ws.apiKey) {
+        await kvAdapter.set(`${NS.workspaceByApiKey}:${ws.apiKey}`, ws.id);
       }
     }
-  } catch (err) {
-    console.warn("[CBT Store] Could not read disk store, using memory store:", err);
   }
+}
 
-  globalForCbt.__cbtDatabase = defaultDb;
-  return defaultDb;
-};
-
-const persistDatabase = () => {
-  if (!globalForCbt.__cbtDatabase) return;
-  try {
-    const filePath = getStoreFilePath();
-    fs.writeFileSync(filePath, JSON.stringify(globalForCbt.__cbtDatabase, null, 2), "utf-8");
-  } catch (err) {
-    // If running in read-only environment like Vercel serverless, in-memory cache serves requests
-  }
-};
-
+// ── Grade helper (unchanged) ──────────────────────────────────────────────────
 export function computeWaecGrade(percentage: number): string {
   if (percentage >= 75) return "A1";
   if (percentage >= 70) return "B2";
@@ -225,116 +187,150 @@ export function computeWaecGrade(percentage: number): string {
   return "F9";
 }
 
+// ── Store ─────────────────────────────────────────────────────────────────────
 export const cbtServerStore = {
   // ── Workspaces ──────────────────────────────────────────────────────────
-  getWorkspace(id: string): StoredWorkspace | null {
-    const db = initDatabase();
+  async getWorkspace(id: string): Promise<StoredWorkspace | null> {
     if (!id) return null;
+    await ensureDefaultWorkspaces();
+    const ws = await kvAdapter.hget<StoredWorkspace>(NS.workspace, id);
+    if (ws) return ws;
+    // secondary lookup by name or "sweep" alias
+    const all = await kvAdapter.hlist<StoredWorkspace>(NS.workspace);
     return (
-      db.workspaces[id] ||
-      Object.values(db.workspaces).find(
+      all.find(
         (w) =>
-          w.id === id ||
           w.name?.toLowerCase() === id.toLowerCase() ||
           (id === "sweep" && w.id === "ws_sweep_prod")
-      ) ||
-      null
+      ) || null
     );
   },
 
-  findWorkspaceByApiKey(apiKey: string): StoredWorkspace | null {
-    const db = initDatabase();
+  async findWorkspaceByApiKey(apiKey: string): Promise<StoredWorkspace | null> {
     const cleanKey = apiKey.trim();
-    for (const ws of Object.values(db.workspaces)) {
-      if (ws.apiKey === cleanKey) {
-        return ws;
-      }
-    }
-    return null;
+    const id = await kvAdapter.get<string>(`${NS.workspaceByApiKey}:${cleanKey}`);
+    if (id) return kvAdapter.hget<StoredWorkspace>(NS.workspace, id);
+    // fallback full scan
+    const all = await kvAdapter.hlist<StoredWorkspace>(NS.workspace);
+    return all.find((w) => w.apiKey === cleanKey) || null;
   },
 
-  findWorkspaceByEmail(email: string): StoredWorkspace | null {
-    const db = initDatabase();
+  async findWorkspaceByEmail(email: string): Promise<StoredWorkspace | null> {
     const cleanEmail = email.trim().toLowerCase();
-    for (const ws of Object.values(db.workspaces)) {
-      if (ws.ownerEmail?.toLowerCase() === cleanEmail) {
-        return ws;
-      }
-    }
-    return null;
+    const id = await kvAdapter.get<string>(`${NS.workspaceByEmail}:${cleanEmail}`);
+    if (id) return kvAdapter.hget<StoredWorkspace>(NS.workspace, id);
+    const all = await kvAdapter.hlist<StoredWorkspace>(NS.workspace);
+    return all.find((w) => w.ownerEmail?.toLowerCase() === cleanEmail) || null;
   },
 
-  updateWorkspace(id: string, data: Partial<StoredWorkspace>): StoredWorkspace | null {
-    const db = initDatabase();
-    const ws = this.getWorkspace(id);
+  async updateWorkspace(
+    id: string,
+    data: Partial<StoredWorkspace>
+  ): Promise<StoredWorkspace | null> {
+    const ws = await this.getWorkspace(id);
     if (!ws) return null;
     if (data.name !== undefined) ws.name = data.name;
     if (data.webhookUrl !== undefined) ws.webhookUrl = data.webhookUrl;
     if (data.webhookSecret !== undefined) ws.webhookSecret = data.webhookSecret;
     if (data.apiKey !== undefined) ws.apiKey = data.apiKey;
     if (data.credits !== undefined) ws.credits = data.credits;
-    persistDatabase();
+    await kvAdapter.hset(NS.workspace, ws.id, ws);
     return ws;
   },
 
-  upsertWorkspace(
+  async upsertWorkspace(
     data: Partial<StoredWorkspace> & { ownerEmail?: string; email?: string }
-  ): StoredWorkspace {
-    const db = initDatabase();
-    const email = (data.ownerEmail || data.email || `${data.id || "ws"}@pln.ng`).trim().toLowerCase();
-    const existing = data.id ? this.getWorkspace(data.id) : this.findWorkspaceByEmail(email);
-    const id = data.id || existing?.id || `ws_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  ): Promise<StoredWorkspace> {
+    const email = (
+      data.ownerEmail ||
+      data.email ||
+      `${data.id || "ws"}@pln.ng`
+    )
+      .trim()
+      .toLowerCase();
+    const existing = data.id
+      ? await this.getWorkspace(data.id)
+      : await this.findWorkspaceByEmail(email);
+    const id =
+      data.id ||
+      existing?.id ||
+      `ws_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const workspace: StoredWorkspace = {
       id,
-      name: data.name || existing?.name || `${email.split("@")[0].toUpperCase()} Exam Hall`,
+      name:
+        data.name ||
+        existing?.name ||
+        `${email.split("@")[0].toUpperCase()} Exam Hall`,
       type: data.type || existing?.type || "STANDALONE_HALL",
-      ownerName: data.ownerName || existing?.ownerName || email.split("@")[0],
+      ownerName:
+        data.ownerName || existing?.ownerName || email.split("@")[0],
       ownerEmail: email,
       credits: data.credits ?? existing?.credits ?? 50,
       apiKey:
         data.apiKey ||
         existing?.apiKey ||
-        `pln_live_sk_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`,
+        `pln_live_sk_${Math.random().toString(36).substring(2)}${Math.random()
+          .toString(36)
+          .substring(2)}`,
       webhookUrl: data.webhookUrl || existing?.webhookUrl,
       webhookSecret:
         data.webhookSecret ||
         existing?.webhookSecret ||
-        `pln_whsec_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`,
+        `pln_whsec_${Math.random().toString(36).substring(2)}${Math.random()
+          .toString(36)
+          .substring(2)}`,
       createdAt: existing?.createdAt || new Date().toISOString(),
     };
-    db.workspaces[id] = workspace;
-    persistDatabase();
+    await kvAdapter.hset(NS.workspace, id, workspace);
+    await kvAdapter.set(`${NS.workspaceByEmail}:${email}`, id);
+    if (workspace.apiKey) {
+      await kvAdapter.set(`${NS.workspaceByApiKey}:${workspace.apiKey}`, id);
+    }
     return workspace;
   },
 
   // ── Exams ───────────────────────────────────────────────────────────────
-  listExams(workspaceId?: string): StoredExam[] {
-    const db = initDatabase();
-    const all = Object.values(db.exams);
+  async listExams(workspaceId?: string): Promise<StoredExam[]> {
+    const all = await kvAdapter.hlist<StoredExam>(NS.exam);
     if (!workspaceId) return all;
-    return all.filter((e) => e.workspaceId === workspaceId || workspaceId === "default");
+    return all.filter(
+      (e) => e.workspaceId === workspaceId || workspaceId === "default"
+    );
   },
 
-  getExamById(id: string): StoredExam | null {
-    const db = initDatabase();
-    return db.exams[id] || null;
+  async getExamById(id: string): Promise<StoredExam | null> {
+    return kvAdapter.hget<StoredExam>(NS.exam, id);
   },
 
-  getExamByCode(code: string): StoredExam | null {
-    const db = initDatabase();
+  async getExamByCode(code: string): Promise<StoredExam | null> {
     const cleanCode = code.trim().toUpperCase();
-    for (const exam of Object.values(db.exams)) {
-      if (exam.accessCode?.trim().toUpperCase() === cleanCode) {
-        return exam;
-      }
+    const examId = await kvAdapter.get<string>(
+      `${NS.examByCode}:${cleanCode}`
+    );
+    if (examId) {
+      const exam = await kvAdapter.hget<StoredExam>(NS.exam, examId);
+      if (exam) return exam;
     }
-    return null;
+    // fallback full scan (handles exams created before index existed)
+    const all = await kvAdapter.hlist<StoredExam>(NS.exam);
+    const exam =
+      all.find(
+        (e) => e.accessCode?.trim().toUpperCase() === cleanCode
+      ) || null;
+    // backfill index
+    if (exam) {
+      await kvAdapter.set(`${NS.examByCode}:${cleanCode}`, exam.id);
+    }
+    return exam;
   },
 
-  upsertExam(data: Partial<StoredExam> & { title: string }): StoredExam {
-    const db = initDatabase();
-    const id = data.id || `exam_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const existing = db.exams[id];
+  async upsertExam(
+    data: Partial<StoredExam> & { title: string }
+  ): Promise<StoredExam> {
+    const id =
+      data.id ||
+      `exam_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const existing = await kvAdapter.hget<StoredExam>(NS.exam, id);
     const accessCode =
       data.accessCode?.trim().toUpperCase() ||
       existing?.accessCode ||
@@ -345,59 +341,75 @@ export const cbtServerStore = {
       workspaceId: data.workspaceId || existing?.workspaceId || "default",
       title: data.title,
       accessCode,
-      durationMins: Number(data.durationMins) || existing?.durationMins || 60,
+      durationMins:
+        Number(data.durationMins) || existing?.durationMins || 60,
       totalMarks: data.totalMarks ?? existing?.totalMarks ?? 0,
-      totalQuestions: data.totalQuestions ?? existing?.totalQuestions ?? (existing?.questionIds?.length || 0),
+      totalQuestions:
+        data.totalQuestions ??
+        existing?.totalQuestions ??
+        existing?.questionIds?.length ??
+        0,
       isPublished: data.isPublished ?? existing?.isPublished ?? true,
       startsAt: data.startsAt ?? existing?.startsAt ?? null,
       endsAt: data.endsAt ?? existing?.endsAt ?? null,
-      maxTabViolations: Number(data.maxTabViolations) || existing?.maxTabViolations || 3,
-      shuffleQuestions: data.shuffleQuestions ?? existing?.shuffleQuestions ?? true,
+      maxTabViolations:
+        Number(data.maxTabViolations) || existing?.maxTabViolations || 3,
+      shuffleQuestions:
+        data.shuffleQuestions ?? existing?.shuffleQuestions ?? true,
       shuffleChoices: data.shuffleChoices ?? existing?.shuffleChoices ?? true,
-      showResultAfter: data.showResultAfter ?? existing?.showResultAfter ?? true,
+      showResultAfter:
+        data.showResultAfter ?? existing?.showResultAfter ?? true,
       questionIds: data.questionIds || existing?.questionIds || [],
       createdAt: existing?.createdAt || new Date().toISOString(),
     };
 
-    db.exams[id] = exam;
-    persistDatabase();
+    await kvAdapter.hset(NS.exam, id, exam);
+    // Write code → id index so lookups are O(1) and cross-instance
+    await kvAdapter.set(`${NS.examByCode}:${exam.accessCode}`, id);
     return exam;
   },
 
-  attachQuestionsToExam(examId: string, questionIds: string[]): StoredExam | null {
-    const db = initDatabase();
-    const exam = db.exams[examId];
+  async attachQuestionsToExam(
+    examId: string,
+    questionIds: string[]
+  ): Promise<StoredExam | null> {
+    const exam = await kvAdapter.hget<StoredExam>(NS.exam, examId);
     if (!exam) return null;
     exam.questionIds = questionIds;
     exam.totalQuestions = questionIds.length;
     let totalMarks = 0;
-    questionIds.forEach((qId) => {
-      const q = db.questions[qId];
+    for (const qId of questionIds) {
+      const q = await kvAdapter.hget<StoredQuestion>(NS.question, qId);
       if (q) totalMarks += q.marks || 1;
-    });
+    }
     exam.totalMarks = totalMarks;
-    persistDatabase();
+    await kvAdapter.hset(NS.exam, examId, exam);
     return exam;
   },
 
   // ── Questions ───────────────────────────────────────────────────────────
-  getQuestion(id: string): StoredQuestion | null {
-    const db = initDatabase();
-    return db.questions[id] || null;
+  async getQuestion(id: string): Promise<StoredQuestion | null> {
+    return kvAdapter.hget<StoredQuestion>(NS.question, id);
   },
 
-  getQuestionsForExam(examId: string): StoredQuestion[] {
-    const db = initDatabase();
-    const exam = db.exams[examId];
+  async getQuestionsForExam(examId: string): Promise<StoredQuestion[]> {
+    const exam = await kvAdapter.hget<StoredExam>(NS.exam, examId);
     if (!exam || !exam.questionIds) return [];
-    return exam.questionIds.map((id) => db.questions[id]).filter(Boolean);
+    const questions = await Promise.all(
+      exam.questionIds.map((id) =>
+        kvAdapter.hget<StoredQuestion>(NS.question, id)
+      )
+    );
+    return questions.filter((q): q is StoredQuestion => q !== null);
   },
 
-  upsertQuestion(data: Partial<StoredQuestion> & { prompt: string }): StoredQuestion {
-    const db = initDatabase();
-    const id = data.id || `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const existing = db.questions[id];
-
+  async upsertQuestion(
+    data: Partial<StoredQuestion> & { prompt: string }
+  ): Promise<StoredQuestion> {
+    const id =
+      data.id ||
+      `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const existing = await kvAdapter.hget<StoredQuestion>(NS.question, id);
     const question: StoredQuestion = {
       id,
       workspaceId: data.workspaceId || existing?.workspaceId || "default",
@@ -409,17 +421,20 @@ export const cbtServerStore = {
       explanation: data.explanation || existing?.explanation || "",
       createdAt: existing?.createdAt || new Date().toISOString(),
     };
-
-    db.questions[id] = question;
-    persistDatabase();
+    await kvAdapter.hset(NS.question, id, question);
     return question;
   },
 
-  bulkUpsertQuestions(workspaceId: string, questions: Array<Partial<StoredQuestion> & { prompt: string }>): StoredQuestion[] {
-    const db = initDatabase();
+  async bulkUpsertQuestions(
+    workspaceId: string,
+    questions: Array<Partial<StoredQuestion> & { prompt: string }>
+  ): Promise<StoredQuestion[]> {
     const results: StoredQuestion[] = [];
-    questions.forEach((q, idx) => {
-      const id = q.id || `q_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 5)}`;
+    for (let idx = 0; idx < questions.length; idx++) {
+      const q = questions[idx];
+      const id =
+        q.id ||
+        `q_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 5)}`;
       const item: StoredQuestion = {
         id,
         workspaceId,
@@ -431,15 +446,14 @@ export const cbtServerStore = {
         explanation: q.explanation || "",
         createdAt: new Date().toISOString(),
       };
-      db.questions[id] = item;
+      await kvAdapter.hset(NS.question, id, item);
       results.push(item);
-    });
-    persistDatabase();
+    }
     return results;
   },
 
   // ── Candidate Provisioning ──────────────────────────────────────────────
-  provisionCandidate(data: {
+  async provisionCandidate(data: {
     examId: string;
     candidateName: string;
     candidatePin?: string;
@@ -449,37 +463,45 @@ export const cbtServerStore = {
     phone?: string | null;
     metadata?: Record<string, any> | null;
     baseUrl?: string;
-  }): StoredCandidate & { launchUrl: string; accessCode: string } {
-    const db = initDatabase();
-    const exam = db.exams[data.examId] || Object.values(db.exams).find((e) => e.accessCode === data.examId);
-    if (!exam) {
-      throw new Error(`Exam ${data.examId} not found.`);
-    }
+  }): Promise<StoredCandidate & { launchUrl: string; accessCode: string }> {
+    const exam =
+      (await kvAdapter.hget<StoredExam>(NS.exam, data.examId)) ||
+      (await this.getExamByCode(data.examId));
+    if (!exam) throw new Error(`Exam ${data.examId} not found.`);
 
     let pin = data.candidatePin?.trim().toUpperCase();
     if (!pin) {
+      const allCands = await kvAdapter.hlist<StoredCandidate>(NS.candidate);
+      const examCands = allCands.filter((c) => c.examId === exam.id);
       let attempts = 0;
       do {
         pin = Math.floor(100000 + Math.random() * 900000).toString();
         attempts++;
       } while (
         attempts < 100 &&
-        Object.values(db.candidates).some((c) => c.examId === exam.id && c.candidatePin === pin)
+        examCands.some((c) => c.candidatePin === pin)
       );
     }
 
-    const existing = Object.values(db.candidates).find(
-      (c) => c.examId === exam.id && (c.candidatePin === pin || (data.studentId && c.studentId === data.studentId))
+    const allCands = await kvAdapter.hlist<StoredCandidate>(NS.candidate);
+    const existing = allCands.find(
+      (c) =>
+        c.examId === exam.id &&
+        (c.candidatePin === pin ||
+          (data.studentId && c.studentId === data.studentId))
     );
 
-    const candId = existing?.id || `cand_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const candId =
+      existing?.id ||
+      `cand_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const candidate: StoredCandidate = {
       id: candId,
       examId: exam.id,
       candidateName: data.candidateName.trim(),
-      candidatePin: pin,
+      candidatePin: pin!,
       studentId: data.studentId || existing?.studentId || null,
-      externalAttemptId: data.externalAttemptId || existing?.externalAttemptId || null,
+      externalAttemptId:
+        data.externalAttemptId || existing?.externalAttemptId || null,
       email: data.email || existing?.email || null,
       phone: data.phone || existing?.phone || null,
       status: existing?.status || "REGISTERED",
@@ -487,21 +509,21 @@ export const cbtServerStore = {
       createdAt: existing?.createdAt || new Date().toISOString(),
     };
 
-    db.candidates[candId] = candidate;
-    persistDatabase();
+    await kvAdapter.hset(NS.candidate, candId, candidate);
 
     const domain = (data.baseUrl || "https://pln.ng").replace(/\/+$/, "");
     const search = new URLSearchParams();
     search.set("pin", candidate.candidatePin);
     search.set("name", candidate.candidateName);
     if (candidate.studentId) search.set("studentId", candidate.studentId);
-    if (candidate.externalAttemptId) search.set("attemptId", candidate.externalAttemptId);
+    if (candidate.externalAttemptId)
+      search.set("attemptId", candidate.externalAttemptId);
 
     const launchUrl = `${domain}/take/${exam.accessCode}?${search.toString()}`;
     return { ...candidate, accessCode: exam.accessCode, launchUrl };
   },
 
-  bulkProvisionCandidates(
+  async bulkProvisionCandidates(
     examId: string,
     candidates: Array<{
       candidateName: string;
@@ -513,24 +535,28 @@ export const cbtServerStore = {
       metadata?: Record<string, any> | null;
     }>,
     baseUrl?: string
-  ): Array<StoredCandidate & { launchUrl: string; accessCode: string }> {
-    return candidates.map((cand) =>
-      this.provisionCandidate({
-        examId,
-        candidateName: cand.candidateName,
-        candidatePin: cand.candidatePin,
-        studentId: cand.studentId,
-        externalAttemptId: cand.externalAttemptId,
-        email: cand.email,
-        phone: cand.phone,
-        metadata: cand.metadata,
-        baseUrl,
-      })
-    );
+  ): Promise<Array<StoredCandidate & { launchUrl: string; accessCode: string }>> {
+    const results = [];
+    for (const cand of candidates) {
+      results.push(
+        await this.provisionCandidate({
+          examId,
+          candidateName: cand.candidateName,
+          candidatePin: cand.candidatePin,
+          studentId: cand.studentId,
+          externalAttemptId: cand.externalAttemptId,
+          email: cand.email,
+          phone: cand.phone,
+          metadata: cand.metadata,
+          baseUrl,
+        })
+      );
+    }
+    return results;
   },
 
-  // ── Attempts & Candidates ────────────────────────────────────────────────
-  startAttempt(payload: {
+  // ── Attempts ────────────────────────────────────────────────────────────
+  async startAttempt(payload: {
     accessCode: string;
     candidateName: string;
     candidatePin?: string;
@@ -539,36 +565,55 @@ export const cbtServerStore = {
     studentId?: string;
     externalAttemptId?: string;
     metadata?: Record<string, any>;
-  }): { attempt: StoredAttempt; exam: StoredExam; questions: StoredQuestion[]; isResumed: boolean } | null {
-    const db = initDatabase();
-    const exam = this.getExamByCode(payload.accessCode);
+  }): Promise<{
+    attempt: StoredAttempt;
+    exam: StoredExam;
+    questions: StoredQuestion[];
+    isResumed: boolean;
+  } | null> {
+    const exam = await this.getExamByCode(payload.accessCode);
     if (!exam) return null;
 
-    const pin = payload.candidatePin?.trim().toUpperCase() || Math.floor(100000 + Math.random() * 900000).toString();
+    const pin =
+      payload.candidatePin?.trim().toUpperCase() ||
+      Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Check pre-registered candidate
-    const preRegistered = Object.values(db.candidates).find(
-      (c) => c.examId === exam.id && (c.candidatePin === pin || (payload.studentId && c.studentId === payload.studentId))
+    const allCands = await kvAdapter.hlist<StoredCandidate>(NS.candidate);
+    const preRegistered = allCands.find(
+      (c) =>
+        c.examId === exam.id &&
+        (c.candidatePin === pin ||
+          (payload.studentId && c.studentId === payload.studentId))
     );
 
-    const resolvedStudentId = payload.studentId || preRegistered?.studentId || null;
-    const resolvedExternalAttemptId = payload.externalAttemptId || preRegistered?.externalAttemptId || null;
+    const resolvedStudentId =
+      payload.studentId || preRegistered?.studentId || null;
+    const resolvedExternalAttemptId =
+      payload.externalAttemptId || preRegistered?.externalAttemptId || null;
 
-    // Check for existing attempt with same exam & pin or externalAttemptId
-    for (const att of Object.values(db.attempts)) {
+    // Check for resumable attempt
+    const allAttempts = await kvAdapter.hlist<StoredAttempt>(NS.attempt);
+    for (const att of allAttempts) {
       const matchByPin = att.examId === exam.id && att.candidatePin === pin;
-      const matchByExternalId = Boolean(resolvedExternalAttemptId && att.externalAttemptId === resolvedExternalAttemptId);
+      const matchByExternalId = Boolean(
+        resolvedExternalAttemptId &&
+          att.externalAttemptId === resolvedExternalAttemptId
+      );
       if ((matchByPin || matchByExternalId) && att.status === "in_progress") {
-        const questions = (exam.questionIds || []).map((id) => db.questions[id]).filter(Boolean);
+        const questions = await this.getQuestionsForExam(exam.id);
         return { attempt: att, exam, questions, isResumed: true };
       }
     }
 
     const durationMins = exam.durationMins || 60;
     const now = new Date();
-    const deadline = new Date(now.getTime() + durationMins * 60 * 1000).toISOString();
+    const deadline = new Date(
+      now.getTime() + durationMins * 60 * 1000
+    ).toISOString();
+    const attemptId = `att_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 6)}`;
 
-    const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const attempt: StoredAttempt = {
       id: attemptId,
       examId: exam.id,
@@ -589,16 +634,19 @@ export const cbtServerStore = {
       metadata: payload.metadata || preRegistered?.metadata || {},
     };
 
-    db.attempts[attemptId] = attempt;
+    await kvAdapter.hset(NS.attempt, attemptId, attempt);
 
     if (preRegistered) {
       preRegistered.status = "STARTED";
       if (resolvedExternalAttemptId && !preRegistered.externalAttemptId) {
         preRegistered.externalAttemptId = resolvedExternalAttemptId;
       }
+      await kvAdapter.hset(NS.candidate, preRegistered.id, preRegistered);
     } else {
-      const candId = `cand_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
-      db.candidates[candId] = {
+      const candId = `cand_${Date.now()}_${Math.random()
+        .toString(36)
+        .substring(2, 5)}`;
+      const newCand: StoredCandidate = {
         id: candId,
         examId: exam.id,
         candidateName: payload.candidateName,
@@ -611,65 +659,64 @@ export const cbtServerStore = {
         metadata: payload.metadata || null,
         createdAt: now.toISOString(),
       };
+      await kvAdapter.hset(NS.candidate, candId, newCand);
     }
 
-    persistDatabase();
-    const questions = (exam.questionIds || []).map((id) => db.questions[id]).filter(Boolean);
+    const questions = await this.getQuestionsForExam(exam.id);
     return { attempt, exam, questions, isResumed: false };
   },
 
-  bufferAnswer(attemptId: string, questionId: string, selectedVal: any): boolean {
-    const db = initDatabase();
-    const att = db.attempts[attemptId];
+  async bufferAnswer(
+    attemptId: string,
+    questionId: string,
+    selectedVal: any
+  ): Promise<boolean> {
+    const att = await kvAdapter.hget<StoredAttempt>(NS.attempt, attemptId);
     if (!att) return false;
     att.answers[questionId] = selectedVal;
-    persistDatabase();
+    await kvAdapter.hset(NS.attempt, attemptId, att);
     return true;
   },
 
-  recordTelemetry(attemptId: string, eventType: string): { violations: number; disqualified: boolean } {
-    const db = initDatabase();
-    const att = db.attempts[attemptId];
+  async recordTelemetry(
+    attemptId: string,
+    eventType: string
+  ): Promise<{ violations: number; disqualified: boolean }> {
+    const att = await kvAdapter.hget<StoredAttempt>(NS.attempt, attemptId);
     if (!att) return { violations: 0, disqualified: false };
     att.violations = (att.violations || 0) + 1;
-    const exam = db.exams[att.examId];
+    const exam = await kvAdapter.hget<StoredExam>(NS.exam, att.examId);
     const maxViolations = exam?.maxTabViolations ?? 3;
     const disqualified = att.violations >= maxViolations;
-    if (disqualified) {
-      att.status = "disqualified";
-    }
-    persistDatabase();
+    if (disqualified) att.status = "disqualified";
+    await kvAdapter.hset(NS.attempt, attemptId, att);
     return { violations: att.violations, disqualified };
   },
 
-  submitAttempt(
+  async submitAttempt(
     attemptId: string,
     finalAnswers?: Record<string, any>
-  ): {
+  ): Promise<{
     attempt: StoredAttempt;
     webhookPayload: any;
     webhookUrl?: string;
     webhookSecret?: string;
-  } | null {
-    const db = initDatabase();
-    const att = db.attempts[attemptId];
+  } | null> {
+    const att = await kvAdapter.hget<StoredAttempt>(NS.attempt, attemptId);
     if (!att) return null;
-    if (finalAnswers) {
-      att.answers = { ...att.answers, ...finalAnswers };
-    }
+    if (finalAnswers) att.answers = { ...att.answers, ...finalAnswers };
     att.status = "submitted";
     att.submittedAt = new Date().toISOString();
 
-    // Auto-score MCQs
-    const exam = db.exams[att.examId];
+    const exam = await kvAdapter.hget<StoredExam>(NS.exam, att.examId);
     let score = 0;
     let totalMarks = 0;
     let correctCount = 0;
     let wrongCount = 0;
 
-    if (exam && exam.questionIds) {
-      exam.questionIds.forEach((qId) => {
-        const q = db.questions[qId];
+    if (exam?.questionIds) {
+      for (const qId of exam.questionIds) {
+        const q = await kvAdapter.hget<StoredQuestion>(NS.question, qId);
         if (q) {
           totalMarks += q.marks || 1;
           if (q.type === "MCQ" || q.type === "TRUE_FALSE") {
@@ -683,37 +730,42 @@ export const cbtServerStore = {
             }
           }
         }
-      });
+      }
     }
 
     att.score = score;
     att.totalMarks = totalMarks > 0 ? totalMarks : 1;
     att.percentage = Math.round((score / att.totalMarks) * 100);
     att.grade = computeWaecGrade(att.percentage);
+    await kvAdapter.hset(NS.attempt, attemptId, att);
 
-    // Update candidate in roster
-    const cand = Object.values(db.candidates).find(
+    // Update candidate status
+    const allCands = await kvAdapter.hlist<StoredCandidate>(NS.candidate);
+    const cand = allCands.find(
       (c) =>
         c.examId === att.examId &&
-        (c.candidatePin === att.candidatePin || (att.studentId && c.studentId === att.studentId))
+        (c.candidatePin === att.candidatePin ||
+          (att.studentId && c.studentId === att.studentId))
     );
     if (cand) {
       cand.status = "SUBMITTED";
       cand.score = att.score;
       cand.totalMarks = att.totalMarks;
       cand.percentage = att.percentage;
+      await kvAdapter.hset(NS.candidate, cand.id, cand);
     }
 
-    persistDatabase();
-
-    const ws = exam ? db.workspaces[exam.workspaceId] : null;
-    const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const timestamp = new Date().toISOString();
+    const ws = exam
+      ? await kvAdapter.hget<StoredWorkspace>(NS.workspace, exam.workspaceId)
+      : null;
+    const eventId = `evt_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
 
     const webhookPayload = {
       event: "exam.attempt.completed",
       eventId,
-      timestamp,
+      timestamp: new Date().toISOString(),
       workspaceId: exam?.workspaceId || "default",
       examId: att.examId,
       examCode: att.examCode,
@@ -734,7 +786,8 @@ export const cbtServerStore = {
         durationMins: att.durationMins,
         violations: att.violations,
         breakdown: {
-          totalQuestions: exam?.totalQuestions || exam?.questionIds?.length || 0,
+          totalQuestions:
+            exam?.totalQuestions || exam?.questionIds?.length || 0,
           correctCount,
           wrongCount,
           mcqScore: att.score,
@@ -756,20 +809,23 @@ export const cbtServerStore = {
     };
   },
 
-  getAttempt(attemptId: string): StoredAttempt | null {
-    const db = initDatabase();
+  async getAttempt(attemptId: string): Promise<StoredAttempt | null> {
     if (!attemptId) return null;
+    const direct = await kvAdapter.hget<StoredAttempt>(NS.attempt, attemptId);
+    if (direct) return direct;
+    // fallback: scan by externalAttemptId
+    const all = await kvAdapter.hlist<StoredAttempt>(NS.attempt);
     return (
-      db.attempts[attemptId] ||
-      Object.values(db.attempts).find(
-        (a) => a.id === attemptId || (a.externalAttemptId && a.externalAttemptId === attemptId)
-      ) ||
-      null
+      all.find(
+        (a) =>
+          a.id === attemptId ||
+          (a.externalAttemptId && a.externalAttemptId === attemptId)
+      ) || null
     );
   },
 
-  listCandidates(examId: string): StoredCandidate[] {
-    const db = initDatabase();
-    return Object.values(db.candidates).filter((c) => c.examId === examId);
+  async listCandidates(examId: string): Promise<StoredCandidate[]> {
+    const all = await kvAdapter.hlist<StoredCandidate>(NS.candidate);
+    return all.filter((c) => c.examId === examId);
   },
 };

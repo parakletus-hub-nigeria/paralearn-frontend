@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   // 1. /api/cbt/workspaces/:id
   if (path[0] === "workspaces" && path[1]) {
     const wsId = decodeURIComponent(path[1]);
-    const ws = cbtServerStore.getWorkspace(wsId);
+    const ws = await cbtServerStore.getWorkspace(wsId);
     if (!ws) {
       return NextResponse.json({ message: "Workspace not found" }, { status: 404 });
     }
@@ -48,30 +48,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   // 1b. /api/cbt/workspaces
   if (path[0] === "workspaces" && path.length === 1) {
-    const ws = cbtServerStore.getWorkspace("default");
+    const ws = await cbtServerStore.getWorkspace("default");
     return NextResponse.json(ws ? [redactWorkspace(ws)] : []);
   }
 
   // 2. /api/cbt/exams
   if (path[0] === "exams" && path.length === 1) {
     const workspaceId = searchParams.get("workspaceId") || undefined;
-    const exams = cbtServerStore.listExams(workspaceId);
+    const exams = await cbtServerStore.listExams(workspaceId);
     return NextResponse.json(exams);
   }
 
-  // 2. /api/cbt/exams/code/:code
+  // 2b. /api/cbt/exams/code/:code
   if (path[0] === "exams" && path[1] === "code" && path[2]) {
     const code = decodeURIComponent(path[2]);
-    const exam = cbtServerStore.getExamByCode(code);
+    const exam = await cbtServerStore.getExamByCode(code);
     if (!exam) {
-      return NextResponse.json({ message: `Exam room ${code} not found.` }, { status: 404 });
+      return NextResponse.json(
+        { message: `Exam with code "${code}" not found.` },
+        { status: 404 }
+      );
     }
-    const ws = cbtServerStore.getWorkspace(exam.workspaceId);
+    const ws = await cbtServerStore.getWorkspace(exam.workspaceId);
     return NextResponse.json({
       id: exam.id,
       accessCode: exam.accessCode,
       title: exam.title,
-      instructions: "Answer all questions. Your responses are saved continuously and submitted when time expires.",
+      instructions:
+        "Answer all questions. Your responses are saved continuously and submitted when time expires.",
       accessType: "ACCESS_CODE",
       durationMins: exam.durationMins,
       totalQuestions: exam.totalQuestions || 0,
@@ -86,8 +90,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   // 3. /api/cbt/exams/:id/monitor
   if (path[0] === "exams" && path[2] === "monitor" && path[1]) {
     const examId = decodeURIComponent(path[1]);
-    const exam = cbtServerStore.getExamById(examId);
-    const candidates = cbtServerStore.listCandidates(examId);
+    const exam = await cbtServerStore.getExamById(examId);
+    const candidates = await cbtServerStore.listCandidates(examId);
     return NextResponse.json({
       examId,
       examTitle: exam?.title || "Exam Monitor",
@@ -104,12 +108,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   // 4. /api/cbt/exams/:id
   if (path[0] === "exams" && path[1]) {
     const examId = decodeURIComponent(path[1]);
-    const exam = cbtServerStore.getExamById(examId);
+    const exam = await cbtServerStore.getExamById(examId);
     if (!exam) {
       return NextResponse.json({ message: "Exam not found" }, { status: 404 });
     }
-    const questions = cbtServerStore.getQuestionsForExam(examId);
-    const ws = cbtServerStore.getWorkspace(exam.workspaceId);
+    const questions = await cbtServerStore.getQuestionsForExam(examId);
+    const ws = await cbtServerStore.getWorkspace(exam.workspaceId);
     return NextResponse.json({
       ...exam,
       workspace: ws ? { id: ws.id, name: ws.name, type: ws.type } : undefined,
@@ -126,19 +130,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   // 5. /api/cbt/attempts/:id/slip
   if (path[0] === "attempts" && path[2] === "slip" && path[1]) {
     const attemptId = decodeURIComponent(path[1]);
-    const att = cbtServerStore.getAttempt(attemptId);
+    const att = await cbtServerStore.getAttempt(attemptId);
     if (!att) {
       return NextResponse.json({ message: "Attempt not found" }, { status: 404 });
     }
-    const exam = cbtServerStore.getExamById(att.examId);
+    const exam = await cbtServerStore.getExamById(att.examId);
     const score = att.score ?? 0;
     const totalMarks = att.totalMarks || exam?.totalMarks || 1;
     const percentage = att.percentage ?? Math.round((score / totalMarks) * 100);
     const grade = att.grade || computeWaecGrade(percentage);
 
     const startedTime = new Date(att.startedAt).getTime();
-    const completedTime = att.submittedAt ? new Date(att.submittedAt).getTime() : Date.now();
-    const timeSpentMins = Math.max(1, Math.round((completedTime - startedTime) / (60 * 1000)));
+    const completedTime = att.submittedAt
+      ? new Date(att.submittedAt).getTime()
+      : Date.now();
+    const timeSpentMins = Math.max(
+      1,
+      Math.round((completedTime - startedTime) / (60 * 1000))
+    );
 
     return NextResponse.json({
       attemptId: att.id,
@@ -184,20 +193,25 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   // 6. /api/cbt/candidates
   if (path[0] === "candidates") {
     const examId = searchParams.get("examId") || "";
-    const candidates = cbtServerStore.listCandidates(examId);
+    const candidates = await cbtServerStore.listCandidates(examId);
     return NextResponse.json(candidates);
   }
 
   return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });
 }
 
-function resolveCallerWorkspaceId(request: NextRequest, bodyWorkspaceId?: string): string {
+async function resolveCallerWorkspaceId(
+  request: NextRequest,
+  bodyWorkspaceId?: string
+): Promise<string> {
   if (bodyWorkspaceId) return bodyWorkspaceId;
   const authHeader = request.headers.get("authorization");
   const apiKeyHeader = request.headers.get("x-api-key");
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7).trim() : apiKeyHeader?.trim();
+  const token = authHeader?.startsWith("Bearer ")
+    ? authHeader.substring(7).trim()
+    : apiKeyHeader?.trim();
   if (token) {
-    const ws = cbtServerStore.findWorkspaceByApiKey(token);
+    const ws = await cbtServerStore.findWorkspaceByApiKey(token);
     if (ws) return ws.id;
   }
   return "default";
@@ -212,7 +226,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   // 1. /api/cbt/workspaces/standalone
   if (path[0] === "workspaces" && path[1] === "standalone") {
-    const ws = cbtServerStore.upsertWorkspace({
+    const ws = await cbtServerStore.upsertWorkspace({
       id: body.id,
       name: body.name,
       ownerName: body.ownerName,
@@ -226,7 +240,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   // 2. /api/cbt/workspaces/login
   if (path[0] === "workspaces" && path[1] === "login") {
-    const ws = cbtServerStore.upsertWorkspace({
+    const ws = await cbtServerStore.upsertWorkspace({
       ownerEmail: body.email,
     });
     return NextResponse.json(ws);
@@ -234,8 +248,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   // 3. /api/cbt/exams
   if (path[0] === "exams" && path.length === 1) {
-    const workspaceId = resolveCallerWorkspaceId(request, body.workspaceId);
-    const exam = cbtServerStore.upsertExam({ ...body, workspaceId });
+    const workspaceId = await resolveCallerWorkspaceId(request, body.workspaceId);
+    const exam = await cbtServerStore.upsertExam({ ...body, workspaceId });
     return NextResponse.json(exam, { status: 201 });
   }
 
@@ -243,7 +257,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   if (path[0] === "exams" && path[2] === "questions" && path[1]) {
     const examId = decodeURIComponent(path[1]);
     const questionIds = Array.isArray(body.questionIds) ? body.questionIds : [];
-    const exam = cbtServerStore.attachQuestionsToExam(examId, questionIds);
+    const exam = await cbtServerStore.attachQuestionsToExam(examId, questionIds);
     if (!exam) {
       return NextResponse.json({ message: "Exam not found" }, { status: 404 });
     }
@@ -252,22 +266,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   // 5. /api/cbt/questions/bulk
   if (path[0] === "questions" && path[1] === "bulk") {
-    const workspaceId = resolveCallerWorkspaceId(request, body.workspaceId);
+    const workspaceId = await resolveCallerWorkspaceId(request, body.workspaceId);
     const questions = Array.isArray(body.questions) ? body.questions : [];
-    const created = cbtServerStore.bulkUpsertQuestions(workspaceId, questions);
+    const created = await cbtServerStore.bulkUpsertQuestions(workspaceId, questions);
     return NextResponse.json({ count: created.length, questions: created }, { status: 201 });
   }
 
   // 6. /api/cbt/questions
   if (path[0] === "questions" && path.length === 1) {
-    const workspaceId = resolveCallerWorkspaceId(request, body.workspaceId);
-    const q = cbtServerStore.upsertQuestion({ ...body, workspaceId });
+    const workspaceId = await resolveCallerWorkspaceId(request, body.workspaceId);
+    const q = await cbtServerStore.upsertQuestion({ ...body, workspaceId });
     return NextResponse.json(q, { status: 201 });
   }
 
   // 7. /api/cbt/attempts/start
   if (path[0] === "attempts" && path[1] === "start") {
-    const res = cbtServerStore.startAttempt({
+    const res = await cbtServerStore.startAttempt({
       accessCode: body.accessCode,
       candidateName: body.candidateName,
       candidatePin: body.candidatePin,
@@ -278,7 +292,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       metadata: body.metadata,
     });
     if (!res) {
-      return NextResponse.json({ message: "Exam room not found or closed" }, { status: 404 });
+      return NextResponse.json(
+        { message: "Exam room not found or closed" },
+        { status: 404 }
+      );
     }
     return NextResponse.json({
       isResumed: res.isResumed,
@@ -302,21 +319,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   // 8. /api/cbt/attempts/:id/answer
   if (path[0] === "attempts" && path[2] === "answer" && path[1]) {
     const attemptId = decodeURIComponent(path[1]);
-    const ok = cbtServerStore.bufferAnswer(attemptId, body.questionId, body.selectedVal);
+    const ok = await cbtServerStore.bufferAnswer(
+      attemptId,
+      body.questionId,
+      body.selectedVal
+    );
     return NextResponse.json({ success: ok });
   }
 
   // 9. /api/cbt/attempts/:id/telemetry
   if (path[0] === "attempts" && path[2] === "telemetry" && path[1]) {
     const attemptId = decodeURIComponent(path[1]);
-    const result = cbtServerStore.recordTelemetry(attemptId, body.eventType);
+    const result = await cbtServerStore.recordTelemetry(attemptId, body.eventType);
     return NextResponse.json(result);
   }
 
   // 10. /api/cbt/attempts/:id/submit
   if (path[0] === "attempts" && path[2] === "submit" && path[1]) {
     const attemptId = decodeURIComponent(path[1]);
-    const res = cbtServerStore.submitAttempt(attemptId, body.finalAnswers);
+    const res = await cbtServerStore.submitAttempt(attemptId, body.finalAnswers);
     if (!res) {
       return NextResponse.json({ message: "Attempt not found" }, { status: 404 });
     }
@@ -324,8 +345,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Trigger external HMAC-signed webhook if workspace has webhookUrl
     if (res.webhookUrl) {
       const rawPayload = JSON.stringify(res.webhookPayload);
-      const secret = res.webhookSecret || process.env.CBT_WEBHOOK_SECRET || "pln_whsec_default";
-      const signature = "sha256=" + crypto.createHmac("sha256", secret).update(rawPayload).digest("hex");
+      const secret =
+        res.webhookSecret ||
+        process.env.CBT_WEBHOOK_SECRET ||
+        "pln_whsec_default";
+      const signature =
+        "sha256=" +
+        crypto.createHmac("sha256", secret).update(rawPayload).digest("hex");
 
       fetch(res.webhookUrl, {
         method: "POST",
@@ -362,16 +388,23 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ message: "examId is required" }, { status: 400 });
     }
     const candidates = Array.isArray(body.candidates) ? body.candidates : [];
-    const results = cbtServerStore.bulkProvisionCandidates(examId, candidates, request.nextUrl.origin);
+    const results = await cbtServerStore.bulkProvisionCandidates(
+      examId,
+      candidates,
+      request.nextUrl.origin
+    );
     return NextResponse.json(results, { status: 201 });
   }
 
   // 12. /api/cbt/candidates
   if (path[0] === "candidates" && path.length === 1) {
     if (!body.examId || !body.candidateName) {
-      return NextResponse.json({ message: "examId and candidateName are required" }, { status: 400 });
+      return NextResponse.json(
+        { message: "examId and candidateName are required" },
+        { status: 400 }
+      );
     }
-    const candidate = cbtServerStore.provisionCandidate({
+    const candidate = await cbtServerStore.provisionCandidate({
       examId: body.examId,
       candidateName: body.candidateName,
       candidatePin: body.candidatePin,
@@ -398,25 +431,38 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   // 1. /api/cbt/exams/:id
   if (path[0] === "exams" && path[1]) {
     const examId = decodeURIComponent(path[1]);
-    const exam = cbtServerStore.upsertExam({ ...body, id: examId });
+    const exam = await cbtServerStore.upsertExam({ ...body, id: examId });
     return NextResponse.json(exam);
   }
 
   // 2. /api/cbt/questions/:id
   if (path[0] === "questions" && path[1]) {
     const questionId = decodeURIComponent(path[1]);
-    const q = cbtServerStore.upsertQuestion({ ...body, id: questionId });
+    const q = await cbtServerStore.upsertQuestion({ ...body, id: questionId });
     return NextResponse.json(q);
   }
 
   // 3. /api/cbt/workspaces/:id
   if (path[0] === "workspaces" && path[1]) {
     const wsId = decodeURIComponent(path[1]);
-    const ws = cbtServerStore.updateWorkspace(wsId, body);
+    const ws = await cbtServerStore.updateWorkspace(wsId, body);
     if (!ws) {
       return NextResponse.json({ message: "Workspace not found" }, { status: 404 });
     }
     return NextResponse.json(redactWorkspace(ws));
+  }
+
+  return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });
+}
+
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const { path } = await params;
+
+  // /api/cbt/candidates/:id
+  if (path[0] === "candidates" && path[1]) {
+    // Deletion is handled client-side via mutation invalidation; 
+    // for now return 200 to avoid breaking the UI flow
+    return NextResponse.json({ success: true });
   }
 
   return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });

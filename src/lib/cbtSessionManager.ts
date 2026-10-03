@@ -158,6 +158,8 @@ export const clearExaminerSession = (): void => {
 };
 
 // ── Local Optimistic Cache & Offline Candidate Resilience ───────────────────
+const STORAGE_PREFIX = "paralearn_cbt_session_";
+
 export const getSessionStorageKey = (examCode: string, pin: string = "default"): string => {
   return `${STORAGE_PREFIX}${examCode.trim().toUpperCase()}_${pin.trim()}`;
 };
@@ -200,8 +202,25 @@ export const loadCandidateSession = (examCode: string, pin?: string): CandidateS
     const finalPin = candidatePin || "default";
     const key = getSessionStorageKey(examCode, finalPin);
     const data = localStorage.getItem(key);
-    if (!data) return null;
-    return JSON.parse(data) as CandidateSession;
+    if (data) return JSON.parse(data) as CandidateSession;
+
+    // Fallback: search localStorage for any key matching this examCode
+    const prefix = `${STORAGE_PREFIX}${examCode.trim().toUpperCase()}_`;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(prefix)) {
+        const item = localStorage.getItem(k);
+        if (item) {
+          try {
+            const parsed = JSON.parse(item) as CandidateSession;
+            if (parsed && (parsed.status === "in_progress" || !parsed.status)) {
+              return parsed;
+            }
+          } catch {}
+        }
+      }
+    }
+    return null;
   } catch (err) {
     console.error("[CBT Session] Failed to restore session:", err);
     return null;
