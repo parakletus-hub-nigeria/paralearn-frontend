@@ -31,6 +31,7 @@ import {
   useGetExamByCodeQuery,
   useStartAttemptMutation,
 } from "@cbt/store/cbtMicroserviceApi";
+import { BUSI_QUESTIONS_STATIC } from "@cbt/lib/busiQuestions";
 
 interface ExamMetadata {
   code: string;
@@ -174,6 +175,21 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
       return;
     }
 
+    if (normalizedExamCode === "BUSI-7642") {
+      setMetadata({
+        code: "BUSI-7642",
+        title: "Business Development Assessment - 1",
+        institutionName: "Parakletus Internship Program",
+        durationMins: 90,
+        questionCount: 30,
+        instructions:
+          "Answer all questions. Your responses are saved continuously and submitted when time expires.",
+        requiresPin: false,
+        maxTabViolations: 3,
+      });
+      return;
+    }
+
     // Offline / Local fallback check
     const stored = loadStoredExams();
     const localExam = stored.find(
@@ -265,7 +281,10 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
         console.warn("[Candidate Lobby] Microservice attempt start unreachable, generating local session:", apiErr);
         const stored = loadStoredExams();
         const localExam = stored.find((e) => e.accessCode?.trim().toUpperCase() === metadata.code.toUpperCase());
-        const storedQuestions = localExam ? loadStoredQuestions(localExam.id) : [];
+        let storedQuestions = localExam ? loadStoredQuestions(localExam.id) : [];
+        if (metadata.code.toUpperCase() === "BUSI-7642" && storedQuestions.length === 0) {
+          storedQuestions = BUSI_QUESTIONS_STATIC;
+        }
         const generatedPin = candidatePin.trim() || Math.floor(100000 + Math.random() * 900000).toString();
         const durationMins = metadata.durationMins || 60;
         const now = new Date();

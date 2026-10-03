@@ -11,13 +11,14 @@
 export type KvValue = string | number | boolean | object | null;
 
 // ── Detect Upstash environment ────────────────────────────────────────────────
-const DEFAULT_UPSTASH_URL = "https://probable-pika-192064.upstash.io";
-const DEFAULT_UPSTASH_TOKEN = "gQAAAAAAAu5AAQIgcDE1MTQyNzFjYTNjNGI0NDRiOWUyMTJjNGI4NmE1MzA4Mw";
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL || DEFAULT_UPSTASH_URL;
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || DEFAULT_UPSTASH_TOKEN;
-
-const hasUpstash = Boolean(redisUrl && redisToken);
+const hasUpstash = Boolean(
+  redisUrl &&
+  redisToken &&
+  !redisUrl.includes("probable-pika")
+);
 
 // ── Lazy Upstash client ───────────────────────────────────────────────────────
 let _upstash: import("@upstash/redis").Redis | null = null;

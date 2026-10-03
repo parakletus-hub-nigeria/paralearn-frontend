@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { cbtServerStore, computeWaecGrade } from "@/lib/cbtServerStore";
+import { BUSI_EXAM, BUSI_QUESTIONS } from "@/lib/busiAssessmentData";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +62,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   // 2b. /api/cbt/exams/code/:code
   if (path[0] === "exams" && path[1] === "code" && path[2]) {
-    const code = decodeURIComponent(path[2]);
+    const code = decodeURIComponent(path[2]).trim().toUpperCase();
+    if (code === "BUSI-7642") {
+      return NextResponse.json({
+        id: BUSI_EXAM.id,
+        accessCode: "BUSI-7642",
+        title: "Business Development Assessment - 1",
+        instructions:
+          "Answer all questions. Your responses are saved continuously and submitted when time expires.",
+        accessType: "ACCESS_CODE",
+        durationMins: 90,
+        totalQuestions: 30,
+        totalMarks: 30,
+        maxTabViolations: 3,
+        workspaceName: "Parakletus Internship Program",
+        startsAt: BUSI_EXAM.startsAt,
+        endsAt: BUSI_EXAM.endsAt,
+      });
+    }
     const exam = await cbtServerStore.getExamByCode(code);
     if (!exam) {
       return NextResponse.json(
@@ -281,6 +299,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   // 7. /api/cbt/attempts/start
   if (path[0] === "attempts" && path[1] === "start") {
+    const accessCode = (body.accessCode || "").trim().toUpperCase();
+    if (accessCode === "BUSI-7642") {
+      const pin =
+        body.candidatePin?.trim().toUpperCase() ||
+        Math.floor(100000 + Math.random() * 900000).toString();
+      const now = new Date();
+      const deadline = new Date(now.getTime() + 90 * 60 * 1000).toISOString();
+      const attemptId = `att_busi_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      return NextResponse.json({
+        isResumed: false,
+        attemptId,
+        externalAttemptId: body.externalAttemptId || null,
+        studentId: body.studentId || null,
+        examId: BUSI_EXAM.id,
+        examTitle: BUSI_EXAM.title,
+        candidateName: body.candidateName || "Candidate",
+        candidatePin: pin,
+        durationMins: 90,
+        deadline,
+        remainingSeconds: 90 * 60,
+        violations: 0,
+        maxTabViolations: 3,
+        questions: BUSI_QUESTIONS,
+        restoredAnswers: {},
+      });
+    }
+
     const res = await cbtServerStore.startAttempt({
       accessCode: body.accessCode,
       candidateName: body.candidateName,
