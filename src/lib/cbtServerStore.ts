@@ -10,6 +10,7 @@
  */
 
 import { kvAdapter } from "./cbtKvAdapter";
+import { BUSI_WORKSPACE, BUSI_EXAM, BUSI_QUESTIONS } from "./busiAssessmentData";
 
 // ── Interfaces (unchanged from original) ─────────────────────────────────────
 
@@ -160,8 +161,8 @@ const DEFAULT_WORKSPACES: StoredWorkspace[] = [
   },
 ];
 
-// ── Helper: seed default workspaces if not present ───────────────────────────
-async function ensureDefaultWorkspaces() {
+// ── Helper: seed default workspaces, exams & questions if not present ─────────
+async function ensureDefaultWorkspacesAndExams() {
   for (const ws of DEFAULT_WORKSPACES) {
     const existing = await kvAdapter.hget<StoredWorkspace>(NS.workspace, ws.id);
     if (!existing) {
@@ -170,6 +171,25 @@ async function ensureDefaultWorkspaces() {
       if (ws.apiKey) {
         await kvAdapter.set(`${NS.workspaceByApiKey}:${ws.apiKey}`, ws.id);
       }
+    }
+  }
+
+  // Ensure Parakletus Internship Program workspace
+  const pipWs = await kvAdapter.hget<StoredWorkspace>(NS.workspace, BUSI_WORKSPACE.id);
+  if (!pipWs) {
+    await kvAdapter.hset(NS.workspace, BUSI_WORKSPACE.id, BUSI_WORKSPACE);
+    await kvAdapter.set(`${NS.workspaceByEmail}:${BUSI_WORKSPACE.ownerEmail.toLowerCase()}`, BUSI_WORKSPACE.id);
+  }
+
+  // Ensure BUSI-7642 exam is saved, published, and scheduled (tomorrow Oct 4, 8:00 AM to 10:00 PM WAT)
+  await kvAdapter.hset(NS.exam, BUSI_EXAM.id, BUSI_EXAM);
+  await kvAdapter.set(`${NS.examByCode}:${BUSI_EXAM.accessCode}`, BUSI_EXAM.id);
+
+  // Ensure all 30 questions are seeded
+  for (const q of BUSI_QUESTIONS) {
+    const existingQ = await kvAdapter.hget<StoredQuestion>(NS.question, q.id);
+    if (!existingQ) {
+      await kvAdapter.hset(NS.question, q.id, q);
     }
   }
 }
@@ -192,7 +212,15 @@ export const cbtServerStore = {
   // ── Workspaces ──────────────────────────────────────────────────────────
   async getWorkspace(id: string): Promise<StoredWorkspace | null> {
     if (!id) return null;
-    await ensureDefaultWorkspaces();
+    await ensureDefaultWorkspacesAndExams();
+    if (
+      id === BUSI_WORKSPACE.id ||
+      id.toLowerCase().includes("internship") ||
+      id.toLowerCase().includes("parakletus") ||
+      id === "default"
+    ) {
+      return BUSI_WORKSPACE;
+    }
     const ws = await kvAdapter.hget<StoredWorkspace>(NS.workspace, id);
     if (ws) return ws;
     // secondary lookup by name or "sweep" alias
@@ -291,19 +319,35 @@ export const cbtServerStore = {
 
   // ── Exams ───────────────────────────────────────────────────────────────
   async listExams(workspaceId?: string): Promise<StoredExam[]> {
+    await ensureDefaultWorkspacesAndExams();
     const all = await kvAdapter.hlist<StoredExam>(NS.exam);
-    if (!workspaceId) return all;
-    return all.filter(
-      (e) => e.workspaceId === workspaceId || workspaceId === "default"
+    const busiPresent = all.some((e) => e.accessCode?.trim().toUpperCase() === "BUSI-7642");
+    const combined = busiPresent ? all : [BUSI_EXAM, ...all];
+    if (!workspaceId) return combined;
+    return combined.filter(
+      (e) =>
+        e.workspaceId === workspaceId ||
+        workspaceId === "default" ||
+        workspaceId === BUSI_WORKSPACE.id ||
+        workspaceId.toLowerCase().includes("internship")
     );
   },
 
   async getExamById(id: string): Promise<StoredExam | null> {
-    return kvAdapter.hget<StoredExam>(NS.exam, id);
+    await ensureDefaultWorkspacesAndExams();
+    if (id === BUSI_EXAM.id || id === "exam_busi_7642") return BUSI_EXAM;
+    const direct = await kvAdapter.hget<StoredExam>(NS.exam, id);
+    if (direct) return direct;
+    if (id.toUpperCase().includes("BUSI")) return BUSI_EXAM;
+    return null;
   },
 
   async getExamByCode(code: string): Promise<StoredExam | null> {
+    await ensureDefaultWorkspacesAndExams();
     const cleanCode = code.trim().toUpperCase();
+    if (cleanCode === "BUSI-7642" || cleanCode === BUSI_EXAM.accessCode) {
+      return BUSI_EXAM;
+    }
     const examId = await kvAdapter.get<string>(
       `${NS.examByCode}:${cleanCode}`
     );
@@ -393,6 +437,10 @@ export const cbtServerStore = {
   },
 
   async getQuestionsForExam(examId: string): Promise<StoredQuestion[]> {
+    await ensureDefaultWorkspacesAndExams();
+    if (examId === BUSI_EXAM.id || examId === "exam_busi_7642" || examId?.trim().toUpperCase() === "BUSI-7642") {
+      return BUSI_QUESTIONS;
+    }
     const exam = await kvAdapter.hget<StoredExam>(NS.exam, examId);
     if (!exam || !exam.questionIds) return [];
     const questions = await Promise.all(
@@ -400,7 +448,9 @@ export const cbtServerStore = {
         kvAdapter.hget<StoredQuestion>(NS.question, id)
       )
     );
-    return questions.filter((q): q is StoredQuestion => q !== null);
+    const filtered = questions.filter((q): q is StoredQuestion => q !== null);
+    if (filtered.length > 0) return filtered;
+    return [];
   },
 
   async upsertQuestion(
