@@ -144,16 +144,8 @@ export interface CandidateRecord {
 
 export const getCbtBaseUrl = (): string => {
   if (typeof window !== "undefined") {
-    const isLocalhost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-    const envUrl = process.env.NEXT_PUBLIC_CBT_API_URL;
-    if (!envUrl || envUrl.includes("localhost") || envUrl.includes("127.0.0.1")) {
-      if (!isLocalhost) {
-        return "/api/cbt";
-      }
-    }
-    return (envUrl || "/api/cbt").replace(/\/+$/, "");
+    // In any browser, relative URL `/api/cbt` always routes to Next.js API route on the same origin
+    return "/api/cbt";
   }
   const envUrl = process.env.NEXT_PUBLIC_CBT_API_URL;
   if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
@@ -164,15 +156,21 @@ export const getCbtBaseUrl = (): string => {
 
 export const CBT_MICROSERVICE_BASE_URL = getCbtBaseUrl();
 
-export const cbtMicroserviceApi = createApi({
-  reducerPath: "cbtMicroserviceApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: CBT_MICROSERVICE_BASE_URL,
+const dynamicCbtBaseQuery = async (args: any, api: any, extraOptions: any) => {
+  const baseUrl = getCbtBaseUrl();
+  const rawBaseQuery = fetchBaseQuery({
+    baseUrl,
     prepareHeaders: (headers) => {
       headers.set("Accept", "application/json");
       return headers;
     },
-  }),
+  });
+  return rawBaseQuery(args, api, extraOptions);
+};
+
+export const cbtMicroserviceApi = createApi({
+  reducerPath: "cbtMicroserviceApi",
+  baseQuery: dynamicCbtBaseQuery,
   tagTypes: ["CbtWorkspace", "CbtExam", "CbtQuestion", "CbtCandidate", "CbtAttempt", "CbtMonitor"],
   endpoints: (builder) => ({
     examinerLogin: builder.mutation<ExaminerWorkspace, { email: string; password?: string }>({

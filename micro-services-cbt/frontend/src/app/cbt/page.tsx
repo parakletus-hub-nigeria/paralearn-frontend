@@ -128,9 +128,10 @@ export default function CbtPortalPage() {
   };
 
   useEffect(() => {
-    if (!examiner?.id || !serviceExams) return;
+    if (!examiner?.id) return;
 
-    const normalized = serviceExams.map((exam) => ({
+    const rawList = Array.isArray(serviceExams) ? serviceExams : [];
+    const normalized = rawList.map((exam) => ({
       ...exam,
       totalQuestions: exam.totalQuestions ?? (exam as any)._count?.questions ?? 0,
     }));
@@ -138,14 +139,43 @@ export default function CbtPortalPage() {
     // Merge remote exams with locally created offline exams so local rooms are preserved
     const localExams = loadStoredExams(examiner.id);
     const remoteIdSet = new Set(normalized.map((e) => e.id));
-    const merged = [
+    let merged = [
       ...normalized,
       ...localExams.filter((local) => !remoteIdSet.has(local.id)),
     ];
 
+    const isInternship =
+      examiner.id === "ws_parakletus_internship" ||
+      examiner.id === "default" ||
+      examiner.name?.toLowerCase().includes("internship") ||
+      examiner.ownerEmail?.toLowerCase().includes("internship");
+
+    if (isInternship && !merged.some((e) => e.accessCode?.trim().toUpperCase() === "BUSI-7642")) {
+      merged = [
+        {
+          id: "exam_busi_7642",
+          workspaceId: examiner.id,
+          title: "Business Development Assessment - 1",
+          accessCode: "BUSI-7642",
+          durationMins: 90,
+          totalQuestions: 30,
+          totalMarks: 30,
+          isPublished: true,
+          startsAt: "2026-10-04T07:00:00.000Z",
+          endsAt: "2026-10-04T21:00:00.000Z",
+          maxTabViolations: 3,
+          shuffleQuestions: true,
+          shuffleChoices: true,
+          showResultAfter: true,
+          createdAt: "2026-10-03T12:00:00.000Z",
+        },
+        ...merged,
+      ];
+    }
+
     setExams(merged);
     saveStoredExams(merged, examiner.id);
-  }, [examiner?.id, serviceExams]);
+  }, [examiner?.id, examiner?.name, examiner?.ownerEmail, serviceExams]);
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();

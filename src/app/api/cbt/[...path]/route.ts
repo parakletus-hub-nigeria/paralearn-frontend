@@ -37,8 +37,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
   const searchParams = request.nextUrl.searchParams;
 
-  // 1. /api/cbt/workspaces/:id
-  if (path[0] === "workspaces" && path[1]) {
+  // 1a. /api/cbt/workspaces/:id/exams
+  if (path[0] === "workspaces" && path[2] === "exams" && path[1]) {
+    const wsId = decodeURIComponent(path[1]);
+    const exams = await cbtServerStore.listExams(wsId);
+    return NextResponse.json(exams);
+  }
+
+
+  // 1c. /api/cbt/workspaces/:id (EXACT match: path.length === 2)
+  if (path[0] === "workspaces" && path.length === 2 && path[1]) {
     const wsId = decodeURIComponent(path[1]);
     const ws = await cbtServerStore.getWorkspace(wsId);
     if (!ws) {
@@ -47,7 +55,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(redactWorkspace(ws));
   }
 
-  // 1b. /api/cbt/workspaces
+  // 1d. /api/cbt/workspaces (EXACT match: path.length === 1)
   if (path[0] === "workspaces" && path.length === 1) {
     const ws = await cbtServerStore.getWorkspace("default");
     return NextResponse.json(ws ? [redactWorkspace(ws)] : []);
@@ -76,6 +84,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         totalMarks: 30,
         maxTabViolations: 3,
         workspaceName: "Parakletus Internship Program",
+        isPublished: true,
         startsAt: BUSI_EXAM.startsAt,
         endsAt: BUSI_EXAM.endsAt,
       });
@@ -100,6 +109,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       totalMarks: exam.totalMarks || 0,
       maxTabViolations: exam.maxTabViolations || 3,
       workspaceName: ws?.name || "ParaLearn Assessment Center",
+      isPublished: exam.isPublished ?? true,
       startsAt: exam.startsAt,
       endsAt: exam.endsAt,
     });

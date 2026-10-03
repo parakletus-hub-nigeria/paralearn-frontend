@@ -112,6 +112,46 @@ function CandidatePinInput({
   );
 }
 
+function getInitialExamMetadata(code: string): ExamMetadata | null {
+  const normalized = (code || "").trim().toUpperCase();
+  if (normalized === "BUSI-7642") {
+    return {
+      code: "BUSI-7642",
+      title: "Business Development Assessment - 1",
+      institutionName: "Parakletus Internship Program",
+      durationMins: 90,
+      questionCount: 30,
+      instructions:
+        "Answer all questions. Your responses are saved continuously and submitted when time expires.",
+      requiresPin: false,
+      maxTabViolations: 3,
+    };
+  }
+  if (typeof window !== "undefined") {
+    try {
+      const stored = loadStoredExams();
+      const localExam = stored.find(
+        (e) => e.accessCode?.trim().toUpperCase() === normalized
+      );
+      if (localExam) {
+        const storedQuestions = loadStoredQuestions(localExam.id);
+        return {
+          code: localExam.accessCode,
+          title: localExam.title,
+          institutionName: "ParaLearn Assessment Center",
+          durationMins: localExam.durationMins || 60,
+          questionCount: storedQuestions.length || localExam.totalQuestions || 0,
+          instructions:
+            "Answer all questions. Your responses are saved continuously and submitted when time expires.",
+          requiresPin: false,
+          maxTabViolations: localExam.maxTabViolations ?? 3,
+        };
+      }
+    } catch {}
+  }
+  return null;
+}
+
 export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -123,7 +163,9 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
   } = useGetExamByCodeQuery(normalizedExamCode);
   const [startAttempt] = useStartAttemptMutation();
 
-  const [metadata, setMetadata] = useState<ExamMetadata | null>(null);
+  const [metadata, setMetadata] = useState<ExamMetadata | null>(() =>
+    getInitialExamMetadata(normalizedExamCode)
+  );
 
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
@@ -175,39 +217,9 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
       return;
     }
 
-    if (normalizedExamCode === "BUSI-7642") {
-      setMetadata({
-        code: "BUSI-7642",
-        title: "Business Development Assessment - 1",
-        institutionName: "Parakletus Internship Program",
-        durationMins: 90,
-        questionCount: 30,
-        instructions:
-          "Answer all questions. Your responses are saved continuously and submitted when time expires.",
-        requiresPin: false,
-        maxTabViolations: 3,
-      });
-      return;
-    }
-
-    // Offline / Local fallback check
-    const stored = loadStoredExams();
-    const localExam = stored.find(
-      (e) => e.accessCode?.trim().toUpperCase() === normalizedExamCode
-    );
-    if (localExam) {
-      const storedQuestions = loadStoredQuestions(localExam.id);
-      setMetadata({
-        code: localExam.accessCode,
-        title: localExam.title,
-        institutionName: "ParaLearn Assessment Center",
-        durationMins: localExam.durationMins || 60,
-        questionCount: storedQuestions.length || localExam.totalQuestions || 0,
-        instructions:
-          "Answer all questions. Your responses are saved continuously and submitted when time expires.",
-        requiresPin: false,
-        maxTabViolations: localExam.maxTabViolations ?? 3,
-      });
+    const fallback = getInitialExamMetadata(normalizedExamCode);
+    if (fallback) {
+      setMetadata(fallback);
     }
   }, [remoteExam, normalizedExamCode]);
 
@@ -363,6 +375,13 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
   };
 
   if (!metadata) {
+    if (normalizedExamCode === "BUSI-7642") {
+      const fb = getInitialExamMetadata("BUSI-7642");
+      if (fb) {
+        setMetadata(fb);
+        return null;
+      }
+    }
     const notFound = Boolean(examLookupError) && !isLoadingExam;
     const lookupMessage = (examLookupError as any)?.data?.message;
     return (
@@ -421,6 +440,13 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
           <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5">
             Room Code: <strong className="font-mono text-violet-700">{metadata.code}</strong> &bull; Duration: {metadata.durationMins} Mins
           </p>
+
+          {metadata.code === "BUSI-7642" && (
+            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Assessment Window: <strong>Sunday, Oct 4, 2026 &bull; 8:00 AM – 10:00 PM WAT</strong></span>
+            </div>
+          )}
         </div>
 
         {/* Form Body */}
