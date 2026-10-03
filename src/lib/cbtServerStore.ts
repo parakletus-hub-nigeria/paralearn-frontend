@@ -134,8 +134,23 @@ const initDatabase = (): CbtDatabase => {
         type: "STANDALONE_HALL",
         ownerName: "ParaLearn Admin",
         ownerEmail: "admin@pln.ng",
-        credits: 9999,
-        createdAt: new Date().toISOString(),
+        credits: 99999,
+        apiKey: process.env.CBT_WORKSPACE_API_KEY || "pln_live_sk_paralearn_cbt_prod",
+        webhookSecret: process.env.CBT_WEBHOOK_SECRET || "pln_whsec_paralearn_cbt_prod",
+        webhookUrl: process.env.CBT_WEBHOOK_URL || undefined,
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+      ws_sweep_prod: {
+        id: "ws_sweep_prod",
+        name: "SWEEP Assessment Integration",
+        type: "STANDALONE_HALL",
+        ownerName: "SWEEP Integration",
+        ownerEmail: "sweep@pln.ng",
+        credits: 999999,
+        apiKey: process.env.SWEEP_CBT_API_KEY || "pln_live_sk_sweep_prod_89f2a1b4",
+        webhookSecret: process.env.SWEEP_CBT_WEBHOOK_SECRET || "pln_whsec_sweep_prod_7c3e1a90",
+        webhookUrl: process.env.SWEEP_WEBHOOK_URL || undefined,
+        createdAt: "2026-01-01T00:00:00.000Z",
       },
     },
     exams: {},
@@ -150,8 +165,20 @@ const initDatabase = (): CbtDatabase => {
       const raw = fs.readFileSync(filePath, "utf-8");
       if (raw) {
         const parsed = JSON.parse(raw);
+        const mergedWorkspaces = { ...defaultDb.workspaces, ...(parsed.workspaces || {}) };
+        // Ensure credentials exist for every workspace
+        Object.keys(mergedWorkspaces).forEach((k) => {
+          const ws = mergedWorkspaces[k];
+          if (!ws.apiKey) {
+            ws.apiKey = defaultDb.workspaces[k]?.apiKey || `pln_live_sk_${k}_key`;
+          }
+          if (!ws.webhookSecret) {
+            ws.webhookSecret = defaultDb.workspaces[k]?.webhookSecret || `pln_whsec_${k}_secret`;
+          }
+        });
+
         globalForCbt.__cbtDatabase = {
-          workspaces: { ...defaultDb.workspaces, ...(parsed.workspaces || {}) },
+          workspaces: mergedWorkspaces,
           exams: parsed.exams || {},
           questions: parsed.questions || {},
           candidates: parsed.candidates || {},
@@ -194,7 +221,28 @@ export const cbtServerStore = {
   // ── Workspaces ──────────────────────────────────────────────────────────
   getWorkspace(id: string): StoredWorkspace | null {
     const db = initDatabase();
-    return db.workspaces[id] || null;
+    if (!id) return null;
+    return (
+      db.workspaces[id] ||
+      Object.values(db.workspaces).find(
+        (w) =>
+          w.id === id ||
+          w.name?.toLowerCase() === id.toLowerCase() ||
+          (id === "sweep" && w.id === "ws_sweep_prod")
+      ) ||
+      null
+    );
+  },
+
+  findWorkspaceByApiKey(apiKey: string): StoredWorkspace | null {
+    const db = initDatabase();
+    const cleanKey = apiKey.trim();
+    for (const ws of Object.values(db.workspaces)) {
+      if (ws.apiKey === cleanKey) {
+        return ws;
+      }
+    }
+    return null;
   },
 
   findWorkspaceByEmail(email: string): StoredWorkspace | null {
@@ -208,16 +256,32 @@ export const cbtServerStore = {
     return null;
   },
 
-  upsertWorkspace(data: Partial<StoredWorkspace> & { ownerEmail: string }): StoredWorkspace {
+  updateWorkspace(id: string, data: Partial<StoredWorkspace>): StoredWorkspace | null {
     const db = initDatabase();
-    const existing = this.findWorkspaceByEmail(data.ownerEmail);
+    const ws = this.getWorkspace(id);
+    if (!ws) return null;
+    if (data.name !== undefined) ws.name = data.name;
+    if (data.webhookUrl !== undefined) ws.webhookUrl = data.webhookUrl;
+    if (data.webhookSecret !== undefined) ws.webhookSecret = data.webhookSecret;
+    if (data.apiKey !== undefined) ws.apiKey = data.apiKey;
+    if (data.credits !== undefined) ws.credits = data.credits;
+    persistDatabase();
+    return ws;
+  },
+
+  upsertWorkspace(
+    data: Partial<StoredWorkspace> & { ownerEmail?: string; email?: string }
+  ): StoredWorkspace {
+    const db = initDatabase();
+    const email = (data.ownerEmail || data.email || `${data.id || "ws"}@pln.ng`).trim().toLowerCase();
+    const existing = data.id ? this.getWorkspace(data.id) : this.findWorkspaceByEmail(email);
     const id = data.id || existing?.id || `ws_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const workspace: StoredWorkspace = {
       id,
-      name: data.name || existing?.name || `${data.ownerEmail.split("@")[0].toUpperCase()} Exam Hall`,
+      name: data.name || existing?.name || `${email.split("@")[0].toUpperCase()} Exam Hall`,
       type: data.type || existing?.type || "STANDALONE_HALL",
-      ownerName: data.ownerName || existing?.ownerName || data.ownerEmail.split("@")[0],
-      ownerEmail: data.ownerEmail.trim().toLowerCase(),
+      ownerName: data.ownerName || existing?.ownerName || email.split("@")[0],
+      ownerEmail: email,
       credits: data.credits ?? existing?.credits ?? 50,
       apiKey:
         data.apiKey ||
