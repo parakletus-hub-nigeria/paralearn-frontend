@@ -123,6 +123,25 @@ const NS = {
   attemptsByExam: "cbt:atts:exam",
 };
 
+export const SWEEP_WORKSPACE: StoredWorkspace = {
+  id: "ws_sweep_prod",
+  name: "SWEEP ACADEMY",
+  type: "STANDALONE_HALL",
+  ownerName: "Mina Ogbanga",
+  ownerEmail: "ogbangadigitalprojects@gmail.com",
+  credits: 999999,
+  apiKey:
+    process.env.SWEEP_CBT_API_KEY ||
+    "pln_live_sk_swp_16a28285697747567c3b838c7de52a4892be574d",
+  webhookSecret:
+    process.env.SWEEP_CBT_WEBHOOK_SECRET ||
+    "pln_whsec_swp_e40c3e7ff4d07d241380e63c7d1c955a6da8fe84",
+  webhookUrl:
+    process.env.SWEEP_WEBHOOK_URL ||
+    "https://<your-sweep-domain>/courses/paralearn/webhook/",
+  createdAt: "2026-01-01T00:00:00.000Z",
+};
+
 // ── Default workspaces seeded on first access ────────────────────────────────
 const DEFAULT_WORKSPACES: StoredWorkspace[] = [
   {
@@ -141,45 +160,23 @@ const DEFAULT_WORKSPACES: StoredWorkspace[] = [
     webhookUrl: process.env.CBT_WEBHOOK_URL || undefined,
     createdAt: "2026-01-01T00:00:00.000Z",
   },
-  {
-    id: "ws_sweep_prod",
-    name: "SWEEP ACADEMY",
-    type: "STANDALONE_HALL",
-    ownerName: "SWEEP Academy",
-    ownerEmail: "sweep@pln.ng",
-    credits: 999999,
-    apiKey:
-      process.env.SWEEP_CBT_API_KEY ||
-      "pln_live_sk_swp_16a28285697747567c3b838c7de52a4892be574d",
-    webhookSecret:
-      process.env.SWEEP_CBT_WEBHOOK_SECRET ||
-      "pln_whsec_swp_e40c3e7ff4d07d241380e63c7d1c955a6da8fe84",
-    webhookUrl:
-      process.env.SWEEP_WEBHOOK_URL ||
-      "https://<your-sweep-domain>/courses/paralearn/webhook/",
-    createdAt: "2026-01-01T00:00:00.000Z",
-  },
+  SWEEP_WORKSPACE,
+  BUSI_WORKSPACE,
 ];
 
 // ── Helper: seed default workspaces, exams & questions if not present ─────────
 async function ensureDefaultWorkspacesAndExams() {
   for (const ws of DEFAULT_WORKSPACES) {
-    const existing = await kvAdapter.hget<StoredWorkspace>(NS.workspace, ws.id);
-    if (!existing) {
-      await kvAdapter.hset(NS.workspace, ws.id, ws);
-      await kvAdapter.set(`${NS.workspaceByEmail}:${ws.ownerEmail.toLowerCase()}`, ws.id);
-      if (ws.apiKey) {
-        await kvAdapter.set(`${NS.workspaceByApiKey}:${ws.apiKey}`, ws.id);
-      }
+    await kvAdapter.hset(NS.workspace, ws.id, ws);
+    await kvAdapter.set(`${NS.workspaceByEmail}:${ws.ownerEmail.toLowerCase()}`, ws.id);
+    if (ws.apiKey) {
+      await kvAdapter.set(`${NS.workspaceByApiKey}:${ws.apiKey}`, ws.id);
     }
   }
 
-  // Ensure Parakletus Internship Program workspace
-  const pipWs = await kvAdapter.hget<StoredWorkspace>(NS.workspace, BUSI_WORKSPACE.id);
-  if (!pipWs) {
-    await kvAdapter.hset(NS.workspace, BUSI_WORKSPACE.id, BUSI_WORKSPACE);
-    await kvAdapter.set(`${NS.workspaceByEmail}:${BUSI_WORKSPACE.ownerEmail.toLowerCase()}`, BUSI_WORKSPACE.id);
-  }
+  // Ensure secondary email indexes
+  await kvAdapter.set(`${NS.workspaceByEmail}:sweep@pln.ng`, SWEEP_WORKSPACE.id);
+  await kvAdapter.set(`${NS.workspaceByEmail}:internship@parakletus.com`, BUSI_WORKSPACE.id);
 
   // Ensure BUSI-7642 exam is saved, published, and scheduled (tomorrow Oct 4, 8:00 AM to 10:00 PM WAT)
   await kvAdapter.hset(NS.exam, BUSI_EXAM.id, BUSI_EXAM);
@@ -213,25 +210,58 @@ export const cbtServerStore = {
   async getWorkspace(id: string): Promise<StoredWorkspace | null> {
     if (!id) return null;
     await ensureDefaultWorkspacesAndExams();
+    const cleanId = id.trim().toLowerCase();
+
+    // 1. SWEEP ACADEMY: Mina Ogbanga (ogbangadigitalprojects@gmail.com)
     if (
-      id === BUSI_WORKSPACE.id ||
-      id.toLowerCase().includes("internship") ||
-      id.toLowerCase().includes("parakletus") ||
-      id === "default"
+      cleanId === "ws_sweep_prod" ||
+      cleanId === "sweep" ||
+      cleanId.includes("sweep") ||
+      cleanId === "ogbangadigitalprojects@gmail.com" ||
+      cleanId.includes("ogbanga")
     ) {
-      return BUSI_WORKSPACE;
+      const ws = await kvAdapter.hget<StoredWorkspace>(NS.workspace, "ws_sweep_prod");
+      return {
+        ...SWEEP_WORKSPACE,
+        ...(ws || {}),
+        id: "ws_sweep_prod",
+        name: "SWEEP ACADEMY",
+        ownerName: "Mina Ogbanga",
+        ownerEmail: "ogbangadigitalprojects@gmail.com",
+      };
     }
+
+    // 2. Parakletus Internship Program: Evander Ikechukwu (parakletus70@gmail.com)
+    if (
+      cleanId === BUSI_WORKSPACE.id ||
+      cleanId.includes("internship") ||
+      cleanId.includes("parakletus") ||
+      cleanId === "parakletus70@gmail.com" ||
+      cleanId.includes("ikechukwu") ||
+      cleanId.includes("evander")
+    ) {
+      const ws = await kvAdapter.hget<StoredWorkspace>(NS.workspace, BUSI_WORKSPACE.id);
+      return {
+        ...BUSI_WORKSPACE,
+        ...(ws || {}),
+        id: BUSI_WORKSPACE.id,
+        name: "Parakletus Internship Program",
+        ownerName: "Evander Ikechukwu",
+        ownerEmail: "parakletus70@gmail.com",
+      };
+    }
+
+    // 3. Default
+    if (cleanId === "default") {
+      const defaultWs = await kvAdapter.hget<StoredWorkspace>(NS.workspace, "default");
+      return defaultWs || DEFAULT_WORKSPACES[0];
+    }
+
     const ws = await kvAdapter.hget<StoredWorkspace>(NS.workspace, id);
     if (ws) return ws;
-    // secondary lookup by name or "sweep" alias
+
     const all = await kvAdapter.hlist<StoredWorkspace>(NS.workspace);
-    return (
-      all.find(
-        (w) =>
-          w.name?.toLowerCase() === id.toLowerCase() ||
-          (id === "sweep" && w.id === "ws_sweep_prod")
-      ) || null
-    );
+    return all.find((w) => w.id === id || w.name?.toLowerCase() === cleanId) || null;
   },
 
   async findWorkspaceByApiKey(apiKey: string): Promise<StoredWorkspace | null> {
@@ -244,7 +274,31 @@ export const cbtServerStore = {
   },
 
   async findWorkspaceByEmail(email: string): Promise<StoredWorkspace | null> {
+    if (!email) return null;
+    await ensureDefaultWorkspacesAndExams();
     const cleanEmail = email.trim().toLowerCase();
+
+    // 1. SWEEP ACADEMY: Mina Ogbanga
+    if (
+      cleanEmail === "ogbangadigitalprojects@gmail.com" ||
+      cleanEmail === "sweep@pln.ng" ||
+      cleanEmail.includes("ogbanga") ||
+      cleanEmail.includes("sweep")
+    ) {
+      return this.getWorkspace("ws_sweep_prod");
+    }
+
+    // 2. Parakletus Internship Program: Evander Ikechukwu
+    if (
+      cleanEmail === "parakletus70@gmail.com" ||
+      cleanEmail === "internship@parakletus.com" ||
+      cleanEmail.includes("parakletus") ||
+      cleanEmail.includes("ikechukwu") ||
+      cleanEmail.includes("evander")
+    ) {
+      return this.getWorkspace(BUSI_WORKSPACE.id);
+    }
+
     const id = await kvAdapter.get<string>(`${NS.workspaceByEmail}:${cleanEmail}`);
     if (id) return kvAdapter.hget<StoredWorkspace>(NS.workspace, id);
     const all = await kvAdapter.hlist<StoredWorkspace>(NS.workspace);
@@ -276,6 +330,54 @@ export const cbtServerStore = {
     )
       .trim()
       .toLowerCase();
+
+    // Explicit routing for SWEEP ACADEMY (Mina Ogbanga)
+    if (
+      data.id === "ws_sweep_prod" ||
+      email === "ogbangadigitalprojects@gmail.com" ||
+      email === "sweep@pln.ng" ||
+      email.includes("ogbanga") ||
+      email.includes("sweep")
+    ) {
+      const current = await this.getWorkspace("ws_sweep_prod");
+      const updated: StoredWorkspace = {
+        ...SWEEP_WORKSPACE,
+        ...(current || {}),
+        id: "ws_sweep_prod",
+        name: "SWEEP ACADEMY",
+        ownerName: "Mina Ogbanga",
+        ownerEmail: "ogbangadigitalprojects@gmail.com",
+      };
+      await kvAdapter.hset(NS.workspace, updated.id, updated);
+      await kvAdapter.set(`${NS.workspaceByEmail}:ogbangadigitalprojects@gmail.com`, updated.id);
+      await kvAdapter.set(`${NS.workspaceByEmail}:sweep@pln.ng`, updated.id);
+      return updated;
+    }
+
+    // Explicit routing for Parakletus Internship Program (Evander Ikechukwu)
+    if (
+      data.id === BUSI_WORKSPACE.id ||
+      email === "parakletus70@gmail.com" ||
+      email === "internship@parakletus.com" ||
+      email.includes("parakletus") ||
+      email.includes("ikechukwu") ||
+      email.includes("evander")
+    ) {
+      const current = await this.getWorkspace(BUSI_WORKSPACE.id);
+      const updated: StoredWorkspace = {
+        ...BUSI_WORKSPACE,
+        ...(current || {}),
+        id: BUSI_WORKSPACE.id,
+        name: "Parakletus Internship Program",
+        ownerName: "Evander Ikechukwu",
+        ownerEmail: "parakletus70@gmail.com",
+      };
+      await kvAdapter.hset(NS.workspace, updated.id, updated);
+      await kvAdapter.set(`${NS.workspaceByEmail}:parakletus70@gmail.com`, updated.id);
+      await kvAdapter.set(`${NS.workspaceByEmail}:internship@parakletus.com`, updated.id);
+      return updated;
+    }
+
     const existing = data.id
       ? await this.getWorkspace(data.id)
       : await this.findWorkspaceByEmail(email);
@@ -325,18 +427,66 @@ export const cbtServerStore = {
       (e): e is StoredExam =>
         typeof e === "object" && e !== null && typeof (e as any).title === "string"
     );
-    const busiPresent = all.some((e) => e.accessCode?.trim().toUpperCase() === "BUSI-7642");
-    const combined = busiPresent ? all : [BUSI_EXAM, ...all];
-    if (!workspaceId) return combined;
-    return combined.filter(
-      (e) =>
-        e.workspaceId === workspaceId ||
-        workspaceId === "default" ||
-        workspaceId === BUSI_WORKSPACE.id ||
-        workspaceId === "ws_sweep_prod" ||
-        workspaceId.toLowerCase().includes("internship") ||
-        workspaceId.toLowerCase().includes("sweep")
-    );
+
+    if (!workspaceId) {
+      const busiPresent = all.some((e) => e.accessCode?.trim().toUpperCase() === "BUSI-7642");
+      return busiPresent ? all : [BUSI_EXAM, ...all];
+    }
+
+    const cleanWs = workspaceId.trim().toLowerCase();
+
+    // 1. SWEEP ACADEMY: Mina Ogbanga (ogbangadigitalprojects@gmail.com)
+    // Strictly isolate: NEVER return BUSI-7642, never return exams belonging to Parakletus
+    if (
+      cleanWs === "ws_sweep_prod" ||
+      cleanWs === "sweep" ||
+      cleanWs.includes("sweep") ||
+      cleanWs === "ogbangadigitalprojects@gmail.com" ||
+      cleanWs.includes("ogbanga")
+    ) {
+      return all.filter(
+        (e) =>
+          (e.workspaceId === "ws_sweep_prod" || e.workspaceId?.toLowerCase().includes("sweep")) &&
+          e.accessCode?.trim().toUpperCase() !== "BUSI-7642" &&
+          e.id !== BUSI_EXAM.id &&
+          e.workspaceId !== BUSI_WORKSPACE.id &&
+          !e.workspaceId?.toLowerCase().includes("internship") &&
+          !e.workspaceId?.toLowerCase().includes("parakletus")
+      );
+    }
+
+    // 2. Parakletus Internship Program: Evander Ikechukwu (parakletus70@gmail.com)
+    // Strictly isolate: Must include BUSI-7642, never return SWEEP exams
+    if (
+      cleanWs === BUSI_WORKSPACE.id ||
+      cleanWs.includes("internship") ||
+      cleanWs.includes("parakletus") ||
+      cleanWs === "parakletus70@gmail.com" ||
+      cleanWs.includes("ikechukwu") ||
+      cleanWs.includes("evander")
+    ) {
+      const parakletusExams = all.filter(
+        (e) =>
+          (e.workspaceId === BUSI_WORKSPACE.id ||
+            e.workspaceId?.toLowerCase().includes("internship") ||
+            e.workspaceId?.toLowerCase().includes("parakletus") ||
+            e.accessCode?.trim().toUpperCase() === "BUSI-7642" ||
+            e.id === BUSI_EXAM.id) &&
+          e.workspaceId !== "ws_sweep_prod" &&
+          !e.workspaceId?.toLowerCase().includes("sweep")
+      );
+      const hasBusi = parakletusExams.some((e) => e.accessCode?.trim().toUpperCase() === "BUSI-7642");
+      return hasBusi ? parakletusExams : [BUSI_EXAM, ...parakletusExams];
+    }
+
+    // 3. Default workspace
+    if (cleanWs === "default") {
+      const busiPresent = all.some((e) => e.accessCode?.trim().toUpperCase() === "BUSI-7642");
+      return busiPresent ? all : [BUSI_EXAM, ...all];
+    }
+
+    // 4. Any other custom hall
+    return all.filter((e) => e.workspaceId === workspaceId || e.workspaceId?.toLowerCase() === cleanWs);
   },
 
   async getExamById(id: string): Promise<StoredExam | null> {
