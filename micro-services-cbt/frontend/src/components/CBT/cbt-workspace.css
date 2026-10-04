@@ -557,11 +557,13 @@
 }
 @media (max-width: 1023px) {
   .cbt-sidebar {
+    visibility: hidden;
     transform: translateX(-100%);
     width: 250px;
     top: 64px;
   }
   .cbt-sidebar.is-open {
+    visibility: visible;
     transform: translateX(0);
   }
   .cbt-mobile-header {

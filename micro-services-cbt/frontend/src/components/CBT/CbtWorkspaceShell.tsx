@@ -34,6 +34,14 @@ export default function CbtWorkspaceShell({
     setSession(getExaminerSession());
     setMenuOpen(false);
   }, [pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [menuOpen]);
   const isPublic =
     !session || pathname.endsWith("/auth") || pathname.endsWith("/api-docs");
   if (isPublic) return <div className="cbt-surface">{children}</div>;
