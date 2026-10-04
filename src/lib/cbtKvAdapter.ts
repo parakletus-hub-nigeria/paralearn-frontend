@@ -14,11 +14,7 @@ export type KvValue = string | number | boolean | object | null;
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const hasUpstash = Boolean(
-  redisUrl &&
-  redisToken &&
-  !redisUrl.includes("probable-pika")
-);
+const hasUpstash = Boolean(redisUrl && redisToken);
 
 // ── Lazy Upstash client (uses installed @upstash/redis) ────────────────────────
 let _upstash: import("@upstash/redis").Redis | null = null;

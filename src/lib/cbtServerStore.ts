@@ -216,6 +216,7 @@ export const cbtServerStore = {
     // 1. SWEEP ACADEMY: Mina Ogbanga (ogbangadigitalprojects@gmail.com)
     if (
       cleanId === "ws_sweep_prod" ||
+      cleanId === "cmusrg4w30002of8ccfazuegn" ||
       cleanId === "sweep" ||
       cleanId.includes("sweep") ||
       cleanId === "ogbangadigitalprojects@gmail.com" ||
@@ -336,6 +337,7 @@ export const cbtServerStore = {
     // Explicit routing for SWEEP ACADEMY (Mina Ogbanga)
     if (
       data.id === "ws_sweep_prod" ||
+      data.id === "cmusrg4w30002of8ccfazuegn" ||
       email === "ogbangadigitalprojects@gmail.com" ||
       email === "sweep@pln.ng" ||
       email.includes("ogbanga") ||
@@ -442,6 +444,7 @@ export const cbtServerStore = {
     // Strictly isolate: NEVER return BUSI-7642, never return exams belonging to Parakletus
     if (
       cleanWs === "ws_sweep_prod" ||
+      cleanWs === "cmusrg4w30002of8ccfazuegn" ||
       cleanWs === "sweep" ||
       cleanWs.includes("sweep") ||
       cleanWs === "ogbangadigitalprojects@gmail.com" ||
@@ -449,7 +452,9 @@ export const cbtServerStore = {
     ) {
       return all.filter(
         (e) =>
-          (e.workspaceId === "ws_sweep_prod" || e.workspaceId?.toLowerCase().includes("sweep")) &&
+          (e.workspaceId === "ws_sweep_prod" ||
+            e.workspaceId === "cmusrg4w30002of8ccfazuegn" ||
+            e.workspaceId?.toLowerCase().includes("sweep")) &&
           e.accessCode?.trim().toUpperCase() !== "BUSI-7642" &&
           e.id !== BUSI_EXAM.id &&
           e.workspaceId !== BUSI_WORKSPACE.id &&
