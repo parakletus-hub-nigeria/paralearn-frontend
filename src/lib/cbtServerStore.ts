@@ -454,7 +454,8 @@ export const cbtServerStore = {
         (e) =>
           (e.workspaceId === "ws_sweep_prod" ||
             e.workspaceId === "cmusrg4w30002of8ccfazuegn" ||
-            e.workspaceId?.toLowerCase().includes("sweep")) &&
+            e.workspaceId?.toLowerCase().includes("sweep") ||
+            e.accessCode?.trim().toUpperCase().startsWith("SWP-")) &&
           e.accessCode?.trim().toUpperCase() !== "BUSI-7642" &&
           e.id !== BUSI_EXAM.id &&
           e.workspaceId !== BUSI_WORKSPACE.id &&

@@ -11,8 +11,12 @@
 export type KvValue = string | number | boolean | object | null;
 
 // ── Detect Upstash environment ────────────────────────────────────────────────
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+const redisUrl =
+  process.env.UPSTASH_REDIS_REST_URL ||
+  "https://probable-pika-192064.upstash.io";
+const redisToken =
+  process.env.UPSTASH_REDIS_REST_TOKEN ||
+  "gQAAAAAAAu5AAQIgcDE1MTQyNzFjYTNjNGI0NDRiOWUyMTJjNGI4NmE1MzA4Mw";
 
 const hasUpstash = Boolean(redisUrl && redisToken);
 
@@ -113,6 +117,21 @@ async function hlist<T>(ns: string): Promise<T[]> {
       !k.includes(":apikey:")
   );
   if (!itemKeys.length) return [];
+  if (hasUpstash) {
+    try {
+      const r = await getUpstash();
+      const items = await r.mget<T[]>(...itemKeys);
+      return (items || []).filter(
+        (item): item is T =>
+          item !== null && item !== undefined && typeof item === "object"
+      );
+    } catch (err: any) {
+      console.warn(
+        "[CBT KV] Upstash mget failed, falling back to per-item get:",
+        err?.message || err
+      );
+    }
+  }
   const results = await Promise.all(itemKeys.map((k) => get<T>(k)));
   const list: T[] = [];
   for (const item of results) {

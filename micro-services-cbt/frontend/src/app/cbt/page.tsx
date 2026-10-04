@@ -32,6 +32,8 @@ import {
 import { toast } from "sonner";
 import {
   getExaminerSession,
+  loadStoredExams,
+  saveStoredExams,
   type ExaminerWorkspace,
 } from "@cbt/lib/cbtSessionManager";
 import {
@@ -81,6 +83,7 @@ export default function CbtPortalPage() {
   const [shuffleChoices, setShuffleChoices] = useState(true);
   const [showResultAfter, setShowResultAfter] = useState(true);
   const [maxTabViolations, setMaxTabViolations] = useState(3);
+  const [storedExams, setStoredExams] = useState<CbtExamItem[]>([]);
   const {
     data: exams = [],
     isFetching,
@@ -95,11 +98,28 @@ export default function CbtPortalPage() {
   const [createExam, { isLoading: creating }] = useCreateCbtExamMutation();
   const [updateExam] = useUpdateCbtExamMutation();
   useEffect(() => {
-    setExaminer(getExaminerSession());
+    const ses = getExaminerSession();
+    setExaminer(ses);
+    if (ses?.id) {
+      const cached = loadStoredExams(ses.id);
+      if (cached && cached.length > 0) {
+        setStoredExams(cached);
+      }
+    }
     setHydrated(true);
     const timer = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (exams && exams.length > 0 && examiner?.id) {
+      saveStoredExams(exams, examiner.id);
+      setStoredExams(exams);
+    }
+  }, [exams, examiner?.id]);
+
+  const activeExams =
+    exams.length > 0 ? exams : storedExams.length > 0 ? storedExams : exams;
 
   const safeIsoString = (
     dateStr?: string,
@@ -122,13 +142,13 @@ export default function CbtPortalPage() {
   }, [copied]);
 
   const counts = {
-    "All exams": exams.length,
-    Drafts: exams.filter((e) => !e.isPublished).length,
-    Open: exams.filter((e) => statusOf(e, now) === "Open").length,
-    Scheduled: exams.filter((e) => statusOf(e, now) === "Scheduled").length,
-    Closed: exams.filter((e) => statusOf(e, now) === "Closed").length,
+    "All exams": activeExams.length,
+    Drafts: activeExams.filter((e) => !e.isPublished).length,
+    Open: activeExams.filter((e) => statusOf(e, now) === "Open").length,
+    Scheduled: activeExams.filter((e) => statusOf(e, now) === "Scheduled").length,
+    Closed: activeExams.filter((e) => statusOf(e, now) === "Closed").length,
   };
-  const visible = exams
+  const visible = activeExams
     .filter((exam) => {
       const status = statusOf(exam, now);
       return (
@@ -146,7 +166,7 @@ export default function CbtPortalPage() {
           ? (a.createdAt || "").localeCompare(b.createdAt || "")
           : (b.createdAt || "").localeCompare(a.createdAt || ""),
     );
-  const attempts = exams.reduce(
+  const attempts = activeExams.reduce(
     (sum, exam) => sum + (exam._count?.attempts ?? 0),
     0,
   );
@@ -261,7 +281,7 @@ export default function CbtPortalPage() {
         <div className="cbt-notice" role="alert">
           <AlertCircle size={18} className="shrink-0" />
           <span>
-            {exams.length
+            {activeExams.length
               ? "Connection interrupted. These results may be out of date."
               : "We could not load your examinations."}
           </span>
@@ -273,24 +293,24 @@ export default function CbtPortalPage() {
       <dl className="cbt-summary">
         <div>
           <dt>Total exams</dt>
-          <dd>{isLoading || (error && !exams.length) ? "--" : exams.length}</dd>
+          <dd>{isLoading && !activeExams.length ? "--" : activeExams.length}</dd>
           <small>{counts.Drafts} drafts</small>
         </div>
         <div>
           <dt>Open for candidates</dt>
-          <dd>{isLoading || (error && !exams.length) ? "--" : counts.Open}</dd>
+          <dd>{isLoading && !activeExams.length ? "--" : counts.Open}</dd>
           <small>Published and accepting entry</small>
         </div>
         <div>
           <dt>Scheduled exams</dt>
           <dd>
-            {isLoading || (error && !exams.length) ? "--" : counts.Scheduled}
+            {isLoading && !activeExams.length ? "--" : counts.Scheduled}
           </dd>
           <small>Upcoming opening windows</small>
         </div>
         <div>
           <dt>Exam attempts</dt>
-          <dd>{isLoading || (error && !exams.length) ? "--" : attempts}</dd>
+          <dd>{isLoading && !activeExams.length ? "--" : attempts}</dd>
           <small>Across all examinations</small>
         </div>
       </dl>

@@ -544,6 +544,16 @@ export const loadStoredExams = (workspaceId?: string): CbtExamItem[] => {
   try {
     const activeWs = workspaceId || getExaminerSession()?.id || "default";
     let raw = localStorage.getItem(`paralearn_cbt_exams_${activeWs}`);
+    if (
+      !raw &&
+      (activeWs === "ws_sweep_prod" ||
+        activeWs === "cmusrg4w30002of8ccfazuegn" ||
+        activeWs.includes("sweep"))
+    ) {
+      raw =
+        localStorage.getItem("paralearn_cbt_exams_cmusrg4w30002of8ccfazuegn") ||
+        localStorage.getItem("paralearn_cbt_exams_ws_sweep_prod");
+    }
     if (!raw && activeWs !== "default") {
       raw = localStorage.getItem("paralearn_cbt_exams_default");
     }
@@ -577,6 +587,14 @@ export const saveStoredExams = (exams: CbtExamItem[], workspaceId?: string) => {
   try {
     const activeWs = workspaceId || getExaminerSession()?.id || "default";
     localStorage.setItem(`paralearn_cbt_exams_${activeWs}`, JSON.stringify(exams));
+    if (
+      activeWs === "ws_sweep_prod" ||
+      activeWs === "cmusrg4w30002of8ccfazuegn" ||
+      activeWs.includes("sweep")
+    ) {
+      localStorage.setItem("paralearn_cbt_exams_ws_sweep_prod", JSON.stringify(exams));
+      localStorage.setItem("paralearn_cbt_exams_cmusrg4w30002of8ccfazuegn", JSON.stringify(exams));
+    }
     if (activeWs !== "default") {
       localStorage.setItem("paralearn_cbt_exams_default", JSON.stringify(exams));
     }
