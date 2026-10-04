@@ -58,6 +58,7 @@ export interface StoredWorkspace {
   type: string;
   ownerName: string;
   ownerEmail: string;
+  password?: string;
   credits: number;
   apiKey?: string;
   webhookUrl?: string;
@@ -178,7 +179,7 @@ async function ensureDefaultWorkspacesAndExams() {
   await kvAdapter.set(`${NS.workspaceByEmail}:sweep@pln.ng`, SWEEP_WORKSPACE.id);
   await kvAdapter.set(`${NS.workspaceByEmail}:internship@parakletus.com`, BUSI_WORKSPACE.id);
 
-  // Ensure BUSI-7642 exam is saved, published, and scheduled (tomorrow Oct 4, 8:00 AM to 10:00 PM WAT)
+  // Ensure BUSI-7642 exam is saved, published, and scheduled (Monday Oct 5, 8:00 AM to 11:00 PM WAT)
   await kvAdapter.hset(NS.exam, BUSI_EXAM.id, BUSI_EXAM);
   await kvAdapter.set(`${NS.examByCode}:${BUSI_EXAM.accessCode}`, BUSI_EXAM.id);
 
@@ -248,6 +249,7 @@ export const cbtServerStore = {
         name: "Parakletus Internship Program",
         ownerName: "Evander Ikechukwu",
         ownerEmail: "parakletus70@gmail.com",
+        password: "60647065PiP",
       };
     }
 
@@ -371,6 +373,7 @@ export const cbtServerStore = {
         name: "Parakletus Internship Program",
         ownerName: "Evander Ikechukwu",
         ownerEmail: "parakletus70@gmail.com",
+        password: "60647065PiP",
       };
       await kvAdapter.hset(NS.workspace, updated.id, updated);
       await kvAdapter.set(`${NS.workspaceByEmail}:parakletus70@gmail.com`, updated.id);

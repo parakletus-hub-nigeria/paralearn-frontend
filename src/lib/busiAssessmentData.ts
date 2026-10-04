@@ -6,6 +6,7 @@ export const BUSI_WORKSPACE: StoredWorkspace = {
   type: "STANDALONE_HALL",
   ownerName: "Evander Ikechukwu",
   ownerEmail: "parakletus70@gmail.com",
+  password: "60647065PiP",
   credits: 99999,
   apiKey: "pln_live_sk_pip_72a19c40b8e21f95a43c",
   webhookSecret: "pln_whsec_pip_84b39e1f08c52b7d91",
@@ -21,9 +22,9 @@ export const BUSI_EXAM: StoredExam = {
   totalMarks: 30,
   totalQuestions: 30,
   isPublished: true,
-  // Active window: Oct 4 8:00 AM WAT (+01:00 = 07:00 UTC) to Oct 5 10:00 PM WAT (+01:00 = 21:00 UTC)
-  startsAt: "2026-10-04T07:00:00.000Z",
-  endsAt: "2026-10-05T21:00:00.000Z",
+  // Active window: Monday Oct 5, 2026, 8:00 AM WAT (+01:00 = 07:00 UTC) to 11:00 PM WAT (+01:00 = 22:00 UTC)
+  startsAt: "2026-10-05T07:00:00.000Z",
+  endsAt: "2026-10-05T22:00:00.000Z",
   maxTabViolations: 3,
   shuffleQuestions: true,
   shuffleChoices: true,

@@ -269,10 +269,29 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   // 2. /api/cbt/workspaces/login
   if (path[0] === "workspaces" && path[1] === "login") {
+    const email = (body.email || "").trim().toLowerCase();
+    const password = body.password ? String(body.password).trim() : "";
+
+    // Specific password verification for parakletus70@gmail.com
+    if (
+      email === "parakletus70@gmail.com" ||
+      email === "internship@parakletus.com" ||
+      email.includes("parakletus")
+    ) {
+      if (!password || password !== "60647065PiP") {
+        return NextResponse.json(
+          { message: "Invalid password for Parakletus Internship Program examiner." },
+          { status: 401 }
+        );
+      }
+    }
+
     const ws = await cbtServerStore.upsertWorkspace({
       ownerEmail: body.email,
+      password: body.password || "60647065PiP",
     });
-    return NextResponse.json(ws);
+    const { password: _p, ...safeWs } = ws as any;
+    return NextResponse.json(safeWs);
   }
 
   // 3. /api/cbt/exams

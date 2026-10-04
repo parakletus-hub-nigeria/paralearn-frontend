@@ -82,6 +82,7 @@ export interface ExaminerWorkspace {
   type: string;
   ownerName: string;
   ownerEmail: string;
+  password?: string;
   credits: number;
   apiKey?: string;
   webhookUrl?: string;
@@ -153,7 +154,11 @@ export const getExaminerSession = (): ExaminerWorkspace | null => {
       }
     }
     if (!raw) return null;
-    return JSON.parse(raw) as ExaminerWorkspace;
+    const ws = JSON.parse(raw) as ExaminerWorkspace;
+    if (ws && (ws.id === "ws_parakletus_internship" || ws.ownerEmail === "internship@parakletus.com")) {
+      ws.ownerEmail = "parakletus70@gmail.com";
+    }
+    return ws;
   } catch {
     return null;
   }

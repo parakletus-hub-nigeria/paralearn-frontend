@@ -68,6 +68,7 @@ export interface ExaminerWorkspace {
   type: string;
   ownerName: string;
   ownerEmail: string;
+  password?: string;
   credits: number;
   apiKey?: string;
   webhookUrl?: string;
@@ -139,7 +140,11 @@ export const getExaminerSession = (): ExaminerWorkspace | null => {
       }
     }
     if (!raw) return null;
-    return JSON.parse(raw) as ExaminerWorkspace;
+    const ws = JSON.parse(raw) as ExaminerWorkspace;
+    if (ws && (ws.id === "ws_parakletus_internship" || ws.ownerEmail === "internship@parakletus.com")) {
+      ws.ownerEmail = "parakletus70@gmail.com";
+    }
+    return ws;
   } catch {
     return null;
   }
@@ -316,32 +321,18 @@ export const cbtApi = {
    * Examiner sign in — automatically saves session in client storage
    */
   async examinerLogin(email: string, password?: string): Promise<ExaminerWorkspace> {
-    try {
-      const res = await fetch(`${CBT_API_BASE}/workspaces/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (res.ok) {
-        const workspace = await res.json();
-        saveExaminerSession(workspace);
-        return workspace;
-      }
-    } catch {
-      // Fallback below
+    const res = await fetch(`${CBT_API_BASE}/workspaces/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: "Examiner sign-in failed" }));
+      throw new Error(err.message || "Examiner sign-in failed.");
     }
-
-    const fallback: ExaminerWorkspace = {
-      id: `hall_${Date.now()}`,
-      name: `${email.split("@")[0]}'s Exam Hall`,
-      ownerName: email.split("@")[0],
-      ownerEmail: email.trim(),
-      type: "STANDALONE_HALL",
-      credits: 30,
-      createdAt: new Date().toISOString(),
-    };
-    saveExaminerSession(fallback);
-    return fallback;
+    const workspace = await res.json();
+    saveExaminerSession(workspace);
+    return workspace;
   },
 
   /**

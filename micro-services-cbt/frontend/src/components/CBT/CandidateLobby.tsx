@@ -490,7 +490,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
               <span>
                 Assessment Window:{" "}
                 <strong>
-                  Sunday, Oct 4, 2026 &bull; 8:00 AM – 10:00 PM WAT
+                  Monday, Oct 5, 2026 &bull; 8:00 AM – 11:00 PM WAT
                 </strong>
               </span>
             </div>
