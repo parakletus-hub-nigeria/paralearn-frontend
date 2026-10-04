@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "seo:gate": "node scripts/seo-gate.mjs"
+    "seo:gate": "node scripts/seo-gate.mjs",
+    "db:push:cbt": "tsx scripts/push_to_db.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
