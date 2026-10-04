@@ -21,6 +21,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import CbtBrand from "./CbtBrand";
+import "./cbt-workspace.css";
 import { saveCandidateSession, loadCandidateSession } from "@cbt/lib/cbtSessionManager";
 import {
   useGetExamByCodeQuery,
@@ -130,7 +132,6 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
     browser: "checking", // ready | error
     visibilityApi: "checking",
     connection: "checking",
-    pingMs: 0,
   });
 
   useEffect(() => {
@@ -163,16 +164,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
     }
 
     // Run Pre-Flight Diagnostics
-    const runDiagnostics = async () => {
-      const startTime = performance.now();
-      let ping = 25;
-      try {
-        await fetch("/favicon.ico", { method: "HEAD", cache: "no-store" });
-        ping = Math.round(performance.now() - startTime);
-      } catch (err) {
-        ping = 60;
-      }
-
+    const runDiagnostics = () => {
       const hasVisibility = typeof document !== "undefined" && "visibilityState" in document;
       const isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
 
@@ -180,11 +172,16 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
         browser: "ready",
         visibilityApi: hasVisibility ? "ready" : "error",
         connection: isOnline ? "ready" : "error",
-        pingMs: ping,
       });
     };
 
     runDiagnostics();
+    window.addEventListener("online", runDiagnostics);
+    window.addEventListener("offline", runDiagnostics);
+    return () => {
+      window.removeEventListener("online", runDiagnostics);
+      window.removeEventListener("offline", runDiagnostics);
+    };
   }, [normalizedExamCode]);
 
   const handleStartExam = async (e: React.FormEvent) => {
@@ -250,13 +247,6 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
         });
       }
       
-      // Request fullscreen if supported for security
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {
-          // Fullscreen can fail if user interaction permissions are strict; proceed anyway
-        });
-      }
-
       router.push(`/take/${encodeURIComponent(metadata.code)}/live`);
     } catch (err: any) {
       console.error("Failed to start session:", err);
@@ -296,12 +286,14 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-4 sm:p-6 text-[var(--foreground)]">
+    <div className="cbt-surface flex flex-col items-center px-4 py-8 sm:py-12">
+      <div className="mb-8"><CbtBrand /></div>
+      <ol className="flex flex-wrap justify-center gap-6 text-xs text-slate-600 mb-8" aria-label="Candidate journey"><li>1. Exam code</li><li aria-current="step" className="font-bold text-violet-800">2. Your details</li><li>3. Examination</li></ol>
       {/* Container */}
-      <div className="w-full max-w-xl bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
+      <div className="w-full max-w-xl overflow-hidden">
         
         {/* Header Ribbon */}
-        <div className="bg-[var(--surface-muted)] border-b border-[var(--border-fine)] px-6 py-5">
+        <div className="border-b border-[var(--border-fine)] py-5">
           <div className="flex items-center justify-between mb-2">
             <Badge 
               variant="outline" 
@@ -328,17 +320,19 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleStartExam} className="p-5 sm:p-7 space-y-6">
+        <form onSubmit={handleStartExam} className="py-6 space-y-6">
           
           {/* Candidate Name */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
+            <label htmlFor="candidate-full-name" className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
               Candidate Full Name
             </label>
             <Input
               type="text"
               required
+              id="candidate-full-name"
+              autoComplete="name"
               placeholder="e.g. Daniel Olawale"
               value={candidateName}
               onChange={(e) => setCandidateName(e.target.value)}
@@ -356,6 +350,8 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
                 </label>
                 <Input
                   type="email"
+                  aria-label="Email (optional)"
+                  autoComplete="email"
                   placeholder="you@example.com"
                   value={candidateEmail}
                   onChange={(e) => setCandidateEmail(e.target.value)}
@@ -369,6 +365,8 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
                 </label>
                 <Input
                   type="tel"
+                  aria-label="Phone (optional)"
+                  autoComplete="tel"
                   placeholder="080..."
                   value={candidatePhone}
                   onChange={(e) => setCandidatePhone(e.target.value)}
@@ -413,6 +411,11 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
             </details>
           )}
 
+          <section className="border-t border-slate-200 pt-5" aria-labelledby="exam-instructions">
+            <h2 id="exam-instructions" className="text-sm font-bold mb-2">Examination instructions</h2>
+            <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-wrap break-words">{metadata.instructions}</p>
+          </section>
+
           {/* Rules & Malpractice Warning Box */}
           <div className="bg-[var(--amber-tint)] border border-[var(--amber-signal)]/30 rounded-[var(--radius-md)] p-3.5 text-xs text-[#92400e] space-y-1">
             <div className="flex items-center gap-1.5 font-bold text-[13px]">
@@ -429,7 +432,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
           <div className="pt-2 border-t border-[var(--border-fine)]">
             <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-2">
               <span className="font-semibold uppercase tracking-wider">System Readiness</span>
-              <span className="font-mono text-[11px] text-[var(--emerald-signal)]">Ping: ~{diagnostics.pingMs}ms</span>
+              <span className="text-[11px] text-slate-600">{diagnostics.connection === "ready" ? "Device online" : "Device offline"}</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="flex items-center gap-1.5 p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-xs">
@@ -454,7 +457,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
                 ) : (
                   <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)]" />
                 )}
-                <span>Online Sync</span>
+                <span>{diagnostics.connection === "ready" ? "Connected" : "Offline"}</span>
               </div>
             </div>
           </div>

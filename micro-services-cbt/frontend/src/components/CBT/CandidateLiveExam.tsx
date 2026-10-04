@@ -449,7 +449,7 @@ export default function CandidateLiveExam({
     <div className="min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)] select-none">
       
       {/* ── STICKY HUD HEADER (56px) ─────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-[var(--border-fine)] px-4 sm:px-6 flex items-center justify-between shadow-[var(--shadow-card)]">
+      <header className="sticky top-0 z-30 min-h-16 bg-white border-b border-[var(--border-fine)] px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
         {/* Left: Exam Info & Progress */}
         <div className="flex items-center gap-3">
           <div className="font-bold text-sm sm:text-base tracking-tight truncate max-w-[180px] sm:max-w-md">
@@ -501,6 +501,8 @@ export default function CandidateLiveExam({
             variant="outline"
             size="icon"
             onClick={() => setIsMobilePaletteOpen(!isMobilePaletteOpen)}
+            aria-label="Toggle question navigator"
+            aria-expanded={isMobilePaletteOpen}
             className="lg:hidden h-9 w-9 border-[var(--border-fine)]"
           >
             <Menu className="w-4 h-4" />
@@ -512,7 +514,7 @@ export default function CandidateLiveExam({
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex gap-6 lg:gap-8 items-start">
         
         {/* Left Column: Question Canvas */}
-        <main className="flex-1 min-w-0 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-5 sm:p-8 shadow-[var(--shadow-card)] space-y-6">
+        <main className="flex-1 min-w-0 bg-white p-5 sm:p-8 space-y-6">
           
           {/* Question Header & Meta */}
           <div className="flex items-center justify-between pb-4 border-b border-[var(--border-fine)] flex-wrap gap-2">
@@ -906,17 +908,16 @@ export default function CandidateLiveExam({
             <AlertDialogTitle className="text-xl font-bold tracking-tight text-[var(--foreground)]">
               Confirm Exam Submission
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-[var(--text-secondary)] space-y-3 pt-2">
-              <p>
-                Are you sure you want to end your examination session? Once submitted, answers cannot be altered.
-              </p>
-
+            <AlertDialogDescription className="text-sm text-[var(--text-secondary)] pt-2">
+              Are you sure you want to end your examination session? Once submitted, answers cannot be altered.
+            </AlertDialogDescription>
+            <div className="space-y-3 pt-2">
               {hasEssayQuestions && (
                 <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-md text-xs text-amber-800">
                   <strong>Notice:</strong> This examination includes essay questions. Your objective questions will be scored immediately, while your essays will be submitted for examiner and AI evaluation.
                 </div>
               )}
-              
+
               <div className="bg-[var(--surface-muted)] p-3.5 rounded-[var(--radius-md)] border border-[var(--border-fine)] text-xs text-[var(--foreground)] grid grid-cols-3 gap-2 text-center font-mono">
                 <div>
                   <div className="text-[var(--text-secondary)] uppercase text-[10px]">Answered</div>
@@ -931,7 +932,7 @@ export default function CandidateLiveExam({
                   <div className="text-base font-bold text-[var(--amber-signal)]">{flaggedCount}</div>
                 </div>
               </div>
-            </AlertDialogDescription>
+            </div>
           </AlertDialogHeader>
 
           <AlertDialogFooter className="mt-4 gap-2">

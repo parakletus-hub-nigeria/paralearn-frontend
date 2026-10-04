@@ -583,7 +583,7 @@ export default function CbtQuestionStudio({
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)]">
+    <div className="cbt-studio min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)]">
       
       {/* ── TOP ACTION BAR (56px) ────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 h-14 bg-white border-b border-[var(--border-fine)] px-4 sm:px-6 flex items-center justify-between shadow-xs">
@@ -665,7 +665,7 @@ export default function CbtQuestionStudio({
             className="h-8 px-2.5 sm:px-3 text-xs font-bold border-violet-200 text-violet-700 bg-violet-50/70 hover:bg-violet-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
             title="Generate MCQs and Essays with ParaLearn AI"
           >
-            <Sparkles className="w-3.5 h-3.5 text-violet-600 animate-pulse" />
+            <Sparkles className="w-3.5 h-3.5 text-violet-600" />
             <span>ParaLearn AI</span>
           </Button>
 

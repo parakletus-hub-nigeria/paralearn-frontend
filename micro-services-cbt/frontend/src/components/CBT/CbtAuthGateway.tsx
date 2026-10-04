@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { saveSubdomainToStorage, extractSubdomainFromURL } from "@/lib/subdomainManager";
 import { cbtApi } from "@cbt/lib/cbtSessionManager";
+import CbtBrand from "./CbtBrand";
 
 export default function CbtAuthGateway() {
   const router = useRouter();
@@ -173,10 +174,7 @@ export default function CbtAuthGateway() {
       
       {/* Brand Header */}
       <div className="mb-6 text-center space-y-1">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--violet-tint)] text-[var(--violet-ink)] text-xs font-semibold">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>ParaLearn Assessment Suite</span>
-        </div>
+        <div className="flex justify-center mb-7"><CbtBrand /></div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--foreground)]">
           {workspaceType === "standalone"
             ? authMode === "login"
@@ -188,7 +186,7 @@ export default function CbtAuthGateway() {
           {workspaceType === "standalone"
             ? authMode === "login"
               ? "Access your tests, question banks, and live candidate monitor."
-              : "Set up your independent testing centre in 60 seconds with 30 free candidates."
+              : "Create a workspace for your examinations."
             : "Sign in with your registered ParaLearn school credentials."}
         </p>
       </div>

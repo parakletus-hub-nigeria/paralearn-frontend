@@ -45,7 +45,7 @@ interface CbtEssayGradingModalProps {
   modelAnswer?: string;
   keyTerms?: string[];
   rubric?: ExamRubric;
-  onGraded: (updatedSession: CandidateSession) => void;
+  onGraded: (updatedSession: CandidateSession) => void | Promise<void>;
 }
 
 export default function CbtEssayGradingModal({
@@ -88,6 +88,7 @@ export default function CbtEssayGradingModal({
   const [strengths, setStrengths] = useState<string[]>([]);
   const [areasForImprovement, setAreasForImprovement] = useState<string[]>([]);
   const [isAiGrading, setIsAiGrading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [showModelAnswer, setShowModelAnswer] = useState(false);
 
   // Initialize or load existing feedback
@@ -176,7 +177,7 @@ export default function CbtEssayGradingModal({
   };
 
   // Approve & Finalize
-  const handleApproveAndSave = () => {
+  const handleApproveAndSave = async () => {
     const updatedFeedback = {
       ...(candidateSession.essayFeedback || {}),
       [questionId]: {
@@ -207,10 +208,17 @@ export default function CbtEssayGradingModal({
       gradingStatus: "GRADED",
     };
 
-    saveCandidateSession(updatedSession);
-    onGraded(updatedSession);
-    toast.success(`Essay grade approved: ${currentTotalAwarded} / ${questionMarks} Marks!`);
-    onClose();
+    setIsSaving(true);
+    try {
+      saveCandidateSession(updatedSession);
+      await onGraded(updatedSession);
+      toast.success(`Essay grade approved: ${currentTotalAwarded} / ${questionMarks} Marks!`);
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.data?.message || err?.message || "Could not save the grade to the CBT backend.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -459,10 +467,11 @@ export default function CbtEssayGradingModal({
               type="button"
               size="sm"
               onClick={handleApproveAndSave}
+              disabled={isSaving}
               className="h-9 px-5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs flex items-center gap-1.5"
             >
-              <Check className="w-4 h-4 stroke-[3]" />
-              <span>Approve &amp; Finalize Grade</span>
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 stroke-[3]" />}
+              <span>{isSaving ? "Saving Grade..." : "Approve & Finalize Grade"}</span>
             </Button>
           </div>
         </div>

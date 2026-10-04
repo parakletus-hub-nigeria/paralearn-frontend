@@ -132,6 +132,43 @@ export interface CandidateRecord {
   createdAt?: string;
 }
 
+export interface AttemptReviewQuestion {
+  id: string;
+  prompt: string;
+  type: CbtQuestionType;
+  marks: number;
+  options?: Array<{
+    id: string;
+    text: string;
+    keyLabel?: string;
+    isCorrect?: boolean;
+  }>;
+  explanation?: string;
+  orderIndex?: number;
+  answer?: string | string[] | Record<string, any> | null;
+  marksAwarded?: number;
+  isCorrect?: boolean | null;
+}
+
+export interface AttemptReviewPayload {
+  attemptId: string;
+  examId: string;
+  examTitle: string;
+  accessCode: string;
+  institutionName?: string;
+  candidateName: string;
+  candidatePin: string;
+  studentId?: string | null;
+  status: "IN_PROGRESS" | "SUBMITTED" | "DISQUALIFIED";
+  score: number;
+  totalMarks: number;
+  percentage: number;
+  grade: string;
+  violations: number;
+  submittedAt?: string | null;
+  questions: AttemptReviewQuestion[];
+}
+
 const rawBaseUrl = process.env.NEXT_PUBLIC_CBT_API_URL || "http://localhost:4000";
 export const CBT_MICROSERVICE_BASE_URL = rawBaseUrl.replace(/\/+$/, "");
 
@@ -286,6 +323,27 @@ export const cbtMicroserviceApi = createApi({
       providesTags: (_result, _error, attemptId) => [{ type: "CbtAttempt", id: attemptId }],
     }),
 
+    getAttemptReview: builder.query<AttemptReviewPayload, string>({
+      query: (attemptId) => `/attempts/${attemptId}/review`,
+      providesTags: (_result, _error, attemptId) => [{ type: "CbtAttempt", id: attemptId }],
+    }),
+
+    manualGradeAttempt: builder.mutation<
+      AttemptReviewPayload,
+      { attemptId: string; answers: Array<{ questionId: string; marksAwarded: number; feedback?: string }> }
+    >({
+      query: ({ attemptId, answers }) => ({
+        url: `/attempts/${attemptId}/manual-grade`,
+        method: "POST",
+        body: { answers },
+      }),
+      invalidatesTags: (_result, _error, arg) => [
+        { type: "CbtAttempt", id: arg.attemptId },
+        "CbtMonitor",
+        "CbtCandidate",
+      ],
+    }),
+
     getLiveMonitor: builder.query<any, string>({
       query: (examId) => `/exams/${examId}/monitor`,
       providesTags: (_result, _error, examId) => [{ type: "CbtMonitor", id: examId }],
@@ -349,6 +407,8 @@ export const {
   useRecordTelemetryMutation,
   useSubmitAttemptMutation,
   useGetResultSlipQuery,
+  useLazyGetAttemptReviewQuery,
+  useManualGradeAttemptMutation,
   useGetLiveMonitorQuery,
   useListCandidatesQuery,
   useUpsertCandidateMutation,
