@@ -425,24 +425,24 @@ export default function CandidateLiveExam({
     <div className="min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)] select-none">
       
       {/* ── STICKY HUD HEADER (56px) ─────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-[var(--border-fine)] px-4 sm:px-6 flex items-center justify-between shadow-[var(--shadow-card)]">
+      <header className="sticky top-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-[var(--border-fine)] px-2.5 sm:px-6 flex items-center justify-between shadow-[var(--shadow-card)] gap-2">
         {/* Left: Exam Info & Progress */}
-        <div className="flex items-center gap-3">
-          <div className="font-bold text-sm sm:text-base tracking-tight truncate max-w-[180px] sm:max-w-md">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="font-bold text-xs sm:text-base tracking-tight truncate max-w-[85px] xs:max-w-[130px] sm:max-w-md">
             {examTitle}
           </div>
           <Badge 
             variant="outline"
-            className="hidden sm:inline-flex bg-[var(--surface-muted)] text-[var(--foreground)] border-[var(--border-fine)] text-xs font-mono"
+            className="hidden sm:inline-flex bg-[var(--surface-muted)] text-[var(--foreground)] border-[var(--border-fine)] text-xs font-mono shrink-0"
           >
             Question {activeQuestionIdx + 1} of {questions.length}
           </Badge>
         </div>
 
         {/* Center: Timer Pill */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-[var(--radius-pill)] font-mono text-sm font-bold border transition-colors ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-[var(--radius-pill)] font-mono text-xs sm:text-sm font-bold border transition-colors ${
               secondsRemaining < 60
                 ? "bg-[var(--crimson-tint)] border-[var(--crimson-signal)] text-[#991b1b] animate-pulse"
                 : secondsRemaining < 300
@@ -450,7 +450,7 @@ export default function CandidateLiveExam({
                 : "bg-[var(--surface-muted)] border-[var(--border-fine)] text-[var(--foreground)]"
             }`}
           >
-            <Timer className="w-4 h-4 shrink-0" />
+            <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
             <span className="tabular-nums">{formatTimer(secondsRemaining)}</span>
           </div>
 
@@ -462,14 +462,15 @@ export default function CandidateLiveExam({
         </div>
 
         {/* Right: Actions & Palette Mobile Toggle */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <Button
             size="sm"
             onClick={() => setIsSubmitDialogOpen(true)}
-            className="h-9 px-4 text-xs font-bold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-white rounded-[var(--radius-md)]"
+            className="h-8 sm:h-9 px-2.5 sm:px-4 text-xs font-bold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-white rounded-[var(--radius-md)]"
           >
-            <Send className="w-3.5 h-3.5 mr-1.5" />
-            <span>Submit Exam</span>
+            <Send className="w-3.5 h-3.5 mr-1 sm:mr-1.5" />
+            <span className="hidden sm:inline">Submit Exam</span>
+            <span className="sm:hidden">Submit</span>
           </Button>
 
           {/* Mobile Palette Button */}
@@ -477,7 +478,7 @@ export default function CandidateLiveExam({
             variant="outline"
             size="icon"
             onClick={() => setIsMobilePaletteOpen(!isMobilePaletteOpen)}
-            className="lg:hidden h-9 w-9 border-[var(--border-fine)]"
+            className="lg:hidden h-8 w-8 sm:h-9 sm:w-9 border-[var(--border-fine)]"
           >
             <Menu className="w-4 h-4" />
           </Button>
@@ -485,10 +486,10 @@ export default function CandidateLiveExam({
       </header>
 
       {/* ── MAIN WORKSPACE (2-Column Grid) ───────────────────────────────── */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex gap-6 lg:gap-8 items-start">
+      <div className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-6 lg:p-8 flex gap-4 lg:gap-8 items-start">
         
         {/* Left Column: Question Canvas */}
-        <main className="flex-1 min-w-0 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-5 sm:p-8 shadow-[var(--shadow-card)] space-y-6">
+        <main className="flex-1 min-w-0 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-4 sm:p-8 shadow-[var(--shadow-card)] space-y-5 sm:space-y-6">
           
           {/* Question Header & Meta */}
           <div className="flex items-center justify-between pb-4 border-b border-[var(--border-fine)] flex-wrap gap-2">
@@ -680,14 +681,14 @@ export default function CandidateLiveExam({
           )}
 
           {/* Bottom Navigation Toolbar */}
-          <div className="pt-6 border-t border-[var(--border-fine)] flex items-center justify-between">
+          <div className="pt-5 sm:pt-6 border-t border-[var(--border-fine)] flex items-center justify-between gap-2">
             <Button
               variant="outline"
               disabled={activeQuestionIdx === 0}
               onClick={goToPrev}
-              className="h-11 px-4 sm:px-5 font-semibold text-xs sm:text-sm bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)]/80 text-[var(--foreground)] border-[var(--border-fine)] rounded-[var(--radius-md)]"
+              className="h-10 sm:h-11 px-3 sm:px-5 font-semibold text-xs sm:text-sm bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)]/80 text-[var(--foreground)] border-[var(--border-fine)] rounded-[var(--radius-md)]"
             >
-              <ChevronLeft className="w-4 h-4 mr-1" />
+              <ChevronLeft className="w-4 h-4 mr-0.5 sm:mr-1" />
               <span>Previous</span>
               <Kbd className="ml-2 hidden sm:inline-flex">P</Kbd>
             </Button>
@@ -705,19 +706,19 @@ export default function CandidateLiveExam({
             {activeQuestionIdx < questions.length - 1 ? (
               <Button
                 onClick={goToNext}
-                className="h-11 px-4 sm:px-5 font-bold text-xs sm:text-sm bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
+                className="h-10 sm:h-11 px-3 sm:px-5 font-bold text-xs sm:text-sm bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
               >
                 <span>Next Question</span>
                 <Kbd className="ml-2 hidden sm:inline-flex bg-white/20 text-white">N</Kbd>
-                <ChevronRight className="w-4 h-4 ml-1" />
+                <ChevronRight className="w-4 h-4 ml-0.5 sm:ml-1" />
               </Button>
             ) : (
               <Button
                 onClick={() => setIsSubmitDialogOpen(true)}
-                className="h-11 px-5 font-bold text-xs sm:text-sm bg-[var(--emerald-signal)] hover:bg-[var(--emerald-signal)]/90 text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
+                className="h-10 sm:h-11 px-3 sm:px-5 font-bold text-xs sm:text-sm bg-[var(--emerald-signal)] hover:bg-[var(--emerald-signal)]/90 text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
               >
                 <span>Review &amp; Submit</span>
-                <Send className="w-3.5 h-3.5 ml-1.5" />
+                <Send className="w-3.5 h-3.5 ml-1 sm:ml-1.5" />
               </Button>
             )}
           </div>
@@ -731,9 +732,9 @@ export default function CandidateLiveExam({
           />
         )}
 
-        {/* Right Column: Question Palette Grid (300px, Sticky) */}
+        {/* Right Column: Question Palette Grid (Sticky) */}
         <aside
-          className={`fixed lg:static inset-y-0 right-0 z-40 w-72 sm:w-80 bg-white border-l lg:border border-[var(--border-fine)] lg:rounded-[var(--radius-lg)] p-5 shadow-[var(--shadow-dialog)] lg:shadow-[var(--shadow-card)] flex flex-col transition-transform ${
+          className={`fixed lg:static inset-y-0 right-0 z-40 w-[84vw] max-w-xs sm:w-80 bg-white border-l lg:border border-[var(--border-fine)] lg:rounded-[var(--radius-lg)] p-4 sm:p-5 shadow-[var(--shadow-dialog)] lg:shadow-[var(--shadow-card)] flex flex-col transition-transform ${
             isMobilePaletteOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
           }`}
         >

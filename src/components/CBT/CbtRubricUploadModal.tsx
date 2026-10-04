@@ -242,28 +242,28 @@ export default function CbtRubricUploadModal({
       <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl border-stone-200">
         
         {/* Header */}
-        <div className="px-5 py-4 border-b border-stone-200 bg-stone-50/70 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center font-bold">
+        <div className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-stone-200 bg-stone-50/70 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center font-bold shrink-0">
               <Award className="w-5 h-5" />
             </div>
-            <div>
-              <DialogTitle className="text-base font-bold text-stone-900">
+            <div className="min-w-0">
+              <DialogTitle className="text-sm sm:text-base font-bold text-stone-900 truncate">
                 Marking Rubric &amp; Evaluation Guide
               </DialogTitle>
-              <DialogDescription className="text-xs text-stone-500">
-                Upload institutional marking schemes, select standardized templates, or parse custom criteria.
+              <DialogDescription className="text-xs text-stone-500 truncate">
+                Upload schemes, select templates, or parse custom criteria.
               </DialogDescription>
             </div>
           </div>
         </div>
 
         {/* Tab Strip */}
-        <div className="flex items-center border-b border-stone-200 px-5 bg-white text-xs font-semibold gap-4">
+        <div className="flex items-center border-b border-stone-200 px-4 sm:px-5 bg-white text-xs font-semibold gap-3 sm:gap-4 overflow-x-auto whitespace-nowrap">
           <button
             type="button"
             onClick={() => setTab("upload")}
-            className={`py-2.5 border-b-2 transition-all flex items-center gap-1.5 ${
+            className={`py-2.5 border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
               tab === "upload"
                 ? "border-violet-600 text-violet-700 font-bold"
                 : "border-transparent text-stone-500 hover:text-stone-800"
@@ -276,7 +276,7 @@ export default function CbtRubricUploadModal({
           <button
             type="button"
             onClick={() => setTab("templates")}
-            className={`py-2.5 border-b-2 transition-all flex items-center gap-1.5 ${
+            className={`py-2.5 border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
               tab === "templates"
                 ? "border-violet-600 text-violet-700 font-bold"
                 : "border-transparent text-stone-500 hover:text-stone-800"
@@ -289,7 +289,7 @@ export default function CbtRubricUploadModal({
           <button
             type="button"
             onClick={() => setTab("paste")}
-            className={`py-2.5 border-b-2 transition-all flex items-center gap-1.5 ${
+            className={`py-2.5 border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
               tab === "paste"
                 ? "border-violet-600 text-violet-700 font-bold"
                 : "border-transparent text-stone-500 hover:text-stone-800"
@@ -301,7 +301,7 @@ export default function CbtRubricUploadModal({
         </div>
 
         {/* Body Content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 sm:space-y-5">
           
           {/* Rubric Title & Target Settings */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-stone-50/80 p-3 rounded-xl border border-stone-200">

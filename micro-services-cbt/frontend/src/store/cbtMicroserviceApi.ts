@@ -99,6 +99,8 @@ export interface StartAttemptRequest {
   email?: string;
   phone?: string;
   studentId?: string;
+  externalAttemptId?: string;
+  metadata?: Record<string, any>;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -106,6 +108,8 @@ export interface StartAttemptRequest {
 export interface StartAttemptResponse {
   isResumed: boolean;
   attemptId: string;
+  externalAttemptId?: string | null;
+  studentId?: string | null;
   examId: string;
   examTitle: string;
   candidateName: string;
@@ -125,9 +129,15 @@ export interface CandidateRecord {
   candidateName: string;
   candidatePin: string;
   studentId?: string | null;
+  externalAttemptId?: string | null;
   email?: string | null;
   phone?: string | null;
   status: "REGISTERED" | "STARTED" | "SUBMITTED" | "DISQUALIFIED";
+  score?: number;
+  totalMarks?: number;
+  percentage?: number;
+  launchUrl?: string;
+  accessCode?: string;
   metadata?: Record<string, any> | null;
   createdAt?: string;
 }
@@ -180,7 +190,13 @@ export const cbtMicroserviceApi = createApi({
       headers.set("Accept", "application/json");
       return headers;
     },
-  }),
+  });
+  return rawBaseQuery(args, api, extraOptions);
+};
+
+export const cbtMicroserviceApi = createApi({
+  reducerPath: "cbtMicroserviceApi",
+  baseQuery: dynamicCbtBaseQuery,
   tagTypes: ["CbtWorkspace", "CbtExam", "CbtQuestion", "CbtCandidate", "CbtAttempt", "CbtMonitor"],
   endpoints: (builder) => ({
     examinerLogin: builder.mutation<ExaminerWorkspace, { email: string; password?: string }>({

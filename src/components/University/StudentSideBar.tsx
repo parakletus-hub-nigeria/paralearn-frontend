@@ -242,7 +242,7 @@ const SidebarContentContainer = ({
             <SidebarTrigger className="hover:bg-purple-50 h-9 w-9 sm:h-10 sm:w-10" />
           </div>
         )}
-        <div className="px-4 py-4 sm:p-6 md:p-10 w-full max-w-[1600px] mx-auto">
+        <div className="pt-16 pb-6 px-3.5 sm:px-6 sm:py-6 md:p-10 w-full max-w-[1600px] mx-auto">
           {children}
         </div>
       </main>

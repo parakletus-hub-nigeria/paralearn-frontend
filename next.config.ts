@@ -3,7 +3,7 @@ import { config as loadEnv } from "dotenv";
 
 // Explicitly load .env files so variables are available in next.config.ts
 // (required when using Turbopack or TypeScript config files)
-loadEnv({ path: ".env.local", override: false });
+loadEnv({ path: ".env.local", override: true });
 loadEnv({ path: ".env", override: false });
 
 const nextConfig: NextConfig = {

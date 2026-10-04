@@ -6,26 +6,29 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/reduxToolKit/store";
 import { loginUser } from "@/reduxToolKit/user/userThunks";
-import { 
-  Building2, 
-  UserCheck, 
-  ArrowRight, 
+import {
+  Building2,
+  UserCheck,
+  ArrowRight,
   ArrowLeft,
-  Lock, 
-  Mail, 
-  Eye, 
-  EyeOff, 
-  Sparkles, 
+  Lock,
+  Mail,
+  Eye,
+  EyeOff,
+  Sparkles,
   KeyRound,
   ShieldCheck,
   CheckCircle2,
   LogIn,
-  UserPlus
+  UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { saveSubdomainToStorage, extractSubdomainFromURL } from "@/lib/subdomainManager";
+import {
+  saveSubdomainToStorage,
+  extractSubdomainFromURL,
+} from "@/lib/subdomainManager";
 import { cbtApi } from "@cbt/lib/cbtSessionManager";
 import CbtBrand from "./CbtBrand";
 
@@ -35,7 +38,9 @@ export default function CbtAuthGateway() {
   const searchParams = useSearchParams();
 
   // Primary Tab: Independent Examiner vs School Staff SSO
-  const [workspaceType, setWorkspaceType] = useState<"standalone" | "school">("standalone");
+  const [workspaceType, setWorkspaceType] = useState<"standalone" | "school">(
+    "standalone",
+  );
 
   // Secondary Tab for Independent Examiner: Login vs Register
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -94,12 +99,17 @@ export default function CbtAuthGateway() {
 
     setIsLoading(true);
     try {
-      const workspace = await cbtApi.examinerLogin(loginData.email.trim(), loginData.password);
+      const workspace = await cbtApi.examinerLogin(
+        loginData.email.trim(),
+        loginData.password,
+      );
       toast.success(`Welcome back, ${workspace.ownerName || workspace.name}!`);
       // Automatically signed in — redirect straight to CBT Workspace Hub
       router.push("/cbt");
     } catch (err: any) {
-      toast.error(err.message || "Failed to sign in. Please verify your details.");
+      toast.error(
+        err.message || "Failed to sign in. Please verify your details.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -116,13 +126,15 @@ export default function CbtAuthGateway() {
     setIsLoading(true);
     try {
       const workspace = await cbtApi.registerStandaloneWorkspace({
-        name: registerData.centreName.trim() || `${registerData.fullName}'s Exam Hall`,
+        name:
+          registerData.centreName.trim() ||
+          `${registerData.fullName}'s Exam Hall`,
         ownerName: registerData.fullName.trim(),
         email: registerData.email.trim(),
       });
 
       toast.success(
-        `Exam Hall "${workspace.name}" provisioned with 30 Free Credits! Signed in automatically.`
+        `Exam Hall "${workspace.name}" provisioned with 30 Free Credits! Signed in automatically.`,
       );
       // AUTOMATICALLY SIGNED IN — send directly into the CBT workspace!
       router.push("/cbt");
@@ -152,14 +164,15 @@ export default function CbtAuthGateway() {
           email: schoolData.email.trim(),
           password: schoolData.password,
           institutionType: "k12",
-        })
+        }),
       );
 
       if (loginUser.fulfilled.match(resultAction)) {
         toast.success("Authenticated with School Workspace!");
         router.push("/cbt");
       } else {
-        const errorMsg = (resultAction.payload as string) || "Invalid school credentials.";
+        const errorMsg =
+          (resultAction.payload as string) || "Invalid school credentials.";
         toast.error(errorMsg);
       }
     } catch (err) {
@@ -170,11 +183,12 @@ export default function CbtAuthGateway() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-4 sm:p-6 font-sans text-[var(--foreground)]">
-      
+    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-3 sm:p-6 font-sans text-[var(--foreground)]">
       {/* Brand Header */}
       <div className="mb-6 text-center space-y-1">
-        <div className="flex justify-center mb-7"><CbtBrand /></div>
+        <div className="flex justify-center mb-7">
+          <CbtBrand />
+        </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--foreground)]">
           {workspaceType === "standalone"
             ? authMode === "login"
@@ -204,34 +218,33 @@ export default function CbtAuthGateway() {
 
       {/* Main Auth Card */}
       <div className="w-full max-w-md bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
-        
         {/* Workspace Type Selector */}
         <div className="p-2 bg-[var(--surface-muted)] border-b border-[var(--border-fine)]">
           <div className="grid grid-cols-2 gap-1 bg-white/60 p-1 rounded-[var(--radius-md)] border border-[var(--border-fine)]">
             <button
               type="button"
               onClick={() => setWorkspaceType("standalone")}
-              className={`h-9 text-xs font-bold rounded-[var(--radius-sm)] transition-all flex items-center justify-center gap-1.5 ${
+              className={`h-9 px-1 text-xs font-bold rounded-[var(--radius-sm)] transition-all flex items-center justify-center gap-1.5 min-w-0 ${
                 workspaceType === "standalone"
                   ? "bg-white text-[var(--foreground)] shadow-xs border border-[var(--border-fine)]"
                   : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
               }`}
             >
-              <UserCheck className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-              <span>Independent Examiner</span>
+              <UserCheck className="w-3.5 h-3.5 text-[var(--violet-ink)] shrink-0" />
+              <span className="truncate">Independent</span>
             </button>
 
             <button
               type="button"
               onClick={() => setWorkspaceType("school")}
-              className={`h-9 text-xs font-bold rounded-[var(--radius-sm)] transition-all flex items-center justify-center gap-1.5 ${
+              className={`h-9 px-1 text-xs font-bold rounded-[var(--radius-sm)] transition-all flex items-center justify-center gap-1.5 min-w-0 ${
                 workspaceType === "school"
                   ? "bg-white text-[var(--foreground)] shadow-xs border border-[var(--border-fine)]"
                   : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
               }`}
             >
-              <Building2 className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-              <span>School Account (SSO)</span>
+              <Building2 className="w-3.5 h-3.5 text-[var(--violet-ink)] shrink-0" />
+              <span className="truncate">School (SSO)</span>
             </button>
           </div>
         </div>
@@ -266,7 +279,9 @@ export default function CbtAuthGateway() {
                 >
                   <UserPlus className="w-3.5 h-3.5 text-[var(--emerald-signal)]" />
                   <span>Create Account</span>
-                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700">Free</span>
+                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700">
+                    Free
+                  </span>
                 </button>
               </div>
             </div>
@@ -277,7 +292,8 @@ export default function CbtAuthGateway() {
                 <div className="bg-[var(--surface-subtle)] border border-[var(--border-fine)] rounded-[var(--radius-md)] p-3 text-xs text-[var(--text-secondary)] flex items-start gap-2">
                   <ShieldCheck className="w-4 h-4 text-[var(--violet-ink)] shrink-0 mt-0.5" />
                   <span>
-                    Sign in to your Exam Hall to manage tests, questions, and view live results.
+                    Sign in to your Exam Hall to manage tests, questions, and
+                    view live results.
                   </span>
                 </div>
 
@@ -291,7 +307,9 @@ export default function CbtAuthGateway() {
                       required
                       placeholder="e.g. tutor@gmail.com"
                       value={loginData.email}
-                      onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                      onChange={(e) =>
+                        setLoginData({ ...loginData, email: e.target.value })
+                      }
                       className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] pl-9"
                     />
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -309,7 +327,9 @@ export default function CbtAuthGateway() {
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••••••"
                       value={loginData.password}
-                      onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                      onChange={(e) =>
+                        setLoginData({ ...loginData, password: e.target.value })
+                      }
                       className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] pl-9 pr-10"
                     />
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -318,7 +338,11 @@ export default function CbtAuthGateway() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-2.5 text-[var(--text-secondary)] hover:text-[var(--foreground)]"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -328,7 +352,9 @@ export default function CbtAuthGateway() {
                   disabled={isLoading}
                   className="w-full h-11 text-sm font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)] flex items-center justify-center gap-2 mt-2"
                 >
-                  {isLoading ? <span>Signing In...</span> : (
+                  {isLoading ? (
+                    <span>Signing In...</span>
+                  ) : (
                     <>
                       <span>Sign In as Examiner</span>
                       <ArrowRight className="w-4 h-4" />
@@ -342,7 +368,10 @@ export default function CbtAuthGateway() {
                     onClick={() => setAuthMode("register")}
                     className="text-xs text-slate-500 hover:text-[var(--violet-ink)] font-semibold transition-colors"
                   >
-                    Don't have an exam hall yet? <span className="underline text-[var(--violet-ink)]">Create one for free</span>
+                    Don't have an exam hall yet?{" "}
+                    <span className="underline text-[var(--violet-ink)]">
+                      Create one for free
+                    </span>
                   </button>
                 </div>
               </form>
@@ -354,7 +383,10 @@ export default function CbtAuthGateway() {
                 <div className="bg-[var(--emerald-tint)]/60 border border-[var(--emerald-signal)]/30 rounded-[var(--radius-md)] p-3 text-xs text-[#065f46] flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-[var(--emerald-signal)] shrink-0 mt-0.5" />
                   <span>
-                    <strong>Instant Auto-SignIn:</strong> You will be signed in automatically with <strong>30 free candidate credits</strong> immediately after clicking below.
+                    <strong>Instant Auto-SignIn:</strong> You will be signed in
+                    automatically with{" "}
+                    <strong>30 free candidate credits</strong> immediately after
+                    clicking below.
                   </span>
                 </div>
 
@@ -367,7 +399,12 @@ export default function CbtAuthGateway() {
                     required
                     placeholder="e.g. Samuel Adekunle"
                     value={registerData.fullName}
-                    onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
+                    onChange={(e) =>
+                      setRegisterData({
+                        ...registerData,
+                        fullName: e.target.value,
+                      })
+                    }
                     className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)]"
                   />
                 </div>
@@ -380,7 +417,12 @@ export default function CbtAuthGateway() {
                     type="text"
                     placeholder="e.g. Apex JAMB &amp; WAEC Academy (Optional)"
                     value={registerData.centreName}
-                    onChange={(e) => setRegisterData({ ...registerData, centreName: e.target.value })}
+                    onChange={(e) =>
+                      setRegisterData({
+                        ...registerData,
+                        centreName: e.target.value,
+                      })
+                    }
                     className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)]"
                   />
                 </div>
@@ -394,7 +436,12 @@ export default function CbtAuthGateway() {
                     required
                     placeholder="tutor@gmail.com"
                     value={registerData.email}
-                    onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                    onChange={(e) =>
+                      setRegisterData({
+                        ...registerData,
+                        email: e.target.value,
+                      })
+                    }
                     className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)]"
                   />
                 </div>
@@ -408,7 +455,12 @@ export default function CbtAuthGateway() {
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••••••"
                       value={registerData.password}
-                      onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          password: e.target.value,
+                        })
+                      }
                       className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] pr-10"
                     />
                     <button
@@ -416,7 +468,11 @@ export default function CbtAuthGateway() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-2.5 text-[var(--text-secondary)] hover:text-[var(--foreground)]"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -426,7 +482,9 @@ export default function CbtAuthGateway() {
                   disabled={isLoading}
                   className="w-full h-11 text-sm font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)] flex items-center justify-center gap-2 mt-2"
                 >
-                  {isLoading ? <span>Provisioning &amp; Signing In...</span> : (
+                  {isLoading ? (
+                    <span>Provisioning &amp; Signing In...</span>
+                  ) : (
                     <>
                       <span>Create &amp; Sign In Automatically</span>
                       <ArrowRight className="w-4 h-4" />
@@ -440,7 +498,10 @@ export default function CbtAuthGateway() {
                     onClick={() => setAuthMode("login")}
                     className="text-xs text-slate-500 hover:text-[var(--violet-ink)] font-semibold transition-colors"
                   >
-                    Already have an account? <span className="underline text-[var(--violet-ink)]">Sign in here</span>
+                    Already have an account?{" "}
+                    <span className="underline text-[var(--violet-ink)]">
+                      Sign in here
+                    </span>
                   </button>
                 </div>
               </form>
@@ -454,7 +515,8 @@ export default function CbtAuthGateway() {
             <div className="bg-[var(--surface-subtle)] border border-[var(--border-fine)] rounded-[var(--radius-md)] p-3 text-xs text-[var(--text-secondary)] flex items-start gap-2">
               <ShieldCheck className="w-4 h-4 text-[var(--violet-ink)] shrink-0 mt-0.5" />
               <span>
-                Sign in with your registered ParaLearn school credentials. Classes and rosters are pre-synced.
+                Sign in with your registered ParaLearn school credentials.
+                Classes and rosters are pre-synced.
               </span>
             </div>
 
@@ -467,7 +529,9 @@ export default function CbtAuthGateway() {
                   type="text"
                   placeholder="e.g. greenfield"
                   value={schoolData.subdomain}
-                  onChange={(e) => setSchoolData({ ...schoolData, subdomain: e.target.value })}
+                  onChange={(e) =>
+                    setSchoolData({ ...schoolData, subdomain: e.target.value })
+                  }
                   className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] pr-20"
                 />
                 <span className="absolute right-3 text-xs font-mono text-[var(--text-secondary)] bg-[var(--surface-muted)] px-2 py-0.5 rounded-[var(--radius-xs)] border border-[var(--border-fine)]">
@@ -485,7 +549,9 @@ export default function CbtAuthGateway() {
                 required
                 placeholder="teacher@school.com"
                 value={schoolData.email}
-                onChange={(e) => setSchoolData({ ...schoolData, email: e.target.value })}
+                onChange={(e) =>
+                  setSchoolData({ ...schoolData, email: e.target.value })
+                }
                 className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)]"
               />
             </div>
@@ -500,7 +566,9 @@ export default function CbtAuthGateway() {
                   required
                   placeholder="••••••••••••"
                   value={schoolData.password}
-                  onChange={(e) => setSchoolData({ ...schoolData, password: e.target.value })}
+                  onChange={(e) =>
+                    setSchoolData({ ...schoolData, password: e.target.value })
+                  }
                   className="h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] pr-10"
                 />
                 <button
@@ -508,7 +576,11 @@ export default function CbtAuthGateway() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-2.5 text-[var(--text-secondary)] hover:text-[var(--foreground)]"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -518,7 +590,9 @@ export default function CbtAuthGateway() {
               disabled={isLoading}
               className="w-full h-11 text-sm font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)] flex items-center justify-center gap-2 mt-2"
             >
-              {isLoading ? <span>Signing In...</span> : (
+              {isLoading ? (
+                <span>Signing In...</span>
+              ) : (
                 <>
                   <span>Sign In with School Account</span>
                   <ArrowRight className="w-4 h-4" />
@@ -539,9 +613,7 @@ export default function CbtAuthGateway() {
             <span>Enter Exam Code &rarr;</span>
           </a>
         </div>
-
       </div>
-
     </div>
   );
 }

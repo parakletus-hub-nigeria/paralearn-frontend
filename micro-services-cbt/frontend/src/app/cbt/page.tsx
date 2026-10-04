@@ -100,6 +100,21 @@ export default function CbtPortalPage() {
     const timer = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(timer);
   }, []);
+
+  const safeIsoString = (
+    dateStr?: string,
+    timeStr?: string,
+  ): string | undefined => {
+    if (!dateStr || !dateStr.trim()) return undefined;
+    const time = timeStr && timeStr.trim() ? timeStr.trim() : "00:00";
+    try {
+      const d = new Date(`${dateStr.trim()}T${time}:00`);
+      return isNaN(d.getTime()) ? undefined : d.toISOString();
+    } catch {
+      return undefined;
+    }
+  };
+
   useEffect(() => {
     if (!copied) return;
     const timer = setTimeout(() => setCopied(null), 2500);

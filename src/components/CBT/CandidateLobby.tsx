@@ -82,7 +82,7 @@ function CandidatePinInput({
   };
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-1.5 sm:gap-2 max-w-full justify-between sm:justify-start">
       {Array.from({ length }).map((_, i) => (
         <input
           key={i}
@@ -94,7 +94,7 @@ function CandidatePinInput({
           value={value[i] || ""}
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
-          className="w-11 h-11 text-center font-mono font-bold text-lg rounded-[var(--radius-md)] border border-[var(--border-fine)] bg-white text-[var(--foreground)] focus:border-[var(--violet-ink)] focus:ring-2 focus:ring-[var(--violet-ink)]/20 outline-none transition-all shadow-xs"
+          className="w-9 h-10 min-w-0 sm:w-11 sm:h-11 text-center font-mono font-bold text-base sm:text-lg rounded-[var(--radius-md)] border border-[var(--border-fine)] bg-white text-[var(--foreground)] focus:border-[var(--violet-ink)] focus:ring-2 focus:ring-[var(--violet-ink)]/20 outline-none transition-all shadow-xs"
         />
       ))}
     </div>
@@ -229,12 +229,12 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-4 sm:p-6 text-[var(--foreground)]">
+    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-3 sm:p-6 text-[var(--foreground)]">
       {/* Container */}
       <div className="w-full max-w-xl bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
         
         {/* Header Ribbon */}
-        <div className="bg-[var(--surface-muted)] border-b border-[var(--border-fine)] px-6 py-5">
+        <div className="bg-[var(--surface-muted)] border-b border-[var(--border-fine)] px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between mb-2">
             <Badge 
               variant="outline" 
@@ -247,9 +247,9 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
               <span>{metadata.durationMins} Minutes</span>
             </div>
           </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-2">
-            <Laptop className="w-3.5 h-3.5 text-violet-600" />
-            <span>Exam Centre: <strong>{metadata.institutionName}</strong></span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-2 max-w-full truncate">
+            <Laptop className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+            <span className="truncate">Exam Centre: <strong>{metadata.institutionName}</strong></span>
           </div>
           
           <h1 className="text-xl sm:text-2xl font-bold font-sans tracking-tight text-[var(--foreground)]">
@@ -261,7 +261,7 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleStartExam} className="p-5 sm:p-7 space-y-6">
+        <form onSubmit={handleStartExam} className="p-4 sm:p-7 space-y-5 sm:space-y-6">
           
           {/* Candidate Name */}
           <div className="space-y-1.5">
@@ -316,30 +316,30 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
               <span className="font-semibold uppercase tracking-wider">System Readiness</span>
               <span className="font-mono text-[11px] text-[var(--emerald-signal)]">Ping: ~{diagnostics.pingMs}ms</span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="flex items-center gap-1.5 p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-xs">
+            <div className="grid grid-cols-1 xs:grid-cols-3 gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-1.5 p-1.5 sm:p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-[11px] sm:text-xs">
                 {diagnostics.browser === "ready" ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--emerald-signal)]" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--emerald-signal)] shrink-0" />
                 ) : (
-                  <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)]" />
+                  <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)] shrink-0" />
                 )}
-                <span>Browser OK</span>
+                <span className="truncate">Browser OK</span>
               </div>
-              <div className="flex items-center gap-1.5 p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-xs">
+              <div className="flex items-center gap-1.5 p-1.5 sm:p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-[11px] sm:text-xs">
                 {diagnostics.visibilityApi === "ready" ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--emerald-signal)]" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--emerald-signal)] shrink-0" />
                 ) : (
-                  <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)]" />
+                  <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)] shrink-0" />
                 )}
-                <span>Anti-Cheat Ready</span>
+                <span className="truncate">Anti-Cheat</span>
               </div>
-              <div className="flex items-center gap-1.5 p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-xs">
+              <div className="flex items-center gap-1.5 p-1.5 sm:p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-[11px] sm:text-xs">
                 {diagnostics.connection === "ready" ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--emerald-signal)]" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--emerald-signal)] shrink-0" />
                 ) : (
-                  <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)]" />
+                  <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)] shrink-0" />
                 )}
-                <span>Online Sync</span>
+                <span className="truncate">Online Sync</span>
               </div>
             </div>
           </div>

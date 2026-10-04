@@ -13,7 +13,7 @@ import {
   ThumbsUp,
   AlertCircle,
   HelpCircle,
-  FileText
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ import {
   RubricCriterion,
   ExamRubric,
   CandidateSession,
-  saveCandidateSession
+  saveCandidateSession,
 } from "@cbt/lib/cbtSessionManager";
 
 interface CbtEssayGradingModalProps {
@@ -62,7 +62,9 @@ export default function CbtEssayGradingModal({
   onGraded,
 }: CbtEssayGradingModalProps) {
   const studentAnswer = (candidateSession.answers[questionId] as string) || "";
-  const studentWordCount = studentAnswer.trim() ? studentAnswer.trim().split(/\s+/).length : 0;
+  const studentWordCount = studentAnswer.trim()
+    ? studentAnswer.trim().split(/\s+/).length
+    : 0;
 
   // Criteria list to evaluate
   const criteriaList: RubricCriterion[] = useMemo(() => {
@@ -75,15 +77,32 @@ export default function CbtEssayGradingModal({
     const remaining = Math.max(1, questionMarks - half - third);
 
     return [
-      { id: "c1", title: "Content Accuracy & Understanding", maxMarks: half, description: "Grasp of core principles and depth of relevant ideas." },
-      { id: "c2", title: "Structure, Coherence & Flow", maxMarks: third, description: "Logical progression, paragraphing, and clarity." },
-      { id: "c3", title: "Technical Diction & Mechanics", maxMarks: remaining, description: "Appropriate subject vocabulary, spelling, and grammar." },
+      {
+        id: "c1",
+        title: "Content Accuracy & Understanding",
+        maxMarks: half,
+        description: "Grasp of core principles and depth of relevant ideas.",
+      },
+      {
+        id: "c2",
+        title: "Structure, Coherence & Flow",
+        maxMarks: third,
+        description: "Logical progression, paragraphing, and clarity.",
+      },
+      {
+        id: "c3",
+        title: "Technical Diction & Mechanics",
+        maxMarks: remaining,
+        description: "Appropriate subject vocabulary, spelling, and grammar.",
+      },
     ];
   }, [rubric, questionMarks]);
 
   // Evaluated Scores State
   const [scores, setScores] = useState<Record<string, number>>({});
-  const [criterionFeedback, setCriterionFeedback] = useState<Record<string, string>>({});
+  const [criterionFeedback, setCriterionFeedback] = useState<
+    Record<string, string>
+  >({});
   const [overallComment, setOverallComment] = useState("");
   const [strengths, setStrengths] = useState<string[]>([]);
   const [areasForImprovement, setAreasForImprovement] = useState<string[]>([]);
@@ -111,7 +130,10 @@ export default function CbtEssayGradingModal({
 
   // Current Total Awarded
   const currentTotalAwarded = useMemo(() => {
-    return Object.values(scores).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    return Object.values(scores).reduce(
+      (sum, val) => sum + (Number(val) || 0),
+      0,
+    );
   }, [scores]);
 
   // 1-Click AI Grading Assistance
@@ -142,7 +164,9 @@ export default function CbtEssayGradingModal({
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to grade essay with ParaLearn AI.");
+        throw new Error(
+          data.error || "Failed to grade essay with ParaLearn AI.",
+        );
       }
 
       const evalData = data.evaluation;
@@ -162,7 +186,9 @@ export default function CbtEssayGradingModal({
       setStrengths(evalData.strengths || []);
       setAreasForImprovement(evalData.areasForImprovement || []);
 
-      toast.success("ParaLearn AI suggested scores & feedback generated! Review and adjust before approval.");
+      toast.success(
+        "ParaLearn AI suggested scores & feedback generated! Review and adjust before approval.",
+      );
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Failed to score with AI.");
@@ -191,13 +217,14 @@ export default function CbtEssayGradingModal({
     // Calculate total essay score across all graded essays
     const totalEssayScore = Object.values(updatedFeedback).reduce(
       (sum, item) => sum + (item.score || 0),
-      0
+      0,
     );
 
     const mcqScore = candidateSession.mcqScore || 0;
     const finalScore = mcqScore + totalEssayScore;
-    const totalMarks = candidateSession.totalMarks || (questionMarks + 10);
-    const percentage = totalMarks > 0 ? Math.round((finalScore / totalMarks) * 100) : 0;
+    const totalMarks = candidateSession.totalMarks || questionMarks + 10;
+    const percentage =
+      totalMarks > 0 ? Math.round((finalScore / totalMarks) * 100) : 0;
 
     const updatedSession: CandidateSession = {
       ...candidateSession,
@@ -212,10 +239,16 @@ export default function CbtEssayGradingModal({
     try {
       saveCandidateSession(updatedSession);
       await onGraded(updatedSession);
-      toast.success(`Essay grade approved: ${currentTotalAwarded} / ${questionMarks} Marks!`);
+      toast.success(
+        `Essay grade approved: ${currentTotalAwarded} / ${questionMarks} Marks!`,
+      );
       onClose();
     } catch (err: any) {
-      toast.error(err?.data?.message || err?.message || "Could not save the grade to the CBT backend.");
+      toast.error(
+        err?.data?.message ||
+          err?.message ||
+          "Could not save the grade to the CBT backend.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -224,45 +257,55 @@ export default function CbtEssayGradingModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] bg-white border border-slate-200 rounded-2xl p-0 overflow-hidden flex flex-col shadow-2xl">
-        
         {/* Header */}
-        <DialogHeader className="p-6 border-b border-slate-100 bg-slate-50/70 flex flex-row items-center justify-between shrink-0">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
+        <DialogHeader className="p-4 sm:p-6 border-b border-slate-100 bg-slate-50/70 flex flex-row items-center justify-between shrink-0 gap-2">
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0">
                 <Award className="w-4 h-4 text-amber-600" />
               </span>
-              <DialogTitle className="text-base font-bold text-slate-900 tracking-tight">
+              <DialogTitle className="text-sm sm:text-base font-bold text-slate-900 tracking-tight truncate">
                 Examiner Essay Evaluation &amp; Grading
               </DialogTitle>
-              <Badge variant="outline" className="text-[10px] font-mono bg-white text-slate-700">
-                {candidateSession.candidateName} &bull; PIN: {candidateSession.candidatePin}
+              <Badge
+                variant="outline"
+                className="text-[10px] font-mono bg-white text-slate-700 truncate"
+              >
+                {candidateSession.candidateName} &bull; PIN:{" "}
+                {candidateSession.candidatePin}
               </Badge>
             </div>
             <DialogDescription className="text-xs text-slate-500">
-              Score candidate response against marking rubrics, with 1-click ParaLearn AI grading assistance.
+              Score candidate response against marking rubrics, with 1-click
+              ParaLearn AI grading assistance.
             </DialogDescription>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-slate-700"
+            className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-slate-700 shrink-0"
           >
             <X className="w-4 h-4" />
           </Button>
         </DialogHeader>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Question Prompt Card */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Question Prompt ({questionType === "LONG_ESSAY" ? "Comprehensive Essay" : "Short Answer"})
+                Question Prompt (
+                {questionType === "LONG_ESSAY"
+                  ? "Comprehensive Essay"
+                  : "Short Answer"}
+                )
               </span>
-              <Badge variant="outline" className="font-mono text-xs font-bold text-violet-700 bg-violet-50 border-violet-200">
+              <Badge
+                variant="outline"
+                className="font-mono text-xs font-bold text-violet-700 bg-violet-50 border-violet-200"
+              >
                 Total: {questionMarks} Marks
               </Badge>
             </div>
@@ -279,7 +322,11 @@ export default function CbtEssayGradingModal({
                   className="text-xs font-semibold text-violet-700 hover:text-violet-900 flex items-center gap-1"
                 >
                   <BookOpen className="w-3.5 h-3.5" />
-                  <span>{showModelAnswer ? "Hide Benchmark Model Answer" : "View Benchmark Model Answer"}</span>
+                  <span>
+                    {showModelAnswer
+                      ? "Hide Benchmark Model Answer"
+                      : "View Benchmark Model Answer"}
+                  </span>
                 </button>
                 {showModelAnswer && (
                   <div className="mt-2 p-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 leading-relaxed">
@@ -304,7 +351,11 @@ export default function CbtEssayGradingModal({
             </div>
 
             <div className="p-4 rounded-xl border border-slate-200 bg-white min-h-[120px] text-sm text-slate-900 leading-relaxed whitespace-pre-wrap select-text font-normal shadow-2xs">
-              {studentAnswer || <span className="text-slate-400 italic">No response submitted by candidate.</span>}
+              {studentAnswer || (
+                <span className="text-slate-400 italic">
+                  No response submitted by candidate.
+                </span>
+              )}
             </div>
           </div>
 
@@ -316,7 +367,8 @@ export default function CbtEssayGradingModal({
                 <span>1-Click ParaLearn AI Grading Assistance</span>
               </div>
               <p className="text-[11px] text-violet-700 leading-tight">
-                Analyzes student's text against the rubric, autofilling criteria scores and constructive feedback comments.
+                Analyzes student's text against the rubric, autofilling criteria
+                scores and constructive feedback comments.
               </p>
             </div>
 
@@ -348,7 +400,9 @@ export default function CbtEssayGradingModal({
                 Marking Rubric Criteria ({criteriaList.length} Items)
               </label>
               <div className="text-xs font-mono font-bold">
-                Awarded: <span className="text-emerald-700">{currentTotalAwarded}</span> / {questionMarks} Marks
+                Awarded:{" "}
+                <span className="text-emerald-700">{currentTotalAwarded}</span>{" "}
+                / {questionMarks} Marks
               </div>
             </div>
 
@@ -358,33 +412,51 @@ export default function CbtEssayGradingModal({
                 const feedbackText = criterionFeedback[crit.id] || "";
 
                 return (
-                  <div key={crit.id} className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                  <div
+                    key={crit.id}
+                    className="p-4 rounded-xl border border-slate-200 bg-white space-y-3"
+                  >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
-                        <span className="text-xs font-bold text-slate-900">{crit.title}</span>
-                        <p className="text-[11px] text-slate-500 mt-0.5">{crit.description}</p>
+                        <span className="text-xs font-bold text-slate-900">
+                          {crit.title}
+                        </span>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {crit.description}
+                        </p>
                       </div>
 
                       {/* Score Input */}
                       <div className="flex items-center gap-2 shrink-0">
-                        <label className="text-xs font-semibold text-slate-500">Score:</label>
+                        <label className="text-xs font-semibold text-slate-500">
+                          Score:
+                        </label>
                         <Input
                           type="number"
                           min="0"
                           max={crit.maxMarks}
                           step="0.5"
                           value={currentScore}
-                          onChange={(e) => handleScoreChange(crit.id, parseFloat(e.target.value) || 0, crit.maxMarks)}
+                          onChange={(e) =>
+                            handleScoreChange(
+                              crit.id,
+                              parseFloat(e.target.value) || 0,
+                              crit.maxMarks,
+                            )
+                          }
                           className="w-16 h-8 text-center font-mono font-bold text-xs"
                         />
-                        <span className="text-xs font-mono text-slate-500">/ {crit.maxMarks}m</span>
+                        <span className="text-xs font-mono text-slate-500">
+                          / {crit.maxMarks}m
+                        </span>
                       </div>
                     </div>
 
                     {/* Criterion Feedback */}
                     {feedbackText && (
                       <p className="text-[11px] text-violet-700 bg-violet-50/70 p-2 rounded-lg border border-violet-100">
-                        <strong>AI Observation: </strong>{feedbackText}
+                        <strong>AI Observation: </strong>
+                        {feedbackText}
                       </p>
                     )}
                   </div>
@@ -397,7 +469,10 @@ export default function CbtEssayGradingModal({
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
               <MessageSquare className="w-3.5 h-3.5 text-violet-600" />
-              <span>Examiner Constructive Commentary (Shared with candidate on Result Slip)</span>
+              <span>
+                Examiner Constructive Commentary (Shared with candidate on
+                Result Slip)
+              </span>
             </label>
             <Textarea
               rows={3}
@@ -440,24 +515,25 @@ export default function CbtEssayGradingModal({
               )}
             </div>
           )}
-
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between shrink-0">
+        <div className="px-4 py-3.5 sm:px-6 sm:py-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between shrink-0 gap-2">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-9 px-4 text-xs font-semibold text-slate-600"
+            className="h-9 px-3 sm:px-4 text-xs font-semibold text-slate-600"
           >
             Cancel
           </Button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="text-right hidden sm:block">
-              <span className="text-[10px] text-slate-500 uppercase font-semibold block">Total Awarded</span>
+              <span className="text-[10px] text-slate-500 uppercase font-semibold block">
+                Total Awarded
+              </span>
               <span className="text-sm font-mono font-bold text-slate-900">
                 {currentTotalAwarded} / {questionMarks} Marks
               </span>
@@ -470,12 +546,17 @@ export default function CbtEssayGradingModal({
               disabled={isSaving}
               className="h-9 px-5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs flex items-center gap-1.5"
             >
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 stroke-[3]" />}
-              <span>{isSaving ? "Saving Grade..." : "Approve & Finalize Grade"}</span>
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4 stroke-[3]" />
+              )}
+              <span>
+                {isSaving ? "Saving Grade..." : "Approve & Finalize Grade"}
+              </span>
             </Button>
           </div>
         </div>
-
       </DialogContent>
     </Dialog>
   );

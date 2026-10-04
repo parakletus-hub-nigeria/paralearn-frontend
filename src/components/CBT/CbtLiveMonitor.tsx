@@ -224,36 +224,37 @@ export default function CbtLiveMonitor({
     <div className="min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)]">
       
       {/* ── HEADER (56px) ────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 h-14 bg-white border-b border-[var(--border-fine)] px-4 sm:px-6 flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-30 h-14 bg-white border-b border-[var(--border-fine)] px-2.5 sm:px-6 flex items-center justify-between shadow-xs gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link href={backHref}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--text-secondary)]">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--text-secondary)] shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sm sm:text-base text-[var(--foreground)]">
-              Invigilation Monitor: {examTitle}
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="font-bold text-xs sm:text-base text-[var(--foreground)] truncate max-w-[120px] xs:max-w-[180px] sm:max-w-md">
+              {examTitle}
             </span>
-            <Badge variant="outline" className="hidden sm:inline-flex font-mono text-xs bg-[var(--violet-tint)] text-[var(--violet-ink)] uppercase">
+            <Badge variant="outline" className="hidden sm:inline-flex font-mono text-xs bg-[var(--violet-tint)] text-[var(--violet-ink)] uppercase shrink-0">
               Room: {roomCode}
             </Badge>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Badge className="bg-[var(--emerald-tint)] text-[#065f46] font-mono text-xs flex items-center gap-1.5 px-2.5 py-1 rounded-full border-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge className="bg-[var(--emerald-tint)] text-[#065f46] font-mono text-xs flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full border-0">
             <span className="w-2 h-2 rounded-full bg-[var(--emerald-signal)] animate-pulse" />
-            <span>Telemetry: Live</span>
+            <span className="hidden xs:inline">Telemetry: </span>
+            <span>Live</span>
           </Badge>
         </div>
       </header>
 
       {/* ── MAIN MONITOR BOARD ───────────────────────────────────────────── */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
         
         {/* Metric Summary Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
           <div className="bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-4 shadow-xs">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
               Active Candidates

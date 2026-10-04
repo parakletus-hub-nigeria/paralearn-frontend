@@ -419,30 +419,30 @@ export default function CbtQuestionStudio({
     <div className="min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)]">
       
       {/* ── TOP ACTION BAR (56px) ────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 h-14 bg-white border-b border-[var(--border-fine)] px-4 sm:px-6 flex items-center justify-between shadow-xs">
+      <header className="sticky top-0 z-30 h-14 bg-white border-b border-[var(--border-fine)] px-2.5 sm:px-6 flex items-center justify-between shadow-xs gap-2">
         
         {/* Left: Back & Exam Title */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
           <Link href={backHref}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[var(--radius-md)] text-[var(--text-secondary)]">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[var(--radius-md)] text-[var(--text-secondary)] shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
 
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sm sm:text-base tracking-tight truncate max-w-[180px] sm:max-w-md">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="font-bold text-xs sm:text-base tracking-tight truncate max-w-[85px] xs:max-w-[130px] sm:max-w-xs md:max-w-md">
               {examTitle}
             </span>
             
             {/* Room Code Badge */}
-            <Badge variant="outline" className="hidden sm:inline-flex font-mono text-xs bg-[var(--violet-tint)] text-[var(--violet-ink)] border-[var(--violet-ink)]/20 uppercase">
+            <Badge variant="outline" className="hidden sm:inline-flex font-mono text-xs bg-[var(--violet-tint)] text-[var(--violet-ink)] border-[var(--violet-ink)]/20 uppercase shrink-0">
               {roomCode}
             </Badge>
           </div>
         </div>
 
         {/* Right: Actions (Adaptive Desktop & Mobile) */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           
           {/* Desktop Full Actions (>= lg) */}
           <div className="hidden lg:flex items-center gap-2">
@@ -483,7 +483,7 @@ export default function CbtQuestionStudio({
             variant="outline"
             size="sm"
             onClick={() => setIsRubricModalOpen(true)}
-            className="h-8 px-2.5 sm:px-3 text-xs font-semibold border-amber-200 text-amber-800 bg-amber-50/70 hover:bg-amber-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
+            className="h-8 px-2 sm:px-3 text-xs font-semibold border-amber-200 text-amber-800 bg-amber-50/70 hover:bg-amber-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
             title="Manage institutional marking rubrics"
           >
             <Award className="w-3.5 h-3.5 text-amber-600" />
@@ -495,18 +495,19 @@ export default function CbtQuestionStudio({
             variant="outline"
             size="sm"
             onClick={() => setIsAiModalOpen(true)}
-            className="h-8 px-2.5 sm:px-3 text-xs font-bold border-violet-200 text-violet-700 bg-violet-50/70 hover:bg-violet-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
+            className="h-8 px-2 sm:px-3 text-xs font-bold border-violet-200 text-violet-700 bg-violet-50/70 hover:bg-violet-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
             title="Generate MCQs and Essays with ParaLearn AI"
           >
             <Sparkles className="w-3.5 h-3.5 text-violet-600 animate-pulse" />
-            <span>ParaLearn AI</span>
+            <span className="hidden sm:inline">ParaLearn </span>
+            <span>AI</span>
           </Button>
 
           {/* Save Button (Primary action on all screens) */}
           <Button
             size="sm"
             onClick={handleSaveQuestions}
-            className="h-8 px-3 sm:px-4 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-xs shrink-0"
+            className="h-8 px-2.5 sm:px-4 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-xs shrink-0"
           >
             Save
           </Button>
@@ -751,7 +752,7 @@ export default function CbtQuestionStudio({
         </aside>
 
         {/* Right Pane: Question Editor Canvas */}
-        <main className="flex-1 min-w-0 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-5 sm:p-7 shadow-[var(--shadow-card)] space-y-6">
+        <main className="flex-1 min-w-0 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-3.5 sm:p-7 shadow-[var(--shadow-card)] space-y-5 sm:space-y-6">
           {!activeQuestion ? (
             <div className="py-20 text-center space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
@@ -792,7 +793,7 @@ export default function CbtQuestionStudio({
                   </span>
 
                   {/* Format Segmented Switcher */}
-                  <div className="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 text-xs">
+                  <div className="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 text-xs overflow-x-auto max-w-full">
                     <button
                       type="button"
                       onClick={() => handleChangeQuestionType("MCQ")}

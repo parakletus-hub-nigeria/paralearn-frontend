@@ -80,11 +80,11 @@ export default function CbtWorkspaceHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-30 h-15 bg-white border-b border-[var(--border-fine)] px-4 sm:px-6 flex items-center justify-between shadow-xs">
+    <header className="sticky top-0 z-30 h-15 bg-white border-b border-[var(--border-fine)] px-2.5 sm:px-6 flex items-center justify-between shadow-xs gap-2">
       
       {/* Left: Brand & Workspace Switcher Context */}
-      <div className="flex items-center gap-3.5">
-        <Link href={isSchoolMode ? "/RMS/cbt" : "/cbt"} className="flex items-center gap-2">
+      <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
+        <Link href={isSchoolMode ? "/RMS/cbt" : "/cbt"} className="flex items-center gap-2 shrink-0">
           <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--violet-ink)] text-white flex items-center justify-center font-bold text-sm shadow-xs">
             PL
           </div>
@@ -96,23 +96,23 @@ export default function CbtWorkspaceHeader() {
         </Link>
 
         {/* Divider */}
-        <div className="hidden sm:block h-4 w-[1px] bg-[var(--border-fine)]" />
+        <div className="hidden sm:block h-4 w-[1px] bg-[var(--border-fine)] shrink-0" />
 
         {/* Active Workspace Badge */}
-        <div className="flex items-center gap-2 bg-[var(--surface-muted)] px-3 py-1 rounded-[var(--radius-md)] border border-[var(--border-fine)] text-xs">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-[var(--surface-muted)] px-2 sm:px-3 py-1 rounded-[var(--radius-md)] border border-[var(--border-fine)] text-xs min-w-0">
           {isSchoolMode ? (
             <Building2 className="w-3.5 h-3.5 text-[var(--violet-ink)] shrink-0" />
           ) : (
             <UserCheck className="w-3.5 h-3.5 text-[var(--emerald-signal)] shrink-0" />
           )}
 
-          <span className="font-semibold text-[var(--foreground)] truncate max-w-[140px] sm:max-w-xs">
+          <span className="font-semibold text-[var(--foreground)] truncate max-w-[90px] xs:max-w-[130px] sm:max-w-xs">
             {workspaceTitle}
           </span>
 
           <Badge 
             variant="outline" 
-            className="text-[10px] uppercase font-mono px-1.5 py-0 border-0 bg-white"
+            className="hidden xs:inline-flex text-[10px] uppercase font-mono px-1.5 py-0 border-0 bg-white shrink-0"
           >
             {isSchoolMode ? "School" : "Tutor Hall"}
           </Badge>

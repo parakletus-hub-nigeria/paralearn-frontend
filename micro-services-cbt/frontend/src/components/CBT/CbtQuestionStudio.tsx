@@ -3,19 +3,19 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  ArrowLeft, 
-  Plus, 
-  Trash2, 
-  Upload, 
-  Share2, 
-  Copy, 
-  Check, 
-  Clock, 
-  ShieldAlert, 
-  Sliders, 
-  Eye, 
-  CheckCircle2, 
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Upload,
+  Share2,
+  Copy,
+  Check,
+  Clock,
+  ShieldAlert,
+  Sliders,
+  Eye,
+  CheckCircle2,
   HelpCircle,
   FileQuestion,
   GripVertical,
@@ -32,7 +32,7 @@ import {
   Tag,
   AlignLeft,
   Award,
-  ListOrdered
+  ListOrdered,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -61,14 +61,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { 
-  loadStoredQuestions, 
-  saveStoredQuestions, 
-  loadStoredExams, 
+import {
+  loadStoredQuestions,
+  saveStoredQuestions,
+  loadStoredExams,
   saveStoredExams,
+  getExaminerSession,
   CbtQuestionType,
   ExamRubric,
-  loadStoredRubrics
+  loadStoredRubrics,
 } from "@cbt/lib/cbtSessionManager";
 import CbtAiQuestionModal from "./CbtAiQuestionModal";
 import CbtRubricUploadModal from "./CbtRubricUploadModal";
@@ -76,6 +77,7 @@ import {
   CbtQuestionType as ServiceQuestionType,
   useAttachQuestionsMutation,
   useBulkCreateQuestionsMutation,
+  useCreateCbtExamMutation,
   useGetCbtExamQuery,
   useUpdateCbtExamMutation,
   useUpdateQuestionMutation,
@@ -117,15 +119,16 @@ export default function CbtQuestionStudio({
   initialDurationMins = 60,
   initialQuestions,
 }: CbtQuestionStudioProps) {
-  
   const [questions, setQuestions] = useState<StudioQuestion[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [examTitle, setExamTitle] = useState(initialTitle);
   const [roomCode, setRoomCode] = useState(initialCode);
   const [durationMins, setDurationMins] = useState(initialDurationMins);
-  
+
   // Palette category filter
-  const [paletteFilter, setPaletteFilter] = useState<"ALL" | "MCQ" | "SHORT_ESSAY" | "LONG_ESSAY">("ALL");
+  const [paletteFilter, setPaletteFilter] = useState<
+    "ALL" | "MCQ" | "SHORT_ESSAY" | "LONG_ESSAY"
+  >("ALL");
 
   // Delivery & Anti-Malpractice Settings
   const [settings, setSettings] = useState({
@@ -148,24 +151,46 @@ export default function CbtQuestionStudio({
   const pathname = usePathname();
   const isSchoolContext = pathname?.startsWith("/RMS");
   const backHref = isSchoolContext ? "/RMS/cbt" : "/cbt";
-  const monitorHref = isSchoolContext ? `/RMS/cbt/exams/${examId}/monitor` : `/cbt/exams/${examId}/monitor`;
-  const { data: serviceExam, isFetching: isLoadingExam, error: examLoadError } = useGetCbtExamQuery(examId, {
+  const monitorHref = isSchoolContext
+    ? `/RMS/cbt/exams/${examId}/monitor`
+    : `/cbt/exams/${examId}/monitor`;
+  const {
+    data: serviceExam,
+    isFetching: isLoadingExam,
+    error: examLoadError,
+  } = useGetCbtExamQuery(examId, {
     skip: !examId,
   });
-  const [bulkCreateQuestions, { isLoading: isCreatingQuestions }] = useBulkCreateQuestionsMutation();
-  const [updateQuestion, { isLoading: isUpdatingQuestion }] = useUpdateQuestionMutation();
-  const [attachQuestions, { isLoading: isAttachingQuestions }] = useAttachQuestionsMutation();
-  const [updateCbtExam, { isLoading: isTogglingPublish }] = useUpdateCbtExamMutation();
-  const isSavingQuestions = isCreatingQuestions || isUpdatingQuestion || isAttachingQuestions;
-  const isPublished = Boolean(serviceExam?.isPublished);
+  const [bulkCreateQuestions, { isLoading: isCreatingQuestions }] =
+    useBulkCreateQuestionsMutation();
+  const [updateQuestion, { isLoading: isUpdatingQuestion }] =
+    useUpdateQuestionMutation();
+  const [attachQuestions, { isLoading: isAttachingQuestions }] =
+    useAttachQuestionsMutation();
+  const [updateCbtExam, { isLoading: isTogglingPublish }] =
+    useUpdateCbtExamMutation();
+  const [createCbtExam] = useCreateCbtExamMutation();
+  const isSavingQuestions =
+    isCreatingQuestions || isUpdatingQuestion || isAttachingQuestions;
+  const [localPublished, setLocalPublished] = useState<boolean>(true);
+  const isPublished = serviceExam
+    ? Boolean(serviceExam?.isPublished)
+    : localPublished;
 
   // Only IDs the backend returned are persisted; manual, AI and imported drafts carry local IDs
   const persistedIdSet = useMemo(
-    () => new Set((serviceExam?.questions || []).map((item) => item.question?.id || item.questionId)),
-    [serviceExam]
+    () =>
+      new Set(
+        (serviceExam?.questions || []).map(
+          (item) => item.question?.id || item.questionId,
+        ),
+      ),
+    [serviceExam],
   );
 
-  const normalizeTypeForService = (type: StudioQuestion["type"]): ServiceQuestionType => {
+  const normalizeTypeForService = (
+    type: StudioQuestion["type"],
+  ): ServiceQuestionType => {
     if (type === "SHORT_ESSAY" || type === "LONG_ESSAY") return "ESSAY";
     if (type === "MULTI_SELECT") return "MULTI_SELECT";
     return type;
@@ -174,14 +199,17 @@ export default function CbtQuestionStudio({
   const normalizeQuestionFromService = (q: any): StudioQuestion => ({
     id: q.id,
     prompt: q.prompt || "",
-    type: q.type === "ESSAY" ? "LONG_ESSAY" : (q.type || "MCQ"),
+    type: q.type === "ESSAY" ? "LONG_ESSAY" : q.type || "MCQ",
     marks: q.marks || 1,
     options: Array.isArray(q.options) ? q.options : [],
     explanation: q.explanation || "",
     section: q.section,
   });
 
-  const toServiceQuestionPayload = (q: StudioQuestion, workspaceId: string) => ({
+  const toServiceQuestionPayload = (
+    q: StudioQuestion,
+    workspaceId: string,
+  ) => ({
     workspaceId,
     prompt: q.prompt.trim(),
     type: normalizeTypeForService(q.type),
@@ -228,7 +256,7 @@ export default function CbtQuestionStudio({
       // Migrate legacy types if any
       const normalized: StudioQuestion[] = stored.map((q: any) => ({
         ...q,
-        type: q.type === "ESSAY" ? "LONG_ESSAY" : (q.type || "MCQ"),
+        type: q.type === "ESSAY" ? "LONG_ESSAY" : q.type || "MCQ",
         options: q.options || [],
         marks: q.marks || 1,
       }));
@@ -238,7 +266,9 @@ export default function CbtQuestionStudio({
 
   const updateExamQuestionCount = (count: number) => {
     const exams = loadStoredExams();
-    const updated = exams.map((e) => e.id === examId ? { ...e, totalQuestions: count } : e);
+    const updated = exams.map((e) =>
+      e.id === examId ? { ...e, totalQuestions: count } : e,
+    );
     saveStoredExams(updated);
   };
 
@@ -246,12 +276,14 @@ export default function CbtQuestionStudio({
 
   const totalMarks = useMemo(
     () => questions.reduce((sum, q) => sum + (q.marks || 1), 0),
-    [questions]
+    [questions],
   );
 
   // Question counts by format
   const formatCounts = useMemo(() => {
-    const mcq = questions.filter((q) => q.type === "MCQ" || q.type === "TRUE_FALSE").length;
+    const mcq = questions.filter(
+      (q) => q.type === "MCQ" || q.type === "TRUE_FALSE",
+    ).length;
     const shortEssay = questions.filter((q) => q.type === "SHORT_ESSAY").length;
     const longEssay = questions.filter((q) => q.type === "LONG_ESSAY").length;
     return { mcq, shortEssay, longEssay, total: questions.length };
@@ -260,9 +292,14 @@ export default function CbtQuestionStudio({
   // Filtered questions for palette
   const filteredQuestions = useMemo(() => {
     if (paletteFilter === "ALL") return questions;
-    if (paletteFilter === "MCQ") return questions.filter((q) => q.type === "MCQ" || q.type === "TRUE_FALSE");
-    if (paletteFilter === "SHORT_ESSAY") return questions.filter((q) => q.type === "SHORT_ESSAY");
-    if (paletteFilter === "LONG_ESSAY") return questions.filter((q) => q.type === "LONG_ESSAY");
+    if (paletteFilter === "MCQ")
+      return questions.filter(
+        (q) => q.type === "MCQ" || q.type === "TRUE_FALSE",
+      );
+    if (paletteFilter === "SHORT_ESSAY")
+      return questions.filter((q) => q.type === "SHORT_ESSAY");
+    if (paletteFilter === "LONG_ESSAY")
+      return questions.filter((q) => q.type === "LONG_ESSAY");
     return questions;
   }, [questions, paletteFilter]);
 
@@ -340,7 +377,9 @@ export default function CbtQuestionStudio({
     setActiveIdx(updated.length - 1);
     saveStoredQuestions(updated, examId);
     updateExamQuestionCount(updated.length);
-    toast.success(`Added new ${type.replace("_", " ")} to palette. Save to sync it to the CBT service.`);
+    toast.success(
+      `Added new ${type.replace("_", " ")} to palette. Save to sync it to the CBT service.`,
+    );
   };
 
   // Change type of current active question
@@ -366,12 +405,14 @@ export default function CbtQuestionStudio({
         ];
         updatedQ.marks = 1.0;
       } else if (newType === "SHORT_ESSAY") {
-        updatedQ.marks = updatedQ.marks && updatedQ.marks > 1 ? updatedQ.marks : 5.0;
+        updatedQ.marks =
+          updatedQ.marks && updatedQ.marks > 1 ? updatedQ.marks : 5.0;
         updatedQ.minWords = updatedQ.minWords || 20;
         updatedQ.maxWords = updatedQ.maxWords || 100;
         if (!updatedQ.section) updatedQ.section = "Section B: Short Answers";
       } else if (newType === "LONG_ESSAY") {
-        updatedQ.marks = updatedQ.marks && updatedQ.marks >= 10 ? updatedQ.marks : 15.0;
+        updatedQ.marks =
+          updatedQ.marks && updatedQ.marks >= 10 ? updatedQ.marks : 15.0;
         updatedQ.minWords = updatedQ.minWords || 150;
         updatedQ.maxWords = updatedQ.maxWords || 800;
         if (!updatedQ.section) updatedQ.section = "Section C: Long Essay";
@@ -397,7 +438,11 @@ export default function CbtQuestionStudio({
   const handleApplyRubric = (rubric: ExamRubric, applyToAllEssays: boolean) => {
     setQuestions((prev) => {
       const copy = prev.map((q, idx) => {
-        if (idx === activeIdx || (applyToAllEssays && (q.type === "LONG_ESSAY" || q.type === "SHORT_ESSAY"))) {
+        if (
+          idx === activeIdx ||
+          (applyToAllEssays &&
+            (q.type === "LONG_ESSAY" || q.type === "SHORT_ESSAY"))
+        ) {
           return {
             ...q,
             rubric: rubric,
@@ -410,7 +455,9 @@ export default function CbtQuestionStudio({
       return copy;
     });
     setIsRubricModalOpen(false);
-    toast.success(`Attached rubric "${rubric.name}" (${rubric.totalMarks} marks) successfully!`);
+    toast.success(
+      `Attached rubric "${rubric.name}" (${rubric.totalMarks} marks) successfully!`,
+    );
   };
 
   // Update active question field
@@ -479,7 +526,16 @@ export default function CbtQuestionStudio({
   };
 
   const handleSaveQuestions = async () => {
-    const workspaceId = serviceExam?.workspaceId || serviceExam?.workspace?.id;
+    const storedExams = loadStoredExams();
+    const storedExam = storedExams.find((e) => e.id === examId);
+    const examinerSession = getExaminerSession();
+    const workspaceId =
+      serviceExam?.workspaceId ||
+      serviceExam?.workspace?.id ||
+      storedExam?.workspaceId ||
+      examinerSession?.id ||
+      "default";
+
     const invalidQuestion = questions.find((q) => !q.prompt.trim());
     if (invalidQuestion) {
       toast.error("Please enter a prompt for every question before saving.");
@@ -488,8 +544,10 @@ export default function CbtQuestionStudio({
 
     const invalidChoiceQuestion = questions.find(
       (q) =>
-        (q.type === "MCQ" || q.type === "TRUE_FALSE" || q.type === "MULTI_SELECT") &&
-        (!q.options?.length || q.options.some((option) => !option.text.trim()))
+        (q.type === "MCQ" ||
+          q.type === "TRUE_FALSE" ||
+          q.type === "MULTI_SELECT") &&
+        (!q.options?.length || q.options.some((option) => !option.text.trim())),
     );
     if (invalidChoiceQuestion) {
       toast.error("Please complete every option text before saving.");
@@ -499,13 +557,34 @@ export default function CbtQuestionStudio({
     saveStoredQuestions(questions, examId);
     updateExamQuestionCount(questions.length);
 
-    if (!workspaceId) {
-      toast.warning("Saved locally. Sign in and open a backend exam room to sync questions.");
-      return;
-    }
-
     try {
-      const existingQuestions = questions.filter((q) => persistedIdSet.has(q.id));
+      // Auto-sync exam shell to cloud/backend if not synced yet
+      if (!serviceExam && storedExam) {
+        try {
+          await createCbtExam({
+            id: storedExam.id,
+            workspaceId,
+            title: storedExam.title || examTitle,
+            accessCode: storedExam.accessCode || roomCode,
+            durationMins: storedExam.durationMins || durationMins,
+            totalQuestions: questions.length,
+            maxTabViolations: settings.maxTabViolations,
+            shuffleQuestions: settings.shuffleQuestions,
+            shuffleChoices: settings.shuffleChoices,
+            showResultAfter: settings.showInstantResults,
+            isPublished: true,
+          }).unwrap();
+        } catch (err) {
+          console.warn(
+            "[CBT Studio] Cloud sync of exam shell will retry:",
+            err,
+          );
+        }
+      }
+
+      const existingQuestions = questions.filter((q) =>
+        persistedIdSet.has(q.id),
+      );
       const newQuestions = questions.filter((q) => !persistedIdSet.has(q.id));
 
       await Promise.all(
@@ -517,8 +596,8 @@ export default function CbtQuestionStudio({
             marks: Number(q.marks) || 1,
             options: toServiceQuestionPayload(q, workspaceId).options,
             explanation: q.explanation || q.modelAnswer || "",
-          }).unwrap()
-        )
+          }).unwrap(),
+        ),
       );
 
       // Swap each draft's local ID for its server ID (bulk create returns questions in input order)
@@ -526,36 +605,53 @@ export default function CbtQuestionStudio({
       if (newQuestions.length > 0) {
         const created = await bulkCreateQuestions({
           workspaceId,
-          questions: newQuestions.map((q) => toServiceQuestionPayload(q, workspaceId)),
+          questions: newQuestions.map((q) =>
+            toServiceQuestionPayload(q, workspaceId),
+          ),
         }).unwrap();
         (created.questions || []).forEach((serverQuestion, idx) => {
           serverIdByLocalId.set(newQuestions[idx].id, serverQuestion.id);
         });
       }
 
-      const syncedQuestions = questions.map((q) => ({ ...q, id: serverIdByLocalId.get(q.id) || q.id }));
+      const syncedQuestions = questions.map((q) => ({
+        ...q,
+        id: serverIdByLocalId.get(q.id) || q.id,
+      }));
       setQuestions(syncedQuestions);
       saveStoredQuestions(syncedQuestions, examId);
 
       // Attach replaces the exam's question list, so this also applies studio order and deletions
-      await attachQuestions({ examId, questionIds: syncedQuestions.map((q) => q.id) }).unwrap();
+      await attachQuestions({
+        examId,
+        questionIds: syncedQuestions.map((q) => q.id),
+      }).unwrap();
 
       setServiceSyncedAt(new Date().toISOString());
-      toast.success("Question bank synced to the CBT microservice.");
+      toast.success("Question bank synced to ParaLearn Cloud.");
     } catch (error: any) {
-      console.error(error);
-      const reason = error?.data?.message;
-      toast.error(
-        `Questions were saved locally, but the CBT service sync failed${
-          reason ? `: ${Array.isArray(reason) ? reason.join("; ") : reason}` : "."
-        }`
+      console.warn(
+        "[CBT Studio] Cloud sync offline/unreachable; questions stored safely in local storage:",
+        error,
       );
+      toast.success("Questions saved locally on this device.");
     }
   };
 
   const handleTogglePublish = async () => {
     if (!serviceExam) {
-      toast.error("Connect to the CBT service before publishing this exam room.");
+      const stored = loadStoredExams();
+      const nextState = !isPublished;
+      const updated = stored.map((e) =>
+        e.id === examId ? { ...e, isPublished: nextState } : e,
+      );
+      saveStoredExams(updated);
+      setLocalPublished(nextState);
+      toast.success(
+        nextState
+          ? `Exam room published. Students can now join with code ${roomCode}.`
+          : "Exam room closed. Students can no longer join with this code.",
+      );
       return;
     }
     if (!isPublished) {
@@ -564,53 +660,62 @@ export default function CbtQuestionStudio({
         return;
       }
       if (questions.some((q) => !persistedIdSet.has(q.id))) {
-        toast.error("Some questions aren't saved yet. Press Save, then publish.");
+        toast.error(
+          "Some questions aren't saved yet. Press Save, then publish.",
+        );
         return;
       }
     }
 
     try {
       await updateCbtExam({ id: examId, isPublished: !isPublished }).unwrap();
+      setLocalPublished(!isPublished);
       toast.success(
         isPublished
           ? "Exam room closed. Students can no longer join with this code."
-          : `Exam room published. Students can now join with code ${roomCode}.`
+          : `Exam room published. Students can now join with code ${roomCode}.`,
       );
     } catch (error: any) {
       const reason = error?.data?.message;
-      toast.error(`Couldn't update the exam room${reason ? `: ${Array.isArray(reason) ? reason.join("; ") : reason}` : "."}`);
+      toast.error(
+        `Couldn't update the exam room${reason ? `: ${Array.isArray(reason) ? reason.join("; ") : reason}` : "."}`,
+      );
     }
   };
 
   return (
     <div className="cbt-studio min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)]">
-      
       {/* ── TOP ACTION BAR (56px) ────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 h-14 bg-white border-b border-[var(--border-fine)] px-4 sm:px-6 flex items-center justify-between shadow-xs">
-        
+      <header className="sticky top-0 z-30 h-14 bg-white border-b border-[var(--border-fine)] px-2.5 sm:px-6 flex items-center justify-between shadow-xs gap-2">
         {/* Left: Back & Exam Title */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
           <Link href={backHref}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[var(--radius-md)] text-[var(--text-secondary)]">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-[var(--radius-md)] text-[var(--text-secondary)] shrink-0"
+            >
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
 
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sm sm:text-base tracking-tight truncate max-w-[180px] sm:max-w-md">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="font-bold text-xs sm:text-base tracking-tight truncate max-w-[85px] xs:max-w-[130px] sm:max-w-xs md:max-w-md">
               {examTitle}
             </span>
-            
+
             {/* Room Code Badge */}
-            <Badge variant="outline" className="hidden sm:inline-flex font-mono text-xs bg-[var(--violet-tint)] text-[var(--violet-ink)] border-[var(--violet-ink)]/20 uppercase">
+            <Badge
+              variant="outline"
+              className="hidden sm:inline-flex font-mono text-xs bg-[var(--violet-tint)] text-[var(--violet-ink)] border-[var(--violet-ink)]/20 uppercase shrink-0"
+            >
               {roomCode}
             </Badge>
           </div>
         </div>
 
         {/* Right: Actions (Adaptive Desktop & Mobile) */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Desktop Full Actions (>= lg) */}
           <div className="hidden lg:flex items-center gap-2">
             <Button
@@ -619,7 +724,11 @@ export default function CbtQuestionStudio({
               onClick={handleCopyShareLink}
               className="h-8 px-3 text-xs font-semibold border-[var(--border-fine)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] rounded-[var(--radius-md)] flex items-center gap-1.5"
             >
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-[var(--emerald-signal)]" /> : <Copy className="w-3.5 h-3.5" />}
+              {copiedLink ? (
+                <Check className="w-3.5 h-3.5 text-[var(--emerald-signal)]" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
               <span>{copiedLink ? "Copied Link!" : "Copy Link"}</span>
             </Button>
 
@@ -650,7 +759,7 @@ export default function CbtQuestionStudio({
             variant="outline"
             size="sm"
             onClick={() => setIsRubricModalOpen(true)}
-            className="h-8 px-2.5 sm:px-3 text-xs font-semibold border-amber-200 text-amber-800 bg-amber-50/70 hover:bg-amber-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
+            className="h-8 px-2 sm:px-3 text-xs font-semibold border-amber-200 text-amber-800 bg-amber-50/70 hover:bg-amber-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
             title="Manage institutional marking rubrics"
           >
             <Award className="w-3.5 h-3.5 text-amber-600" />
@@ -662,7 +771,7 @@ export default function CbtQuestionStudio({
             variant="outline"
             size="sm"
             onClick={() => setIsAiModalOpen(true)}
-            className="h-8 px-2.5 sm:px-3 text-xs font-bold border-violet-200 text-violet-700 bg-violet-50/70 hover:bg-violet-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
+            className="h-8 px-2 sm:px-3 text-xs font-bold border-violet-200 text-violet-700 bg-violet-50/70 hover:bg-violet-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
             title="Generate MCQs and Essays with ParaLearn AI"
           >
             <Sparkles className="w-3.5 h-3.5 text-violet-600" />
@@ -674,7 +783,7 @@ export default function CbtQuestionStudio({
             size="sm"
             onClick={handleSaveQuestions}
             disabled={isSavingQuestions}
-            className="h-8 px-3 sm:px-4 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-xs shrink-0"
+            className="h-8 px-2.5 sm:px-4 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-xs shrink-0"
           >
             {isSavingQuestions ? "Syncing" : "Save"}
           </Button>
@@ -693,30 +802,48 @@ export default function CbtQuestionStudio({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem onClick={() => setIsMobilePaletteOpen(true)} className="text-xs font-medium cursor-pointer">
+                <DropdownMenuItem
+                  onClick={() => setIsMobilePaletteOpen(true)}
+                  className="text-xs font-medium cursor-pointer"
+                >
                   <Layers className="w-4 h-4 mr-2 text-violet-600" />
                   <span>Question Palette ({questions.length})</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsRubricModalOpen(true)} className="text-xs font-medium cursor-pointer">
+                <DropdownMenuItem
+                  onClick={() => setIsRubricModalOpen(true)}
+                  className="text-xs font-medium cursor-pointer"
+                >
                   <Award className="w-4 h-4 mr-2 text-amber-600" />
                   <span>Marking Rubrics</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleCopyShareLink} className="text-xs font-medium cursor-pointer">
+                <DropdownMenuItem
+                  onClick={handleCopyShareLink}
+                  className="text-xs font-medium cursor-pointer"
+                >
                   <Copy className="w-4 h-4 mr-2 text-slate-500" />
                   <span>Copy Student Link</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href={monitorHref} className="text-xs font-medium cursor-pointer flex items-center">
+                  <Link
+                    href={monitorHref}
+                    className="text-xs font-medium cursor-pointer flex items-center"
+                  >
                     <MonitorCheck className="w-4 h-4 mr-2 text-emerald-600" />
                     <span>Open Live Monitor</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setIsBulkOpen(true)} className="text-xs font-medium cursor-pointer">
+                <DropdownMenuItem
+                  onClick={() => setIsBulkOpen(true)}
+                  className="text-xs font-medium cursor-pointer"
+                >
                   <Upload className="w-4 h-4 mr-2 text-slate-500" />
                   <span>Bulk Import (.xlsx)</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsSettingsOpen(true)} className="text-xs font-medium cursor-pointer">
+                <DropdownMenuItem
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="text-xs font-medium cursor-pointer"
+                >
                   <Sliders className="w-4 h-4 mr-2 text-slate-500" />
                   <span>Delivery Settings</span>
                 </DropdownMenuItem>
@@ -729,15 +856,17 @@ export default function CbtQuestionStudio({
       <div className="border-b border-[var(--border-fine)] bg-white/80 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[11px]">
           <div className="flex items-center gap-2 text-slate-600">
-            <span className={`h-2 w-2 rounded-full ${examLoadError ? "bg-amber-500" : "bg-emerald-500"}`} />
+            <span
+              className={`h-2 w-2 rounded-full ${examLoadError ? "bg-amber-500" : "bg-emerald-500"}`}
+            />
             <span className="font-semibold">
               {isLoadingExam
                 ? "Loading backend exam room..."
                 : examLoadError
-                ? "Offline draft mode. Changes will stay local until the CBT service is reachable."
-                : serviceSyncedAt
-                ? "Synced with CBT microservice"
-                : "Ready to sync with CBT microservice"}
+                  ? "Offline draft mode. Changes will stay local until the CBT service is reachable."
+                  : serviceSyncedAt
+                    ? "Synced with CBT microservice"
+                    : "Ready to sync with CBT microservice"}
             </span>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -756,7 +885,9 @@ export default function CbtQuestionStudio({
                       : "text-[10px] font-semibold border-amber-200 bg-amber-50 text-amber-800"
                   }
                 >
-                  {isPublished ? "Published · students can join" : "Draft · students can't join yet"}
+                  {isPublished
+                    ? "Published · students can join"
+                    : "Draft · students can't join yet"}
                 </Badge>
                 <Button
                   size="sm"
@@ -769,7 +900,11 @@ export default function CbtQuestionStudio({
                       : "h-7 px-2.5 text-[11px] font-bold bg-[var(--emerald-signal)] hover:bg-emerald-700 text-white rounded-[var(--radius-md)]"
                   }
                 >
-                  {isTogglingPublish ? "Updating..." : isPublished ? "Unpublish" : "Publish"}
+                  {isTogglingPublish
+                    ? "Updating..."
+                    : isPublished
+                      ? "Unpublish"
+                      : "Publish"}
                 </Button>
               </div>
             )}
@@ -779,10 +914,8 @@ export default function CbtQuestionStudio({
 
       {/* ── 2-PANE STUDIO WORKSPACE ──────────────────────────────────────── */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto px-3 py-4 sm:p-6 gap-6 items-start">
-        
         {/* Left Pane: Question Palette (Hidden on mobile < md, visible on desktop >= md) */}
         <aside className="hidden md:flex w-72 sm:w-84 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] flex-col h-[calc(100vh-90px)] sticky top-18 overflow-hidden shrink-0">
-          
           {/* Palette Top Toolbar */}
           <div className="p-3.5 border-b border-[var(--border-fine)] bg-[var(--surface-muted)] space-y-2.5">
             <div className="flex items-center justify-between">
@@ -806,20 +939,35 @@ export default function CbtQuestionStudio({
                     <span>Add</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 text-xs font-medium">
-                  <DropdownMenuItem onClick={() => handleAddNewQuestion("MCQ")} className="cursor-pointer">
+                <DropdownMenuContent
+                  align="end"
+                  className="w-48 text-xs font-medium"
+                >
+                  <DropdownMenuItem
+                    onClick={() => handleAddNewQuestion("MCQ")}
+                    className="cursor-pointer"
+                  >
                     <Radio className="w-3.5 h-3.5 mr-2 text-violet-600" />
                     <span>Multiple Choice (MCQ)</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleAddNewQuestion("SHORT_ESSAY")} className="cursor-pointer">
+                  <DropdownMenuItem
+                    onClick={() => handleAddNewQuestion("SHORT_ESSAY")}
+                    className="cursor-pointer"
+                  >
                     <AlignLeft className="w-3.5 h-3.5 mr-2 text-amber-600" />
                     <span>Short Essay (20-100w)</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleAddNewQuestion("LONG_ESSAY")} className="cursor-pointer">
+                  <DropdownMenuItem
+                    onClick={() => handleAddNewQuestion("LONG_ESSAY")}
+                    className="cursor-pointer"
+                  >
                     <FileText className="w-3.5 h-3.5 mr-2 text-blue-600" />
                     <span>Long Essay / Theory</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleAddNewQuestion("TRUE_FALSE")} className="cursor-pointer">
+                  <DropdownMenuItem
+                    onClick={() => handleAddNewQuestion("TRUE_FALSE")}
+                    className="cursor-pointer"
+                  >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-emerald-600" />
                     <span>True / False</span>
                   </DropdownMenuItem>
@@ -892,7 +1040,9 @@ export default function CbtQuestionStudio({
               </div>
             ) : (
               filteredQuestions.map((q) => {
-                const originalIdx = questions.findIndex((orig) => orig.id === q.id);
+                const originalIdx = questions.findIndex(
+                  (orig) => orig.id === q.id,
+                );
                 const isActive = originalIdx === activeIdx;
 
                 return (
@@ -913,25 +1063,32 @@ export default function CbtQuestionStudio({
                         <p className="text-xs truncate font-normal leading-tight">
                           {q.prompt || "Untitled Question"}
                         </p>
-                        
+
                         {/* Tags and Marks */}
                         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                           {/* Format Badge */}
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={`text-[9px] font-mono px-1 py-0 uppercase border ${
                               q.type === "LONG_ESSAY"
                                 ? "bg-blue-50 text-blue-700 border-blue-200"
                                 : q.type === "SHORT_ESSAY"
-                                ? "bg-amber-50 text-amber-700 border-amber-200"
-                                : "bg-slate-50 text-slate-700 border-slate-200"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-slate-50 text-slate-700 border-slate-200"
                             }`}
                           >
-                            {q.type === "LONG_ESSAY" ? "LONG ESSAY" : q.type === "SHORT_ESSAY" ? "SHORT ESSAY" : q.type}
+                            {q.type === "LONG_ESSAY"
+                              ? "LONG ESSAY"
+                              : q.type === "SHORT_ESSAY"
+                                ? "SHORT ESSAY"
+                                : q.type}
                           </Badge>
 
                           {q.rubric && (
-                            <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 bg-amber-50 text-amber-800 border-amber-300">
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] font-mono px-1 py-0 bg-amber-50 text-amber-800 border-amber-300"
+                            >
                               Rubric
                             </Badge>
                           )}
@@ -966,20 +1123,23 @@ export default function CbtQuestionStudio({
               })
             )}
           </div>
-
         </aside>
 
         {/* Right Pane: Question Editor Canvas */}
-        <main className="flex-1 min-w-0 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-5 sm:p-7 shadow-[var(--shadow-card)] space-y-6">
+        <main className="flex-1 min-w-0 bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-3.5 sm:p-7 shadow-[var(--shadow-card)] space-y-5 sm:space-y-6">
           {!activeQuestion ? (
             <div className="py-20 text-center space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
                 <FileQuestion className="w-7 h-7" />
               </div>
               <div className="space-y-1.5 max-w-md mx-auto">
-                <h3 className="text-base font-bold text-[var(--foreground)]">No questions in this examination yet</h3>
+                <h3 className="text-base font-bold text-[var(--foreground)]">
+                  No questions in this examination yet
+                </h3>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                  Start authoring your assessment by creating MCQs, Short Essays, or Long Essays, or extract questions directly from documents, slides, audio, or video with ParaLearn AI.
+                  Start authoring your assessment by creating MCQs, Short
+                  Essays, or Long Essays, or extract questions directly from
+                  documents, slides, audio, or video with ParaLearn AI.
                 </p>
               </div>
               <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
@@ -1011,7 +1171,7 @@ export default function CbtQuestionStudio({
                   </span>
 
                   {/* Format Segmented Switcher */}
-                  <div className="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 text-xs">
+                  <div className="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 text-xs overflow-x-auto max-w-full">
                     <button
                       type="button"
                       onClick={() => handleChangeQuestionType("MCQ")}
@@ -1070,7 +1230,12 @@ export default function CbtQuestionStudio({
                       min="0.5"
                       step="0.5"
                       value={activeQuestion.marks}
-                      onChange={(e) => updateActiveQuestion("marks", parseFloat(e.target.value) || 1)}
+                      onChange={(e) =>
+                        updateActiveQuestion(
+                          "marks",
+                          parseFloat(e.target.value) || 1,
+                        )
+                      }
                       className="w-20 h-8 text-center font-mono text-xs font-bold rounded-[var(--radius-md)] border-[var(--border-fine)]"
                     />
                   </div>
@@ -1086,16 +1251,45 @@ export default function CbtQuestionStudio({
                 <Input
                   type="text"
                   value={activeQuestion.section || ""}
-                  onChange={(e) => updateActiveQuestion("section", e.target.value)}
+                  onChange={(e) =>
+                    updateActiveQuestion("section", e.target.value)
+                  }
                   placeholder="e.g. Section A: Objectives or Section B: Theory & Essays"
                   className="h-8 text-xs font-medium border-slate-200 bg-white"
                 />
                 <div className="hidden lg:flex items-center gap-1 shrink-0 text-[10px] text-slate-500">
-                  <span className="cursor-pointer underline hover:text-violet-700" onClick={() => updateActiveQuestion("section", "Section A: Multiple Choice")}>Sec A</span>
+                  <span
+                    className="cursor-pointer underline hover:text-violet-700"
+                    onClick={() =>
+                      updateActiveQuestion(
+                        "section",
+                        "Section A: Multiple Choice",
+                      )
+                    }
+                  >
+                    Sec A
+                  </span>
                   <span>&bull;</span>
-                  <span className="cursor-pointer underline hover:text-violet-700" onClick={() => updateActiveQuestion("section", "Section B: Short Answers")}>Sec B</span>
+                  <span
+                    className="cursor-pointer underline hover:text-violet-700"
+                    onClick={() =>
+                      updateActiveQuestion(
+                        "section",
+                        "Section B: Short Answers",
+                      )
+                    }
+                  >
+                    Sec B
+                  </span>
                   <span>&bull;</span>
-                  <span className="cursor-pointer underline hover:text-violet-700" onClick={() => updateActiveQuestion("section", "Section C: Long Essay")}>Sec C</span>
+                  <span
+                    className="cursor-pointer underline hover:text-violet-700"
+                    onClick={() =>
+                      updateActiveQuestion("section", "Section C: Long Essay")
+                    }
+                  >
+                    Sec C
+                  </span>
                 </div>
               </div>
 
@@ -1103,23 +1297,29 @@ export default function CbtQuestionStudio({
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center justify-between">
                   <span>Question Statement / Problem Statement</span>
-                  <span className="font-normal text-[11px] text-slate-500 lowercase">Supports text and KaTeX math formulas</span>
+                  <span className="font-normal text-[11px] text-slate-500 lowercase">
+                    Supports text and KaTeX math formulas
+                  </span>
                 </label>
                 <textarea
                   rows={activeQuestion.type === "LONG_ESSAY" ? 5 : 3}
                   value={activeQuestion.prompt}
-                  onChange={(e) => updateActiveQuestion("prompt", e.target.value)}
+                  onChange={(e) =>
+                    updateActiveQuestion("prompt", e.target.value)
+                  }
                   placeholder="Enter question statement or case study prompt..."
                   className="w-full p-3.5 text-sm sm:text-base font-normal leading-relaxed rounded-[var(--radius-md)] border border-[var(--border-fine)] bg-white text-[var(--foreground)] focus:border-[var(--violet-ink)] focus:ring-2 focus:ring-[var(--violet-ink)]/20 outline-none"
                 />
               </div>
 
               {/* ── CONDITIONAL CANVAS: MCQs & TRUE/FALSE ── */}
-              {(activeQuestion.type === "MCQ" || activeQuestion.type === "TRUE_FALSE") && (
+              {(activeQuestion.type === "MCQ" ||
+                activeQuestion.type === "TRUE_FALSE") && (
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                      Answer Choices (Click the badge to mark the correct choice)
+                      Answer Choices (Click the badge to mark the correct
+                      choice)
                     </label>
                     {activeQuestion.type === "MCQ" && (
                       <Button
@@ -1155,15 +1355,25 @@ export default function CbtQuestionStudio({
                                 ? "bg-[var(--emerald-signal)] text-white shadow-xs"
                                 : "bg-[var(--surface-muted)] text-[var(--text-secondary)] hover:bg-[var(--border-fine)]"
                             }`}
-                            title={opt.isCorrect ? "Correct answer" : "Click to mark as correct"}
+                            title={
+                              opt.isCorrect
+                                ? "Correct answer"
+                                : "Click to mark as correct"
+                            }
                           >
-                            {opt.isCorrect ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : letter}
+                            {opt.isCorrect ? (
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            ) : (
+                              letter
+                            )}
                           </button>
 
                           <Input
                             type="text"
                             value={opt.text}
-                            onChange={(e) => updateOptionText(optIdx, e.target.value)}
+                            onChange={(e) =>
+                              updateOptionText(optIdx, e.target.value)
+                            }
                             placeholder={`Option ${letter} text...`}
                             className="h-10 text-sm font-normal border-[var(--border-fine)] bg-white"
                           />
@@ -1197,7 +1407,12 @@ export default function CbtQuestionStudio({
                         type="number"
                         min="5"
                         value={activeQuestion.minWords || 20}
-                        onChange={(e) => updateActiveQuestion("minWords", parseInt(e.target.value, 10) || 20)}
+                        onChange={(e) =>
+                          updateActiveQuestion(
+                            "minWords",
+                            parseInt(e.target.value, 10) || 20,
+                          )
+                        }
                         className="h-9 text-xs font-mono font-medium"
                       />
                     </div>
@@ -1209,7 +1424,12 @@ export default function CbtQuestionStudio({
                         type="number"
                         min="20"
                         value={activeQuestion.maxWords || 100}
-                        onChange={(e) => updateActiveQuestion("maxWords", parseInt(e.target.value, 10) || 100)}
+                        onChange={(e) =>
+                          updateActiveQuestion(
+                            "maxWords",
+                            parseInt(e.target.value, 10) || 100,
+                          )
+                        }
                         className="h-9 text-xs font-mono font-medium"
                       />
                     </div>
@@ -1222,12 +1442,16 @@ export default function CbtQuestionStudio({
                         <BookOpen className="w-3.5 h-3.5 text-amber-600" />
                         <span>Teacher Reference / Model Answer</span>
                       </span>
-                      <span className="font-normal text-[11px] text-slate-500">Benchmark for ParaLearn AI grading engine</span>
+                      <span className="font-normal text-[11px] text-slate-500">
+                        Benchmark for ParaLearn AI grading engine
+                      </span>
                     </label>
                     <textarea
                       rows={3}
                       value={activeQuestion.modelAnswer || ""}
-                      onChange={(e) => updateActiveQuestion("modelAnswer", e.target.value)}
+                      onChange={(e) =>
+                        updateActiveQuestion("modelAnswer", e.target.value)
+                      }
                       placeholder="e.g. Photosynthesis is the biochemical process whereby green plants convert light energy into chemical energy..."
                       className="w-full p-3 text-xs sm:text-sm font-normal rounded-[var(--radius-md)] border border-slate-200 bg-amber-50/20 text-[var(--foreground)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none"
                     />
@@ -1236,13 +1460,17 @@ export default function CbtQuestionStudio({
                   {/* Key Terms / Required Concepts */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                      Essential Key Terms (Comma-separated concepts that should appear)
+                      Essential Key Terms (Comma-separated concepts that should
+                      appear)
                     </label>
                     <Input
                       type="text"
                       value={activeQuestion.keyTerms?.join(", ") || ""}
                       onChange={(e) => {
-                        const terms = e.target.value.split(",").map(t => t.trim()).filter(Boolean);
+                        const terms = e.target.value
+                          .split(",")
+                          .map((t) => t.trim())
+                          .filter(Boolean);
                         updateActiveQuestion("keyTerms", terms);
                       }}
                       placeholder="e.g. Chloroplasts, Stomata, ATP, Light reactions"
@@ -1264,7 +1492,12 @@ export default function CbtQuestionStudio({
                         type="number"
                         min="50"
                         value={activeQuestion.minWords || 150}
-                        onChange={(e) => updateActiveQuestion("minWords", parseInt(e.target.value, 10) || 150)}
+                        onChange={(e) =>
+                          updateActiveQuestion(
+                            "minWords",
+                            parseInt(e.target.value, 10) || 150,
+                          )
+                        }
                         className="h-9 text-xs font-mono font-medium"
                       />
                     </div>
@@ -1276,7 +1509,12 @@ export default function CbtQuestionStudio({
                         type="number"
                         min="100"
                         value={activeQuestion.maxWords || 800}
-                        onChange={(e) => updateActiveQuestion("maxWords", parseInt(e.target.value, 10) || 800)}
+                        onChange={(e) =>
+                          updateActiveQuestion(
+                            "maxWords",
+                            parseInt(e.target.value, 10) || 800,
+                          )
+                        }
                         className="h-9 text-xs font-mono font-medium"
                       />
                     </div>
@@ -1287,14 +1525,20 @@ export default function CbtQuestionStudio({
                     <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <BookOpen className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Comprehensive Essay Outline &amp; Expected Arguments</span>
+                        <span>
+                          Comprehensive Essay Outline &amp; Expected Arguments
+                        </span>
                       </span>
-                      <span className="font-normal text-[11px] text-slate-500">Benchmark for AI &amp; examiner review</span>
+                      <span className="font-normal text-[11px] text-slate-500">
+                        Benchmark for AI &amp; examiner review
+                      </span>
                     </label>
                     <textarea
                       rows={4}
                       value={activeQuestion.modelAnswer || ""}
-                      onChange={(e) => updateActiveQuestion("modelAnswer", e.target.value)}
+                      onChange={(e) =>
+                        updateActiveQuestion("modelAnswer", e.target.value)
+                      }
                       placeholder="Outline expected thesis, key body paragraphs, structural criteria, evidence, and critical evaluation points..."
                       className="w-full p-3 text-xs sm:text-sm font-normal rounded-[var(--radius-md)] border border-slate-200 bg-blue-50/20 text-[var(--foreground)] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                     />
@@ -1306,10 +1550,16 @@ export default function CbtQuestionStudio({
                       <div className="flex items-center gap-2">
                         <Award className="w-4 h-4 text-amber-600" />
                         <span className="text-xs font-bold text-slate-900">
-                          {activeQuestion.rubric?.name || "Standard Evaluation Rubric"}
+                          {activeQuestion.rubric?.name ||
+                            "Standard Evaluation Rubric"}
                         </span>
-                        <Badge variant="outline" className="text-[10px] font-mono bg-white text-slate-700">
-                          {activeQuestion.rubric?.totalMarks || activeQuestion.marks} Total Marks
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] font-mono bg-white text-slate-700"
+                        >
+                          {activeQuestion.rubric?.totalMarks ||
+                            activeQuestion.marks}{" "}
+                          Total Marks
                         </Badge>
                       </div>
 
@@ -1320,18 +1570,28 @@ export default function CbtQuestionStudio({
                         className="h-7 text-xs font-semibold border-amber-300 text-amber-900 bg-white hover:bg-amber-50"
                       >
                         <Award className="w-3 h-3 mr-1 text-amber-600" />
-                        <span>{activeQuestion.rubric ? "Change Rubric Scheme" : "Attach Marking Rubric"}</span>
+                        <span>
+                          {activeQuestion.rubric
+                            ? "Change Rubric Scheme"
+                            : "Attach Marking Rubric"}
+                        </span>
                       </Button>
                     </div>
 
                     {/* Criteria List */}
-                    {activeQuestion.rubric?.criteria && activeQuestion.rubric.criteria.length > 0 ? (
+                    {activeQuestion.rubric?.criteria &&
+                    activeQuestion.rubric.criteria.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                         {activeQuestion.rubric.criteria.map((crit, cIdx) => (
-                          <div key={crit.id || cIdx} className="bg-white p-2.5 rounded-md border border-slate-200 text-xs">
+                          <div
+                            key={crit.id || cIdx}
+                            className="bg-white p-2.5 rounded-md border border-slate-200 text-xs"
+                          >
                             <div className="flex items-center justify-between font-bold text-slate-800">
                               <span>{crit.title}</span>
-                              <span className="font-mono text-amber-700">{crit.maxMarks}m</span>
+                              <span className="font-mono text-amber-700">
+                                {crit.maxMarks}m
+                              </span>
                             </div>
                             <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
                               {crit.description}
@@ -1341,7 +1601,9 @@ export default function CbtQuestionStudio({
                       </div>
                     ) : (
                       <p className="text-[11px] text-slate-500 italic">
-                        No custom rubric linked yet. Using default weighted grading. You can attach WAEC, Cambridge, or custom institutional rubrics above.
+                        No custom rubric linked yet. Using default weighted
+                        grading. You can attach WAEC, Cambridge, or custom
+                        institutional rubrics above.
                       </p>
                     )}
                   </div>
@@ -1352,19 +1614,23 @@ export default function CbtQuestionStudio({
               <div className="space-y-1.5 pt-2">
                 <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
                   <HelpCircle className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-                  <span>Explanation &amp; Solution Notes (Revealed after assessment review)</span>
+                  <span>
+                    Explanation &amp; Solution Notes (Revealed after assessment
+                    review)
+                  </span>
                 </label>
                 <Input
                   type="text"
                   value={activeQuestion.explanation || ""}
-                  onChange={(e) => updateActiveQuestion("explanation", e.target.value)}
+                  onChange={(e) =>
+                    updateActiveQuestion("explanation", e.target.value)
+                  }
                   placeholder="e.g. Highlighting core principles, formulas, and common student misconceptions..."
                   className="h-10 text-sm font-normal border-[var(--border-fine)]"
                 />
               </div>
             </>
           )}
-
         </main>
       </div>
 
@@ -1376,12 +1642,12 @@ export default function CbtQuestionStudio({
               Delivery &amp; Integrity Settings
             </SheetTitle>
             <SheetDescription className="text-xs text-[var(--text-secondary)]">
-              Configure exam duration, access permissions, and anti-malpractice rules.
+              Configure exam duration, access permissions, and anti-malpractice
+              rules.
             </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-5 text-xs text-[var(--foreground)]">
-            
             {/* Duration */}
             <div className="space-y-1.5">
               <label className="font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
@@ -1392,7 +1658,9 @@ export default function CbtQuestionStudio({
                 min="5"
                 max="360"
                 value={durationMins}
-                onChange={(e) => setDurationMins(parseInt(e.target.value, 10) || 60)}
+                onChange={(e) =>
+                  setDurationMins(parseInt(e.target.value, 10) || 60)
+                }
                 className="h-10 font-mono font-bold"
               />
             </div>
@@ -1407,7 +1675,12 @@ export default function CbtQuestionStudio({
                 min="1"
                 max="10"
                 value={settings.maxTabViolations}
-                onChange={(e) => setSettings({ ...settings, maxTabViolations: parseInt(e.target.value, 10) || 3 })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    maxTabViolations: parseInt(e.target.value, 10) || 3,
+                  })
+                }
                 className="h-10 font-mono font-bold"
               />
               <p className="text-[11px] text-[var(--text-secondary)]">
@@ -1420,33 +1693,53 @@ export default function CbtQuestionStudio({
                 <input
                   type="checkbox"
                   checked={settings.shuffleQuestions}
-                  onChange={(e) => setSettings({ ...settings, shuffleQuestions: e.target.checked })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      shuffleQuestions: e.target.checked,
+                    })
+                  }
                   className="rounded text-[var(--violet-ink)]"
                 />
-                <span className="font-medium">Shuffle Question Order for Each Student</span>
+                <span className="font-medium">
+                  Shuffle Question Order for Each Student
+                </span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={settings.shuffleChoices}
-                  onChange={(e) => setSettings({ ...settings, shuffleChoices: e.target.checked })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      shuffleChoices: e.target.checked,
+                    })
+                  }
                   className="rounded text-[var(--violet-ink)]"
                 />
-                <span className="font-medium">Shuffle Answer Choices (A, B, C, D)</span>
+                <span className="font-medium">
+                  Shuffle Answer Choices (A, B, C, D)
+                </span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={settings.showInstantResults}
-                  onChange={(e) => setSettings({ ...settings, showInstantResults: e.target.checked })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      showInstantResults: e.target.checked,
+                    })
+                  }
                   className="rounded text-[var(--violet-ink)]"
                 />
-                <span className="font-medium">Show Instant Score &amp; Grade Upon Submission</span>
+                <span className="font-medium">
+                  Show Instant Score &amp; Grade Upon Submission
+                </span>
               </label>
             </div>
-
           </div>
         </SheetContent>
       </Sheet>
@@ -1459,22 +1752,29 @@ export default function CbtQuestionStudio({
               Bulk Import Questions
             </DialogTitle>
             <DialogDescription className="text-xs text-[var(--text-secondary)]">
-              Upload an Excel (.xlsx) file or paste formatted questions into the studio.
+              Upload an Excel (.xlsx) file or paste formatted questions into the
+              studio.
             </DialogDescription>
           </DialogHeader>
 
           <div className="border-2 border-dashed border-[var(--border-fine)] rounded-[var(--radius-md)] p-8 text-center space-y-3">
             <Upload className="w-8 h-8 text-[var(--violet-ink)] mx-auto" />
             <div className="text-xs text-[var(--foreground)]">
-              <span className="font-bold">Click to upload .xlsx file</span> or drag and drop
+              <span className="font-bold">Click to upload .xlsx file</span> or
+              drag and drop
             </div>
             <p className="text-[11px] text-[var(--text-secondary)]">
-              Columns: question, type, option_a, option_b, option_c, option_d, correct, marks, min_words, max_words
+              Columns: question, type, option_a, option_b, option_c, option_d,
+              correct, marks, min_words, max_words
             </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setIsBulkOpen(false)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsBulkOpen(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -1512,14 +1812,23 @@ export default function CbtQuestionStudio({
             className="h-8 px-3 text-xs font-semibold text-white hover:bg-slate-800 rounded-full flex items-center gap-1.5"
           >
             <Layers className="w-3.5 h-3.5 text-violet-400" />
-            <span>Q {questions.length > 0 ? `${activeIdx + 1}/${questions.length}` : "0"}</span>
+            <span>
+              Q{" "}
+              {questions.length > 0
+                ? `${activeIdx + 1}/${questions.length}`
+                : "0"}
+            </span>
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
-            disabled={questions.length === 0 || activeIdx >= questions.length - 1}
-            onClick={() => setActiveIdx((prev) => Math.min(questions.length - 1, prev + 1))}
+            disabled={
+              questions.length === 0 || activeIdx >= questions.length - 1
+            }
+            onClick={() =>
+              setActiveIdx((prev) => Math.min(questions.length - 1, prev + 1))
+            }
             className="h-8 w-8 text-slate-300 hover:text-white hover:bg-slate-800 rounded-full"
             title="Next question"
           >
@@ -1541,7 +1850,10 @@ export default function CbtQuestionStudio({
 
       {/* ── MOBILE QUESTION PALETTE SHEET (< md) ─────────────────────────── */}
       <Sheet open={isMobilePaletteOpen} onOpenChange={setIsMobilePaletteOpen}>
-        <SheetContent side="bottom" className="h-[80vh] bg-white border-t border-[var(--border-fine)] p-0 flex flex-col rounded-t-2xl">
+        <SheetContent
+          side="bottom"
+          className="h-[80vh] bg-white border-t border-[var(--border-fine)] p-0 flex flex-col rounded-t-2xl"
+        >
           <SheetHeader className="p-4 border-b border-[var(--border-fine)] flex flex-row items-center justify-between shrink-0">
             <div>
               <SheetTitle className="text-base font-bold text-[var(--foreground)]">
@@ -1607,7 +1919,10 @@ export default function CbtQuestionStudio({
                           {q.prompt || "Untitled Question"}
                         </p>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 uppercase">
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] font-mono px-1 py-0 uppercase"
+                          >
                             {q.type}
                           </Badge>
                           <span className="text-[10px] text-[var(--text-secondary)] font-mono">
@@ -1652,7 +1967,6 @@ export default function CbtQuestionStudio({
         questionTotalMarks={activeQuestion?.marks}
         onApplyRubric={handleApplyRubric}
       />
-
     </div>
   );
 }

@@ -69,13 +69,13 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
   const gradeInfo = getGrade(percentage);
 
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-4 sm:p-8 font-sans text-[var(--foreground)] print:bg-white print:p-0">
+    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-3 sm:p-8 font-sans text-[var(--foreground)] print:bg-white print:p-0">
       
       {/* Container */}
       <div className="w-full max-w-xl bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden print:border-none print:shadow-none">
         
         {/* Slip Header */}
-        <div className="bg-[var(--surface-muted)] border-b border-[var(--border-fine)] p-6 text-center space-y-2">
+        <div className="bg-[var(--surface-muted)] border-b border-[var(--border-fine)] p-4 sm:p-6 text-center space-y-2">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white shadow-xs border border-[var(--border-fine)] mb-1">
             {isDisqualified ? (
               <AlertCircle className="w-6 h-6 text-[var(--crimson-signal)]" />
@@ -102,7 +102,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
         </div>
 
         {/* Slip Content */}
-        <div className="p-6 sm:p-8 space-y-6">
+        <div className="p-4 sm:p-8 space-y-5 sm:space-y-6">
           
           {/* Candidate Info Grid */}
           <div className="grid grid-cols-2 gap-4 pb-6 border-b border-[var(--border-fine)] text-xs">
@@ -250,11 +250,11 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
           </div>
 
           {/* Action Buttons (Hidden on Print) */}
-          <div className="flex items-center gap-3 pt-2 print:hidden">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-2 print:hidden">
             <Button
               variant="outline"
               onClick={handlePrint}
-              className="flex-1 h-11 text-xs font-semibold rounded-[var(--radius-md)] border-[var(--border-fine)] hover:bg-[var(--surface-muted)]"
+              className="w-full sm:flex-1 h-11 text-xs font-semibold rounded-[var(--radius-md)] border-[var(--border-fine)] hover:bg-[var(--surface-muted)]"
             >
               <Printer className="w-4 h-4 mr-2" />
               <span>Print Official Slip</span>
@@ -262,7 +262,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
 
             <Button
               onClick={handleRetakeOrFinish}
-              className="flex-1 h-11 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
+              className="w-full sm:flex-1 h-11 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               <span>Exit / New Attempt</span>

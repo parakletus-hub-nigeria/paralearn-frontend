@@ -44,10 +44,18 @@ interface RawGeneratedQuestion {
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.CBT_GEMINI_API_KEY;
+    const rawApiKey =
+      process.env.CBT_GEMINI_API_KEY ||
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY ||
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = rawApiKey ? rawApiKey.trim().replace(/^["']|["']$/g, "") : "";
     if (!apiKey) {
       return NextResponse.json(
-        { error: "CBT_GEMINI_API_KEY is not configured in server environment." },
+        {
+          error:
+            "GEMINI_API_KEY (or CBT_GEMINI_API_KEY) is not configured in server environment. Please define GEMINI_API_KEY or GOOGLE_API_KEY in your .env.local file or hosting environment variables.",
+        },
         { status: 500 }
       );
     }
@@ -233,20 +241,32 @@ Return the result STRICTLY as a valid JSON object matching this schema:
       text: `\nGenerate now the array of ${count} questions in accordance with difficulty: "${difficulty}" and format mode: "${formatMode}".`,
     });
 
-    // Generate content using Gemini 3
+    // Generate content using Gemini
     let result;
     try {
       result = await model.generateContent(promptParts);
     } catch (err: any) {
-      console.warn(`Primary model ${modelName} failed, falling back to gemini-2.5-flash:`, err?.message);
-      const fallbackModel = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.2,
-        },
-      });
-      result = await fallbackModel.generateContent(promptParts);
+      console.warn(`Primary model ${modelName} failed (${err?.message}), falling back to gemini-3.8-flash...`);
+      try {
+        const fallbackModel = genAI.getGenerativeModel({
+          model: "gemini-3.8-flash",
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.2,
+          },
+        });
+        result = await fallbackModel.generateContent(promptParts);
+      } catch (fbErr: any) {
+        console.warn(`Secondary model gemini-3.8-flash failed (${fbErr?.message}), falling back to gemini-flash-latest...`);
+        const tertiaryModel = genAI.getGenerativeModel({
+          model: "gemini-flash-latest",
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.2,
+          },
+        });
+        result = await tertiaryModel.generateContent(promptParts);
+      }
     }
 
     const response = await result.response;
