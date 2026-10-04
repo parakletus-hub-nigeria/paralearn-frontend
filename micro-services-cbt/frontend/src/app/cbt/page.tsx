@@ -414,7 +414,16 @@ export default function CbtPortalPage() {
                       {status === "Ready" ? "Ready to publish" : status}
                     </span>
                   </td>
-                  <td className="cbt-detail-col tabular-nums">{questions}</td>
+                  <td className="cbt-detail-col tabular-nums">
+                    <Link
+                      href={`/cbt/exams/${exam.id}`}
+                      className="inline-flex items-center gap-1.5 font-semibold text-violet-700 hover:text-violet-900 hover:underline"
+                      title="Click to view and edit questions"
+                    >
+                      <BookOpen size={13} />
+                      <span>{questions}</span>
+                    </Link>
+                  </td>
                   <td className="cbt-schedule-col text-xs text-slate-600">
                     {!exam.isPublished
                       ? "Not published"
@@ -431,6 +440,15 @@ export default function CbtPortalPage() {
                   </td>
                   <td>
                     <div className="cbt-row-actions">
+                      <Link
+                        className="cbt-button outline"
+                        title="View and edit questions"
+                        aria-label={`View or edit questions for ${exam.title}`}
+                        href={`/cbt/exams/${exam.id}`}
+                      >
+                        <FileText size={14} />
+                        <span>View/Edit questions</span>
+                      </Link>
                       {exam.isPublished ? (
                         <>
                           <button
@@ -472,15 +490,7 @@ export default function CbtPortalPage() {
                           <Send size={14} />
                           Publish exam
                         </button>
-                      ) : (
-                        <Link
-                          className="cbt-button"
-                          href={`/cbt/exams/${exam.id}`}
-                        >
-                          <Plus size={14} />
-                          Add questions
-                        </Link>
-                      )}
+                      ) : null}
                       <Link
                         className="cbt-icon"
                         title="Manage candidates"
