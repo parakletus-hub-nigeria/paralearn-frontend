@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { cbtServerStore, computeWaecGrade } from "@/lib/cbtServerStore";
 import { BUSI_EXAM, BUSI_QUESTIONS } from "@/lib/busiAssessmentData";
 
+// Route handler for CBT microservice proxy
 export const dynamic = "force-dynamic";
 
 interface RouteParams {

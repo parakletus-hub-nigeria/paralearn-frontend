@@ -26,6 +26,8 @@ import "./cbt-workspace.css";
 import {
   saveCandidateSession,
   loadCandidateSession,
+  loadStoredExams,
+  loadStoredQuestions,
 } from "@cbt/lib/cbtSessionManager";
 import {
   useGetExamByCodeQuery,

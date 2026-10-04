@@ -20,7 +20,7 @@ const hasUpstash = Boolean(
   !redisUrl.includes("probable-pika")
 );
 
-// ── Lazy Upstash client ───────────────────────────────────────────────────────
+// ── Lazy Upstash client (uses installed @upstash/redis) ────────────────────────
 let _upstash: import("@upstash/redis").Redis | null = null;
 
 async function getUpstash() {
