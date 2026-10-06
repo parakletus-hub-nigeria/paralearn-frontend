@@ -37,9 +37,11 @@ const reportStatusMeta = (status: string) => {
 
 export const DashboardPage = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { studentCount, teacherCount, tenantInfo } = useSelector(selectDashboardUserData);
+  const { tenantInfo } = useSelector(selectDashboardUserData);
   const { users } = useSelector((state: RootState) => state.user);
   const currentSession = useSelector(selectCurrentSession);
+  const [studentCount, setStudentCount] = useState(0);
+  const [teacherCount, setTeacherCount] = useState(0);
   const [subjectCount, setSubjectCount] = useState(0);
   const [assessmentCount, setAssessmentCount] = useState(0);
   const [recentAssessments, setRecentAssessments] = useState<any[]>([]);
@@ -59,7 +61,8 @@ export const DashboardPage = () => {
         catch { try { const d = await fetchJson(`/api/proxy/assessments?status=${status}`); return Array.isArray(d) ? d : []; } catch { return []; } }
       };
 
-      const [usersResult, subjectResult, aStarted, aEnded, aNotStarted, reportResult] = await Promise.all([
+      const [statsResult, usersResult, subjectResult, aStarted, aEnded, aNotStarted, reportResult] = await Promise.all([
+        fetchJson("/api/proxy/users/stats").catch(() => null),
         dispatch(fetchAllUsers()).unwrap().catch(() => ({ users: [] as any[] })),
         fetchJson("/api/proxy/subjects").catch(() => null),
         fetchByStatus("started"),
@@ -67,6 +70,10 @@ export const DashboardPage = () => {
         fetchByStatus("not_started"),
         fetchJson("/api/proxy/reports/report-cards?limit=10").catch(() => null),
       ]);
+
+      const userStats = statsResult?.data || statsResult;
+      setStudentCount(userStats?.students ?? 0);
+      setTeacherCount(userStats?.teachers ?? 0);
 
       const subjectsArr = subjectResult?.data || subjectResult?.subjects || subjectResult;
       setSubjectCount(Array.isArray(subjectsArr) ? subjectsArr.length : 0);
