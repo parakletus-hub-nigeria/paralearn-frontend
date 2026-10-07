@@ -458,6 +458,7 @@ export const cbtMicroserviceApi = createApi({
       {
         workspaceId: string;
         examId: string;
+        examTitle?: string;
         email: string;
         classIds: string[];
         autoGeneratePin?: boolean;

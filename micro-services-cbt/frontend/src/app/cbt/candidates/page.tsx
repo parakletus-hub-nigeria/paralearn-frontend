@@ -896,10 +896,10 @@ function CandidatesPageContent() {
       <ImportFromParalearnModal
         open={isImportOpen}
         onOpenChange={setIsImportOpen}
-        workspaceId={examiner?.id || "cmuyg4mva0000v1v8d6702yxm"}
-        examId={activeExamId || requestedExamId || "cmuyg4nle0002v1v86exuw15m"}
+        workspaceId={examiner?.id || ""}
+        examId={activeExamId || requestedExamId}
         examTitle={selectedExam?.title || "Current Exam"}
-        defaultEmail={examiner?.ownerEmail || "admin@brightfuture.ng"}
+        defaultEmail={examiner?.ownerEmail || ""}
       />
     </div>
   );

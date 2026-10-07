@@ -526,10 +526,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         body: JSON.stringify(body),
       });
       const data = await response.json().catch(() => ({}));
+
+      // Exam attempts are served from the local store, so mirror imported candidates
+      // there too — otherwise their studentId link (needed for score sync) is lost.
+      if (response.ok && path[1] === "candidates" && Array.isArray(data?.candidates)) {
+        for (const c of data.candidates) {
+          try {
+            await cbtServerStore.provisionCandidate({
+              examId: body.examId,
+              candidateName: c.candidateName,
+              candidatePin: c.candidatePin,
+              studentId: c.studentId,
+              email: c.email,
+              phone: c.phone,
+              metadata: c.metadata,
+              baseUrl: request.nextUrl.origin,
+            });
+          } catch (mirrorErr) {
+            console.warn("[cbt-import] Could not mirror candidate to local store:", mirrorErr);
+            break; // exam not in local store — remaining candidates would fail the same way
+          }
+        }
+      }
+
       return NextResponse.json(data, { status: response.status });
     } catch (err) {
       return NextResponse.json(
-        { message: "Failed to connect to CBT microservice: " + (err.message || String(err)) },
+        { message: "Failed to connect to CBT microservice: " + (err instanceof Error ? err.message : String(err)) },
         { status: 502 }
       );
     }

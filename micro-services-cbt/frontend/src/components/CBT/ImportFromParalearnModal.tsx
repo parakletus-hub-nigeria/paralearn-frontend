@@ -55,14 +55,14 @@ export function ImportFromParalearnModal({
   defaultEmail = "",
   onSuccess,
 }: ImportFromParalearnModalProps) {
-  const [email, setEmail] = useState(defaultEmail || "admin@brightfuture.ng");
+  const [email, setEmail] = useState(defaultEmail);
   const [importMode, setImportMode] = useState<"ALL" | "SPECIFIC">("ALL");
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [autoGeneratePin, setAutoGeneratePin] = useState(true);
 
-  const activeWorkspaceId = workspaceId || getExaminerSession()?.id || "cmuyg4mva0000v1v8d6702yxm";
-  const activeEmail = email.trim() || defaultEmail.trim() || getExaminerSession()?.ownerEmail || "admin@brightfuture.ng";
+  const activeWorkspaceId = workspaceId || getExaminerSession()?.id || "";
+  const activeEmail = email.trim() || defaultEmail.trim() || getExaminerSession()?.ownerEmail || "";
 
   // RTK Query Mutations
   const [fetchClasses, { data: classData, isLoading: isLoadingClasses, error: fetchError, reset: resetFetch }] =
@@ -140,6 +140,11 @@ export function ImportFromParalearnModal({
       return;
     }
 
+    if (!activeWorkspaceId || !activeEmail) {
+      toast.error("Your examiner session is not loaded. Please sign in again.");
+      return;
+    }
+
     const classIdsToImport = importMode === "ALL" ? availableClasses.map((c) => c.id) : selectedClassIds;
 
     if (classIdsToImport.length === 0) {
@@ -151,6 +156,7 @@ export function ImportFromParalearnModal({
       const result = await importCandidates({
         workspaceId: activeWorkspaceId,
         examId,
+        examTitle,
         email: activeEmail,
         classIds: classIdsToImport,
         autoGeneratePin,

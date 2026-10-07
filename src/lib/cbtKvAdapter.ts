@@ -29,8 +29,49 @@ async function getUpstash() {
   _upstash = new Redis({
     url: redisUrl,
     token: redisToken,
+    // Fail fast — the in-memory fallback handles outages (default is 5 retries with backoff)
+    retry: { retries: 1, backoff: () => 100 },
   });
   return _upstash;
+}
+
+// ── Circuit breaker ───────────────────────────────────────────────────────────
+// When Upstash is unreachable, every call would otherwise wait out its own timeout.
+// After one failure we skip Upstash for UPSTASH_COOLDOWN_MS and serve from memory.
+const UPSTASH_TIMEOUT_MS = 3000;
+const UPSTASH_COOLDOWN_MS = 60_000;
+let upstashDownUntil = 0;
+
+function upstashAvailable(): boolean {
+  return hasUpstash && Date.now() >= upstashDownUntil;
+}
+
+async function callUpstash<T>(
+  op: string,
+  fn: (r: import("@upstash/redis").Redis) => Promise<T>
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const r = await getUpstash();
+    return await Promise.race([
+      fn(r),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`timed out after ${UPSTASH_TIMEOUT_MS}ms`)),
+          UPSTASH_TIMEOUT_MS
+        );
+      }),
+    ]);
+  } catch (err: any) {
+    upstashDownUntil = Date.now() + UPSTASH_COOLDOWN_MS;
+    console.warn(
+      `[CBT KV] Upstash ${op} failed, using memory cache for ${UPSTASH_COOLDOWN_MS / 1000}s:`,
+      err?.message || err
+    );
+    throw err;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 // ── In-memory fallback store ──────────────────────────────────────────────────
@@ -41,13 +82,12 @@ function getMemStore(): Map<string, string> {
 }
 
 async function get<T = KvValue>(key: string): Promise<T | null> {
-  if (hasUpstash) {
+  if (upstashAvailable()) {
     try {
-      const r = await getUpstash();
-      const val = await r.get<T>(key);
+      const val = await callUpstash("get", (r) => r.get<T>(key));
       if (val !== null && val !== undefined) return val;
-    } catch (err: any) {
-      console.warn("[CBT KV] Upstash get failed, reading from memory cache:", err?.message || err);
+    } catch {
+      // logged in callUpstash; fall through to memory cache
     }
   }
   const raw = getMemStore().get(key);
@@ -61,37 +101,34 @@ async function get<T = KvValue>(key: string): Promise<T | null> {
 
 async function set(key: string, value: KvValue, exSeconds?: number): Promise<void> {
   getMemStore().set(key, JSON.stringify(value));
-  if (hasUpstash) {
+  if (upstashAvailable()) {
     try {
-      const r = await getUpstash();
       const opts = exSeconds ? { ex: exSeconds } : undefined;
-      await r.set(key, value, opts);
-    } catch (err: any) {
-      console.warn("[CBT KV] Upstash set failed, persisted in memory cache only:", err?.message || err);
+      await callUpstash("set", (r) => r.set(key, value, opts));
+    } catch {
+      // logged in callUpstash; value is persisted in memory cache only
     }
   }
 }
 
 async function del(key: string): Promise<void> {
   getMemStore().delete(key);
-  if (hasUpstash) {
+  if (upstashAvailable()) {
     try {
-      const r = await getUpstash();
-      await r.del(key);
-    } catch (err: any) {
-      console.warn("[CBT KV] Upstash del failed, removed from memory cache only:", err?.message || err);
+      await callUpstash("del", (r) => r.del(key));
+    } catch {
+      // logged in callUpstash; removed from memory cache only
     }
   }
 }
 
 async function keys(pattern: string): Promise<string[]> {
-  if (hasUpstash) {
+  if (upstashAvailable()) {
     try {
-      const r = await getUpstash();
-      const upstashKeys = await r.keys(pattern);
+      const upstashKeys = await callUpstash("keys", (r) => r.keys(pattern));
       if (upstashKeys && upstashKeys.length > 0) return upstashKeys;
-    } catch (err: any) {
-      console.warn("[CBT KV] Upstash keys failed, reading from memory cache:", err?.message || err);
+    } catch {
+      // logged in callUpstash; fall through to memory cache
     }
   }
   const prefix = pattern.replace(/\*$/, "");
@@ -117,19 +154,15 @@ async function hlist<T>(ns: string): Promise<T[]> {
       !k.includes(":apikey:")
   );
   if (!itemKeys.length) return [];
-  if (hasUpstash) {
+  if (upstashAvailable()) {
     try {
-      const r = await getUpstash();
-      const items = await r.mget<T[]>(...itemKeys);
+      const items = await callUpstash("mget", (r) => r.mget<T[]>(...itemKeys));
       return (items || []).filter(
         (item): item is T =>
           item !== null && item !== undefined && typeof item === "object"
       );
-    } catch (err: any) {
-      console.warn(
-        "[CBT KV] Upstash mget failed, falling back to per-item get:",
-        err?.message || err
-      );
+    } catch {
+      // logged in callUpstash; circuit is now open, so per-item gets below read memory
     }
   }
   const results = await Promise.all(itemKeys.map((k) => get<T>(k)));
