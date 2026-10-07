@@ -29,6 +29,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getExaminerSession } from "@cbt/lib/cbtSessionManager";
 import {
   useFetchImportableClassesMutation,
   useImportCandidatesFromParalearnMutation,
@@ -54,11 +55,14 @@ export function ImportFromParalearnModal({
   defaultEmail = "",
   onSuccess,
 }: ImportFromParalearnModalProps) {
-  const [email, setEmail] = useState(defaultEmail);
+  const [email, setEmail] = useState(defaultEmail || "admin@brightfuture.ng");
   const [importMode, setImportMode] = useState<"ALL" | "SPECIFIC">("ALL");
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [autoGeneratePin, setAutoGeneratePin] = useState(true);
+
+  const activeWorkspaceId = workspaceId || getExaminerSession()?.id || "cmuyg4mva0000v1v8d6702yxm";
+  const activeEmail = email.trim() || defaultEmail.trim() || getExaminerSession()?.ownerEmail || "admin@brightfuture.ng";
 
   // RTK Query Mutations
   const [fetchClasses, { data: classData, isLoading: isLoadingClasses, error: fetchError, reset: resetFetch }] =
@@ -66,17 +70,17 @@ export function ImportFromParalearnModal({
   const [importCandidates, { isLoading: isImporting }] = useImportCandidatesFromParalearnMutation();
 
   useEffect(() => {
-    if (defaultEmail && !email) {
+    if (defaultEmail && defaultEmail !== email) {
       setEmail(defaultEmail);
     }
   }, [defaultEmail]);
 
-  // When modal opens, automatically fetch classes if email and workspaceId exist
+  // When modal opens, automatically fetch classes
   useEffect(() => {
-    if (open && workspaceId && email.trim()) {
+    if (open) {
       handleFetchClasses();
     }
-  }, [open, workspaceId]);
+  }, [open, activeWorkspaceId]);
 
   // When classes load, select all by default
   useEffect(() => {
@@ -86,9 +90,11 @@ export function ImportFromParalearnModal({
   }, [classData]);
 
   const handleFetchClasses = async () => {
-    if (!email.trim() || !workspaceId) return;
+    const wsId = activeWorkspaceId;
+    const em = activeEmail;
+    if (!em || !wsId) return;
     try {
-      await fetchClasses({ workspaceId, email: email.trim() }).unwrap();
+      await fetchClasses({ workspaceId: wsId, email: em }).unwrap();
     } catch (err: any) {
       console.error("Failed to fetch classes:", err);
     }
@@ -143,9 +149,9 @@ export function ImportFromParalearnModal({
 
     try {
       const result = await importCandidates({
-        workspaceId,
+        workspaceId: activeWorkspaceId,
         examId,
-        email: email.trim(),
+        email: activeEmail,
         classIds: classIdsToImport,
         autoGeneratePin,
       }).unwrap();
@@ -192,7 +198,7 @@ export function ImportFromParalearnModal({
               <ShieldCheck className="w-4 h-4 text-[#641bc4]" />
               <span className="font-semibold text-slate-600">Verifying as:</span>
               <span className="font-bold text-slate-900 font-mono bg-white px-2 py-0.5 rounded border border-slate-200">
-                {email || "admin@brightfuture.ng"}
+                {activeEmail}
               </span>
             </div>
 
