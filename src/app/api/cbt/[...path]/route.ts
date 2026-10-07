@@ -225,7 +225,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const candidates = await cbtServerStore.listCandidates(examId);
     return NextResponse.json(candidates);
   }
-
   return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });
 }
 
@@ -491,6 +490,30 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       baseUrl: request.nextUrl.origin,
     });
     return NextResponse.json(candidate, { status: 201 });
+  }
+
+  
+  // 13. /api/cbt/import/classes or /api/cbt/import/candidates
+  if (path[0] === "import" && (path[1] === "classes" || path[1] === "candidates")) {
+    const cbtBackendUrl =
+      process.env.NEXT_PUBLIC_CBT_API_URL ||
+      process.env.CBT_BACKEND_URL ||
+      "http://localhost:4000";
+    try {
+      const targetUrl = `${cbtBackendUrl.replace(/\/+$/, "")}/import/${path[1]}`;
+      const response = await fetch(targetUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json().catch(() => ({}));
+      return NextResponse.json(data, { status: response.status });
+    } catch (err) {
+      return NextResponse.json(
+        { message: "Failed to connect to CBT microservice: " + (err.message || String(err)) },
+        { status: 502 }
+      );
+    }
   }
 
   return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });

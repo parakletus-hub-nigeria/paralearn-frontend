@@ -205,6 +205,43 @@ const dynamicCbtBaseQuery = async (args: any, api: any, extraOptions: any) => {
   return rawBaseQuery(args, api, extraOptions);
 };
 
+
+export interface ImportableClassItem {
+  id: string;
+  name: string;
+  code: string | null;
+  level: number | null;
+  stream: string | null;
+  activeStudents: number;
+}
+
+export interface FetchImportableClassesResponse {
+  success: boolean;
+  user: { id: string; name: string; email: string };
+  accessTier: "ADMIN" | "TEACHER";
+  classes: ImportableClassItem[];
+  totalClasses: number;
+  totalAvailableStudents: number;
+}
+
+export interface ImportCandidatesResponse {
+  success: boolean;
+  imported: number;
+  newlyCreated: number;
+  updated: number;
+  examId: string;
+  examTitle: string;
+  classesImported: string[];
+  message: string;
+  candidates: Array<{
+    id: string;
+    candidateName: string;
+    candidatePin: string;
+    studentId: string | null;
+    email: string | null;
+  }>;
+}
+
 export const cbtMicroserviceApi = createApi({
   reducerPath: "cbtMicroserviceApi",
   baseQuery: dynamicCbtBaseQuery,
@@ -404,6 +441,39 @@ export const cbtMicroserviceApi = createApi({
       invalidatesTags: (_result, _error, arg) => [{ type: "CbtCandidate", id: arg.examId }, "CbtMonitor"],
     }),
 
+    
+    fetchImportableClasses: builder.mutation<
+      FetchImportableClassesResponse,
+      { workspaceId: string; email: string }
+    >({
+      query: (body) => ({
+        url: "/import/classes",
+        method: "POST",
+        body,
+      }),
+    }),
+
+    importCandidatesFromParalearn: builder.mutation<
+      ImportCandidatesResponse,
+      {
+        workspaceId: string;
+        examId: string;
+        email: string;
+        classIds: string[];
+        autoGeneratePin?: boolean;
+      }
+    >({
+      query: (body) => ({
+        url: "/import/candidates",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _error, arg) => [
+        { type: "CbtCandidate", id: arg.examId },
+        "CbtMonitor",
+      ],
+    }),
+
     deleteCandidate: builder.mutation<CandidateRecord, { id: string; examId?: string }>({
       query: ({ id }) => ({
         url: `/candidates/${id}`,
@@ -440,4 +510,6 @@ export const {
   useListCandidatesQuery,
   useUpsertCandidateMutation,
   useDeleteCandidateMutation,
+  useFetchImportableClassesMutation,
+  useImportCandidatesFromParalearnMutation,
 } = cbtMicroserviceApi;

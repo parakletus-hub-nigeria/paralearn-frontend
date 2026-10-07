@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { ImportFromParalearnModal } from "@cbt/components/CBT/ImportFromParalearnModal";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
+  School,
   Users,
   UserPlus,
   FileSpreadsheet,
@@ -91,6 +93,7 @@ function CandidatesPageContent() {
 
   // Print Slips Dialog State
   const [isPrintOpen, setIsPrintOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   useEffect(() => {
     purgeAllDemoData();
@@ -301,6 +304,18 @@ function CandidatesPageContent() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            
+            {/* Import from ParaLearn Modal Trigger */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsImportOpen(true)}
+              className="h-9 px-3.5 text-xs font-bold border-violet-200 bg-violet-50/60 hover:bg-violet-100 text-[#641bc4] flex items-center gap-1.5 rounded-xl shadow-2xs transition-all"
+            >
+              <School className="w-3.5 h-3.5 text-[#641bc4]" />
+              <span>Import from ParaLearn</span>
+            </Button>
+
             {/* Print Slips Modal Trigger */}
             <Button
               variant="outline"
