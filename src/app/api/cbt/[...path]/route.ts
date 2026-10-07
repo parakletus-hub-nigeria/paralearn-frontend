@@ -222,6 +222,25 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   // 6. /api/cbt/candidates
   if (path[0] === "candidates") {
     const examId = searchParams.get("examId") || "";
+    const search = searchParams.get("search") || "";
+    const cbtBackendUrl =
+      process.env.NEXT_PUBLIC_CBT_API_URL ||
+      process.env.CBT_BACKEND_URL ||
+      "http://localhost:4000";
+
+    try {
+      const url = new URL(`${cbtBackendUrl.replace(/\/+$/, "")}/candidates`);
+      if (examId) url.searchParams.set("examId", examId);
+      if (search) url.searchParams.set("search", search);
+      const resp = await fetch(url.toString(), { cache: "no-store" });
+      if (resp.ok) {
+        const microserviceCandidates = await resp.json();
+        if (Array.isArray(microserviceCandidates) && microserviceCandidates.length > 0) {
+          return NextResponse.json(microserviceCandidates);
+        }
+      }
+    } catch {}
+
     const candidates = await cbtServerStore.listCandidates(examId);
     return NextResponse.json(candidates);
   }
@@ -558,8 +577,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
   // /api/cbt/candidates/:id
   if (path[0] === "candidates" && path[1]) {
-    // Deletion is handled client-side via mutation invalidation; 
-    // for now return 200 to avoid breaking the UI flow
+    const cbtBackendUrl =
+      process.env.NEXT_PUBLIC_CBT_API_URL ||
+      process.env.CBT_BACKEND_URL ||
+      "http://localhost:4000";
+    try {
+      await fetch(`${cbtBackendUrl.replace(/\/+$/, "")}/candidates/${encodeURIComponent(path[1])}`, {
+        method: "DELETE",
+      });
+    } catch {}
     return NextResponse.json({ success: true });
   }
 
