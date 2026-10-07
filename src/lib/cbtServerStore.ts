@@ -105,8 +105,20 @@ export interface StoredAttempt {
   totalMarks?: number;
   percentage?: number;
   grade?: string;
+  gradingStatus?: GradingStatus;
+  /** Marks set by the examiner, keyed by question id — override auto-marking */
+  manualMarks?: Record<string, number>;
+  mcqScore?: number;
+  essayScore?: number;
+  correctCount?: number;
+  wrongCount?: number;
   metadata?: Record<string, any>;
 }
+
+export type GradingStatus = "AUTO_SCORED" | "PENDING_REVIEW" | "GRADED";
+
+/** Thrown for requests that conflict with current state; routes map it to HTTP 409 */
+export class CbtConflictError extends Error {}
 
 // ── KV namespace prefixes ─────────────────────────────────────────────────────
 const NS = {
@@ -123,6 +135,20 @@ const NS = {
   attempt: "cbt:att",
   attemptsByExam: "cbt:atts:exam",
 };
+
+// Per-exam indexes (Redis hashes) so lookups don't scan every record in the store
+const IDX = {
+  examCands: (examId: string) => `cbt:idx:exam:${examId}:cands`, // candidateId -> pin
+  examAtts: (examId: string) => `cbt:idx:exam:${examId}:atts`, // attemptId -> pin
+  examProgress: (examId: string) => `cbt:idx:exam:${examId}:progress`, // attemptId -> answered count
+  examBuilt: (examId: string) => `cbt:idx:exam:${examId}:built`,
+  answers: (attemptId: string) => `cbt:ans:${attemptId}`, // questionId -> { v: answer }
+};
+
+// Answers arriving this long after the deadline are rejected (covers slow networks)
+const ANSWER_GRACE_MS = 2 * 60 * 1000;
+const ESSAY_TYPES = new Set(["ESSAY", "SHORT_ESSAY", "LONG_ESSAY"]);
+const isEssayType = (type?: string) => ESSAY_TYPES.has(String(type || "").toUpperCase());
 
 export const SWEEP_WORKSPACE: StoredWorkspace = {
   id: "ws_sweep_prod",
@@ -166,7 +192,25 @@ const DEFAULT_WORKSPACES: StoredWorkspace[] = [
 ];
 
 // ── Helper: seed default workspaces, exams & questions if not present ─────────
-async function ensureDefaultWorkspacesAndExams() {
+// Seeding costs ~40 store commands, so it runs once per store (flag key) and once per instance.
+const SEED_FLAG = "cbt:seed:v2";
+let seedPromise: Promise<void> | null = null;
+
+function ensureDefaultWorkspacesAndExams(): Promise<void> {
+  if (!seedPromise) {
+    seedPromise = (async () => {
+      if (await kvAdapter.get(SEED_FLAG)) return;
+      await seedDefaultWorkspacesAndExams();
+      await kvAdapter.set(SEED_FLAG, new Date().toISOString());
+    })().catch((err) => {
+      seedPromise = null;
+      throw err;
+    });
+  }
+  return seedPromise;
+}
+
+async function seedDefaultWorkspacesAndExams() {
   for (const ws of DEFAULT_WORKSPACES) {
     await kvAdapter.hset(NS.workspace, ws.id, ws);
     await kvAdapter.set(`${NS.workspaceByEmail}:${ws.ownerEmail.toLowerCase()}`, ws.id);
@@ -203,6 +247,131 @@ export function computeWaecGrade(percentage: number): string {
   if (percentage >= 45) return "D7";
   if (percentage >= 40) return "E8";
   return "F9";
+}
+
+// ── Index helpers ─────────────────────────────────────────────────────────────
+/** Builds an exam's candidate/attempt indexes from a full scan the first time they're needed */
+async function ensureExamIndex(examId: string) {
+  if (await kvAdapter.get(IDX.examBuilt(examId))) return;
+  const [cands, atts] = await Promise.all([
+    kvAdapter.hlist<StoredCandidate>(NS.candidate),
+    kvAdapter.hlist<StoredAttempt>(NS.attempt),
+  ]);
+  for (const c of cands) {
+    if (c.examId === examId) await kvAdapter.hashSet(IDX.examCands(examId), c.id, c.candidatePin);
+  }
+  for (const a of atts) {
+    if (a.examId === examId) await kvAdapter.hashSet(IDX.examAtts(examId), a.id, a.candidatePin);
+  }
+  await kvAdapter.set(IDX.examBuilt(examId), "1");
+}
+
+async function loadIndexed<T extends { examId: string }>(
+  examId: string,
+  indexKey: string,
+  ns: string
+): Promise<T[]> {
+  await ensureExamIndex(examId);
+  const ids = Object.keys(await kvAdapter.hashGetAll(indexKey));
+  const items = await kvAdapter.mget<T>(ids.map((id) => `${ns}:${id}`));
+  return items.filter((item): item is T => Boolean(item) && item!.examId === examId);
+}
+
+const getExamCandidates = (examId: string) =>
+  loadIndexed<StoredCandidate>(examId, IDX.examCands(examId), NS.candidate);
+const getExamAttempts = (examId: string) =>
+  loadIndexed<StoredAttempt>(examId, IDX.examAtts(examId), NS.attempt);
+
+/**
+ * The attempt's answer sheet. Once submitted, the stored sheet is final; while in progress,
+ * answers saved field-by-field during the exam are merged over it.
+ */
+async function getMergedAnswers(att: StoredAttempt): Promise<Record<string, any>> {
+  if (att.submittedAt) return { ...(att.answers || {}) };
+  const buffered = await kvAdapter.hashGetAll<{ v: unknown }>(IDX.answers(att.id));
+  const merged: Record<string, any> = { ...(att.answers || {}) };
+  for (const [qId, entry] of Object.entries(buffered)) {
+    merged[qId] = entry && typeof entry === "object" && "v" in entry ? entry.v : entry;
+  }
+  return merged;
+}
+
+const toApiStatus = (status: StoredAttempt["status"]) =>
+  status === "in_progress" ? "IN_PROGRESS" : status === "disqualified" ? "DISQUALIFIED" : "SUBMITTED";
+
+/** Strips the answer key so it never reaches a candidate's browser */
+export function toCandidateQuestion(q: StoredQuestion) {
+  const { explanation: _explanation, ...rest } = q;
+  return {
+    ...rest,
+    options: (q.options || []).map(({ isCorrect: _isCorrect, ...opt }) => opt),
+  };
+}
+
+/** Scores an attempt: MCQ/true-false/multi-select are auto-marked, essays wait for the examiner */
+function scoreAttempt(
+  questions: StoredQuestion[],
+  answers: Record<string, any>,
+  manualMarks: Record<string, number> = {}
+) {
+  let mcqScore = 0;
+  let essayScore = 0;
+  let totalMarks = 0;
+  let correctCount = 0;
+  let wrongCount = 0;
+  let ungradedEssays = 0;
+  let essayCount = 0;
+  const perQuestion: Record<string, { marksAwarded?: number; isCorrect: boolean | null }> = {};
+
+  for (const q of questions) {
+    const marks = q.marks || 1;
+    totalMarks += marks;
+    const manual = manualMarks[q.id];
+
+    if (isEssayType(q.type)) {
+      essayCount++;
+      if (manual === undefined) {
+        ungradedEssays++;
+        perQuestion[q.id] = { isCorrect: null };
+      } else {
+        essayScore += manual;
+        perQuestion[q.id] = { marksAwarded: manual, isCorrect: null };
+      }
+      continue;
+    }
+
+    const answer = answers[q.id];
+    const correctIds = (q.options || []).filter((o) => o.isCorrect).map((o) => o.id);
+    const chosen = (Array.isArray(answer) ? answer : answer ? [answer] : []).map(String);
+    const isCorrect =
+      correctIds.length > 0 &&
+      chosen.length === correctIds.length &&
+      chosen.every((id) => correctIds.includes(id));
+    const awarded = manual ?? (isCorrect ? marks : 0);
+    mcqScore += awarded;
+    if (isCorrect) correctCount++;
+    else wrongCount++;
+    perQuestion[q.id] = { marksAwarded: awarded, isCorrect };
+  }
+
+  const score = mcqScore + essayScore;
+  const safeTotal = totalMarks > 0 ? totalMarks : 1;
+  const percentage = Math.round((score / safeTotal) * 100);
+  const gradingStatus: GradingStatus =
+    essayCount === 0 ? "AUTO_SCORED" : ungradedEssays > 0 ? "PENDING_REVIEW" : "GRADED";
+
+  return {
+    score,
+    totalMarks: safeTotal,
+    percentage,
+    grade: computeWaecGrade(percentage),
+    mcqScore,
+    essayScore,
+    correctCount,
+    wrongCount,
+    gradingStatus,
+    perQuestion,
+  };
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
@@ -534,22 +703,35 @@ export const cbtServerStore = {
     return exam;
   },
 
-  async upsertExam(
-    data: Partial<StoredExam> & { title: string }
-  ): Promise<StoredExam> {
+  async upsertExam(data: Partial<StoredExam>): Promise<StoredExam> {
     const id =
       data.id ||
       `exam_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const existing = await kvAdapter.hget<StoredExam>(NS.exam, id);
-    const accessCode =
-      data.accessCode?.trim().toUpperCase() ||
-      existing?.accessCode ||
-      `EXAM-${Math.floor(1000 + Math.random() * 9000)}`;
+    const codeOwner = async (code: string) =>
+      kvAdapter.get<string>(`${NS.examByCode}:${code}`);
+
+    let accessCode = data.accessCode?.trim().toUpperCase() || existing?.accessCode || "";
+    if (accessCode) {
+      const owner = await codeOwner(accessCode);
+      if (owner && owner !== id) {
+        throw new CbtConflictError(
+          `Access code "${accessCode}" is already used by another exam. Choose a different code.`
+        );
+      }
+    } else {
+      for (let tries = 0; tries < 10 && !accessCode; tries++) {
+        const candidate = `EXAM-${Math.floor(100000 + Math.random() * 900000)}`;
+        if (!(await codeOwner(candidate))) accessCode = candidate;
+      }
+      if (!accessCode) accessCode = `EXAM-${Date.now().toString(36).toUpperCase()}`;
+    }
 
     const exam: StoredExam = {
       id,
       workspaceId: data.workspaceId || existing?.workspaceId || "default",
-      title: data.title,
+      // PATCH requests (e.g. publish) may omit the title — keep the existing one
+      title: data.title ?? existing?.title ?? "Untitled Exam",
       accessCode,
       durationMins:
         Number(data.durationMins) || existing?.durationMins || 60,
@@ -576,6 +758,9 @@ export const cbtServerStore = {
     await kvAdapter.hset(NS.exam, id, exam);
     // Write code → id index so lookups are O(1) and cross-instance
     await kvAdapter.set(`${NS.examByCode}:${exam.accessCode}`, id);
+    if (existing?.accessCode && existing.accessCode !== exam.accessCode) {
+      await kvAdapter.del(`${NS.examByCode}:${existing.accessCode}`);
+    }
     return exam;
   },
 
@@ -685,10 +870,9 @@ export const cbtServerStore = {
       (await this.getExamByCode(data.examId));
     if (!exam) throw new Error(`Exam ${data.examId} not found.`);
 
+    const examCands = await getExamCandidates(exam.id);
     let pin = data.candidatePin?.trim().toUpperCase();
     if (!pin) {
-      const allCands = await kvAdapter.hlist<StoredCandidate>(NS.candidate);
-      const examCands = allCands.filter((c) => c.examId === exam.id);
       let attempts = 0;
       do {
         pin = Math.floor(100000 + Math.random() * 900000).toString();
@@ -699,10 +883,8 @@ export const cbtServerStore = {
       );
     }
 
-    const allCands = await kvAdapter.hlist<StoredCandidate>(NS.candidate);
-    const existing = allCands.find(
+    const existing = examCands.find(
       (c) =>
-        c.examId === exam.id &&
         (c.candidatePin === pin ||
           (data.studentId && c.studentId === data.studentId))
     );
@@ -726,6 +908,7 @@ export const cbtServerStore = {
     };
 
     await kvAdapter.hset(NS.candidate, candId, candidate);
+    await kvAdapter.hashSet(IDX.examCands(exam.id), candId, candidate.candidatePin);
 
     const domain = (data.baseUrl || "https://pln.ng").replace(/\/+$/, "");
     const search = new URLSearchParams();
@@ -794,12 +977,14 @@ export const cbtServerStore = {
       payload.candidatePin?.trim().toUpperCase() ||
       Math.floor(100000 + Math.random() * 900000).toString();
 
-    const allCands = await kvAdapter.hlist<StoredCandidate>(NS.candidate);
-    const preRegistered = allCands.find(
+    const [examCands, examAttempts] = await Promise.all([
+      getExamCandidates(exam.id),
+      getExamAttempts(exam.id),
+    ]);
+    const preRegistered = examCands.find(
       (c) =>
-        c.examId === exam.id &&
-        (c.candidatePin === pin ||
-          (payload.studentId && c.studentId === payload.studentId))
+        c.candidatePin === pin ||
+        (payload.studentId && c.studentId === payload.studentId)
     );
 
     const resolvedStudentId =
@@ -807,18 +992,22 @@ export const cbtServerStore = {
     const resolvedExternalAttemptId =
       payload.externalAttemptId || preRegistered?.externalAttemptId || null;
 
-    // Check for resumable attempt
-    const allAttempts = await kvAdapter.hlist<StoredAttempt>(NS.attempt);
-    for (const att of allAttempts) {
-      const matchByPin = att.examId === exam.id && att.candidatePin === pin;
-      const matchByExternalId = Boolean(
-        resolvedExternalAttemptId &&
-          att.externalAttemptId === resolvedExternalAttemptId
+    const samePerson = (att: StoredAttempt) =>
+      att.candidatePin === pin ||
+      Boolean(resolvedExternalAttemptId && att.externalAttemptId === resolvedExternalAttemptId);
+
+    // Rejoining an attempt that is still running resumes it with the answers saved so far
+    const resumable = examAttempts.find((att) => samePerson(att) && att.status === "in_progress");
+    if (resumable) {
+      resumable.answers = await getMergedAnswers(resumable);
+      const questions = await this.getQuestionsForExam(exam.id);
+      return { attempt: resumable, exam, questions, isResumed: true };
+    }
+
+    if (examAttempts.some((att) => samePerson(att) && att.status !== "in_progress")) {
+      throw new CbtConflictError(
+        "You have already submitted this exam. Contact your examiner if you need to retake it."
       );
-      if ((matchByPin || matchByExternalId) && att.status === "in_progress") {
-        const questions = await this.getQuestionsForExam(exam.id);
-        return { attempt: att, exam, questions, isResumed: true };
-      }
     }
 
     const durationMins = exam.durationMins || 60;
@@ -851,6 +1040,7 @@ export const cbtServerStore = {
     };
 
     await kvAdapter.hset(NS.attempt, attemptId, attempt);
+    await kvAdapter.hashSet(IDX.examAtts(exam.id), attemptId, pin);
 
     if (preRegistered) {
       preRegistered.status = "STARTED";
@@ -876,22 +1066,38 @@ export const cbtServerStore = {
         createdAt: now.toISOString(),
       };
       await kvAdapter.hset(NS.candidate, candId, newCand);
+      await kvAdapter.hashSet(IDX.examCands(exam.id), candId, pin);
     }
 
     const questions = await this.getQuestionsForExam(exam.id);
     return { attempt, exam, questions, isResumed: false };
   },
 
+  /** Saves one answer as its own hash field, so rapid answers can't overwrite each other */
   async bufferAnswer(
     attemptId: string,
     questionId: string,
     selectedVal: any
-  ): Promise<boolean> {
+  ): Promise<{ saved: boolean; reason?: string }> {
+    if (!questionId) return { saved: false, reason: "questionId is required" };
     const att = await kvAdapter.hget<StoredAttempt>(NS.attempt, attemptId);
-    if (!att) return false;
-    att.answers[questionId] = selectedVal;
-    await kvAdapter.hset(NS.attempt, attemptId, att);
-    return true;
+    if (!att) return { saved: false, reason: "Attempt not found" };
+    if (att.status !== "in_progress") {
+      return { saved: false, reason: "This attempt has already been submitted." };
+    }
+    if (Date.now() > new Date(att.deadline).getTime() + ANSWER_GRACE_MS) {
+      return { saved: false, reason: "Time is up for this attempt." };
+    }
+    const isNew = await kvAdapter.hashSet(
+      IDX.answers(attemptId),
+      questionId,
+      { v: selectedVal }
+    );
+    if (isNew) {
+      // Progress is a monitor convenience; the answer itself is already saved
+      await kvAdapter.hashIncrBy(IDX.examProgress(att.examId), attemptId, 1).catch(() => {});
+    }
+    return { saved: true };
   },
 
   async recordTelemetry(
@@ -900,6 +1106,10 @@ export const cbtServerStore = {
   ): Promise<{ violations: number; disqualified: boolean }> {
     const att = await kvAdapter.hget<StoredAttempt>(NS.attempt, attemptId);
     if (!att) return { violations: 0, disqualified: false };
+    // Events arriving after submission must not reopen or alter a finished attempt
+    if (att.status !== "in_progress") {
+      return { violations: att.violations || 0, disqualified: att.status === "disqualified" };
+    }
     att.violations = (att.violations || 0) + 1;
     const exam = await kvAdapter.hget<StoredExam>(NS.exam, att.examId);
     const maxViolations = exam?.maxTabViolations ?? 3;
@@ -907,6 +1117,41 @@ export const cbtServerStore = {
     if (disqualified) att.status = "disqualified";
     await kvAdapter.hset(NS.attempt, attemptId, att);
     return { violations: att.violations, disqualified };
+  },
+
+  /** Applies a computed score to the attempt and mirrors it onto the roster entry */
+  async applyScore(att: StoredAttempt, questions: StoredQuestion[]) {
+    const result = scoreAttempt(questions, att.answers || {}, att.manualMarks);
+    att.score = result.score;
+    att.totalMarks = result.totalMarks;
+    att.percentage = result.percentage;
+    att.grade = result.grade;
+    att.gradingStatus = result.gradingStatus;
+    att.mcqScore = result.mcqScore;
+    att.essayScore = result.essayScore;
+    att.correctCount = result.correctCount;
+    att.wrongCount = result.wrongCount;
+    await kvAdapter.hset(NS.attempt, att.id, att);
+
+    try {
+      const cands = await getExamCandidates(att.examId);
+      const cand = cands.find(
+        (c) =>
+          c.candidatePin === att.candidatePin ||
+          (att.studentId && c.studentId === att.studentId)
+      );
+      if (cand) {
+        cand.status = att.status === "disqualified" ? "DISQUALIFIED" : "SUBMITTED";
+        cand.score = att.score;
+        cand.totalMarks = att.totalMarks;
+        cand.percentage = att.percentage;
+        await kvAdapter.hset(NS.candidate, cand.id, cand);
+      }
+    } catch (err) {
+      // The attempt itself is saved; the roster entry is only a summary
+      console.warn("[CBT] Could not update roster entry after scoring:", err);
+    }
+    return result;
   },
 
   async submitAttempt(
@@ -917,58 +1162,23 @@ export const cbtServerStore = {
     webhookPayload: any;
     webhookUrl?: string;
     webhookSecret?: string;
+    alreadySubmitted: boolean;
   } | null> {
     const att = await kvAdapter.hget<StoredAttempt>(NS.attempt, attemptId);
     if (!att) return null;
-    if (finalAnswers) att.answers = { ...att.answers, ...finalAnswers };
-    att.status = "submitted";
-    att.submittedAt = new Date().toISOString();
 
-    const exam = await kvAdapter.hget<StoredExam>(NS.exam, att.examId);
-    let score = 0;
-    let totalMarks = 0;
-    let correctCount = 0;
-    let wrongCount = 0;
+    const exam = await this.getExamById(att.examId);
+    // Retried or duplicate submissions return the stored result instead of re-grading
+    const alreadySubmitted = Boolean(att.submittedAt);
 
-    if (exam?.questionIds) {
-      for (const qId of exam.questionIds) {
-        const q = await kvAdapter.hget<StoredQuestion>(NS.question, qId);
-        if (q) {
-          totalMarks += q.marks || 1;
-          if (q.type === "MCQ" || q.type === "TRUE_FALSE") {
-            const userChoice = att.answers[q.id];
-            const correctOpt = q.options?.find((o) => o.isCorrect);
-            if (userChoice && correctOpt && userChoice === correctOpt.id) {
-              score += q.marks || 1;
-              correctCount++;
-            } else {
-              wrongCount++;
-            }
-          }
-        }
-      }
-    }
-
-    att.score = score;
-    att.totalMarks = totalMarks > 0 ? totalMarks : 1;
-    att.percentage = Math.round((score / att.totalMarks) * 100);
-    att.grade = computeWaecGrade(att.percentage);
-    await kvAdapter.hset(NS.attempt, attemptId, att);
-
-    // Update candidate status
-    const allCands = await kvAdapter.hlist<StoredCandidate>(NS.candidate);
-    const cand = allCands.find(
-      (c) =>
-        c.examId === att.examId &&
-        (c.candidatePin === att.candidatePin ||
-          (att.studentId && c.studentId === att.studentId))
-    );
-    if (cand) {
-      cand.status = "SUBMITTED";
-      cand.score = att.score;
-      cand.totalMarks = att.totalMarks;
-      cand.percentage = att.percentage;
-      await kvAdapter.hset(NS.candidate, cand.id, cand);
+    if (!alreadySubmitted) {
+      const buffered = await getMergedAnswers(att);
+      // The candidate's device holds the complete answer sheet; it wins over the buffer
+      att.answers = { ...buffered, ...(finalAnswers || {}) };
+      if (att.status === "in_progress") att.status = "submitted";
+      att.submittedAt = new Date().toISOString();
+      const questions = await this.getQuestionsForExam(att.examId);
+      await this.applyScore(att, questions);
     }
 
     const ws = exam
@@ -991,7 +1201,8 @@ export const cbtServerStore = {
       candidateName: att.candidateName,
       candidatePin: att.candidatePin,
       email: att.email || null,
-      status: "SUBMITTED",
+      status: toApiStatus(att.status),
+      gradingStatus: att.gradingStatus || "AUTO_SCORED",
       score: att.score,
       totalMarks: att.totalMarks,
       percentage: att.percentage,
@@ -1004,10 +1215,10 @@ export const cbtServerStore = {
         breakdown: {
           totalQuestions:
             exam?.totalQuestions || exam?.questionIds?.length || 0,
-          correctCount,
-          wrongCount,
-          mcqScore: att.score,
-          essayScore: 0.0,
+          correctCount: att.correctCount ?? 0,
+          wrongCount: att.wrongCount ?? 0,
+          mcqScore: att.mcqScore ?? att.score ?? 0,
+          essayScore: att.essayScore ?? 0,
         },
       },
       metadata: {
@@ -1022,6 +1233,156 @@ export const cbtServerStore = {
       webhookPayload,
       webhookUrl: ws?.webhookUrl,
       webhookSecret: ws?.webhookSecret,
+      alreadySubmitted,
+    };
+  },
+
+  /** Full answer sheet with marking, for the examiner's review and grading screens */
+  async getAttemptReview(attemptId: string) {
+    const att = await this.getAttempt(attemptId);
+    if (!att) return null;
+    if (att.status === "in_progress") {
+      throw new CbtConflictError("This attempt is still in progress and cannot be reviewed yet.");
+    }
+    const exam = await this.getExamById(att.examId);
+    const questions = await this.getQuestionsForExam(att.examId);
+    const answers = await getMergedAnswers(att);
+    const result = scoreAttempt(questions, answers, att.manualMarks);
+    const ws = exam ? await this.getWorkspace(exam.workspaceId) : null;
+
+    return {
+      attemptId: att.id,
+      examId: att.examId,
+      examTitle: exam?.title || "CBT Assessment",
+      accessCode: att.examCode,
+      institutionName: ws?.name,
+      candidateName: att.candidateName,
+      candidatePin: att.candidatePin,
+      studentId: att.studentId || null,
+      status: toApiStatus(att.status),
+      gradingStatus: result.gradingStatus,
+      score: result.score,
+      totalMarks: result.totalMarks,
+      percentage: result.percentage,
+      grade: result.grade,
+      violations: att.violations || 0,
+      submittedAt: att.submittedAt || null,
+      questions: questions.map((q, idx) => ({
+        id: q.id,
+        prompt: q.prompt,
+        // The grading UI treats every essay variant as "ESSAY"
+        type: isEssayType(q.type) ? "ESSAY" : q.type,
+        marks: q.marks || 1,
+        options: q.options,
+        explanation: q.explanation,
+        orderIndex: idx,
+        answer: answers[q.id] ?? null,
+        marksAwarded: result.perQuestion[q.id]?.marksAwarded,
+        isCorrect: result.perQuestion[q.id]?.isCorrect ?? null,
+      })),
+    };
+  },
+
+  async manualGradeAttempt(
+    attemptId: string,
+    grades: Array<{ questionId: string; marksAwarded: number }>
+  ) {
+    const att = await kvAdapter.hget<StoredAttempt>(NS.attempt, attemptId);
+    if (!att) return null;
+    if (att.status === "in_progress") {
+      throw new CbtConflictError("Wait for the candidate to submit before grading.");
+    }
+    const questions = await this.getQuestionsForExam(att.examId);
+    const byId = new Map<string, StoredQuestion>(questions.map((q) => [q.id, q]));
+    att.manualMarks = { ...(att.manualMarks || {}) };
+    for (const g of grades || []) {
+      const q = byId.get(g.questionId);
+      if (!q) continue;
+      const max = q.marks || 1;
+      const marks = Number(g.marksAwarded);
+      att.manualMarks[q.id] = Math.min(max, Math.max(0, Number.isFinite(marks) ? marks : 0));
+    }
+    att.answers = await getMergedAnswers(att);
+    await this.applyScore(att, questions);
+    return this.getAttemptReview(attemptId);
+  },
+
+  /** Everyone on an exam: attempts (with progress and scores) plus roster entries not yet started */
+  async getExamMonitor(examId: string) {
+    const exam = await this.getExamById(examId);
+    const [cands, atts, progress] = await Promise.all([
+      getExamCandidates(examId),
+      getExamAttempts(examId),
+      kvAdapter.hashGetAll<number>(IDX.examProgress(examId)),
+    ]);
+    const totalQuestions = exam?.totalQuestions || exam?.questionIds?.length || 0;
+
+    const participants: any[] = atts
+      .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
+      .map((att) => ({
+        id: att.id,
+        attemptId: att.id,
+        candidateName: att.candidateName,
+        candidatePin: att.candidatePin,
+        studentId: att.studentId || null,
+        attemptStatus: toApiStatus(att.status),
+        gradingStatus: att.submittedAt ? att.gradingStatus || "AUTO_SCORED" : undefined,
+        startedAt: att.startedAt,
+        submittedAt: att.submittedAt || null,
+        deadline: att.deadline,
+        answeredCount: att.submittedAt
+          ? Object.keys(att.answers || {}).length
+          : Number(progress[att.id]) || 0,
+        totalQuestions,
+        violations: att.violations || 0,
+        score: att.submittedAt ? att.score ?? 0 : null,
+        totalMarks: att.totalMarks ?? exam?.totalMarks,
+        percentage: att.percentage ?? null,
+        grade: att.gradingStatus === "PENDING_REVIEW" ? null : att.grade ?? null,
+      }));
+
+    const startedPins = new Set(atts.map((a) => a.candidatePin));
+    for (const c of cands) {
+      if (startedPins.has(c.candidatePin)) continue;
+      participants.push({
+        id: c.id,
+        attemptId: null,
+        candidateName: c.candidateName,
+        candidatePin: c.candidatePin,
+        studentId: c.studentId || null,
+        rosterStatus: "REGISTERED",
+        answeredCount: 0,
+        totalQuestions,
+        violations: 0,
+        score: null,
+        totalMarks: exam?.totalMarks,
+      });
+    }
+
+    const submitted = atts.filter((a) => a.submittedAt);
+    const scored = submitted.filter((a) => typeof a.percentage === "number");
+    return {
+      examId,
+      examTitle: exam?.title || "Exam Monitor",
+      exam: exam
+        ? {
+            id: exam.id,
+            title: exam.title,
+            accessCode: exam.accessCode,
+            totalQuestions,
+            totalMarks: exam.totalMarks,
+          }
+        : null,
+      totalCandidates: participants.length,
+      activeNow: atts.filter((a) => a.status === "in_progress").length,
+      submitted: submitted.length,
+      disqualified: atts.filter((a) => a.status === "disqualified").length,
+      pendingReview: submitted.filter((a) => a.gradingStatus === "PENDING_REVIEW").length,
+      averageScore: scored.length
+        ? Math.round(scored.reduce((sum, a) => sum + (a.percentage || 0), 0) / scored.length)
+        : 0,
+      participants,
+      candidates: cands,
     };
   },
 
@@ -1041,7 +1402,18 @@ export const cbtServerStore = {
   },
 
   async listCandidates(examId: string): Promise<StoredCandidate[]> {
-    const all = await kvAdapter.hlist<StoredCandidate>(NS.candidate);
-    return all.filter((c) => c.examId === examId);
+    return getExamCandidates(examId);
+  },
+
+  /** Removes a roster entry by id, or by exam + PIN (for entries mirrored from the CBT service) */
+  async deleteCandidate(ref: { id?: string; examId?: string; pin?: string }): Promise<boolean> {
+    let cand = ref.id ? await kvAdapter.hget<StoredCandidate>(NS.candidate, ref.id) : null;
+    if (!cand && ref.examId && ref.pin) {
+      cand = (await getExamCandidates(ref.examId)).find((c) => c.candidatePin === ref.pin) || null;
+    }
+    if (!cand) return false;
+    await kvAdapter.del(`${NS.candidate}:${cand.id}`);
+    await kvAdapter.hashDel(IDX.examCands(cand.examId), cand.id);
+    return true;
   },
 };

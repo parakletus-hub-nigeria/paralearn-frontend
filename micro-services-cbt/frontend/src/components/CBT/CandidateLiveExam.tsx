@@ -27,6 +27,7 @@ import {
   FileText,
   Tag,
   Check,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,13 @@ export default function CandidateLiveExam({
   // Sync state
   const [syncStatus, setSyncStatus] = useState<"synced" | "saving">("synced");
 
+  // Submission state: guards against double submits (timer + button + malpractice)
+  const [submitState, setSubmitState] = useState<"idle" | "submitting" | "failed">("idle");
+  const [submitError, setSubmitError] = useState<string>("");
+  const submittingRef = useRef(false);
+  // Essay text typed but not yet past the autosave debounce
+  const pendingEssayRef = useRef<{ questionId: string; text: string } | null>(null);
+
   // Keep ref to avoid stale closures in listeners
   const sessionRef = useRef<CandidateSession | null>(null);
   sessionRef.current = session;
@@ -160,12 +168,21 @@ export default function CandidateLiveExam({
     }
 
     setSession(active);
+    sessionRef.current = active;
 
     // Calculate remaining seconds
     const deadlineTime = new Date(active.deadline).getTime();
     const now = Date.now();
     const diffSecs = Math.max(0, Math.floor((deadlineTime - now) / 1000));
     setSecondsRemaining(diffSecs);
+
+    // A submission interrupted by a reload or lost connection resumes automatically;
+    // so does an exam reopened after its time ran out (the timer never starts at 0)
+    if (active.pendingSubmit) {
+      handleFinalSubmit(active.pendingSubmit.reason);
+    } else if (diffSecs === 0) {
+      handleFinalSubmit("timeout");
+    }
   }, [examCode, router]);
 
   // 2. High-precision countdown timer
@@ -189,7 +206,7 @@ export default function CandidateLiveExam({
   // 3. Tab-switch & Malpractice detection listener
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden && sessionRef.current) {
+      if (document.hidden && sessionRef.current && !submittingRef.current) {
         const { violationCount, session: updated } = recordProctoringViolation(
           examCode,
           sessionRef.current.candidatePin,
@@ -215,23 +232,12 @@ export default function CandidateLiveExam({
       }
     };
 
-    const handleWindowBlur = () => {
-      if (sessionRef.current) {
-        recordProctoringViolation(
-          examCode,
-          sessionRef.current.candidatePin,
-          "window_blur",
-          activeQuestionIdx,
-        );
-      }
-    };
-
+    // Only tab switches count. A tab switch also fires window blur, so counting blur
+    // too recorded two violations per switch and disqualified candidates early.
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("blur", handleWindowBlur);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("blur", handleWindowBlur);
     };
   }, [examCode, activeQuestionIdx, maxTabViolations]);
 
@@ -270,7 +276,7 @@ export default function CandidateLiveExam({
 
   // Actions
   const selectChoice = (choiceId: string) => {
-    if (!session || !currentQ) return;
+    if (!session || !currentQ || submittingRef.current) return;
     setSyncStatus("saving");
     const updated = saveAnswerToSession(
       examCode,
@@ -293,8 +299,10 @@ export default function CandidateLiveExam({
 
   // Essay Text Autosave with Debounce (300ms)
   const handleEssayChange = (text: string) => {
+    if (submittingRef.current) return;
     setEssayDraft(text);
     setSyncStatus("saving");
+    if (currentQ) pendingEssayRef.current = { questionId: currentQ.id, text };
 
     if (autosaveTimeoutRef.current) {
       clearTimeout(autosaveTimeoutRef.current);
@@ -320,6 +328,7 @@ export default function CandidateLiveExam({
         }
         setSyncStatus("synced");
       }
+      pendingEssayRef.current = null;
     }, 300);
   };
 
@@ -352,36 +361,81 @@ export default function CandidateLiveExam({
     );
   }, [questions]);
 
-  // Final Submit Handler
+  // Final Submit Handler — retries until the server confirms. A submission is never
+  // scored or "completed" on the device alone, so the examiner always receives it.
   const handleFinalSubmit = async (
     reason: "manual" | "timeout" | "malpractice" = "manual",
   ) => {
-    if (!session) return;
+    const current = sessionRef.current;
+    if (!current || submittingRef.current) return;
+    submittingRef.current = true;
+    setIsSubmitDialogOpen(false);
+    setSubmitState("submitting");
+    setSubmitError("");
 
-    if (session.attemptId) {
+    // Include an essay answer still waiting on its autosave
+    const answers = { ...current.answers };
+    if (pendingEssayRef.current) {
+      answers[pendingEssayRef.current.questionId] = pendingEssayRef.current.text;
+      if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
+      pendingEssayRef.current = null;
+    }
+
+    // Remember the pending submission so a reload resumes it instead of losing it
+    const pending: CandidateSession = {
+      ...current,
+      answers,
+      pendingSubmit: current.pendingSubmit || {
+        reason,
+        since: new Date().toISOString(),
+      },
+    };
+    saveCandidateSession(pending);
+    sessionRef.current = pending;
+    setSession(pending);
+
+    if (!pending.attemptId) {
+      submittingRef.current = false;
+      setSubmitState("failed");
+      setSubmitError(
+        "This exam session was not registered with the server. Please ask your examiner for help.",
+      );
+      return;
+    }
+
+    const retryDelaysMs = [0, 1000, 2000, 4000, 8000, 8000];
+    let lastError: any = null;
+    for (const delay of retryDelaysMs) {
+      if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
       try {
-        const resultSlip = await submitAttempt({
-          attemptId: session.attemptId,
-          finalAnswers: session.answers,
-          autoSubmitted: reason === "timeout" || reason === "malpractice",
+        const result = await submitAttempt({
+          attemptId: pending.attemptId,
+          finalAnswers: answers,
+          autoSubmitted: reason !== "manual",
         }).unwrap();
 
+        const effectiveReason = pending.pendingSubmit?.reason || reason;
         const completedSession: CandidateSession = {
-          ...session,
-          status: reason === "malpractice" ? "disqualified" : "submitted",
-          gradingStatus: "AUTO_SCORED",
-          score: resultSlip.score,
-          totalMarks: resultSlip.totalMarks,
-          percentage: resultSlip.percentage,
+          ...pending,
+          pendingSubmit: undefined,
+          status:
+            result.status === "DISQUALIFIED" || effectiveReason === "malpractice"
+              ? "disqualified"
+              : "submitted",
+          gradingStatus: result.gradingStatus || "AUTO_SCORED",
+          score: result.score,
+          totalMarks: result.totalMarks,
+          percentage: result.percentage,
+          mcqScore: result.resultSlip?.breakdown?.mcqScore,
+          essayScore: result.resultSlip?.breakdown?.essayScore,
         };
-
         saveCandidateSession(completedSession);
 
-        if (reason === "timeout") {
+        if (effectiveReason === "timeout") {
           toast.warning(
             "Time limit expired. Your exam was automatically submitted.",
           );
-        } else if (reason === "malpractice") {
+        } else if (effectiveReason === "malpractice") {
           toast.error("Exam locked due to repeated malpractice violations.");
         } else {
           toast.success("Examination submitted successfully.");
@@ -390,65 +444,40 @@ export default function CandidateLiveExam({
         router.replace(`/take/${encodeURIComponent(examCode)}/results`);
         return;
       } catch (err: any) {
-        console.warn(
-          "[CBT Live] Remote submitAttempt unreachable, finalizing attempt with local scoring:",
-          err,
-        );
-      }
-    }
-
-    let mcqScore = 0;
-    let mcqTotalMarks = 0;
-    let grandTotalMarks = 0;
-
-    questions.forEach((q) => {
-      grandTotalMarks += q.marks;
-      if (q.type === "MCQ" || q.type === "TRUE_FALSE") {
-        mcqTotalMarks += q.marks;
-        const userChoice = session.answers[q.id];
-        // Find correct option
-        const correctOpt =
-          q.options?.find((o) => o.isCorrect) || q.options?.[0];
-        if (userChoice && correctOpt && userChoice === correctOpt.id) {
-          mcqScore += q.marks;
+        lastError = err;
+        const status = err?.status;
+        // Other client errors (e.g. attempt not found) won't succeed on retry
+        if (
+          typeof status === "number" &&
+          status >= 400 &&
+          status < 500 &&
+          status !== 408 &&
+          status !== 429
+        ) {
+          break;
         }
       }
-    });
-
-    const isPendingReview = hasEssayQuestions;
-    const percentage = isPendingReview
-      ? mcqTotalMarks > 0
-        ? Math.round((mcqScore / mcqTotalMarks) * 100)
-        : 0
-      : grandTotalMarks > 0
-        ? Math.round((mcqScore / grandTotalMarks) * 100)
-        : 0;
-
-    const completedSession: CandidateSession = {
-      ...session,
-      status: reason === "malpractice" ? "disqualified" : "submitted",
-      gradingStatus: isPendingReview ? "PENDING_REVIEW" : "AUTO_SCORED",
-      score: mcqScore,
-      totalMarks: grandTotalMarks,
-      mcqScore: mcqScore,
-      essayScore: 0,
-      percentage: percentage,
-    };
-
-    saveCandidateSession(completedSession);
-
-    if (reason === "timeout") {
-      toast.warning(
-        "Time limit expired. Your exam was automatically submitted.",
-      );
-    } else if (reason === "malpractice") {
-      toast.error("Exam locked due to repeated malpractice violations.");
-    } else {
-      toast.success("Examination submitted successfully!");
     }
 
-    router.replace(`/take/${encodeURIComponent(examCode)}/results`);
+    console.warn("[CBT Live] Submission not confirmed by server:", lastError);
+    submittingRef.current = false;
+    setSubmitState("failed");
+    setSubmitError(
+      lastError?.data?.message ||
+        "We couldn't reach the exam server. Your answers are saved on this device.",
+    );
   };
+
+  // Retry a failed submission as soon as the connection comes back
+  useEffect(() => {
+    if (submitState !== "failed") return;
+    const retry = () => {
+      const pendingReason = sessionRef.current?.pendingSubmit?.reason;
+      handleFinalSubmit(pendingReason || "manual");
+    };
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, [submitState]);
 
   // Timer formatting (mm:ss)
   const formatTimer = (totalSecs: number) => {
@@ -1077,6 +1106,53 @@ export default function CandidateLiveExam({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── SUBMISSION PROGRESS / FAILURE OVERLAY ─────────────────────────── */}
+      {submitState !== "idle" && (
+        <div
+          role="alertdialog"
+          aria-live="assertive"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+        >
+          <div className="w-full max-w-sm rounded-[var(--radius-lg)] bg-white p-6 text-center shadow-xl">
+            {submitState === "submitting" ? (
+              <>
+                <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-[var(--emerald-signal)]" />
+                <h2 className="text-lg font-bold text-[var(--foreground)]">
+                  Submitting your exam…
+                </h2>
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                  Please keep this page open.
+                </p>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-[var(--crimson-signal)]" />
+                <h2 className="text-lg font-bold text-[var(--foreground)]">
+                  Submission not confirmed yet
+                </h2>
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                  {submitError}
+                </p>
+                <p className="mt-2 text-xs text-[var(--text-secondary)]">
+                  Don&apos;t close this page. We&apos;ll retry automatically when
+                  your connection returns.
+                </p>
+                <Button
+                  onClick={() =>
+                    handleFinalSubmit(
+                      sessionRef.current?.pendingSubmit?.reason || "manual",
+                    )
+                  }
+                  className="mt-4 h-10 w-full bg-[var(--emerald-signal)] text-sm font-bold text-white hover:bg-[var(--emerald-signal)]/90"
+                >
+                  Retry submission
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── FOOTER WATERMARK ─────────────────────────────────────────────── */}
       <footer className="py-3 px-4 border-t border-[var(--border-fine)] bg-white/60 text-center text-[11px] text-[var(--text-secondary)]">

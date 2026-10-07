@@ -62,6 +62,8 @@ export interface CandidateSession {
     questionIdx: number;
   }>;
   status: "in_progress" | "submitted" | "disqualified";
+  /** Set when time ran out or the candidate submitted but the server hasn't confirmed yet */
+  pendingSubmit?: { reason: "manual" | "timeout" | "malpractice"; since: string };
   gradingStatus?: "AUTO_SCORED" | "PENDING_REVIEW" | "GRADED";
   score?: number;
   totalMarks?: number;
@@ -116,6 +118,9 @@ export const getCbtApiBase = (): string => {
 };
 
 export const CBT_API_BASE = getCbtApiBase();
+// Exams, attempts and live monitoring are served by this app's own /api/cbt routes,
+// even when examiner sign-in goes to the external CBT service.
+const EXAM_API_BASE = "/api/cbt";
 
 export const CBT_COOKIE_SESSION = "pln_cbt_session";
 export const CBT_COOKIE_ATTEMPT = "pln_cbt_active_attempt";
@@ -270,12 +275,7 @@ export const saveAnswerToSession = (
   if (!session) return null;
   session.answers[questionId] = value;
   saveCandidateSession(session);
-
-  // Background non-blocking sync to Redis buffer if attemptId is present
-  if (session.attemptId) {
-    cbtApi.bufferAnswer(session.attemptId, questionId, value).catch(() => {});
-  }
-
+  // The exam page syncs the answer to the server; this only persists it on the device
   return session;
 };
 
@@ -372,7 +372,7 @@ export const cbtApi = {
   },
 
   async getExamByCode(accessCode: string) {
-    const res = await fetch(`${CBT_API_BASE}/exams/code/${encodeURIComponent(accessCode)}`);
+    const res = await fetch(`${EXAM_API_BASE}/exams/code/${encodeURIComponent(accessCode)}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: "Exam not found" }));
       throw new Error(err.message || "Failed to retrieve exam details.");
@@ -386,7 +386,7 @@ export const cbtApi = {
     candidateName: string;
     studentId?: string;
   }) {
-    const res = await fetch(`${CBT_API_BASE}/attempts/start`, {
+    const res = await fetch(`${EXAM_API_BASE}/attempts/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -399,7 +399,7 @@ export const cbtApi = {
   },
 
   async bufferAnswer(attemptId: string, questionId: string, selectedVal: any) {
-    const res = await fetch(`${CBT_API_BASE}/attempts/${attemptId}/answer`, {
+    const res = await fetch(`${EXAM_API_BASE}/attempts/${attemptId}/answer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ questionId, selectedVal }),
@@ -408,7 +408,7 @@ export const cbtApi = {
   },
 
   async recordTelemetry(attemptId: string, eventType: string, questionIdx?: number) {
-    const res = await fetch(`${CBT_API_BASE}/attempts/${attemptId}/telemetry`, {
+    const res = await fetch(`${EXAM_API_BASE}/attempts/${attemptId}/telemetry`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ eventType, timestamp: new Date().toISOString(), questionIdx }),
@@ -418,7 +418,7 @@ export const cbtApi = {
   },
 
   async submitAttempt(attemptId: string, finalAnswers?: Record<string, any>, autoSubmitted?: boolean) {
-    const res = await fetch(`${CBT_API_BASE}/attempts/${attemptId}/submit`, {
+    const res = await fetch(`${EXAM_API_BASE}/attempts/${attemptId}/submit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ finalAnswers, autoSubmitted }),
@@ -431,13 +431,13 @@ export const cbtApi = {
   },
 
   async getResultSlip(attemptId: string) {
-    const res = await fetch(`${CBT_API_BASE}/attempts/${attemptId}/slip`);
+    const res = await fetch(`${EXAM_API_BASE}/attempts/${attemptId}/slip`);
     if (!res.ok) throw new Error("Could not retrieve result slip.");
     return res.json();
   },
 
   async getLiveMonitor(examId: string) {
-    const res = await fetch(`${CBT_API_BASE}/exams/${examId}/monitor`);
+    const res = await fetch(`${EXAM_API_BASE}/exams/${examId}/monitor`);
     if (!res.ok) throw new Error("Could not load live monitor metrics.");
     return res.json();
   },

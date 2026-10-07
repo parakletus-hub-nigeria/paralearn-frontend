@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { cbtServerStore, computeWaecGrade } from "@/lib/cbtServerStore";
-import { BUSI_EXAM, BUSI_QUESTIONS } from "@/lib/busiAssessmentData";
+import {
+  cbtServerStore,
+  computeWaecGrade,
+  CbtConflictError,
+  toCandidateQuestion,
+} from "@/lib/cbtServerStore";
+import { BUSI_EXAM } from "@/lib/busiAssessmentData";
 
 // Route handler for CBT microservice proxy
 export const dynamic = "force-dynamic";
@@ -34,7 +39,41 @@ function redactWorkspace(ws: any) {
   };
 }
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+function cbtBackendBase() {
+  return (
+    process.env.NEXT_PUBLIC_CBT_API_URL ||
+    process.env.CBT_BACKEND_URL ||
+    "http://localhost:4000"
+  ).replace(/\/+$/, "");
+}
+
+type Handler = (request: NextRequest, ctx: RouteParams) => Promise<NextResponse>;
+
+/** Conflicts become 409s; store outages become retryable 503s instead of opaque 500s */
+function withErrorHandling(handler: Handler): Handler {
+  return async (request, ctx) => {
+    try {
+      return await handler(request, ctx);
+    } catch (err) {
+      if (err instanceof CbtConflictError) {
+        return NextResponse.json({ message: err.message }, { status: 409 });
+      }
+      console.error("[CBT API] Request failed:", err);
+      return NextResponse.json(
+        {
+          message: "The exam service is busy. Please try again.",
+          retryable: true,
+          ...(process.env.NODE_ENV !== "production" && {
+            detail: err instanceof Error ? err.message : String(err),
+          }),
+        },
+        { status: 503 }
+      );
+    }
+  };
+}
+
+async function handleGET(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
   const searchParams = request.nextUrl.searchParams;
 
@@ -119,19 +158,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   // 3. /api/cbt/exams/:id/monitor
   if (path[0] === "exams" && path[2] === "monitor" && path[1]) {
     const examId = decodeURIComponent(path[1]);
-    const exam = await cbtServerStore.getExamById(examId);
-    const candidates = await cbtServerStore.listCandidates(examId);
-    return NextResponse.json({
-      examId,
-      examTitle: exam?.title || "Exam Monitor",
-      totalCandidates: candidates.length,
-      activeNow: candidates.filter((c) => c.status === "STARTED").length,
-      submitted: candidates.filter((c) => c.status === "SUBMITTED").length,
-      disqualified: candidates.filter((c) => c.status === "DISQUALIFIED").length,
-      averageScore: 0,
-      flaggedIncidents: [],
-      candidates,
-    });
+    const monitor = await cbtServerStore.getExamMonitor(examId);
+    return NextResponse.json({ ...monitor, flaggedIncidents: [] });
   }
 
   // 4. /api/cbt/exams/:id
@@ -154,6 +182,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         question: q,
       })),
     });
+  }
+
+  // 5a. /api/cbt/attempts/:id/review (examiner answer sheet)
+  if (path[0] === "attempts" && path[2] === "review" && path[1]) {
+    const review = await cbtServerStore.getAttemptReview(decodeURIComponent(path[1]));
+    if (!review) {
+      return NextResponse.json({ message: "Attempt not found" }, { status: 404 });
+    }
+    return NextResponse.json(review);
   }
 
   // 5. /api/cbt/attempts/:id/slip
@@ -189,6 +226,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       candidatePin: att.candidatePin,
       email: att.email || null,
       status: att.status.toUpperCase(),
+      gradingStatus: att.gradingStatus || "AUTO_SCORED",
       score,
       totalMarks,
       percentage,
@@ -205,10 +243,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         violations: att.violations || 0,
         breakdown: {
           totalQuestions: exam?.totalQuestions || exam?.questionIds?.length || 0,
-          correctCount: Math.round(score),
-          wrongCount: Math.max(0, (exam?.totalQuestions || 0) - Math.round(score)),
-          mcqScore: score,
-          essayScore: 0.0,
+          correctCount: att.correctCount ?? 0,
+          wrongCount: att.wrongCount ?? 0,
+          mcqScore: att.mcqScore ?? score,
+          essayScore: att.essayScore ?? 0,
         },
       },
       metadata: {
@@ -223,29 +261,58 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (path[0] === "candidates") {
     const examId = searchParams.get("examId") || "";
     const search = searchParams.get("search") || "";
-    const cbtBackendUrl =
-      process.env.NEXT_PUBLIC_CBT_API_URL ||
-      process.env.CBT_BACKEND_URL ||
-      "http://localhost:4000";
 
+    // Imported rosters live in the CBT service; walk-ins, live status and scores live here.
+    // Merge both by PIN, letting this store's status and score win.
+    let remote: any[] = [];
     try {
-      const url = new URL(`${cbtBackendUrl.replace(/\/+$/, "")}/candidates`);
+      const url = new URL(`${cbtBackendBase()}/candidates`);
       if (examId) url.searchParams.set("examId", examId);
       if (search) url.searchParams.set("search", search);
-      const resp = await fetch(url.toString(), { cache: "no-store" });
+      const resp = await fetch(url.toString(), {
+        cache: "no-store",
+        signal: AbortSignal.timeout(8000),
+      });
       if (resp.ok) {
-        const microserviceCandidates = await resp.json();
-        if (Array.isArray(microserviceCandidates) && microserviceCandidates.length > 0) {
-          return NextResponse.json(microserviceCandidates);
-        }
+        const data = await resp.json();
+        if (Array.isArray(data)) remote = data;
       }
     } catch {}
 
-    const candidates = await cbtServerStore.listCandidates(examId);
-    return NextResponse.json(candidates);
+    const local = await cbtServerStore.listCandidates(examId);
+    const byPin = new Map<string, any>();
+    for (const c of remote) byPin.set(String(c.candidatePin), c);
+    for (const c of local) {
+      const existing = byPin.get(String(c.candidatePin));
+      byPin.set(
+        String(c.candidatePin),
+        existing
+          ? {
+              ...existing,
+              status: c.status,
+              score: c.score,
+              totalMarks: c.totalMarks,
+              percentage: c.percentage,
+            }
+          : c
+      );
+    }
+    let merged = [...byPin.values()];
+    if (search) {
+      const q = search.toLowerCase();
+      merged = merged.filter(
+        (c) =>
+          String(c.candidateName || "").toLowerCase().includes(q) ||
+          String(c.candidatePin || "").toLowerCase().includes(q) ||
+          String(c.email || "").toLowerCase().includes(q)
+      );
+    }
+    return NextResponse.json(merged);
   }
   return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });
 }
+
+export const GET = withErrorHandling(handleGET);
 
 async function resolveCallerWorkspaceId(
   request: NextRequest,
@@ -264,7 +331,7 @@ async function resolveCallerWorkspaceId(
   return "default";
 }
 
-export async function POST(request: NextRequest, { params }: RouteParams) {
+async function handlePOST(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
   let body: any = {};
   try {
@@ -347,33 +414,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   // 7. /api/cbt/attempts/start
   if (path[0] === "attempts" && path[1] === "start") {
-    const accessCode = (body.accessCode || "").trim().toUpperCase();
-    if (accessCode === "BUSI-7642") {
-      const pin =
-        body.candidatePin?.trim().toUpperCase() ||
-        Math.floor(100000 + Math.random() * 900000).toString();
-      const now = new Date();
-      const deadline = new Date(now.getTime() + 90 * 60 * 1000).toISOString();
-      const attemptId = `att_busi_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      return NextResponse.json({
-        isResumed: false,
-        attemptId,
-        externalAttemptId: body.externalAttemptId || null,
-        studentId: body.studentId || null,
-        examId: BUSI_EXAM.id,
-        examTitle: BUSI_EXAM.title,
-        candidateName: body.candidateName || "Candidate",
-        candidatePin: pin,
-        durationMins: 90,
-        deadline,
-        remainingSeconds: 90 * 60,
-        violations: 0,
-        maxTabViolations: 3,
-        questions: BUSI_QUESTIONS,
-        restoredAnswers: {},
-      });
+    if (!String(body.candidateName || "").trim()) {
+      return NextResponse.json({ message: "candidateName is required" }, { status: 400 });
     }
-
     const res = await cbtServerStore.startAttempt({
       accessCode: body.accessCode,
       candidateName: body.candidateName,
@@ -404,7 +447,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       remainingSeconds: res.attempt.remainingSeconds,
       violations: res.attempt.violations,
       maxTabViolations: res.exam.maxTabViolations || 3,
-      questions: res.questions,
+      questions: res.questions.map(toCandidateQuestion),
       restoredAnswers: res.attempt.answers || {},
     });
   }
@@ -412,12 +455,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   // 8. /api/cbt/attempts/:id/answer
   if (path[0] === "attempts" && path[2] === "answer" && path[1]) {
     const attemptId = decodeURIComponent(path[1]);
-    const ok = await cbtServerStore.bufferAnswer(
+    const result = await cbtServerStore.bufferAnswer(
       attemptId,
       body.questionId,
       body.selectedVal
     );
-    return NextResponse.json({ success: ok });
+    if (!result.saved) {
+      const status = result.reason === "Attempt not found" ? 404 : 409;
+      return NextResponse.json({ success: false, message: result.reason }, { status });
+    }
+    return NextResponse.json({ success: true });
   }
 
   // 9. /api/cbt/attempts/:id/telemetry
@@ -435,8 +482,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ message: "Attempt not found" }, { status: 404 });
     }
 
-    // Trigger external HMAC-signed webhook if workspace has webhookUrl
-    if (res.webhookUrl) {
+    // Trigger external HMAC-signed webhook if workspace has webhookUrl (first submission only)
+    if (res.webhookUrl && !res.alreadySubmitted) {
       const rawPayload = JSON.stringify(res.webhookPayload);
       const secret =
         res.webhookSecret ||
@@ -468,10 +515,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       percentage: res.attempt.percentage,
       grade: res.attempt.grade,
       status: res.attempt.status.toUpperCase(),
+      gradingStatus: res.attempt.gradingStatus || "AUTO_SCORED",
+      alreadySubmitted: res.alreadySubmitted,
       attemptId: res.attempt.id,
       externalAttemptId: res.attempt.externalAttemptId || null,
       resultSlip: res.webhookPayload.resultSlip,
     });
+  }
+
+  // 10b. /api/cbt/attempts/:id/manual-grade
+  if (path[0] === "attempts" && path[2] === "manual-grade" && path[1]) {
+    const review = await cbtServerStore.manualGradeAttempt(
+      decodeURIComponent(path[1]),
+      Array.isArray(body.answers) ? body.answers : []
+    );
+    if (!review) {
+      return NextResponse.json({ message: "Attempt not found" }, { status: 404 });
+    }
+    return NextResponse.json(review);
   }
 
   // 11. /api/cbt/candidates/bulk
@@ -514,12 +575,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   
   // 13. /api/cbt/import/classes or /api/cbt/import/candidates
   if (path[0] === "import" && (path[1] === "classes" || path[1] === "candidates")) {
-    const cbtBackendUrl =
-      process.env.NEXT_PUBLIC_CBT_API_URL ||
-      process.env.CBT_BACKEND_URL ||
-      "http://localhost:4000";
     try {
-      const targetUrl = `${cbtBackendUrl.replace(/\/+$/, "")}/import/${path[1]}`;
+      const targetUrl = `${cbtBackendBase()}/import/${path[1]}`;
       const response = await fetch(targetUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -561,7 +618,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });
 }
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export const POST = withErrorHandling(handlePOST);
+
+async function handlePATCH(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
   let body: any = {};
   try {
@@ -595,22 +654,34 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export const PATCH = withErrorHandling(handlePATCH);
+
+async function handleDELETE(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
 
-  // /api/cbt/candidates/:id
+  // /api/cbt/candidates/:id — the entry may exist in the CBT service, this store, or both
   if (path[0] === "candidates" && path[1]) {
-    const cbtBackendUrl =
-      process.env.NEXT_PUBLIC_CBT_API_URL ||
-      process.env.CBT_BACKEND_URL ||
-      "http://localhost:4000";
+    const id = decodeURIComponent(path[1]);
+    const remoteUrl = `${cbtBackendBase()}/candidates/${encodeURIComponent(id)}`;
+    let remote: { examId?: string; candidatePin?: string } | null = null;
     try {
-      await fetch(`${cbtBackendUrl.replace(/\/+$/, "")}/candidates/${encodeURIComponent(path[1])}`, {
-        method: "DELETE",
-      });
+      const found = await fetch(remoteUrl, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+      if (found.ok) remote = await found.json();
+      if (remote) await fetch(remoteUrl, { method: "DELETE", signal: AbortSignal.timeout(8000) });
     } catch {}
+
+    const removedLocal = await cbtServerStore.deleteCandidate({
+      id,
+      examId: remote?.examId,
+      pin: remote?.candidatePin,
+    });
+    if (!remote && !removedLocal) {
+      return NextResponse.json({ message: "Candidate not found" }, { status: 404 });
+    }
     return NextResponse.json({ success: true });
   }
 
   return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });
 }
+
+export const DELETE = withErrorHandling(handleDELETE);

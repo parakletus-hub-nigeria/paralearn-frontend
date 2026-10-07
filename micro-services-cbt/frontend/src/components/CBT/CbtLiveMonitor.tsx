@@ -38,6 +38,7 @@ import {
   useGetLiveMonitorQuery,
   useLazyGetAttemptReviewQuery,
   useManualGradeAttemptMutation,
+  useSubmitAttemptMutation,
 } from "@cbt/store/cbtMicroserviceApi";
 
 export interface CandidateLiveStatus {
@@ -98,6 +99,7 @@ export default function CbtLiveMonitor({
     useLazyGetAttemptReviewQuery();
   const [manualGradeAttempt, { isLoading: isSavingGrade }] =
     useManualGradeAttemptMutation();
+  const [submitAttempt] = useSubmitAttemptMutation();
 
   const mapParticipantStatus = (
     participant: any,
@@ -139,10 +141,13 @@ export default function CbtLiveMonitor({
       violations: participant.violations ?? 0,
       status,
       gradingStatus:
-        status === "submitted"
-          ? participant.grade || participant.score !== null
-            ? "GRADED"
-            : "PENDING_REVIEW"
+        status === "submitted" || status === "locked"
+          ? participant.gradingStatus === "PENDING_REVIEW"
+            ? "PENDING_REVIEW"
+            : participant.gradingStatus ||
+                (participant.grade || participant.score !== null
+                  ? "GRADED"
+                  : "PENDING_REVIEW")
           : undefined,
       score: participant.score ?? undefined,
       totalMarks: participant.totalMarks ?? monitorData?.exam?.totalMarks,
@@ -307,7 +312,11 @@ export default function CbtLiveMonitor({
     if (candidate.attemptId) {
       try {
         const review = await fetchAttemptReview(candidate.attemptId).unwrap();
-        const essayQ = review.questions.find((q) => q.type === "ESSAY");
+        const essays = review.questions.filter((q) => q.type === "ESSAY");
+        // Open the next essay that still needs marks, so multi-essay exams can be fully graded
+        const essayQ =
+          essays.find((q) => q.marksAwarded === undefined || q.marksAwarded === null) ||
+          essays[0];
         if (!essayQ) {
           toast.info(
             "This exam does not have an essay question available for manual review.",
@@ -399,21 +408,25 @@ export default function CbtLiveMonitor({
     );
   };
 
-  // Force submit candidate attempt
-  const handleForceSubmit = (candidateId: string) => {
-    setCandidates((prev) =>
-      prev.map((c) =>
-        c.id === candidateId
-          ? {
-              ...c,
-              status: "submitted",
-              timeRemainingMins: 0,
-              gradingStatus: "PENDING_REVIEW",
-            }
-          : c,
-      ),
-    );
-    toast.success("Attempt force-submitted for grading.");
+  // Force submit candidate attempt — submits on the server with the answers saved so far
+  const handleForceSubmit = async (candidateId: string) => {
+    const candidate = candidates.find((c) => c.id === candidateId);
+    if (!candidate?.attemptId) {
+      toast.error("This candidate has not started the exam yet.");
+      return;
+    }
+    try {
+      await submitAttempt({
+        attemptId: candidate.attemptId,
+        autoSubmitted: true,
+      }).unwrap();
+      toast.success("Attempt submitted with the answers saved so far.");
+      refetchMonitor();
+    } catch (err: any) {
+      toast.error(
+        err?.data?.message || "Could not submit this attempt. Please try again.",
+      );
+    }
   };
 
   // Add 5 minutes grace

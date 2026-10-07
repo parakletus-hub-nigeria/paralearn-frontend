@@ -33,7 +33,6 @@ import {
   useGetExamByCodeQuery,
   useStartAttemptMutation,
 } from "@cbt/store/cbtMicroserviceApi";
-import { BUSI_QUESTIONS_STATIC } from "@cbt/lib/busiQuestions";
 
 interface ExamMetadata {
   code: string;
@@ -280,66 +279,19 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
     setIsVerifying(true);
 
     try {
-      let started: any;
-      try {
-        started = await startAttempt({
-          accessCode: metadata.code,
-          candidateName: candidateName.trim(),
-          candidatePin: candidatePin.trim() || undefined,
-          email: candidateEmail.trim() || undefined,
-          phone: candidatePhone.trim() || undefined,
-          studentId: studentId.trim() || undefined,
-          externalAttemptId: externalAttemptId.trim() || undefined,
-          userAgent:
-            typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-        }).unwrap();
-      } catch (apiErr: any) {
-        console.warn(
-          "[Candidate Lobby] Microservice attempt start unreachable, generating local session:",
-          apiErr,
-        );
-        const stored = loadStoredExams();
-        const localExam = stored.find(
-          (e) =>
-            e.accessCode?.trim().toUpperCase() === metadata.code.toUpperCase(),
-        );
-        let storedQuestions = localExam
-          ? loadStoredQuestions(localExam.id)
-          : [];
-        if (
-          metadata.code.toUpperCase() === "BUSI-7642" &&
-          storedQuestions.length === 0
-        ) {
-          storedQuestions = BUSI_QUESTIONS_STATIC;
-        }
-        const generatedPin =
-          candidatePin.trim() ||
-          Math.floor(100000 + Math.random() * 900000).toString();
-        const durationMins = metadata.durationMins || 60;
-        const now = new Date();
-        const deadline = new Date(
-          now.getTime() + durationMins * 60 * 1000,
-        ).toISOString();
-
-        started = {
-          isResumed: false,
-          attemptId:
-            externalAttemptId.trim() ||
-            `att_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-          examId: localExam?.id || metadata.code,
-          examTitle: metadata.title,
-          candidateName: candidateName.trim(),
-          candidatePin: generatedPin,
-          studentId: studentId.trim() || undefined,
-          durationMins: durationMins,
-          deadline: deadline,
-          remainingSeconds: durationMins * 60,
-          violations: 0,
-          maxTabViolations: metadata.maxTabViolations || 3,
-          questions: storedQuestions,
-          restoredAnswers: {},
-        };
-      }
+      // Attempts must exist on the server so they can be submitted and graded —
+      // never fall back to a local-only session.
+      const started: any = await startAttempt({
+        accessCode: metadata.code,
+        candidateName: candidateName.trim(),
+        candidatePin: candidatePin.trim() || undefined,
+        email: candidateEmail.trim() || undefined,
+        phone: candidatePhone.trim() || undefined,
+        studentId: studentId.trim() || undefined,
+        externalAttemptId: externalAttemptId.trim() || undefined,
+        userAgent:
+          typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+      }).unwrap();
 
       const now = new Date();
       const restoredAnswers = Object.fromEntries(
