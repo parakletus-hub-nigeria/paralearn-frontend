@@ -63,9 +63,8 @@ function withErrorHandling(handler: Handler): Handler {
         {
           message: "The exam service is busy. Please try again.",
           retryable: true,
-          ...(process.env.NODE_ENV !== "production" && {
-            detail: err instanceof Error ? err.message : String(err),
-          }),
+          // Store/network error text only (no credentials) — helps diagnose outages
+          detail: err instanceof Error ? err.message.slice(0, 200) : String(err).slice(0, 200),
         },
         { status: 503 }
       );

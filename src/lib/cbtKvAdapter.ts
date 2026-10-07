@@ -13,8 +13,10 @@
 export type KvValue = string | number | boolean | object | null;
 
 // ── Detect Upstash environment ────────────────────────────────────────────────
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL || "";
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || "";
+// Values pasted from the Upstash console often keep their surrounding quotes
+const cleanEnv = (value?: string) => (value || "").trim().replace(/^["']|["']$/g, "");
+const redisUrl = cleanEnv(process.env.UPSTASH_REDIS_REST_URL);
+const redisToken = cleanEnv(process.env.UPSTASH_REDIS_REST_TOKEN);
 
 const hasUpstash = Boolean(redisUrl && redisToken);
 
