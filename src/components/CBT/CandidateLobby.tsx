@@ -2,24 +2,28 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  ShieldCheck, 
-  Wifi, 
-  Clock, 
-  HelpCircle, 
-  AlertTriangle, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  ShieldCheck,
+  Wifi,
+  Clock,
+  HelpCircle,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
   ArrowRight,
   User,
   KeyRound,
-  Laptop
+  Laptop,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { saveCandidateSession, loadCandidateSession, loadStoredExams } from "@/lib/cbtSessionManager";
+import {
+  saveCandidateSession,
+  loadCandidateSession,
+  loadStoredExams,
+} from "@/lib/cbtSessionManager";
 
 interface ExamMetadata {
   code: string;
@@ -75,7 +79,10 @@ function CandidatePinInput({
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
     if (e.key === "Backspace" && !value[index] && index > 0) {
       inputsRef.current[index - 1]?.focus();
     }
@@ -101,7 +108,10 @@ function CandidatePinInput({
   );
 }
 
-export default function CandidateLobby({ examCode, initialMetadata }: CandidateLobbyProps) {
+export default function CandidateLobby({
+  examCode,
+  initialMetadata,
+}: CandidateLobbyProps) {
   const router = useRouter();
 
   const [metadata, setMetadata] = useState<ExamMetadata>(
@@ -111,10 +121,11 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
       institutionName: "ParaLearn Assessment Centre",
       durationMins: 45,
       questionCount: 30,
-      instructions: "Answer all questions to the best of your ability. Keep your window in view throughout the session. Tab switching or minimizing this browser window will be logged as malpractice violations.",
+      instructions:
+        "Answer all questions to the best of your ability. Keep your window in view throughout the session. Tab switching or minimizing this browser window will be logged as malpractice violations.",
       requiresPin: true,
       maxTabViolations: 3,
-    }
+    },
   );
 
   const [candidateName, setCandidateName] = useState("");
@@ -132,7 +143,9 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
   useEffect(() => {
     // Check if exam metadata exists in stored exams
     const storedExams = loadStoredExams();
-    const foundExam = storedExams.find((e) => e.accessCode.toUpperCase() === examCode.toUpperCase());
+    const foundExam = storedExams.find(
+      (e) => e.accessCode.toUpperCase() === examCode.toUpperCase(),
+    );
     if (foundExam) {
       setMetadata((prev) => ({
         ...prev,
@@ -164,8 +177,10 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
         ping = 60;
       }
 
-      const hasVisibility = typeof document !== "undefined" && "visibilityState" in document;
-      const isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
+      const hasVisibility =
+        typeof document !== "undefined" && "visibilityState" in document;
+      const isOnline =
+        typeof navigator !== "undefined" ? navigator.onLine : true;
 
       setDiagnostics({
         browser: "ready",
@@ -195,7 +210,9 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
 
     try {
       const now = new Date();
-      const deadline = new Date(now.getTime() + metadata.durationMins * 60 * 1000).toISOString();
+      const deadline = new Date(
+        now.getTime() + metadata.durationMins * 60 * 1000,
+      ).toISOString();
 
       // Initialize persistent local candidate session
       saveCandidateSession({
@@ -212,7 +229,7 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
       });
 
       toast.success("Identity verified. Entering exam room...");
-      
+
       // Request fullscreen if supported for security
       if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(() => {
@@ -223,7 +240,9 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
       router.push(`/take/${encodeURIComponent(metadata.code)}/live`);
     } catch (err) {
       console.error("Failed to start session:", err);
-      toast.error("Unable to initialize session. Please check your storage settings.");
+      toast.error(
+        "Unable to initialize session. Please check your storage settings.",
+      );
       setIsVerifying(false);
     }
   };
@@ -232,12 +251,11 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
     <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-3 sm:p-6 text-[var(--foreground)]">
       {/* Container */}
       <div className="w-full max-w-xl bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
-        
         {/* Header Ribbon */}
         <div className="bg-[var(--surface-muted)] border-b border-[var(--border-fine)] px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between mb-2">
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className="bg-[var(--violet-tint)] text-[var(--violet-ink)] border-[var(--violet-ink)]/20 font-mono text-xs uppercase tracking-wider"
             >
               Room Code: {metadata.code}
@@ -249,20 +267,28 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
           </div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-2 max-w-full truncate">
             <Laptop className="w-3.5 h-3.5 text-violet-600 shrink-0" />
-            <span className="truncate">Exam Centre: <strong>{metadata.institutionName}</strong></span>
+            <span className="truncate">
+              Exam Centre: <strong>{metadata.institutionName}</strong>
+            </span>
           </div>
-          
+
           <h1 className="text-xl sm:text-2xl font-bold font-sans tracking-tight text-[var(--foreground)]">
             {metadata.title}
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5">
-            Room Code: <strong className="font-mono text-violet-700">{metadata.code}</strong> &bull; Duration: {metadata.durationMins} Mins
+            Room Code:{" "}
+            <strong className="font-mono text-violet-700">
+              {metadata.code}
+            </strong>{" "}
+            &bull; Duration: {metadata.durationMins} Mins
           </p>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleStartExam} className="p-4 sm:p-7 space-y-5 sm:space-y-6">
-          
+        <form
+          onSubmit={handleStartExam}
+          className="p-4 sm:p-7 space-y-5 sm:space-y-6"
+        >
           {/* Candidate Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
@@ -287,7 +313,9 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
                   <KeyRound className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
                   Access PIN / Candidate Number
                 </label>
-                <span className="text-xs text-[var(--text-secondary)]">Issued by examiner</span>
+                <span className="text-xs text-[var(--text-secondary)]">
+                  Issued by examiner
+                </span>
               </div>
               <div className="flex justify-start">
                 <CandidatePinInput
@@ -305,16 +333,24 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
               <span>Exam Integrity Notice</span>
             </div>
             <p className="leading-relaxed">
-              This is a monitored exam hall. Leaving this window, switching browser tabs, or minimizing the screen is logged. 
-              Accumulating <strong>{metadata.maxTabViolations} malpractice violations</strong> will trigger immediate automatic submission and lock your attempt.
+              This is a monitored exam hall. Leaving this window, switching
+              browser tabs, or minimizing the screen is logged. Accumulating{" "}
+              <strong>
+                {metadata.maxTabViolations} malpractice violations
+              </strong>{" "}
+              will trigger immediate automatic submission and lock your attempt.
             </p>
           </div>
 
           {/* System Diagnostics Strip */}
           <div className="pt-2 border-t border-[var(--border-fine)]">
             <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-2">
-              <span className="font-semibold uppercase tracking-wider">System Readiness</span>
-              <span className="font-mono text-[11px] text-[var(--emerald-signal)]">Ping: ~{diagnostics.pingMs}ms</span>
+              <span className="font-semibold uppercase tracking-wider">
+                System Readiness
+              </span>
+              <span className="font-mono text-[11px] text-[var(--emerald-signal)]">
+                Ping: ~{diagnostics.pingMs}ms
+              </span>
             </div>
             <div className="grid grid-cols-1 xs:grid-cols-3 gap-1.5 sm:gap-2">
               <div className="flex items-center gap-1.5 p-1.5 sm:p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-[11px] sm:text-xs">
@@ -359,12 +395,12 @@ export default function CandidateLobby({ examCode, initialMetadata }: CandidateL
               </>
             )}
           </Button>
-
         </form>
 
         {/* Footer info */}
         <div className="bg-[var(--surface-subtle)] border-t border-[var(--border-fine)] px-6 py-3 text-center text-[11px] text-[var(--text-secondary)]">
-          Powered by <strong className="text-violet-700">ParaLearn CBT</strong> &bull; Secure Standalone Assessment Engine
+          Powered by <strong className="text-violet-700">ParaLearn CBT</strong>{" "}
+          &bull; Secure Standalone Assessment Engine
         </div>
       </div>
     </div>
