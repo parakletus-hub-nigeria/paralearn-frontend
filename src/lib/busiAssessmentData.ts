@@ -6,7 +6,6 @@ export const BUSI_WORKSPACE: StoredWorkspace = {
   type: "STANDALONE_HALL",
   ownerName: "Evander Ikechukwu",
   ownerEmail: "parakletus70@gmail.com",
-  password: "60647065PiP",
   credits: 99999,
   apiKey: "pln_live_sk_pip_72a19c40b8e21f95a43c",
   webhookSecret: "pln_whsec_pip_84b39e1f08c52b7d91",

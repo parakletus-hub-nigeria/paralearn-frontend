@@ -97,29 +97,14 @@ export interface ExaminerWorkspace {
 
 import Cookies from "js-cookie";
 
+// The browser always talks to this app's /api/cbt gateway, which checks the
+// examiner's session before reaching the Redis store or the CBT service.
 export const getCbtApiBase = (): string => {
-  if (typeof window !== "undefined") {
-    const isLocalhost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-    const envUrl = process.env.NEXT_PUBLIC_CBT_API_URL;
-    if (!envUrl || envUrl.includes("localhost") || envUrl.includes("127.0.0.1")) {
-      if (!isLocalhost) {
-        return "/api/cbt";
-      }
-    }
-    return (envUrl || "/api/cbt").replace(/\/+$/, "");
-  }
-  const envUrl = process.env.NEXT_PUBLIC_CBT_API_URL;
-  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
-    return envUrl.replace(/\/+$/, "");
-  }
+  if (typeof window !== "undefined") return "/api/cbt";
   return "http://localhost:3000/api/cbt";
 };
 
 export const CBT_API_BASE = getCbtApiBase();
-// Exams, attempts and live monitoring are served by this app's own /api/cbt routes,
-// even when examiner sign-in goes to the external CBT service.
 const EXAM_API_BASE = "/api/cbt";
 
 export const CBT_COOKIE_SESSION = "pln_cbt_session";
@@ -131,7 +116,10 @@ export const saveExaminerSession = (workspace: ExaminerWorkspace): void => {
   try {
     const raw = JSON.stringify(workspace);
     localStorage.setItem("paralearn_cbt_standalone_workspace", raw);
-    localStorage.setItem("paralearn_cbt_user_type", "STANDALONE_TUTOR");
+    localStorage.setItem(
+      "paralearn_cbt_user_type",
+      workspace.type === "INSTITUTION" ? "SCHOOL_STAFF" : "STANDALONE_TUTOR"
+    );
     localStorage.setItem("paralearn_cbt_examiner_email", workspace.ownerEmail);
 
     // Dual-layer Cookie persistence (7 days, Lax)
@@ -179,6 +167,8 @@ export const clearExaminerSession = (): void => {
   } catch (err) {
     console.error("[CBT Session] Failed to clear examiner session:", err);
   }
+  // End the server session too (httpOnly cookie)
+  fetch("/api/cbt/auth/logout", { method: "POST" }).catch(() => {});
 };
 
 // ── Local Optimistic Cache & Offline Candidate Resilience ───────────────────
@@ -329,44 +319,92 @@ export const recordProctoringViolation = (
   return { violationCount: session.violations.length, session };
 };
 
+// ── Examiner sign-in ─────────────────────────────────────────────────────────
+export interface WorkspaceChoice {
+  workspaceId: string;
+  type: "INSTITUTION" | "STANDALONE_HALL";
+  name: string;
+}
+
+export type SignInResult =
+  | { status: "signed_in"; workspace: ExaminerWorkspace }
+  | { status: "choose"; selectionToken: string; choices: WorkspaceChoice[] };
+
+async function postAuth(action: string, body: unknown): Promise<any> {
+  const res = await fetch(`${EXAM_API_BASE}/auth/${action}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Sign-in failed. Please try again.");
+  return data;
+}
+
+function toExaminerWorkspace(data: any): ExaminerWorkspace {
+  const ws = data.workspace || {};
+  return {
+    id: ws.id,
+    name: ws.name,
+    type: ws.type,
+    ownerName: ws.ownerName || data.session?.name || ws.name,
+    ownerEmail: data.session?.email || ws.ownerEmail,
+    credits: ws.credits ?? 0,
+    webhookUrl: ws.webhookUrl || undefined,
+    createdAt: ws.createdAt,
+  };
+}
+
 // ── Microservice HTTP API Client ───────────────────────────────────────────
 export const cbtApi = {
   /**
-   * Examiner sign in — automatically saves session in client storage
+   * One sign-in for school staff and independent examiners. The server works
+   * out which workspace the credentials open; when an email has both, the
+   * caller chooses one with chooseWorkspace().
    */
-  async examinerLogin(email: string, password?: string): Promise<ExaminerWorkspace> {
-    const res = await fetch(`${CBT_API_BASE}/workspaces/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: "Examiner sign-in failed" }));
-      throw new Error(err.message || "Examiner sign-in failed.");
+  async signIn(email: string, password: string): Promise<SignInResult> {
+    const data = await postAuth("login", { email, password });
+    if (data.requiresChoice) {
+      return {
+        status: "choose",
+        selectionToken: data.selectionToken,
+        choices: data.choices,
+      };
     }
-    const workspace = await res.json();
+    const workspace = toExaminerWorkspace(data);
+    saveExaminerSession(workspace);
+    return { status: "signed_in", workspace };
+  },
+
+  async chooseWorkspace(selectionToken: string, workspaceId: string): Promise<ExaminerWorkspace> {
+    const workspace = toExaminerWorkspace(
+      await postAuth("select", { selectionToken, workspaceId })
+    );
     saveExaminerSession(workspace);
     return workspace;
   },
 
-  /**
-   * Examiner registration — provisions workspace & signs in automatically
-   */
-  async registerStandaloneWorkspace(data: {
+  /** Creates an independent exam hall and signs in */
+  async registerExamHall(data: {
     name: string;
     ownerName: string;
     email: string;
+    password: string;
   }): Promise<ExaminerWorkspace> {
-    const res = await fetch(`${CBT_API_BASE}/workspaces/standalone`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: "Workspace registration failed" }));
-      throw new Error(err.message || "Workspace registration failed.");
+    const workspace = toExaminerWorkspace(await postAuth("register", data));
+    saveExaminerSession(workspace);
+    return workspace;
+  },
+
+  /** The signed-in workspace, or null when the server session has ended */
+  async fetchSession(): Promise<ExaminerWorkspace | null> {
+    const res = await fetch(`${EXAM_API_BASE}/auth/me`, { cache: "no-store" });
+    if (res.status === 401 || res.status === 404) {
+      clearExaminerSession();
+      return null;
     }
-    const workspace = await res.json();
+    if (!res.ok) throw new Error("Could not check your sign-in.");
+    const workspace = toExaminerWorkspace(await res.json());
     saveExaminerSession(workspace);
     return workspace;
   },

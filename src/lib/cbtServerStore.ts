@@ -9,6 +9,7 @@
  * where each function invocation is stateless.
  */
 
+import crypto from "crypto";
 import { kvAdapter } from "./cbtKvAdapter";
 import { BUSI_WORKSPACE, BUSI_EXAM, BUSI_QUESTIONS } from "./busiAssessmentData";
 
@@ -58,7 +59,11 @@ export interface StoredWorkspace {
   type: string;
   ownerName: string;
   ownerEmail: string;
+  /** Legacy plaintext password; replaced by passwordHash on next sign-in */
   password?: string;
+  passwordHash?: string;
+  /** ParaLearn School.id for INSTITUTION workspaces */
+  externalId?: string;
   credits: number;
   apiKey?: string;
   webhookUrl?: string;
@@ -125,6 +130,7 @@ const NS = {
   workspace: "cbt:ws",
   workspaceByEmail: "cbt:ws:email",
   workspaceByApiKey: "cbt:ws:apikey",
+  workspaceBySchool: "cbt:ws:school",
   exam: "cbt:exam",
   examByCode: "cbt:exam:code",
   examsByWorkspace: "cbt:exams:ws",
@@ -419,7 +425,6 @@ export const cbtServerStore = {
         name: "Parakletus Internship Program",
         ownerName: "Evander Ikechukwu",
         ownerEmail: "parakletus70@gmail.com",
-        password: "60647065PiP",
       };
     }
 
@@ -475,6 +480,90 @@ export const cbtServerStore = {
     if (id) return kvAdapter.hget<StoredWorkspace>(NS.workspace, id);
     const all = await kvAdapter.hlist<StoredWorkspace>(NS.workspace);
     return all.find((w) => w.ownerEmail?.toLowerCase() === cleanEmail) || null;
+  },
+
+  /**
+   * Exact-email lookup of an independent exam hall, for sign-in. Unlike
+   * findWorkspaceByEmail it never matches by alias or substring.
+   */
+  async findStandaloneWorkspaceByEmail(email: string): Promise<StoredWorkspace | null> {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) return null;
+    await ensureDefaultWorkspacesAndExams();
+    let id = await kvAdapter.get<string>(`${NS.workspaceByEmail}:${cleanEmail}`);
+    if (!id) {
+      const all = await kvAdapter.hlist<StoredWorkspace>(NS.workspace);
+      id = all.find((w) => w.ownerEmail?.toLowerCase() === cleanEmail)?.id || null;
+    }
+    if (!id || id === "default") return null;
+    const ws = await this.getWorkspace(id);
+    if (!ws || ws.type === "INSTITUTION") return null;
+    return ws;
+  },
+
+  async createStandaloneWorkspace(data: {
+    name: string;
+    ownerName: string;
+    email: string;
+    passwordHash: string;
+  }): Promise<StoredWorkspace> {
+    const email = data.email.trim().toLowerCase();
+    const ws: StoredWorkspace = {
+      id: `ws_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+      name: data.name,
+      type: "STANDALONE_HALL",
+      ownerName: data.ownerName,
+      ownerEmail: email,
+      passwordHash: data.passwordHash,
+      credits: 50,
+      apiKey: `pln_live_sk_${crypto.randomBytes(24).toString("hex")}`,
+      webhookSecret: `pln_whsec_${crypto.randomBytes(24).toString("hex")}`,
+      createdAt: new Date().toISOString(),
+    };
+    await kvAdapter.hset(NS.workspace, ws.id, ws);
+    await kvAdapter.set(`${NS.workspaceByEmail}:${email}`, ws.id);
+    await kvAdapter.set(`${NS.workspaceByApiKey}:${ws.apiKey}`, ws.id);
+    return ws;
+  },
+
+  async setWorkspacePassword(id: string, passwordHash: string): Promise<void> {
+    const ws = await this.getWorkspace(id);
+    if (!ws) return;
+    const { password: _legacy, ...rest } = ws;
+    await kvAdapter.hset(NS.workspace, ws.id, { ...rest, passwordHash });
+  },
+
+  /** Finds or creates a ParaLearn school's workspace, keyed by School.id */
+  async upsertInstitutionWorkspace(data: {
+    id?: string;
+    schoolId: string;
+    name: string;
+    ownerEmail: string;
+  }): Promise<StoredWorkspace> {
+    const existingId = await kvAdapter.get<string>(`${NS.workspaceBySchool}:${data.schoolId}`);
+    const existing = existingId
+      ? await kvAdapter.hget<StoredWorkspace>(NS.workspace, existingId)
+      : data.id
+        ? await kvAdapter.hget<StoredWorkspace>(NS.workspace, data.id)
+        : null;
+
+    const ws: StoredWorkspace = {
+      credits: 999999,
+      apiKey: `pln_live_sk_${crypto.randomBytes(24).toString("hex")}`,
+      webhookSecret: `pln_whsec_${crypto.randomBytes(24).toString("hex")}`,
+      createdAt: new Date().toISOString(),
+      ownerName: data.name,
+      ...(existing || {}),
+      id: existing?.id || data.id || `ws_inst_${crypto.randomBytes(6).toString("hex")}`,
+      name: data.name,
+      type: "INSTITUTION",
+      externalId: data.schoolId,
+      ownerEmail: existing?.ownerEmail || data.ownerEmail.toLowerCase(),
+    };
+    await kvAdapter.hset(NS.workspace, ws.id, ws);
+    await kvAdapter.set(`${NS.workspaceBySchool}:${data.schoolId}`, ws.id);
+    if (ws.apiKey) await kvAdapter.set(`${NS.workspaceByApiKey}:${ws.apiKey}`, ws.id);
+    return ws;
   },
 
   async updateWorkspace(
@@ -544,7 +633,6 @@ export const cbtServerStore = {
         name: "Parakletus Internship Program",
         ownerName: "Evander Ikechukwu",
         ownerEmail: "parakletus70@gmail.com",
-        password: "60647065PiP",
       };
       await kvAdapter.hset(NS.workspace, updated.id, updated);
       await kvAdapter.set(`${NS.workspaceByEmail}:parakletus70@gmail.com`, updated.id);
@@ -1406,6 +1494,10 @@ export const cbtServerStore = {
   },
 
   /** Removes a roster entry by id, or by exam + PIN (for entries mirrored from the CBT service) */
+  async getCandidate(id: string): Promise<StoredCandidate | null> {
+    return kvAdapter.hget<StoredCandidate>(NS.candidate, id);
+  },
+
   async deleteCandidate(ref: { id?: string; examId?: string; pin?: string }): Promise<boolean> {
     let cand = ref.id ? await kvAdapter.hget<StoredCandidate>(NS.candidate, ref.id) : null;
     if (!cand && ref.examId && ref.pin) {

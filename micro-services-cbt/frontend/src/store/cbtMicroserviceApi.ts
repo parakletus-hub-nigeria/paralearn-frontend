@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { clearExaminerSession } from "@cbt/lib/cbtSessionManager";
 
 export type CbtQuestionType = "MCQ" | "TRUE_FALSE" | "MULTI_SELECT" | "ESSAY" | "SHORT_ESSAY" | "LONG_ESSAY";
 
@@ -202,7 +203,18 @@ const dynamicCbtBaseQuery = async (args: any, api: any, extraOptions: any) => {
       return headers;
     },
   });
-  return rawBaseQuery(args, api, extraOptions);
+  const result = await rawBaseQuery(args, api, extraOptions);
+  // The examiner's session ended (expired or signed out elsewhere): sign in again
+  if (
+    result.error?.status === 401 &&
+    typeof window !== "undefined" &&
+    window.location.pathname.startsWith("/cbt") &&
+    !window.location.pathname.startsWith("/cbt/auth")
+  ) {
+    clearExaminerSession();
+    window.location.href = "/cbt/auth?expired=1";
+  }
+  return result;
 };
 
 
@@ -247,27 +259,6 @@ export const cbtMicroserviceApi = createApi({
   baseQuery: dynamicCbtBaseQuery,
   tagTypes: ["CbtWorkspace", "CbtExam", "CbtQuestion", "CbtCandidate", "CbtAttempt", "CbtMonitor"],
   endpoints: (builder) => ({
-    examinerLogin: builder.mutation<ExaminerWorkspace, { email: string; password?: string }>({
-      query: (body) => ({
-        url: "/workspaces/login",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["CbtWorkspace"],
-    }),
-
-    registerStandaloneWorkspace: builder.mutation<
-      ExaminerWorkspace,
-      { name: string; ownerName: string; email: string; webhookUrl?: string }
-    >({
-      query: (body) => ({
-        url: "/workspaces/standalone",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["CbtWorkspace"],
-    }),
-
     listWorkspaceExams: builder.query<CbtExamItem[], string>({
       query: (workspaceId) => ({
         url: "/exams",
@@ -489,8 +480,6 @@ export const cbtMicroserviceApi = createApi({
 });
 
 export const {
-  useExaminerLoginMutation,
-  useRegisterStandaloneWorkspaceMutation,
   useListWorkspaceExamsQuery,
   useCreateCbtExamMutation,
   useGetCbtExamQuery,

@@ -21,6 +21,7 @@ import {
   Monitor,
   Users,
   X,
+  School,
 } from "lucide-react";
 import {
   Dialog,
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
+  cbtApi,
   getExaminerSession,
   loadStoredExams,
   saveStoredExams,
@@ -65,6 +67,15 @@ export default function CbtPortalPage() {
   const router = useRouter();
   const [examiner, setExaminer] = useState<ExaminerWorkspace | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [importPromptDismissed, setImportPromptDismissed] = useState(false);
+  useEffect(() => {
+    if (!examiner?.id) return;
+    try {
+      setImportPromptDismissed(
+        !!localStorage.getItem(`paralearn_cbt_import_prompt_dismissed_${examiner.id}`)
+      );
+    } catch {}
+  }, [examiner?.id]);
   const [now, setNow] = useState(Date.now());
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All exams");
@@ -107,6 +118,11 @@ export default function CbtPortalPage() {
       }
     }
     setHydrated(true);
+    // Confirm the server session; a stale local session drops back to the entrance
+    cbtApi
+      .fetchSession()
+      .then((ws) => setExaminer(ws))
+      .catch(() => {});
     const timer = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(timer);
   }, []);
@@ -251,6 +267,10 @@ export default function CbtPortalPage() {
     );
   if (!examiner) return <CbtEntrance />;
 
+  const importPromptKey = `paralearn_cbt_import_prompt_dismissed_${examiner.id}`;
+  const showImportPrompt =
+    examiner.type === "INSTITUTION" && !importPromptDismissed && activeExams.length > 0;
+
   return (
     <main className="cbt-dashboard">
       <div className="cbt-page-heading">
@@ -277,6 +297,38 @@ export default function CbtPortalPage() {
           </button>
         </div>
       </div>
+      {examiner.type === "INSTITUTION" && activeExams.length === 0 && !isLoading && (
+        <div className="cbt-notice">
+          <School size={18} className="shrink-0" />
+          <span>
+            Create your first exam, then bring in your students from ParaLearn. Their
+            classes are ready to import.
+          </span>
+        </div>
+      )}
+      {showImportPrompt && (
+        <div className="cbt-notice">
+          <School size={18} className="shrink-0" />
+          <span>
+            Bring in your students from ParaLearn: import whole classes into an exam&apos;s
+            candidate list.
+          </span>
+          <Link className="ml-auto underline font-semibold" href="/cbt/candidates?import=1">
+            Import students
+          </Link>
+          <button
+            aria-label="Dismiss"
+            onClick={() => {
+              setImportPromptDismissed(true);
+              try {
+                localStorage.setItem(importPromptKey, "1");
+              } catch {}
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
       {error && (
         <div className="cbt-notice" role="alert">
           <AlertCircle size={18} className="shrink-0" />

@@ -135,6 +135,14 @@ function CandidatesPageContent() {
     }
   }, [requestedExamId, selectedExamId, workspaceExams]);
 
+  // Arriving from the hub's "Bring in your students" prompt (?import=1)
+  const wantsImport = searchParams.get("import") === "1";
+  useEffect(() => {
+    if (wantsImport && examiner?.type === "INSTITUTION" && workspaceExams.length > 0) {
+      setIsImportOpen(true);
+    }
+  }, [wantsImport, examiner?.type, workspaceExams.length]);
+
   useEffect(() => {
     if (!activeExamId || !activeRoomCode || isLoadingCandidates) return;
     const mapped = remoteCandidates.map((candidate) => ({
@@ -305,16 +313,18 @@ function CandidatesPageContent() {
 
           <div className="flex flex-wrap items-center gap-2.5">
             
-            {/* Import from ParaLearn Modal Trigger */}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsImportOpen(true)}
-              className="h-9 px-3.5 text-xs font-bold border-violet-200 bg-violet-50/60 hover:bg-violet-100 text-[#641bc4] flex items-center gap-1.5 rounded-xl shadow-2xs transition-all"
-            >
-              <School className="w-3.5 h-3.5 text-[#641bc4]" />
-              <span>Import from ParaLearn</span>
-            </Button>
+            {/* Import from ParaLearn: school workspaces only */}
+            {examiner?.type === "INSTITUTION" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsImportOpen(true)}
+                className="h-9 px-3.5 text-xs font-bold border-violet-200 bg-violet-50/60 hover:bg-violet-100 text-[#641bc4] flex items-center gap-1.5 rounded-xl shadow-2xs transition-all"
+              >
+                <School className="w-3.5 h-3.5 text-[#641bc4]" />
+                <span>Import from ParaLearn</span>
+              </Button>
+            )}
 
             {/* Print Slips Modal Trigger */}
             <Button

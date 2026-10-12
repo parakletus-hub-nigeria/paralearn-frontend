@@ -142,6 +142,12 @@ const Signin = () => {
           verified = true;
           break;
         }
+        if (status === "REJECTED") {
+          throw new Error(
+            statusData?.message ||
+              "This WhatsApp number could not be matched to your account. Please sign in with your password.",
+          );
+        }
         if (status === "EXPIRED" || status === "CONSUMED") {
           throw new Error("This WhatsApp login request has expired. Start again.");
         }

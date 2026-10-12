@@ -92,7 +92,7 @@ export function ImportFromParalearnModal({
   const handleFetchClasses = async () => {
     const wsId = activeWorkspaceId;
     const em = activeEmail;
-    if (!em || !wsId) return;
+    if (!wsId) return;
     try {
       await fetchClasses({ workspaceId: wsId, email: em }).unwrap();
     } catch (err: any) {
@@ -140,7 +140,7 @@ export function ImportFromParalearnModal({
       return;
     }
 
-    if (!activeWorkspaceId || !activeEmail) {
+    if (!activeWorkspaceId) {
       toast.error("Your examiner session is not loaded. Please sign in again.");
       return;
     }
