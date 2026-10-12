@@ -156,100 +156,29 @@ export default function CbtApiDocsPage() {
               <h2 className="text-2xl font-bold tracking-tight text-slate-900">2. Workspaces & Developer Keys</h2>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Create and manage autonomous workspaces for your academy, school, or tutorial centre. Each standalone workspace receives <strong>30 free candidate testing credits</strong> automatically upon creation.
+              Workspaces are created in the CBT app, not through the API. Independent exam
+              halls sign up at{" "}
+              <a className="text-[#641bc4] underline" href="/cbt/auth?mode=register">cbt.pln.ng/cbt/auth</a>;
+              schools sign in there with a ParaLearn staff account, and their workspace is
+              created and linked to ParaLearn on first sign-in.
             </p>
-
-            {/* Endpoint 2.1: Register Standalone */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2 font-mono text-xs font-bold">
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">POST</span>
-                  <span className="text-slate-700">/workspaces/standalone</span>
-                </div>
-                <span className="text-xs text-slate-500">Register Partner Exam Hall</span>
-              </div>
-              <div className="p-4 space-y-3 font-mono text-xs">
-                <p className="font-sans font-semibold text-slate-700">Request Body:</p>
-                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
-{`{
-  "name": "Standard Assessment Centre",
-  "ownerName": "Centre Administrator",
-  "email": "examiner@example.com",
-  "webhookUrl": "https://api.example.com/webhooks/cbt-results"
-}`}
-                </pre>
-                <p className="font-sans font-semibold text-slate-700">Response (201 Created):</p>
-                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
-{`{
-  "id": "ws_sample_0001",
-  "name": "Standard Assessment Centre",
-  "type": "STANDALONE_HALL",
-  "credits": 30,
-  "apiKey": "pln_live_sk_sample_••••••••••••••••",
-  "webhookSecret": "pln_whsec_sample_••••••••••••••••"
-}`}
-                </pre>
-              </div>
-            </div>
-
-            {/* Endpoint 2.2: Examiner Sign In */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2 font-mono text-xs font-bold">
-                  <span className="px-2 py-0.5 bg-violet-100 text-[#641bc4] rounded">POST</span>
-                  <span className="text-slate-700">/workspaces/login</span>
-                </div>
-                <span className="text-xs text-slate-500">Examiner Sign In & Recovery</span>
-              </div>
-              <div className="p-4 space-y-3 font-mono text-xs">
-                <p className="font-sans text-xs text-slate-600">
-                  Authenticates an examiner using their registered email. Restores their API keys, credit balance, and exam counts. If the account is new, it automatically provisions a workspace with 30 free test credits.
-                </p>
-                <p className="font-sans font-semibold text-slate-700">Request Body:</p>
-                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
-{`{
-  "email": "examiner@example.com",
-  "password": "your_secure_password"
-}`}
-                </pre>
-                <p className="font-sans font-semibold text-slate-700">Response (200 OK):</p>
-                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
-{`{
-  "id": "ws_sample_0001",
-  "name": "Standard Assessment Centre",
-  "ownerName": "Centre Administrator",
-  "ownerEmail": "examiner@example.com",
-  "credits": 30,
-  "apiKey": "pln_live_sk_sample_••••••••••••••••",
-  "_count": {
-    "exams": 4,
-    "questions": 150
-  }
-}`}
-                </pre>
-              </div>
-            </div>
-
-            {/* Endpoint 2.3: School SIS SSO */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2 font-mono text-xs font-bold">
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">POST</span>
-                  <span className="text-slate-700">/workspaces/institution</span>
-                </div>
-                <span className="text-xs text-slate-500">ParaLearn School SIS SSO</span>
-              </div>
-              <div className="p-4 space-y-3 font-mono text-xs">
-                <p className="font-sans font-semibold text-slate-700">Request Body:</p>
-                <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto">
-{`{
-  "schoolId": "sch_sample_99182",
-  "schoolName": "Exemplar Academy",
-  "email": "admin@school.example.edu.ng"
-}`}
-                </pre>
-              </div>
-            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              To get an API key, request API access from <code>dev@pln.ng</code>, naming your
+              workspace. A key only reaches its own workspace: naming another workspace returns{" "}
+              <code>403</code>, and another workspace&apos;s exams, questions, candidates or
+              attempts return <code>404</code>.
+            </p>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Candidate endpoints need no key: <code>GET /exams/code/:accessCode</code>,{" "}
+              <code>POST /attempts/start</code>, <code>/attempts/:id/answer</code>,{" "}
+              <code>/attempts/:id/telemetry</code>, <code>/attempts/:id/submit</code> and{" "}
+              <code>GET /attempts/:id/slip</code>.
+            </p>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              <code>POST /workspaces/standalone</code> and <code>POST /workspaces/institution</code>{" "}
+              are internal to ParaLearn. <code>POST /workspaces/login</code> has been retired and
+              returns <code>410 Gone</code>.
+            </p>
           </section>
 
           {/* Section 3: Exams */}
