@@ -317,59 +317,6 @@ export const recordProctoringViolation = (
 
 // ── Microservice HTTP API Client ───────────────────────────────────────────
 export const cbtApi = {
-  /**
-   * Examiner sign in — automatically saves session in client storage
-   */
-  async examinerLogin(email: string, password?: string): Promise<ExaminerWorkspace> {
-    const res = await fetch(`${CBT_API_BASE}/workspaces/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: "Examiner sign-in failed" }));
-      throw new Error(err.message || "Examiner sign-in failed.");
-    }
-    const workspace = await res.json();
-    saveExaminerSession(workspace);
-    return workspace;
-  },
-
-  /**
-   * Examiner registration — provisions workspace & signs in automatically
-   */
-  async registerStandaloneWorkspace(data: {
-    name: string;
-    ownerName: string;
-    email: string;
-  }): Promise<ExaminerWorkspace> {
-    try {
-      const res = await fetch(`${CBT_API_BASE}/workspaces/standalone`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        const workspace = await res.json();
-        saveExaminerSession(workspace);
-        return workspace;
-      }
-    } catch {
-      // Fallback below
-    }
-
-    const fallback: ExaminerWorkspace = {
-      id: `hall_${Date.now()}`,
-      name: data.name.trim() || `${data.ownerName}'s Exam Hall`,
-      ownerName: data.ownerName.trim(),
-      ownerEmail: data.email.trim(),
-      type: "STANDALONE_HALL",
-      credits: 30,
-      createdAt: new Date().toISOString(),
-    };
-    saveExaminerSession(fallback);
-    return fallback;
-  },
 
   async getExamByCode(accessCode: string) {
     const res = await fetch(`${CBT_API_BASE}/exams/code/${encodeURIComponent(accessCode)}`);

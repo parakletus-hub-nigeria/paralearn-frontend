@@ -37,8 +37,8 @@ ParaLearn CBT is an enterprise-grade Computer-Based Testing and examination engi
 - Candidate roster with printable photocard slips and 1-click WhatsApp exam pass dispatch.
 
 ### 5. Developer API (v1.2.0)
+- Workspaces are created by signing up at https://cbt.pln.ng/cbt/auth (schools sign in with their ParaLearn account); API keys are issued on request (dev@pln.ng) and only reach their own workspace.
 - Endpoints:
-  - POST /workspaces/standalone
   - POST /exams
   - GET /exams/:id/questions
   - POST /exams/:id/questions
