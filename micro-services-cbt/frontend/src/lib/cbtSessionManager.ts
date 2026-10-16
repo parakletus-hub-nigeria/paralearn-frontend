@@ -660,6 +660,28 @@ export const saveStoredQuestions = (questions: any[], examId: string) => {
 };
 
 /**
+ * Marks that this device holds question edits the server hasn't saved yet, so
+ * a refetch or reload shows the examiner's work instead of the older server copy.
+ */
+export const hasUnsavedQuestions = (examId: string): boolean => {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(`paralearn_cbt_questions_unsaved_${examId}`) === "1";
+  } catch {
+    return false;
+  }
+};
+
+export const setUnsavedQuestions = (examId: string, unsaved: boolean) => {
+  if (typeof window === "undefined") return;
+  try {
+    const key = `paralearn_cbt_questions_unsaved_${examId}`;
+    if (unsaved) localStorage.setItem(key, "1");
+    else localStorage.removeItem(key);
+  } catch {}
+};
+
+/**
  * Purge legacy demo accounts and mock data to guarantee a pristine, clean slate.
  */
 export const purgeAllDemoData = () => {
