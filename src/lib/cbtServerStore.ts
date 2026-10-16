@@ -92,6 +92,8 @@ export interface StoredCandidate {
   email?: string | null;
   phone?: string | null;
   status: "REGISTERED" | "STARTED" | "SUBMITTED" | "DISQUALIFIED";
+  /** Added by the candidate starting without a PIN, not enrolled by the examiner */
+  walkIn?: boolean;
   score?: number;
   totalMarks?: number;
   percentage?: number;
@@ -1192,10 +1194,11 @@ export const cbtServerStore = {
       getExamAttempts(exam.id),
     ]);
 
+    // Only examiner-issued PINs identify a candidate on their own
     const enrolled = examCands.find(
       (c) =>
-        (pin && c.candidatePin === pin) ||
-        (externalId && c.externalAttemptId === externalId)
+        !c.walkIn &&
+        ((pin && c.candidatePin === pin) || (externalId && c.externalAttemptId === externalId))
     );
     const samePerson = (att: StoredAttempt) =>
       (pin && att.candidatePin === pin) || (externalId && att.externalAttemptId === externalId);
@@ -1293,6 +1296,7 @@ export const cbtServerStore = {
         studentId: null,
         externalAttemptId: externalId || null,
         status: "STARTED",
+        walkIn: true,
         metadata: payload.metadata || null,
         createdAt: now.toISOString(),
       };

@@ -165,6 +165,8 @@ export function isSafeWebhookUrl(raw: string): boolean {
   } catch {
     return false;
   }
+  // Local testing only: never set this in production
+  if (process.env.CBT_WEBHOOK_ALLOW_INSECURE === "1") return url.protocol === "http:" || url.protocol === "https:";
   if (url.protocol !== "https:") return false;
   const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal") || host.endsWith(".local")) {
