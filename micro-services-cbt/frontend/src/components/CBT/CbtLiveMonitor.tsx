@@ -40,9 +40,12 @@ import {
   useLazyGetAttemptReviewQuery,
   useManualGradeAttemptMutation,
   useSubmitAttemptMutation,
+  useExtendAttemptMutation,
+  useReinstateAttemptMutation,
 } from "@cbt/store/cbtMicroserviceApi";
 
 import CbtReportCardPanel from "./CbtReportCardPanel";
+import CbtAnswerSheetDialog from "./CbtAnswerSheetDialog";
 
 export interface CandidateLiveStatus {
   id: string;
@@ -109,6 +112,10 @@ export default function CbtLiveMonitor({
   const [manualGradeAttempt, { isLoading: isSavingGrade }] =
     useManualGradeAttemptMutation();
   const [submitAttempt] = useSubmitAttemptMutation();
+  const [extendAttempt] = useExtendAttemptMutation();
+  const [reinstateAttempt] = useReinstateAttemptMutation();
+  const [answerSheet, setAnswerSheet] = useState<AttemptReviewPayload | null>(null);
+  const examNotFound = (monitorError as any)?.status === 404;
 
   const mapParticipantStatus = (
     participant: any,
@@ -282,6 +289,7 @@ export default function CbtLiveMonitor({
           [question.id]: {
             score: question.marksAwarded || 0,
             maxScore: question.marks,
+            comment: question.feedback || undefined,
           },
         };
       }
@@ -328,9 +336,8 @@ export default function CbtLiveMonitor({
           essays.find((q) => q.marksAwarded === undefined || q.marksAwarded === null) ||
           essays[0];
         if (!essayQ) {
-          toast.info(
-            "This exam does not have an essay question available for manual review.",
-          );
+          // Nothing to mark by hand: show the marked answer sheet
+          setAnswerSheet(review);
           return;
         }
 
@@ -385,7 +392,13 @@ export default function CbtLiveMonitor({
     if (attemptId && gradedQuestionId) {
       const review = await manualGradeAttempt({
         attemptId,
-        answers: [{ questionId: gradedQuestionId, marksAwarded: awarded }],
+        answers: [
+          {
+            questionId: gradedQuestionId,
+            marksAwarded: awarded,
+            feedback: updatedSession.essayFeedback?.[gradedQuestionId]?.comment || "",
+          },
+        ],
       }).unwrap();
 
       setCandidates((prev) =>
@@ -425,6 +438,7 @@ export default function CbtLiveMonitor({
       toast.error("This candidate has not started the exam yet.");
       return;
     }
+    if (!confirm(`Submit ${candidate.name}'s exam now with the answers saved so far?`)) return;
     try {
       await submitAttempt({
         attemptId: candidate.attemptId,
@@ -439,30 +453,34 @@ export default function CbtLiveMonitor({
     }
   };
 
-  // Add 5 minutes grace
-  const handleAddFiveMins = (candidateId: string) => {
-    setCandidates((prev) =>
-      prev.map((c) =>
-        c.id === candidateId
-          ? {
-              ...c,
-              timeRemainingMins: c.timeRemainingMins + 5,
-              status: c.status === "locked" ? "active" : c.status,
-            }
-          : c,
-      ),
-    );
-    toast.success("Added +5 minutes extension to candidate session.");
+  // Give a writing candidate 5 more minutes; their device picks it up within 20s
+  const handleAddFiveMins = async (candidateId: string) => {
+    const candidate = candidates.find((c) => c.id === candidateId);
+    if (!candidate?.attemptId) return;
+    try {
+      await extendAttempt({ attemptId: candidate.attemptId, minutes: 5 }).unwrap();
+      toast.success(`Gave ${candidate.name} 5 more minutes.`);
+      refetchMonitor();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Couldn't add time for this candidate.");
+    }
   };
 
-  // Unlock disqualified attempt
-  const handleUnlockCandidate = (candidateId: string) => {
-    setCandidates((prev) =>
-      prev.map((c) =>
-        c.id === candidateId ? { ...c, status: "active", violations: 2 } : c,
-      ),
-    );
-    toast.info("Attempt unlocked with 1 violation forgiven.");
+  // Reopen an attempt locked for tab switching; the candidate rejoins from the lobby
+  const handleUnlockCandidate = async (candidateId: string) => {
+    const candidate = candidates.find((c) => c.id === candidateId);
+    if (!candidate?.attemptId) return;
+    if (!confirm(`Let ${candidate.name} continue? Their tab-switch count resets and their answers are kept.`)) return;
+    try {
+      await reinstateAttempt(candidate.attemptId).unwrap();
+      toast.success(
+        `${candidate.name} can continue. Ask them to rejoin from the exam lobby with their name and PIN ${candidate.pin}.`,
+        { duration: 8000 },
+      );
+      refetchMonitor();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Couldn't reopen this attempt.");
+    }
   };
 
   const filteredCandidates = candidates.filter((c) => {
@@ -547,6 +565,13 @@ export default function CbtLiveMonitor({
             <span className="cbt-eyebrow">Examination / Invigilation</span>
             <h1 className="text-2xl font-bold">Candidate monitor</h1>
           </div>
+          <a
+            className="cbt-button"
+            href={`/api/cbt/sync/export-csv/${encodeURIComponent(examId)}`}
+            download
+          >
+            Download results (CSV)
+          </a>
           <button
             className="cbt-button"
             disabled={isLoadingMonitor}
@@ -598,6 +623,12 @@ export default function CbtLiveMonitor({
             </div>
           </div>
         </div>
+
+        {examNotFound && (
+          <div className="cbt-notice" role="alert">
+            This exam wasn't found in your workspace. It may have been deleted, or you're signed in to a different workspace.
+          </div>
+        )}
 
         {/* Report cards: school workspaces only */}
         {isSchoolWorkspace && <CbtReportCardPanel examId={examId} />}
@@ -804,7 +835,9 @@ export default function CbtLiveMonitor({
                               <span>
                                 {c.gradingStatus === "GRADED"
                                   ? "Edit Grade"
-                                  : "Grade Essays"}
+                                  : c.gradingStatus === "PENDING_REVIEW"
+                                    ? "Grade Essays"
+                                    : "View answers"}
                               </span>
                             </Button>
                           ) : c.status === "locked" ? (
@@ -950,7 +983,13 @@ export default function CbtLiveMonitor({
                           className="w-full h-8 text-xs font-bold bg-violet-700 hover:bg-violet-800 text-white rounded-lg flex items-center justify-center gap-1.5"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
-                          <span>Grade Essays (AI Assist)</span>
+                          <span>
+                            {c.gradingStatus === "PENDING_REVIEW"
+                              ? "Grade Essays (AI Assist)"
+                              : c.gradingStatus === "GRADED"
+                                ? "Edit Grade"
+                                : "View answers"}
+                          </span>
                         </Button>
                       ) : c.status === "locked" ? (
                         <Button
@@ -1006,6 +1045,8 @@ export default function CbtLiveMonitor({
           onGraded={handleManualGradeSaved}
         />
       )}
+
+      <CbtAnswerSheetDialog review={answerSheet} onClose={() => setAnswerSheet(null)} />
     </div>
   );
 }

@@ -162,6 +162,13 @@ export interface AttemptReviewQuestion {
   answer?: string | string[] | Record<string, any> | null;
   marksAwarded?: number;
   isCorrect?: boolean | null;
+  minWords?: number;
+  maxWords?: number;
+  modelAnswer?: string;
+  keyTerms?: string[];
+  rubric?: any;
+  /** The examiner's comment on this answer */
+  feedback?: string | null;
 }
 
 export interface AttemptReviewPayload {
@@ -339,6 +346,26 @@ export const cbtMicroserviceApi = createApi({
       invalidatesTags: (_result, _error, arg) => [{ type: "CbtExam", id: arg.id }, "CbtExam"],
     }),
 
+    extendAttempt: builder.mutation<
+      { attemptId: string; status: string; deadline: string },
+      { attemptId: string; minutes: number }
+    >({
+      query: ({ attemptId, minutes }) => ({
+        url: `/attempts/${encodeURIComponent(attemptId)}/extend`,
+        method: "POST",
+        body: { minutes },
+      }),
+      invalidatesTags: ["CbtMonitor"],
+    }),
+
+    reinstateAttempt: builder.mutation<{ attemptId: string; status: string; deadline: string }, string>({
+      query: (attemptId) => ({
+        url: `/attempts/${encodeURIComponent(attemptId)}/reinstate`,
+        method: "POST",
+      }),
+      invalidatesTags: ["CbtMonitor"],
+    }),
+
     deleteCbtExam: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({ url: `/exams/${encodeURIComponent(id)}`, method: "DELETE" }),
       invalidatesTags: ["CbtExam"],
@@ -474,7 +501,7 @@ export const cbtMicroserviceApi = createApi({
       {
         examId: string;
         candidateName: string;
-        candidatePin: string;
+        candidatePin?: string;
         studentId?: string;
         email?: string;
         phone?: string;
@@ -604,6 +631,8 @@ export const {
   useFetchImportableClassesMutation,
   useImportCandidatesFromParalearnMutation,
   useDeleteCbtExamMutation,
+  useExtendAttemptMutation,
+  useReinstateAttemptMutation,
   useGetReportCardOptionsQuery,
   useGetReportCardStatusQuery,
   useLinkReportCardMutation,

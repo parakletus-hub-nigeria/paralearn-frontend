@@ -93,6 +93,7 @@ export default function CbtPortalPage() {
   const [shuffleQuestions, setShuffleQuestions] = useState(true);
   const [shuffleChoices, setShuffleChoices] = useState(true);
   const [showResultAfter, setShowResultAfter] = useState(true);
+  const [rosterOnly, setRosterOnly] = useState(false);
   const [maxTabViolations, setMaxTabViolations] = useState(3);
   const [storedExams, setStoredExams] = useState<CbtExamItem[]>([]);
   const {
@@ -129,7 +130,7 @@ export default function CbtPortalPage() {
 
   useEffect(() => {
     if (exams && exams.length > 0 && examiner?.id) {
-      saveStoredExams(exams, examiner.id);
+      saveStoredExams(exams as any, examiner.id);
       setStoredExams(exams);
     }
   }, [exams, examiner?.id]);
@@ -239,6 +240,7 @@ export default function CbtPortalPage() {
         shuffleQuestions,
         shuffleChoices,
         showResultAfter,
+        accessType: rosterOnly ? "ROSTER_ONLY" : "ACCESS_CODE",
         isPublished: false,
       }).unwrap();
       toast.success("Draft created");
@@ -719,6 +721,14 @@ export default function CbtPortalPage() {
                   onChange={(e) => setShowResultAfter(e.target.checked)}
                 />
                 Show results after submission
+              </label>
+              <label className="cbt-check">
+                <input
+                  type="checkbox"
+                  checked={rosterOnly}
+                  onChange={(e) => setRosterOnly(e.target.checked)}
+                />
+                Registered candidates only (they need the PIN you issue)
               </label>
               <label className="mt-3">
                 Tab-switch limit

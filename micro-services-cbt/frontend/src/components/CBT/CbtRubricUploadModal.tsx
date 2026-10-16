@@ -144,8 +144,9 @@ export default function CbtRubricUploadModal({
     setCriteria((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleParsePastedText = () => {
-    if (!pastedText.trim()) {
+  const handleParsePastedText = (textArg?: string) => {
+    const source = typeof textArg === "string" ? textArg : pastedText;
+    if (!source.trim()) {
       toast.error("Please paste rubric text or a marking scheme first.");
       return;
     }
@@ -153,7 +154,7 @@ export default function CbtRubricUploadModal({
     setIsParsing(true);
     try {
       // Parse lines: look for lines with criteria and numbers
-      const lines = pastedText.split("\n").filter((l) => l.trim().length > 0);
+      const lines = source.split("\n").filter((l) => l.trim().length > 0);
       const parsed: RubricCriterion[] = [];
 
       lines.forEach((line, i) => {
@@ -180,7 +181,7 @@ export default function CbtRubricUploadModal({
         setCriteria(parsed);
         toast.success(`Successfully parsed ${parsed.length} criteria from text!`);
       } else {
-        toast.info("Could not automatically detect criteria. Added standard criteria for editing.");
+        toast.info('No criteria found. Put one criterion per line, e.g. "Content accuracy - 10 marks".');
       }
     } finally {
       setIsParsing(false);
@@ -200,18 +201,16 @@ export default function CbtRubricUploadModal({
           const text = event.target?.result as string;
           if (text) {
             setPastedText(text);
-            handleParsePastedText();
+            handleParsePastedText(text);
           }
         };
         reader.readAsText(file);
       } else {
-        // For Word/PDF/Excel: simulate intelligent schema extraction
-        toast.success(`Loaded document "${file.name}". Extracted criteria structure.`);
-        setCriteria([
-          { id: "c_up_1", title: "Content Mastery & Accuracy", maxMarks: Math.round(questionTotalMarks * 0.4), description: `Extracted from ${file.name}` },
-          { id: "c_up_2", title: "Methodology & Organization", maxMarks: Math.round(questionTotalMarks * 0.3), description: "Structure, coherence, and reasoning" },
-          { id: "c_up_3", title: "Expression & Synthesis", maxMarks: Math.round(questionTotalMarks * 0.3), description: "Quality of articulation and conclusion" },
-        ]);
+        // PDF, Word and Excel can't be read in the browser: say so rather than invent criteria
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        toast.info("Only .txt and .csv rubric files can be read. Copy the marking scheme's text into the paste tab instead.");
+        setTab("paste" as any);
       }
     }
   };
@@ -342,7 +341,7 @@ export default function CbtRubricUploadModal({
                     ref={fileInputRef}
                     type="file"
                     className="hidden"
-                    accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.txt"
+                    accept=".txt,.csv"
                     onChange={handleFileUpload}
                   />
                   <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center mx-auto">
@@ -424,7 +423,7 @@ export default function CbtRubricUploadModal({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={handleParsePastedText}
+                onClick={() => handleParsePastedText()}
                 disabled={isParsing}
                 className="h-8 text-xs font-semibold border-stone-200"
               >

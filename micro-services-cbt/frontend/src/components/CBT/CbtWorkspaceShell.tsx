@@ -116,6 +116,10 @@ export default function CbtWorkspaceShell({
             <Code2 size={17} />
             Developer API
           </Link>
+          <Link href="/cbt/settings">
+            <Code2 size={17} />
+            Settings &amp; API keys
+          </Link>
         </div>
         <div className="cbt-account">
           <div className="cbt-credit">

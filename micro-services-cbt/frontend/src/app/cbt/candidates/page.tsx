@@ -53,7 +53,15 @@ import {
   useListCandidatesQuery,
   useListWorkspaceExamsQuery,
   useUpsertCandidateMutation,
+  useDeleteCandidateMutation,
 } from "@cbt/store/cbtMicroserviceApi";
+
+/** wa.me needs international digits: Nigerian 080... becomes 23480... */
+function whatsAppNumber(phone: string): string {
+  const digits = (phone || "").replace(/[^0-9]/g, "");
+  if (digits.length === 11 && digits.startsWith("0")) return `234${digits.slice(1)}`;
+  return digits;
+}
 
 const mapCandidateStatus = (status: RemoteCandidateRecord["status"]): CandidateRecord["status"] => {
   if (status === "STARTED") return "IN_PROGRESS";
@@ -79,7 +87,9 @@ function CandidatesPageContent() {
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newRoomCode, setNewRoomCode] = useState("");
+  const [newRegNumber, setNewRegNumber] = useState("");
   const [upsertCandidate, { isLoading: isSavingCandidate }] = useUpsertCandidateMutation();
+  const [deleteCandidate] = useDeleteCandidateMutation();
   const { data: workspaceExams = [] } = useListWorkspaceExamsQuery(examiner?.id || "", {
     skip: !examiner?.id,
   });
@@ -145,14 +155,19 @@ function CandidatesPageContent() {
 
   useEffect(() => {
     if (!activeExamId || !activeRoomCode || isLoadingCandidates) return;
-    const mapped = remoteCandidates.map((candidate) => ({
+    const mapped = remoteCandidates.map((candidate: any) => ({
       id: candidate.id,
       name: candidate.candidateName,
-      regNumber: candidate.studentId || candidate.metadata?.regNumber || `PIN-${candidate.candidatePin}`,
+      regNumber: candidate.metadata?.regNumber || candidate.studentId || "—",
       pin: candidate.candidatePin,
       phone: candidate.phone || "",
       roomCode: activeRoomCode,
       status: mapCandidateStatus(candidate.status),
+      score: typeof candidate.percentage === "number" ? candidate.percentage : undefined,
+      grade:
+        typeof candidate.score === "number" && candidate.totalMarks
+          ? `${candidate.score}/${candidate.totalMarks}`
+          : undefined,
       createdAt: candidate.createdAt || "",
     })) as CandidateRecord[];
     setCandidates(mapped);
@@ -175,14 +190,19 @@ function CandidatesPageContent() {
   };
 
   const handleSendWhatsApp = (candidate: CandidateRecord) => {
+    const number = whatsAppNumber(candidate.phone);
+    if (!number) {
+      toast.error("Add a phone number for this candidate to send their pass on WhatsApp.");
+      return;
+    }
     const message = encodeURIComponent(
-      `Hello ${candidate.name}, here is your ParaLearn CBT Exam pass.\n\n` +
-      `Exam Room: ${candidate.roomCode}\n` +
-      `Your Access PIN: ${candidate.pin}\n` +
-      `Direct Link: ${window.location.origin}/take/${candidate.roomCode}\n\n` +
-      `Enter your 6-digit PIN at the lobby to begin. Good luck!`
+      `Hello ${candidate.name}, here is your ParaLearn CBT exam pass.\n\n` +
+      `Exam code: ${candidate.roomCode}\n` +
+      `Your PIN: ${candidate.pin}\n` +
+      `Start here: ${window.location.origin}/take/${candidate.roomCode}?pin=${encodeURIComponent(candidate.pin)}\n\n` +
+      `Enter your full name at the lobby to begin. Good luck!`
     );
-    window.open(`https://wa.me/${candidate.phone.replace(/[^0-9]/g, "")}?text=${message}`, "_blank");
+    window.open(`https://wa.me/${number}?text=${message}`, "_blank", "noopener,noreferrer");
   };
 
   const handleAddCandidate = async (e: React.FormEvent) => {
@@ -197,24 +217,20 @@ function CandidatesPageContent() {
       return;
     }
 
-    const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
-    const nextIndex = candidates.length + 1;
-    const formattedReg = `PLN/26/${String(nextIndex).padStart(3, "0")}`;
-
+    const regNumber = newRegNumber.trim();
     try {
+      // The server issues a PIN no one else in this exam has
       const created = await upsertCandidate({
         examId: activeExamId,
         candidateName: newName.trim(),
-        candidatePin: randomPin,
         phone: newPhone.trim() || undefined,
-        studentId: formattedReg,
-        metadata: { regNumber: formattedReg },
+        metadata: regNumber ? { regNumber } : undefined,
       }).unwrap();
 
       const newCandidate: CandidateRecord = {
         id: created.id,
         name: created.candidateName,
-        regNumber: created.studentId || formattedReg,
+        regNumber: regNumber || "—",
         pin: created.candidatePin,
         phone: created.phone || "",
         roomCode: activeRoomCode || newRoomCode.trim().toUpperCase(),
@@ -225,29 +241,50 @@ function CandidatesPageContent() {
       const updated = [newCandidate, ...candidates.filter((candidate) => candidate.id !== newCandidate.id)];
       setCandidates(updated);
       saveStoredCandidates(updated, examiner?.id);
-      toast.success(`Candidate ${newName} enrolled with PIN: ${randomPin}`);
+      toast.success(`Candidate ${newName} enrolled with PIN: ${created.candidatePin}`);
       setNewName("");
       setNewPhone("");
+      setNewRegNumber("");
       setIsAddOpen(false);
     } catch (err: any) {
       toast.error(err?.data?.message || err?.message || "Could not enroll candidate on the CBT microservice.");
     }
   };
 
-  const handleDeleteCandidate = (id: string) => {
-    const updated = candidates.filter((c) => c.id !== id);
-    setCandidates(updated);
-    saveStoredCandidates(updated, examiner?.id);
-    toast.info("Candidate removed from roster.");
+  // Removing a candidate also revokes their PIN; results already submitted are kept
+  const handleDeleteCandidate = async (id: string) => {
+    const candidate = candidates.find((c) => c.id === id);
+    if (!candidate) return;
+    if (!confirm(`Remove ${candidate.name} from this exam? Their PIN will stop working.`)) return;
+    try {
+      await deleteCandidate({ id, examId: activeExamId }).unwrap();
+      const updated = candidates.filter((c) => c.id !== id);
+      setCandidates(updated);
+      saveStoredCandidates(updated, examiner?.id);
+      toast.success("Candidate removed from roster.");
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Couldn't remove this candidate. Try again.");
+    }
   };
 
-  const handleClearAllCandidates = () => {
-    if (candidates.length === 0) return;
-    if (confirm("Are you sure you want to clear all candidates? This will start with a fresh, clean slate.")) {
-      setCandidates([]);
-      saveStoredCandidates([], examiner?.id);
-      toast.success("Candidate roster cleared. Clean slate restored.");
+  // Clears candidates who haven't started; anyone who sat the exam keeps their record
+  const handleClearAllCandidates = async () => {
+    const removable = candidates.filter((c) => c.status === "ENROLLED");
+    if (removable.length === 0) {
+      toast.info("Everyone on this roster has already started, so there's no one to clear.");
+      return;
     }
+    if (!confirm(`Remove ${removable.length} candidate(s) who haven't started? Their PINs will stop working.`)) return;
+    let removed = 0;
+    for (const c of removable) {
+      try {
+        await deleteCandidate({ id: c.id, examId: activeExamId }).unwrap();
+        removed++;
+      } catch {
+        // keep going; the list refreshes from the server
+      }
+    }
+    toast.success(`Removed ${removed} candidate${removed === 1 ? "" : "s"}.`);
   };
 
   const filteredCandidates = candidates.filter((c) => {
@@ -287,7 +324,21 @@ function CandidatesPageContent() {
                 {examiner.credits} Credits Available
               </Badge>
             )}
-            <Link href={availableRoomCodes.length > 0 ? `/take/${availableRoomCodes[0]}` : `/take`} target="_blank">
+            {workspaceExams.length > 0 && (
+              <select
+                aria-label="Exam"
+                value={activeExamId}
+                onChange={(e) => setSelectedExamId(e.target.value)}
+                className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold"
+              >
+                {workspaceExams.map((exam) => (
+                  <option key={exam.id} value={exam.id}>
+                    {exam.title} ({exam.accessCode})
+                  </option>
+                ))}
+              </select>
+            )}
+            <Link href={activeRoomCode ? `/take/${activeRoomCode}` : `/take`} target="_blank">
               <Button variant="outline" size="sm" className="h-8 text-xs font-bold border-slate-200 flex items-center gap-1.5">
                 <span>Open Student Lobby</span>
                 <ExternalLink className="w-3 h-3 text-[#641bc4]" />
@@ -374,6 +425,20 @@ function CandidatesPageContent() {
                       placeholder="e.g. 08031234567"
                       value={newPhone}
                       onChange={(e) => setNewPhone(e.target.value)}
+                      className="text-xs font-medium"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="cbt-new-reg" className="text-xs font-bold text-slate-700">
+                      Registration number (optional)
+                    </label>
+                    <Input
+                      id="cbt-new-reg"
+                      placeholder="e.g. JSS1/024"
+                      value={newRegNumber}
+                      maxLength={60}
+                      onChange={(e) => setNewRegNumber(e.target.value)}
                       className="text-xs font-medium"
                     />
                   </div>
@@ -651,6 +716,11 @@ function CandidatesPageContent() {
                             PIN Ready
                           </span>
                         )}
+                        {candidate.status === "FLAGGED" && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
+                            Locked
+                          </span>
+                        )}
                       </td>
 
                       {/* Score */}
@@ -658,12 +728,16 @@ function CandidatesPageContent() {
                         {candidate.score !== undefined ? (
                           <div className="flex items-center gap-1.5 font-mono">
                             <strong className="text-slate-900 font-bold">{candidate.score}%</strong>
-                            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px]">
-                              {candidate.grade}
-                            </Badge>
+                            {candidate.grade && (
+                              <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px]">
+                                {candidate.grade}
+                              </Badge>
+                            )}
                           </div>
                         ) : (
-                          <span className="text-slate-400 text-xs italic">Awaiting Exam</span>
+                          <span className="text-slate-400 text-xs italic">
+                            {candidate.status === "IN_PROGRESS" ? "Writing" : "Not taken yet"}
+                          </span>
                         )}
                       </td>
 
@@ -769,6 +843,11 @@ function CandidatesPageContent() {
                           PIN Ready
                         </span>
                       )}
+                      {candidate.status === "FLAGGED" && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
+                          Locked
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -866,7 +945,14 @@ function CandidatesPageContent() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-4">
+          {/* Only the slips print, two per row */}
+          <style>{`@media print {
+            body * { visibility: hidden !important; }
+            #cbt-print-slips, #cbt-print-slips * { visibility: visible !important; }
+            #cbt-print-slips { position: absolute; inset: 0 auto auto 0; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+            #cbt-print-slips > div { break-inside: avoid; }
+          }`}</style>
+          <div id="cbt-print-slips" className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-4">
             {candidates.map((candidate) => (
               <div
                 key={candidate.id}
@@ -894,7 +980,8 @@ function CandidatesPageContent() {
                 </div>
 
                 <div className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-100">
-                  Instructions: Go to <strong>cbt.pln.ng/take</strong> and enter your 6-digit PIN. Do not exit fullscreen.
+                  Go to <strong>{typeof window !== "undefined" ? window.location.host : "cbt.pln.ng"}/take</strong>, enter the
+                  exam code, your full name and this PIN.
                 </div>
               </div>
             ))}

@@ -183,6 +183,7 @@ export const clearExaminerSession = (): void => {
     localStorage.removeItem("paralearn_cbt_standalone_workspace");
     localStorage.removeItem("paralearn_cbt_user_type");
     localStorage.removeItem("paralearn_cbt_examiner_email");
+    clearExaminerCaches();
     Cookies.remove(CBT_COOKIE_SESSION, { path: "/" });
   } catch (err) {
     console.error("[CBT Session] Failed to clear examiner session:", err);
@@ -583,99 +584,62 @@ export interface CandidateRecord {
   createdAt: string;
 }
 
+// Examiner caches are kept per workspace and never shared, so a shared
+// computer never shows one workspace's exams or candidates to another.
+// (Unsaved question drafts are keyed by exam and survive an expired session.)
+const EXAMINER_CACHE_PREFIXES = ["paralearn_cbt_exams_", "paralearn_cbt_candidates_"];
+
+const cacheWorkspace = (workspaceId?: string) => workspaceId || getExaminerSession()?.id || "";
+
+function readCache<T>(key: string): T[] {
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export const loadStoredExams = (workspaceId?: string): CbtExamItem[] => {
   if (typeof window === "undefined") return [];
-  try {
-    const activeWs = workspaceId || getExaminerSession()?.id || "default";
-    let raw = localStorage.getItem(`paralearn_cbt_exams_${activeWs}`);
-    if (
-      !raw &&
-      (activeWs === "ws_sweep_prod" ||
-        activeWs === "cmusrg4w30002of8ccfazuegn" ||
-        activeWs.includes("sweep"))
-    ) {
-      raw =
-        localStorage.getItem("paralearn_cbt_exams_cmusrg4w30002of8ccfazuegn") ||
-        localStorage.getItem("paralearn_cbt_exams_ws_sweep_prod");
-    }
-    if (!raw && activeWs !== "default") {
-      raw = localStorage.getItem("paralearn_cbt_exams_default");
-    }
-    if (!raw) {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith("paralearn_cbt_exams_")) {
-          const val = localStorage.getItem(k);
-          if (val && val !== "[]") {
-            raw = val;
-            break;
-          }
-        }
-      }
-    }
-    if (raw) {
-      const parsed: CbtExamItem[] = JSON.parse(raw);
-      // Clean out demo exam if present to ensure clean slate
-      const cleaned = parsed.filter((e) => e.id !== "jamb_mock_demo" && e.accessCode !== "JAMB-MOCK-26");
-      if (cleaned.length !== parsed.length) {
-        saveStoredExams(cleaned, workspaceId);
-      }
-      return cleaned;
-    }
-  } catch {}
-  return [];
+  const ws = cacheWorkspace(workspaceId);
+  return ws ? readCache<CbtExamItem>(`paralearn_cbt_exams_${ws}`) : [];
 };
 
 export const saveStoredExams = (exams: CbtExamItem[], workspaceId?: string) => {
   if (typeof window === "undefined") return;
+  const ws = cacheWorkspace(workspaceId);
+  if (!ws) return;
   try {
-    const activeWs = workspaceId || getExaminerSession()?.id || "default";
-    localStorage.setItem(`paralearn_cbt_exams_${activeWs}`, JSON.stringify(exams));
-    if (
-      activeWs === "ws_sweep_prod" ||
-      activeWs === "cmusrg4w30002of8ccfazuegn" ||
-      activeWs.includes("sweep")
-    ) {
-      localStorage.setItem("paralearn_cbt_exams_ws_sweep_prod", JSON.stringify(exams));
-      localStorage.setItem("paralearn_cbt_exams_cmusrg4w30002of8ccfazuegn", JSON.stringify(exams));
-    }
-    if (activeWs !== "default") {
-      localStorage.setItem("paralearn_cbt_exams_default", JSON.stringify(exams));
-    }
+    localStorage.setItem(`paralearn_cbt_exams_${ws}`, JSON.stringify(exams));
   } catch {}
 };
 
 export const loadStoredCandidates = (workspaceId?: string): CandidateRecord[] => {
   if (typeof window === "undefined") return [];
-  try {
-    const activeWs = workspaceId || getExaminerSession()?.id || "default";
-    let raw = localStorage.getItem(`paralearn_cbt_candidates_${activeWs}`);
-    if (!raw && activeWs !== "default") {
-      raw = localStorage.getItem("paralearn_cbt_candidates_default");
-    }
-    if (raw) {
-      const parsed: CandidateRecord[] = JSON.parse(raw);
-      // Filter out demo candidate IDs
-      const cleaned = parsed.filter((c) => !["c1", "c2", "c3", "c4", "c5", "c6"].includes(c.id));
-      if (cleaned.length !== parsed.length) {
-        saveStoredCandidates(cleaned, workspaceId);
-      }
-      return cleaned;
-    }
-  } catch {}
-  return [];
+  const ws = cacheWorkspace(workspaceId);
+  return ws ? readCache<CandidateRecord>(`paralearn_cbt_candidates_${ws}`) : [];
 };
 
 export const saveStoredCandidates = (candidates: CandidateRecord[], workspaceId?: string) => {
   if (typeof window === "undefined") return;
+  const ws = cacheWorkspace(workspaceId);
+  if (!ws) return;
   try {
-    const activeWs = workspaceId || getExaminerSession()?.id || "default";
-    localStorage.setItem(`paralearn_cbt_candidates_${activeWs}`, JSON.stringify(candidates));
-    if (activeWs !== "default") {
-      localStorage.setItem("paralearn_cbt_candidates_default", JSON.stringify(candidates));
-    }
+    localStorage.setItem(`paralearn_cbt_candidates_${ws}`, JSON.stringify(candidates));
   } catch {}
 };
+
+/** Removes the cached exam and candidate lists on sign-out */
+function clearExaminerCaches() {
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && EXAMINER_CACHE_PREFIXES.some((prefix) => k.startsWith(prefix))) keys.push(k);
+  }
+  keys.forEach((k) => localStorage.removeItem(k));
+}
 
 export const loadStoredQuestions = (examId: string): any[] => {
   if (typeof window === "undefined") return [];

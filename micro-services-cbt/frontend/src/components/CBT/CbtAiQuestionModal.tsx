@@ -396,7 +396,7 @@ export default function CbtAiQuestionModal({
                         ref={fileInputRef}
                         type="file"
                         className="hidden"
-                        accept=".pdf,.txt,.docx,.md,.pptx,.ppt,.mp3,.wav,.m4a,.ogg,.mp4,.webm,.mov"
+                        accept=".pdf,.txt,.md,.mp3,.wav,.m4a,.ogg,.mp4,.webm,.mov"
                         onChange={handleFileChange}
                       />
                       <div className="w-12 h-12 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center mx-auto mb-3">
@@ -406,7 +406,7 @@ export default function CbtAiQuestionModal({
                         Click to upload or drag &amp; drop lecture file
                       </p>
                       <p className="text-[11px] text-stone-500 mt-1 max-w-sm mx-auto">
-                        Supports Documents (PDF, Word, TXT), Slides (PPTX), Audio (MP3, WAV), and Video (MP4) up to 40MB.
+                        Supports PDF and text documents, audio (MP3, WAV) and video (MP4) up to 40MB. Save Word or PowerPoint files as PDF first.
                       </p>
                     </div>
                   ) : (
@@ -635,6 +635,9 @@ export default function CbtAiQuestionModal({
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleQuestionSelection(q.id)}
+                            // The card toggles on click too; stop the click reaching it twice
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label="Include this question"
                             className="w-4 h-4 rounded text-violet-600 focus:ring-violet-500 cursor-pointer"
                           />
                         </div>

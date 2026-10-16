@@ -31,7 +31,6 @@ import {
   RubricCriterion,
   ExamRubric,
   CandidateSession,
-  saveCandidateSession,
 } from "@cbt/lib/cbtSessionManager";
 
 interface CbtEssayGradingModalProps {
@@ -71,10 +70,11 @@ export default function CbtEssayGradingModal({
     if (rubric && rubric.criteria && rubric.criteria.length > 0) {
       return rubric.criteria;
     }
-    // Default 3 criteria
-    const half = Math.ceil(questionMarks * 0.5);
-    const third = Math.floor(questionMarks * 0.3);
-    const remaining = Math.max(1, questionMarks - half - third);
+    // Default criteria split the question's marks 50/30/20 in half marks and add up to them exactly
+    const toHalf = (x: number) => Math.round(x * 2) / 2;
+    const half = toHalf(questionMarks * 0.5);
+    const third = Math.min(questionMarks - half, toHalf(questionMarks * 0.3));
+    const remaining = questionMarks - half - third;
 
     return [
       {
@@ -95,7 +95,7 @@ export default function CbtEssayGradingModal({
         maxMarks: remaining,
         description: "Appropriate subject vocabulary, spelling, and grammar.",
       },
-    ];
+    ].filter((c) => c.maxMarks > 0);
   }, [rubric, questionMarks]);
 
   // Evaluated Scores State
@@ -116,6 +116,15 @@ export default function CbtEssayGradingModal({
     if (existing) {
       if (existing.rubricScores) {
         setScores(existing.rubricScores);
+      } else {
+        // Only the total was saved: spread it over the criteria so re-saving keeps it
+        let left = Number(existing.score) || 0;
+        const spread: Record<string, number> = {};
+        criteriaList.forEach((c) => {
+          spread[c.id] = Math.min(c.maxMarks, left);
+          left -= spread[c.id];
+        });
+        setScores(spread);
       }
       setOverallComment(existing.comment || "");
     } else {
@@ -237,7 +246,6 @@ export default function CbtEssayGradingModal({
 
     setIsSaving(true);
     try {
-      saveCandidateSession(updatedSession);
       await onGraded(updatedSession);
       toast.success(
         `Essay grade approved: ${currentTotalAwarded} / ${questionMarks} Marks!`,
