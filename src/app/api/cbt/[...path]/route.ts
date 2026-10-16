@@ -4,10 +4,18 @@ import {
   cbtServerStore,
   computeWaecGrade,
   CbtConflictError,
+  publicAttemptMetadata,
   toCandidateQuestion,
 } from "@/lib/cbtServerStore";
 import { BUSI_EXAM } from "@/lib/busiAssessmentData";
 import { cbtServiceHeaders, getPrincipal, type CbtPrincipal } from "@/lib/cbtAuth";
+import {
+  linkReportCard,
+  releaseReportCard,
+  reportCardOptions,
+  reportCardStatus,
+  unlinkReportCard,
+} from "@/lib/cbtReportCard";
 
 // Route handler for CBT microservice proxy
 export const dynamic = "force-dynamic";
@@ -212,6 +220,18 @@ async function handleGET(request: NextRequest, { params }: RouteParams) {
     });
   }
 
+  // 2c. /api/cbt/report-card/options — classes, subjects, categories and terms to link to
+  if (path[0] === "report-card" && path[1] === "options") {
+    return reportCardOptions(me);
+  }
+
+  // 2d. /api/cbt/exams/:id/report-card — link and release status
+  if (path[0] === "exams" && path[2] === "report-card" && path[1]) {
+    const examId = decodeURIComponent(path[1]);
+    if (!(await ownsExam(me, examId))) return notFound("Exam");
+    return reportCardStatus(me, examId);
+  }
+
   // 3. /api/cbt/exams/:id/monitor
   if (path[0] === "exams" && path[2] === "monitor" && path[1]) {
     const examId = decodeURIComponent(path[1]);
@@ -307,7 +327,7 @@ async function handleGET(request: NextRequest, { params }: RouteParams) {
         },
       },
       metadata: {
-        ...att.metadata,
+        ...publicAttemptMetadata(att.metadata),
         sweepLearnerId: att.studentId || null,
         sweepAttemptId: att.externalAttemptId || null,
       },
@@ -421,6 +441,15 @@ async function handlePOST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(exam, { status: 201 });
   }
 
+  // 3b. /api/cbt/exams/:id/report-card(/release) — link to report cards, release scores
+  if (path[0] === "exams" && path[2] === "report-card" && path[1]) {
+    const examId = decodeURIComponent(path[1]);
+    if (!(await ownsExam(me, examId))) return notFound("Exam");
+    return path[3] === "release"
+      ? releaseReportCard(me, examId)
+      : linkReportCard(me, examId, body);
+  }
+
   // 4. /api/cbt/exams/:id/questions
   if (path[0] === "exams" && path[2] === "questions" && path[1]) {
     const examId = decodeURIComponent(path[1]);
@@ -482,6 +511,8 @@ async function handlePOST(request: NextRequest, { params }: RouteParams) {
       );
     }
     return NextResponse.json({
+      // Lets the candidate's device correct its clock for an offline countdown
+      serverNow: new Date().toISOString(),
       isResumed: res.isResumed,
       attemptId: res.attempt.id,
       externalAttemptId: res.attempt.externalAttemptId || null,
@@ -518,14 +549,16 @@ async function handlePOST(request: NextRequest, { params }: RouteParams) {
   // 9. /api/cbt/attempts/:id/telemetry
   if (path[0] === "attempts" && path[2] === "telemetry" && path[1]) {
     const attemptId = decodeURIComponent(path[1]);
-    const result = await cbtServerStore.recordTelemetry(attemptId, body.eventType);
+    const result = await cbtServerStore.recordTelemetry(attemptId, body.eventType, body.eventId);
     return NextResponse.json(result);
   }
 
   // 10. /api/cbt/attempts/:id/submit
   if (path[0] === "attempts" && path[2] === "submit" && path[1]) {
     const attemptId = decodeURIComponent(path[1]);
-    const res = await cbtServerStore.submitAttempt(attemptId, body.finalAnswers);
+    const res = await cbtServerStore.submitAttempt(attemptId, body.finalAnswers, {
+      claimedSubmittedAt: body.submittedAt,
+    });
     if (!res) {
       return NextResponse.json({ message: "Attempt not found" }, { status: 404 });
     }
@@ -624,18 +657,6 @@ async function handlePOST(request: NextRequest, { params }: RouteParams) {
   }
 
   
-  // 12b. /api/cbt/sync/export-scores/:examId — push scores to ParaLearn Core
-  if (path[0] === "sync" && path[1] === "export-scores" && path[2]) {
-    const examId = decodeURIComponent(path[2]);
-    if (!(await ownsExam(me, examId))) return notFound("Exam");
-    const upstream = await fetch(
-      `${cbtBackendBase()}/sync/export-scores/${encodeURIComponent(examId)}`,
-      { method: "POST", headers: cbtServiceHeaders(), signal: AbortSignal.timeout(30000) }
-    );
-    const data = await upstream.json().catch(() => ({}));
-    return NextResponse.json(data, { status: upstream.status });
-  }
-
   // 13. /api/cbt/import/classes or /api/cbt/import/candidates
   if (path[0] === "import" && (path[1] === "classes" || path[1] === "candidates")) {
     if (me.type !== "INSTITUTION") {
@@ -740,6 +761,15 @@ export const PATCH = withErrorHandling(handlePATCH);
 
 async function handleDELETE(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
+
+  // /api/cbt/exams/:id/report-card — unlink (only before scores are released)
+  if (path[0] === "exams" && path[2] === "report-card" && path[1]) {
+    const me = await getPrincipal(request);
+    if (!me) return unauthorized();
+    const examId = decodeURIComponent(path[1]);
+    if (!(await ownsExam(me, examId))) return notFound("Exam");
+    return unlinkReportCard(me, examId);
+  }
 
   // /api/cbt/candidates/:id — the entry may exist in the CBT service, this store, or both
   if (path[0] === "candidates" && path[1]) {

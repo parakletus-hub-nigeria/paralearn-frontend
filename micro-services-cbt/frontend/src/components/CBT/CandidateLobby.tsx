@@ -29,6 +29,7 @@ import {
   loadStoredExams,
   loadStoredQuestions,
 } from "@cbt/lib/cbtSessionManager";
+import { startCbtSync, warmOfflineCache } from "@cbt/lib/cbtOfflineSync";
 import {
   useGetExamByCodeQuery,
   useStartAttemptMutation,
@@ -168,6 +169,11 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
   } = useGetExamByCodeQuery(normalizedExamCode);
   const [startAttempt] = useStartAttemptMutation();
 
+  // Registers the offline worker early and sends anything left from an earlier visit
+  useEffect(() => {
+    startCbtSync();
+  }, []);
+
   const [metadata, setMetadata] = useState<ExamMetadata | null>(() =>
     getInitialExamMetadata(normalizedExamCode),
   );
@@ -294,6 +300,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
       }).unwrap();
 
       const now = new Date();
+      const serverNow = started.serverNow ? new Date(started.serverNow).getTime() : NaN;
       const restoredAnswers = Object.fromEntries(
         Object.entries(started.restoredAnswers || {}).map(
           ([questionId, value]) => {
@@ -317,6 +324,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
         startedAt: now.toISOString(),
         durationMins: started.durationMins,
         deadline: started.deadline,
+        clockOffsetMs: Number.isFinite(serverNow) ? serverNow - now.getTime() : 0,
         answers: restoredAnswers as Record<string, string | string[]>,
         flaggedQuestionIds: [],
         questions: started.questions,
@@ -336,6 +344,8 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
         );
       }
 
+      // Everything the exam needs is now on the device; save the pages for offline use
+      void warmOfflineCache(metadata.code);
       router.push(`/take/${encodeURIComponent(metadata.code)}/live`);
     } catch (err: any) {
       console.error("Failed to start session:", err);

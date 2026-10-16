@@ -28,6 +28,7 @@ import {
   Tag,
   Check,
   Loader2,
+  WifiOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -61,9 +62,50 @@ import {
   ExamRubric,
 } from "@cbt/lib/cbtSessionManager";
 import {
-  useBufferAnswerMutation,
-  useSubmitAttemptMutation,
-} from "@cbt/store/cbtMicroserviceApi";
+  deviceNow,
+  hasQueuedSubmission,
+  queueAnswer,
+  queueSubmission,
+  queueTelemetry,
+  startCbtSync,
+  subscribeSyncState,
+  syncNow,
+  warmOfflineCache,
+  SUBMISSION_SYNCED_EVENT,
+  type CbtSyncState,
+} from "@cbt/lib/cbtOfflineSync";
+
+/** Wall-clock and monotonic readings when this page started timing each attempt */
+const clockBases = new Map<string, { wall: number; mono: number }>();
+
+/**
+ * Seconds left before the server deadline, on the server-corrected device
+ * clock. Setting the device clock back while offline neither rewinds nor
+ * pauses the countdown: within the page it also advances on the monotonic
+ * clock, and the latest time seen is kept across reloads.
+ */
+function secondsLeft(session: CandidateSession): number {
+  const key = `paralearn_cbt_clock_${session.attemptId || session.examCode}`;
+  let latestSeen = 0;
+  try {
+    latestSeen = Number(localStorage.getItem(key) || 0);
+  } catch {}
+
+  let base = clockBases.get(key);
+  if (!base) {
+    base = { wall: Math.max(deviceNow(session), latestSeen), mono: performance.now() };
+    clockBases.set(key, base);
+  }
+  const now = Math.max(
+    deviceNow(session),
+    latestSeen,
+    base.wall + (performance.now() - base.mono),
+  );
+  try {
+    localStorage.setItem(key, String(now));
+  } catch {}
+  return Math.max(0, Math.floor((new Date(session.deadline).getTime() - now) / 1000));
+}
 
 export interface QuestionItem {
   id: string;
@@ -95,8 +137,6 @@ export default function CandidateLiveExam({
   questions: initialQuestions = [],
 }: CandidateLiveExamProps) {
   const router = useRouter();
-  const [bufferAnswer] = useBufferAnswerMutation();
-  const [submitAttempt] = useSubmitAttemptMutation();
 
   // Session state from local storage
   const [session, setSession] = useState<CandidateSession | null>(null);
@@ -109,8 +149,12 @@ export default function CandidateLiveExam({
   // Sync state
   const [syncStatus, setSyncStatus] = useState<"synced" | "saving">("synced");
 
-  // Submission state: guards against double submits (timer + button + malpractice)
-  const [submitState, setSubmitState] = useState<"idle" | "submitting" | "failed">("idle");
+  // Connection and outbox status for the header chip
+  const [syncState, setSyncState] = useState<CbtSyncState>({ online: true, pending: 0 });
+
+  // Submission state: guards against double submits (timer + button + malpractice).
+  // "queued" = submitted on this device, waiting for a connection to send it.
+  const [submitState, setSubmitState] = useState<"idle" | "sending" | "queued" | "failed">("idle");
   const [submitError, setSubmitError] = useState<string>("");
   const submittingRef = useRef(false);
   // Essay text typed but not yet past the autosave debounce
@@ -170,14 +214,11 @@ export default function CandidateLiveExam({
     setSession(active);
     sessionRef.current = active;
 
-    // Calculate remaining seconds
-    const deadlineTime = new Date(active.deadline).getTime();
-    const now = Date.now();
-    const diffSecs = Math.max(0, Math.floor((deadlineTime - now) / 1000));
+    const diffSecs = secondsLeft(active);
     setSecondsRemaining(diffSecs);
 
-    // A submission interrupted by a reload or lost connection resumes automatically;
-    // so does an exam reopened after its time ran out (the timer never starts at 0)
+    // A submission waiting for a connection picks up where it left off; so does
+    // an exam reopened after its time ran out (the timer never starts at 0)
     if (active.pendingSubmit) {
       handleFinalSubmit(active.pendingSubmit.reason);
     } else if (diffSecs === 0) {
@@ -189,15 +230,16 @@ export default function CandidateLiveExam({
   useEffect(() => {
     if (!session || secondsRemaining <= 0) return;
 
+    // Recomputed from the deadline each tick, so a sleeping device catches up
     const timer = setInterval(() => {
-      setSecondsRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleFinalSubmit("timeout");
-          return 0;
-        }
-        return prev - 1;
-      });
+      const current = sessionRef.current;
+      if (!current) return;
+      const left = secondsLeft(current);
+      setSecondsRemaining(left);
+      if (left <= 0) {
+        clearInterval(timer);
+        handleFinalSubmit("timeout");
+      }
     }, 1000);
 
     return () => clearInterval(timer);
@@ -214,7 +256,10 @@ export default function CandidateLiveExam({
           activeQuestionIdx,
         );
 
-        if (updated) setSession(updated);
+        if (updated) {
+          setSession(updated);
+          void queueTelemetry(updated, "tab_switch", activeQuestionIdx);
+        }
 
         toast.error(
           `Malpractice Alert: Tab switch detected! (Violation ${violationCount} of ${maxTabViolations})`,
@@ -286,13 +331,7 @@ export default function CandidateLiveExam({
     );
     if (updated) {
       setSession(updated);
-      if (updated.attemptId) {
-        bufferAnswer({
-          attemptId: updated.attemptId,
-          questionId: currentQ.id,
-          selectedVal: choiceId,
-        }).catch(() => {});
-      }
+      void queueAnswer(updated, currentQ.id, choiceId);
       setTimeout(() => setSyncStatus("synced"), 150);
     }
   };
@@ -319,13 +358,7 @@ export default function CandidateLiveExam({
       );
       if (updated) {
         setSession(updated);
-        if (updated.attemptId) {
-          bufferAnswer({
-            attemptId: updated.attemptId,
-            questionId: currentQ.id,
-            selectedVal: text,
-          }).catch(() => {});
-        }
+        void queueAnswer(updated, currentQ.id, text);
         setSyncStatus("synced");
       }
       pendingEssayRef.current = null;
@@ -361,8 +394,40 @@ export default function CandidateLiveExam({
     );
   }, [questions]);
 
-  // Final Submit Handler — retries until the server confirms. A submission is never
-  // scored or "completed" on the device alone, so the examiner always receives it.
+  // Once the server has scored the submission, show the result; otherwise
+  // reflect whether it is waiting for a connection or was rejected
+  const finishIfSynced = useCallback(() => {
+    const current = sessionRef.current;
+    if (!current) return;
+    const latest = loadCandidateSession(examCode, current.candidatePin);
+    if (!latest) return;
+
+    if (latest.status !== "in_progress") {
+      const reason = current.pendingSubmit?.reason;
+      if (latest.status === "disqualified" || reason === "malpractice") {
+        toast.error("Exam locked due to repeated malpractice violations.");
+      } else if (reason === "timeout") {
+        toast.warning("Time limit expired. Your exam was automatically submitted.");
+      } else {
+        toast.success("Examination submitted successfully.");
+      }
+      router.replace(`/take/${encodeURIComponent(examCode)}/results`);
+      return;
+    }
+
+    sessionRef.current = latest;
+    setSession(latest);
+    if (latest.pendingSubmit?.error) {
+      setSubmitState("failed");
+      setSubmitError(latest.pendingSubmit.error);
+    } else if (latest.pendingSubmit) {
+      setSubmitState("queued");
+    }
+  }, [examCode, router]);
+
+  // Final submit: the answer sheet is locked in on this device and queued for
+  // the server. Online it is sent and scored straight away; offline it waits
+  // in the outbox and is sent when the device reconnects.
   const handleFinalSubmit = async (
     reason: "manual" | "timeout" | "malpractice" = "manual",
   ) => {
@@ -370,7 +435,7 @@ export default function CandidateLiveExam({
     if (!current || submittingRef.current) return;
     submittingRef.current = true;
     setIsSubmitDialogOpen(false);
-    setSubmitState("submitting");
+    setSubmitState("sending");
     setSubmitError("");
 
     // Include an essay answer still waiting on its autosave
@@ -381,20 +446,7 @@ export default function CandidateLiveExam({
       pendingEssayRef.current = null;
     }
 
-    // Remember the pending submission so a reload resumes it instead of losing it
-    const pending: CandidateSession = {
-      ...current,
-      answers,
-      pendingSubmit: current.pendingSubmit || {
-        reason,
-        since: new Date().toISOString(),
-      },
-    };
-    saveCandidateSession(pending);
-    sessionRef.current = pending;
-    setSession(pending);
-
-    if (!pending.attemptId) {
+    if (!current.attemptId) {
       submittingRef.current = false;
       setSubmitState("failed");
       setSubmitError(
@@ -403,81 +455,55 @@ export default function CandidateLiveExam({
       return;
     }
 
-    const retryDelaysMs = [0, 1000, 2000, 4000, 8000, 8000];
-    let lastError: any = null;
-    for (const delay of retryDelaysMs) {
-      if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
-      try {
-        const result = await submitAttempt({
-          attemptId: pending.attemptId,
-          finalAnswers: answers,
-          autoSubmitted: reason !== "manual",
-        }).unwrap();
+    const pending: CandidateSession = {
+      ...current,
+      answers,
+      pendingSubmit: current.pendingSubmit
+        ? { ...current.pendingSubmit, error: undefined }
+        : {
+            reason,
+            since: new Date().toISOString(),
+            submittedAt: new Date(deviceNow(current)).toISOString(),
+          },
+    };
+    saveCandidateSession(pending);
+    sessionRef.current = pending;
+    setSession(pending);
 
-        const effectiveReason = pending.pendingSubmit?.reason || reason;
-        const completedSession: CandidateSession = {
-          ...pending,
-          pendingSubmit: undefined,
-          status:
-            result.status === "DISQUALIFIED" || effectiveReason === "malpractice"
-              ? "disqualified"
-              : "submitted",
-          gradingStatus: result.gradingStatus || "AUTO_SCORED",
-          score: result.score,
-          totalMarks: result.totalMarks,
-          percentage: result.percentage,
-          mcqScore: result.resultSlip?.breakdown?.mcqScore,
-          essayScore: result.resultSlip?.breakdown?.essayScore,
-        };
-        saveCandidateSession(completedSession);
-
-        if (effectiveReason === "timeout") {
-          toast.warning(
-            "Time limit expired. Your exam was automatically submitted.",
-          );
-        } else if (effectiveReason === "malpractice") {
-          toast.error("Exam locked due to repeated malpractice violations.");
-        } else {
-          toast.success("Examination submitted successfully.");
-        }
-
-        router.replace(`/take/${encodeURIComponent(examCode)}/results`);
-        return;
-      } catch (err: any) {
-        lastError = err;
-        const status = err?.status;
-        // Other client errors (e.g. attempt not found) won't succeed on retry
-        if (
-          typeof status === "number" &&
-          status >= 400 &&
-          status < 500 &&
-          status !== 408 &&
-          status !== 429
-        ) {
-          break;
-        }
+    try {
+      if (!(await hasQueuedSubmission(current.attemptId))) {
+        await queueSubmission(pending, answers);
       }
+      await syncNow();
+    } catch (err) {
+      console.warn("[CBT Live] Could not queue the submission:", err);
     }
-
-    console.warn("[CBT Live] Submission not confirmed by server:", lastError);
-    submittingRef.current = false;
-    setSubmitState("failed");
-    setSubmitError(
-      lastError?.data?.message ||
-        "We couldn't reach the exam server. Your answers are saved on this device.",
-    );
+    finishIfSynced();
   };
 
-  // Retry a failed submission as soon as the connection comes back
+  const retrySubmission = () => {
+    submittingRef.current = false;
+    handleFinalSubmit(sessionRef.current?.pendingSubmit?.reason || "manual");
+  };
+
+  // Start syncing, save this exam for offline use and track the connection
   useEffect(() => {
-    if (submitState !== "failed") return;
-    const retry = () => {
-      const pendingReason = sessionRef.current?.pendingSubmit?.reason;
-      handleFinalSubmit(pendingReason || "manual");
+    startCbtSync();
+    void warmOfflineCache(examCode);
+    return subscribeSyncState(setSyncState);
+  }, [examCode]);
+
+  // The submission was sent from the queue (possibly by another tab or the worker)
+  useEffect(() => {
+    const onSynced = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail?.attemptId && detail.attemptId === sessionRef.current?.attemptId) {
+        finishIfSynced();
+      }
     };
-    window.addEventListener("online", retry);
-    return () => window.removeEventListener("online", retry);
-  }, [submitState]);
+    window.addEventListener(SUBMISSION_SYNCED_EVENT, onSynced);
+    return () => window.removeEventListener(SUBMISSION_SYNCED_EVENT, onSynced);
+  }, [finishIfSynced]);
 
   // Timer formatting (mm:ss)
   const formatTimer = (totalSecs: number) => {
@@ -561,12 +587,25 @@ export default function CandidateLiveExam({
             </span>
           </div>
 
-          {/* Sync chip */}
-          <div className="hidden md:flex items-center gap-1 text-[11px] text-[var(--text-secondary)] font-medium">
-            <span
-              className={`w-2 h-2 rounded-full ${syncStatus === "synced" ? "bg-[var(--emerald-signal)]" : "bg-[var(--amber-signal)]"}`}
-            />
-            <span>{syncStatus === "synced" ? "Synced" : "Saving..."}</span>
+          {/* Sync chip: always visible while offline */}
+          <div
+            role="status"
+            className={`${syncState.online ? "hidden md:flex" : "flex"} items-center gap-1 text-[11px] text-[var(--text-secondary)] font-medium`}
+          >
+            {syncState.online ? (
+              <span
+                className={`w-2 h-2 rounded-full ${syncState.pending === 0 ? "bg-[var(--emerald-signal)]" : "bg-[var(--amber-signal)]"}`}
+              />
+            ) : (
+              <WifiOff className="w-3.5 h-3.5 text-[var(--amber-signal)]" />
+            )}
+            <span>
+              {!syncState.online
+                ? "Offline, answers saved on this device"
+                : syncState.pending === 0
+                  ? "All answers saved"
+                  : "Saving..."}
+            </span>
           </div>
         </div>
 
@@ -1115,7 +1154,7 @@ export default function CandidateLiveExam({
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
         >
           <div className="w-full max-w-sm rounded-[var(--radius-lg)] bg-white p-6 text-center shadow-xl">
-            {submitState === "submitting" ? (
+            {submitState === "sending" && (
               <>
                 <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-[var(--emerald-signal)]" />
                 <h2 className="text-lg font-bold text-[var(--foreground)]">
@@ -1125,28 +1164,48 @@ export default function CandidateLiveExam({
                   Please keep this page open.
                 </p>
               </>
-            ) : (
+            )}
+            {submitState === "queued" && (
+              <>
+                <CheckCircle2 className="mx-auto mb-3 h-8 w-8 text-[var(--emerald-signal)]" />
+                <h2 className="text-lg font-bold text-[var(--foreground)]">
+                  Your exam is submitted on this device
+                </h2>
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                  {syncState.online
+                    ? "We're sending it to the exam server now."
+                    : "You're offline. Your answers are saved here and will be sent automatically when you reconnect."}
+                </p>
+                <p className="mt-2 text-xs text-[var(--text-secondary)]">
+                  Your result appears once it has been sent. If you close this page,
+                  open this exam link again on this device when you&apos;re online.
+                </p>
+                <Button
+                  onClick={() => syncNow().then(finishIfSynced)}
+                  disabled={!syncState.online}
+                  className="mt-4 h-10 w-full bg-[var(--emerald-signal)] text-sm font-bold text-white hover:bg-[var(--emerald-signal)]/90"
+                >
+                  {syncState.online ? "Send now" : "Waiting for a connection"}
+                </Button>
+              </>
+            )}
+            {submitState === "failed" && (
               <>
                 <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-[var(--crimson-signal)]" />
                 <h2 className="text-lg font-bold text-[var(--foreground)]">
-                  Submission not confirmed yet
+                  Submission not accepted
                 </h2>
                 <p className="mt-2 text-sm text-[var(--text-secondary)]">
                   {submitError}
                 </p>
                 <p className="mt-2 text-xs text-[var(--text-secondary)]">
-                  Don&apos;t close this page. We&apos;ll retry automatically when
-                  your connection returns.
+                  Your answers are still saved on this device.
                 </p>
                 <Button
-                  onClick={() =>
-                    handleFinalSubmit(
-                      sessionRef.current?.pendingSubmit?.reason || "manual",
-                    )
-                  }
+                  onClick={retrySubmission}
                   className="mt-4 h-10 w-full bg-[var(--emerald-signal)] text-sm font-bold text-white hover:bg-[var(--emerald-signal)]/90"
                 >
-                  Retry submission
+                  Try again
                 </Button>
               </>
             )}

@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { loadCandidateSession, clearCandidateSession, CandidateSession } from "@cbt/lib/cbtSessionManager";
 import { useGetResultSlipQuery } from "@cbt/store/cbtMicroserviceApi";
+import { startCbtSync } from "@cbt/lib/cbtOfflineSync";
 
 interface CandidateResultSlipProps {
   examCode: string;
@@ -32,6 +33,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
   });
 
   useEffect(() => {
+    startCbtSync();
     const loaded = loadCandidateSession(examCode);
     setSession(loaded);
   }, [examCode]);

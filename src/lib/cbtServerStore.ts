@@ -122,6 +122,14 @@ export interface StoredAttempt {
 
 export type GradingStatus = "AUTO_SCORED" | "PENDING_REVIEW" | "GRADED";
 
+export interface CbtReportCardRelease {
+  releasedAt: string;
+  saved: number;
+  skipped: number;
+  /** Fingerprint of the released scores, to spot results that changed since */
+  fingerprint: string;
+}
+
 /** Thrown for requests that conflict with current state; routes map it to HTTP 409 */
 export class CbtConflictError extends Error {}
 
@@ -153,6 +161,16 @@ const IDX = {
 
 // Answers arriving this long after the deadline are rejected (covers slow networks)
 const ANSWER_GRACE_MS = 2 * 60 * 1000;
+/** A submission received this long after the deadline is flagged as synced late */
+const LATE_SYNC_TOLERANCE_MS = 2 * 60 * 1000;
+/** Recent tab-switch report ids kept per attempt, to ignore resent reports */
+const TELEMETRY_IDS_KEPT = 200;
+
+/** Attempt metadata safe to share with integrators (drops internal bookkeeping) */
+export function publicAttemptMetadata(metadata?: Record<string, any>) {
+  const { telemetryEventIds: _ids, ...rest } = metadata || {};
+  return rest;
+}
 const ESSAY_TYPES = new Set(["ESSAY", "SHORT_ESSAY", "LONG_ESSAY"]);
 const isEssayType = (type?: string) => ESSAY_TYPES.has(String(type || "").toUpperCase());
 
@@ -1190,13 +1208,25 @@ export const cbtServerStore = {
 
   async recordTelemetry(
     attemptId: string,
-    eventType: string
+    eventType: string,
+    eventId?: string
   ): Promise<{ violations: number; disqualified: boolean }> {
     const att = await kvAdapter.hget<StoredAttempt>(NS.attempt, attemptId);
     if (!att) return { violations: 0, disqualified: false };
     // Events arriving after submission must not reopen or alter a finished attempt
     if (att.status !== "in_progress") {
       return { violations: att.violations || 0, disqualified: att.status === "disqualified" };
+    }
+    // Offline devices resend reports until they are acknowledged; count each once
+    const seenIds: string[] = att.metadata?.telemetryEventIds || [];
+    if (eventId && seenIds.includes(eventId)) {
+      return { violations: att.violations || 0, disqualified: false };
+    }
+    if (eventId) {
+      att.metadata = {
+        ...att.metadata,
+        telemetryEventIds: [...seenIds, eventId].slice(-TELEMETRY_IDS_KEPT),
+      };
     }
     att.violations = (att.violations || 0) + 1;
     const exam = await kvAdapter.hget<StoredExam>(NS.exam, att.examId);
@@ -1244,7 +1274,8 @@ export const cbtServerStore = {
 
   async submitAttempt(
     attemptId: string,
-    finalAnswers?: Record<string, any>
+    finalAnswers?: Record<string, any>,
+    options: { claimedSubmittedAt?: string } = {}
   ): Promise<{
     attempt: StoredAttempt;
     webhookPayload: any;
@@ -1264,7 +1295,29 @@ export const cbtServerStore = {
       // The candidate's device holds the complete answer sheet; it wins over the buffer
       att.answers = { ...buffered, ...(finalAnswers || {}) };
       if (att.status === "in_progress") att.status = "submitted";
-      att.submittedAt = new Date().toISOString();
+
+      // A device that submitted offline sends the time it submitted; trust it
+      // only within the attempt's own window, and flag late arrivals for review
+      const receivedAt = Date.now();
+      const startedAt = new Date(att.startedAt).getTime();
+      const deadline = new Date(att.deadline).getTime();
+      const claimed = options.claimedSubmittedAt
+        ? new Date(options.claimedSubmittedAt).getTime()
+        : NaN;
+      const submittedAt =
+        Number.isFinite(claimed) && claimed >= startedAt && claimed <= receivedAt
+          ? claimed
+          : receivedAt;
+      att.submittedAt = new Date(submittedAt).toISOString();
+      att.metadata = {
+        ...att.metadata,
+        sync: {
+          receivedAt: new Date(receivedAt).toISOString(),
+          claimedSubmittedAt: options.claimedSubmittedAt || null,
+          syncedLate: receivedAt > deadline + LATE_SYNC_TOLERANCE_MS,
+          overtime: submittedAt > deadline + LATE_SYNC_TOLERANCE_MS,
+        },
+      };
       const questions = await this.getQuestionsForExam(att.examId);
       await this.applyScore(att, questions);
     }
@@ -1310,7 +1363,7 @@ export const cbtServerStore = {
         },
       },
       metadata: {
-        ...att.metadata,
+        ...publicAttemptMetadata(att.metadata),
         sweepLearnerId: att.studentId || null,
         sweepAttemptId: att.externalAttemptId || null,
       },
@@ -1355,6 +1408,7 @@ export const cbtServerStore = {
       grade: result.grade,
       violations: att.violations || 0,
       submittedAt: att.submittedAt || null,
+      sync: att.metadata?.sync || null,
       questions: questions.map((q, idx) => ({
         id: q.id,
         prompt: q.prompt,
@@ -1423,6 +1477,9 @@ export const cbtServerStore = {
           : Number(progress[att.id]) || 0,
         totalQuestions,
         violations: att.violations || 0,
+        // Submitted offline and received after the deadline: worth a second look
+        syncedLate: Boolean(att.metadata?.sync?.syncedLate),
+        overtime: Boolean(att.metadata?.sync?.overtime),
         score: att.submittedAt ? att.score ?? 0 : null,
         totalMarks: att.totalMarks ?? exam?.totalMarks,
         percentage: att.percentage ?? null,
@@ -1494,6 +1551,53 @@ export const cbtServerStore = {
   },
 
   /** Removes a roster entry by id, or by exam + PIN (for entries mirrored from the CBT service) */
+  /**
+   * Finished results ready for report cards: the latest per ParaLearn student,
+   * plus what can't be released yet (essays awaiting grading, walk-in
+   * candidates without a ParaLearn student id, attempts still running).
+   */
+  async getReportCardResults(examId: string) {
+    const exam = await this.getExamById(examId);
+    const attempts = await getExamAttempts(examId);
+    const latest = new Map<string, StoredAttempt>();
+    const unlinked: Array<{ candidateName: string; candidatePin: string }> = [];
+    const pendingReview: Array<{ candidateName: string; candidatePin: string }> = [];
+    let inProgress = 0;
+
+    for (const att of attempts) {
+      if (att.status === "in_progress") {
+        inProgress++;
+      } else if (att.gradingStatus === "PENDING_REVIEW") {
+        pendingReview.push({ candidateName: att.candidateName, candidatePin: att.candidatePin });
+      } else if (!att.studentId) {
+        unlinked.push({ candidateName: att.candidateName, candidatePin: att.candidatePin });
+      } else {
+        const prev = latest.get(att.studentId);
+        if (!prev || (att.submittedAt || "") > (prev.submittedAt || "")) latest.set(att.studentId, att);
+      }
+    }
+
+    const scores = [...latest.values()].map((att) => ({
+      studentId: att.studentId as string,
+      candidateName: att.candidateName,
+      marksAwarded: att.score ?? 0,
+      maxMarks: att.totalMarks || exam?.totalMarks || 0,
+      attemptId: att.id,
+    }));
+    return { exam, scores, unlinked, pendingReview, inProgress };
+  },
+
+  /** What was last released to report cards for an exam (kept apart from the exam record) */
+  async getReportCardRelease(examId: string): Promise<CbtReportCardRelease | null> {
+    return kvAdapter.get<CbtReportCardRelease>(`${NS.exam}:reportcard:${examId}`);
+  },
+
+  async setReportCardRelease(examId: string, release: CbtReportCardRelease | null) {
+    const key = `${NS.exam}:reportcard:${examId}`;
+    if (release) await kvAdapter.set(key, release);
+    else await kvAdapter.del(key);
+  },
+
   async getCandidate(id: string): Promise<StoredCandidate | null> {
     return kvAdapter.hget<StoredCandidate>(NS.candidate, id);
   },

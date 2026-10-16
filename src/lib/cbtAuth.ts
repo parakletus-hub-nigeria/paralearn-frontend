@@ -207,6 +207,53 @@ export function cbtServiceHeaders(): Record<string, string> {
 
 export class CoreUnavailableError extends Error {}
 
+/** A ParaLearn Core call that failed; status and message are safe to show */
+export class CoreRequestError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string
+  ) {
+    super(message);
+  }
+}
+
+/**
+ * Calls one of ParaLearn Core's service endpoints for the CBT
+ * (non-tenant/cbt-import/*), authenticated with the shared service key.
+ * Returns null for an empty response body.
+ */
+export async function callCore<T = any>(path: string, body: unknown): Promise<T | null> {
+  const base = coreApiBase();
+  if (!base) throw new CoreRequestError(503, "ParaLearn isn't configured for the CBT yet.");
+
+  let res: Response;
+  try {
+    res = await fetch(`${base}/non-tenant/cbt-import/${path}`, {
+      method: "POST",
+      headers: cbtServiceHeaders(),
+      body: JSON.stringify(body),
+      cache: "no-store",
+      signal: AbortSignal.timeout(20000),
+    });
+  } catch {
+    throw new CoreRequestError(503, "ParaLearn can't be reached right now. Please try again.");
+  }
+
+  const text = await res.text();
+  let data: any = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {}
+  if (!res.ok) {
+    const message = Array.isArray(data?.message) ? data.message.join(" ") : data?.message;
+    throw new CoreRequestError(
+      res.status >= 500 ? 502 : res.status,
+      message || "ParaLearn couldn't complete the request."
+    );
+  }
+  return data as T | null;
+}
+
 interface CoreStaff {
   email: string;
   name: string;

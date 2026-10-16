@@ -41,6 +41,8 @@ export interface CandidateSession {
   startedAt: string;
   durationMins: number;
   deadline: string;
+  /** Server clock minus device clock when the attempt started, so a changed device clock doesn't move the deadline */
+  clockOffsetMs?: number;
   answers: Record<string, string | string[]>;
   flaggedQuestionIds: string[];
   questions?: Array<{
@@ -62,8 +64,18 @@ export interface CandidateSession {
     questionIdx: number;
   }>;
   status: "in_progress" | "submitted" | "disqualified";
-  /** Set when time ran out or the candidate submitted but the server hasn't confirmed yet */
-  pendingSubmit?: { reason: "manual" | "timeout" | "malpractice"; since: string };
+  /**
+   * Set once the candidate submits (or time runs out) until the server confirms.
+   * The submission waits in the offline outbox meanwhile.
+   */
+  pendingSubmit?: {
+    reason: "manual" | "timeout" | "malpractice";
+    since: string;
+    /** When the candidate submitted, on the server-corrected device clock */
+    submittedAt?: string;
+    /** Set when the server rejected the submission outright */
+    error?: string;
+  };
   gradingStatus?: "AUTO_SCORED" | "PENDING_REVIEW" | "GRADED";
   score?: number;
   totalMarks?: number;
@@ -304,17 +316,8 @@ export const recordProctoringViolation = (
     timestamp: new Date().toISOString(),
     questionIdx,
   });
+  // The caller queues the report for the server (see queueTelemetry in cbtOfflineSync)
   saveCandidateSession(session);
-
-  // Background sync violation telemetry to backend proctoring engine
-  if (session.attemptId) {
-    cbtApi.recordTelemetry(session.attemptId, violationType, questionIdx).then((res) => {
-      if (res && res.disqualified) {
-        session.status = "disqualified";
-        saveCandidateSession(session);
-      }
-    }).catch(() => {});
-  }
 
   return { violationCount: session.violations.length, session };
 };
@@ -477,14 +480,6 @@ export const cbtApi = {
   async getLiveMonitor(examId: string) {
     const res = await fetch(`${EXAM_API_BASE}/exams/${examId}/monitor`);
     if (!res.ok) throw new Error("Could not load live monitor metrics.");
-    return res.json();
-  },
-
-  async syncScoresToParaLearn(examId: string) {
-    const res = await fetch(`${CBT_API_BASE}/sync/export-scores/${examId}`, {
-      method: "POST",
-    });
-    if (!res.ok) throw new Error("Synchronization to ParaLearn Core failed.");
     return res.json();
   },
 

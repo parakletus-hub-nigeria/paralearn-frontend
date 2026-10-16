@@ -218,6 +218,52 @@ const dynamicCbtBaseQuery = async (args: any, api: any, extraOptions: any) => {
 };
 
 
+// ── Report cards (school workspaces) ─────────────────────────────────────────
+export interface ReportCardOptions {
+  tier: "ADMIN" | "TEACHER";
+  classes: Array<{
+    id: string;
+    name: string;
+    level: number | null;
+    subjects: Array<{ id: string; name: string; code: string }>;
+  }>;
+  categories: Array<{ id: string; name: string; code: string; weight: number }>;
+  periods: Array<{ session: string; terms: string[] }>;
+  activePeriod: { session: string; term: string } | null;
+}
+
+export interface ReportCardLink {
+  assessmentId: string;
+  title: string;
+  subject: { id: string; name: string };
+  category: { id: string; name: string; code: string; weight: number };
+  classes: Array<{ id: string; name: string }>;
+  session: string;
+  term: string;
+  totalMarks: number | null;
+  scoresReleased: boolean;
+}
+
+export interface ReportCardStatus {
+  link: ReportCardLink | null;
+  release: { releasedAt: string; saved: number; skipped: number } | null;
+  changedSinceRelease: boolean;
+  ready: {
+    students: number;
+    pendingReview: number;
+    unlinked: Array<{ candidateName: string; candidatePin: string }>;
+    inProgress: number;
+  };
+}
+
+export interface ReportCardReleaseResult {
+  releasedAt: string;
+  saved: number;
+  skipped: Array<{ studentId: string; candidateName: string; reason: string }>;
+  unlinked: Array<{ candidateName: string; candidatePin: string }>;
+  inProgress: number;
+}
+
 export interface ImportableClassItem {
   id: string;
   name: string;
@@ -257,7 +303,7 @@ export interface ImportCandidatesResponse {
 export const cbtMicroserviceApi = createApi({
   reducerPath: "cbtMicroserviceApi",
   baseQuery: dynamicCbtBaseQuery,
-  tagTypes: ["CbtWorkspace", "CbtExam", "CbtQuestion", "CbtCandidate", "CbtAttempt", "CbtMonitor"],
+  tagTypes: ["CbtWorkspace", "CbtExam", "CbtQuestion", "CbtCandidate", "CbtAttempt", "CbtMonitor", "CbtReportCard"],
   endpoints: (builder) => ({
     listWorkspaceExams: builder.query<CbtExamItem[], string>({
       query: (workspaceId) => ({
@@ -476,6 +522,50 @@ export const cbtMicroserviceApi = createApi({
         "CbtMonitor",
       ],
     }),
+
+    getReportCardOptions: builder.query<ReportCardOptions, void>({
+      query: () => ({ url: "/report-card/options" }),
+    }),
+
+    getReportCardStatus: builder.query<ReportCardStatus, string>({
+      query: (examId) => ({ url: `/exams/${encodeURIComponent(examId)}/report-card` }),
+      providesTags: (_result, _error, examId) => [{ type: "CbtReportCard", id: examId }],
+    }),
+
+    linkReportCard: builder.mutation<
+      { link: ReportCardLink },
+      {
+        examId: string;
+        subjectId: string;
+        classIds: string[];
+        categoryId: string;
+        session: string;
+        term: string;
+      }
+    >({
+      query: ({ examId, ...body }) => ({
+        url: `/exams/${encodeURIComponent(examId)}/report-card`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _error, arg) => [{ type: "CbtReportCard", id: arg.examId }],
+    }),
+
+    unlinkReportCard: builder.mutation<{ unlinked: boolean }, string>({
+      query: (examId) => ({
+        url: `/exams/${encodeURIComponent(examId)}/report-card`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, examId) => [{ type: "CbtReportCard", id: examId }],
+    }),
+
+    releaseReportCard: builder.mutation<ReportCardReleaseResult, string>({
+      query: (examId) => ({
+        url: `/exams/${encodeURIComponent(examId)}/report-card/release`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, examId) => [{ type: "CbtReportCard", id: examId }],
+    }),
   }),
 });
 
@@ -502,4 +592,9 @@ export const {
   useDeleteCandidateMutation,
   useFetchImportableClassesMutation,
   useImportCandidatesFromParalearnMutation,
+  useGetReportCardOptionsQuery,
+  useGetReportCardStatusQuery,
+  useLinkReportCardMutation,
+  useUnlinkReportCardMutation,
+  useReleaseReportCardMutation,
 } = cbtMicroserviceApi;

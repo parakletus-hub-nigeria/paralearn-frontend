@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 
 import {
+  getExaminerSession,
   loadStoredCandidates,
   loadStoredQuestions,
   loadCandidateSession,
@@ -40,6 +41,8 @@ import {
   useManualGradeAttemptMutation,
   useSubmitAttemptMutation,
 } from "@cbt/store/cbtMicroserviceApi";
+
+import CbtReportCardPanel from "./CbtReportCardPanel";
 
 export interface CandidateLiveStatus {
   id: string;
@@ -55,6 +58,8 @@ export interface CandidateLiveStatus {
   totalMarks?: number;
   lastActive: string;
   attemptId?: string | null;
+  /** Submitted offline and received after the deadline */
+  syncedLate?: boolean;
 }
 
 interface CbtLiveMonitorProps {
@@ -73,6 +78,10 @@ export default function CbtLiveMonitor({
   const [filter, setFilter] = useState<
     "all" | "flagged" | "locked" | "active" | "review"
   >("all");
+  const [isSchoolWorkspace, setIsSchoolWorkspace] = useState(false);
+  useEffect(() => {
+    setIsSchoolWorkspace(getExaminerSession()?.type === "INSTITUTION");
+  }, []);
   const [monitorMeta, setMonitorMeta] = useState({
     title: examTitle,
     code: roomCode,
@@ -139,6 +148,7 @@ export default function CbtLiveMonitor({
           ? 0
           : Math.max(0, Math.ceil((deadline - Date.now()) / 60000)),
       violations: participant.violations ?? 0,
+      syncedLate: Boolean(participant.syncedLate),
       status,
       gradingStatus:
         status === "submitted" || status === "locked"
@@ -589,6 +599,9 @@ export default function CbtLiveMonitor({
           </div>
         </div>
 
+        {/* Report cards: school workspaces only */}
+        {isSchoolWorkspace && <CbtReportCardPanel examId={examId} />}
+
         {/* Action & Filter Bar */}
         <div className="flex flex-col xl:flex-row gap-3 items-center justify-between">
           {/* Search */}
@@ -730,6 +743,16 @@ export default function CbtLiveMonitor({
                             <Badge className="bg-[var(--amber-tint)] text-[#92400e] border border-[var(--amber-signal)]/30 font-mono text-[10px]">
                               ⚠️ {c.violations} Tab Switches
                             </Badge>
+                          )}
+                          {c.syncedLate && (
+                            <div className="mt-1">
+                              <Badge
+                                title="Submitted while offline and received after the deadline. Check the submission time before accepting."
+                                className="bg-[var(--cobalt-tint)] text-[#1e40af] border border-[var(--cobalt-signal)]/30 text-[10px]"
+                              >
+                                Synced late
+                              </Badge>
+                            </div>
                           )}
                         </td>
 

@@ -389,14 +389,6 @@ export const cbtApi = {
     return res.json();
   },
 
-  async syncScoresToParaLearn(examId: string) {
-    const res = await fetch(`${CBT_API_BASE}/sync/export-scores/${examId}`, {
-      method: "POST",
-    });
-    if (!res.ok) throw new Error("Synchronization to ParaLearn Core failed.");
-    return res.json();
-  },
-
   getExportCsvUrl(examId: string) {
     return `${CBT_API_BASE}/sync/export-csv/${examId}`;
   },
