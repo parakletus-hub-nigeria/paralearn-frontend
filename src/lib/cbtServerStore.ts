@@ -300,6 +300,7 @@ const NS = {
   workspaceBySchool: "cbt:ws:school",
   exam: "cbt:exam",
   examByCode: "cbt:exam:code",
+  attemptByExternalId: "cbt:attempt:ext",
   examsByWorkspace: "cbt:exams:ws",
   question: "cbt:q",
   questionsByExam: "cbt:qs:exam",
@@ -317,6 +318,10 @@ const IDX = {
   examBuilt: (examId: string) => `cbt:idx:exam:${examId}:built`,
   answers: (attemptId: string) => `cbt:ans:${attemptId}`, // questionId -> { v: answer }
 };
+
+/** Set once older exams and attempts have been added to the lookup indexes */
+const EXAM_CODE_INDEX_BUILT = "cbt:exam:code:index-built";
+const ATTEMPT_EXTERNAL_INDEX_BUILT = "cbt:attempt:ext:index-built";
 
 // Answers arriving this long after the deadline are rejected (covers slow networks)
 const ANSWER_GRACE_MS = 2 * 60 * 1000;
@@ -857,17 +862,22 @@ export const cbtServerStore = {
       const exam = await kvAdapter.hget<StoredExam>(NS.exam, examId);
       if (exam) return exam;
     }
-    // fallback full scan (handles exams created before index existed)
+    // Exams saved before the index existed are indexed in one pass; after that a
+    // wrong code is a single lookup, so guessing codes can't make every request
+    // read the whole store
+    if (await kvAdapter.get(EXAM_CODE_INDEX_BUILT)) return null;
     const all = await kvAdapter.hlist<StoredExam>(NS.exam);
-    const exam =
-      all.find(
-        (e) => e.accessCode?.trim().toUpperCase() === cleanCode
-      ) || null;
-    // backfill index
-    if (exam) {
-      await kvAdapter.set(`${NS.examByCode}:${cleanCode}`, exam.id);
+    let match: StoredExam | null = null;
+    for (const e of all) {
+      const key = e.accessCode?.trim().toUpperCase();
+      if (!key) continue;
+      if (!(await kvAdapter.get(`${NS.examByCode}:${key}`))) {
+        await kvAdapter.set(`${NS.examByCode}:${key}`, e.id);
+      }
+      if (!match && key === cleanCode) match = e;
     }
-    return exam;
+    await kvAdapter.set(EXAM_CODE_INDEX_BUILT, "1");
+    return match;
   },
 
   async upsertExam(data: Partial<StoredExam>): Promise<StoredExam> {
@@ -1279,6 +1289,10 @@ export const cbtServerStore = {
 
     await kvAdapter.hset(NS.attempt, attemptId, attempt);
     await kvAdapter.hashSet(IDX.examAtts(exam.id), attemptId, candidatePin);
+    if (attempt.externalAttemptId) {
+      const extKey = `${NS.attemptByExternalId}:${attempt.externalAttemptId}`;
+      if (!(await kvAdapter.get(extKey))) await kvAdapter.set(extKey, attemptId);
+    }
 
     if (enrolled) {
       enrolled.status = "STARTED";
@@ -1770,15 +1784,22 @@ export const cbtServerStore = {
     if (!attemptId) return null;
     const direct = await kvAdapter.hget<StoredAttempt>(NS.attempt, attemptId);
     if (direct) return direct;
-    // fallback: scan by externalAttemptId
+    // An integrator's own attempt id, through its index
+    const byExternal = await kvAdapter.get<string>(`${NS.attemptByExternalId}:${attemptId}`);
+    if (byExternal) return kvAdapter.hget<StoredAttempt>(NS.attempt, byExternal);
+    // Attempts saved before the index existed are indexed in one pass; after that
+    // an unknown id is a single lookup instead of a scan of every attempt
+    if (await kvAdapter.get(ATTEMPT_EXTERNAL_INDEX_BUILT)) return null;
     const all = await kvAdapter.hlist<StoredAttempt>(NS.attempt);
-    return (
-      all.find(
-        (a) =>
-          a.id === attemptId ||
-          (a.externalAttemptId && a.externalAttemptId === attemptId)
-      ) || null
-    );
+    let match: StoredAttempt | null = null;
+    for (const a of all) {
+      if (!a.externalAttemptId) continue;
+      const key = `${NS.attemptByExternalId}:${a.externalAttemptId}`;
+      if (!(await kvAdapter.get(key))) await kvAdapter.set(key, a.id);
+      if (!match && a.externalAttemptId === attemptId) match = a;
+    }
+    await kvAdapter.set(ATTEMPT_EXTERNAL_INDEX_BUILT, "1");
+    return match;
   },
 
   async listCandidates(examId: string): Promise<StoredCandidate[]> {
