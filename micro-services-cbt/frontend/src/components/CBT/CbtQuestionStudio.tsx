@@ -73,6 +73,8 @@ import {
 } from "@cbt/lib/cbtSessionManager";
 import CbtAiQuestionModal from "./CbtAiQuestionModal";
 import CbtRubricUploadModal from "./CbtRubricUploadModal";
+import CbtExamSettingsSheet from "./CbtExamSettingsSheet";
+import CbtBulkImportDialog from "./CbtBulkImportDialog";
 import {
   CbtQuestionType as ServiceQuestionType,
   useAttachQuestionsMutation,
@@ -188,14 +190,10 @@ export default function CbtQuestionStudio({
     [serviceExam],
   );
 
-  const normalizeTypeForService = (
-    type: StudioQuestion["type"],
-  ): ServiceQuestionType => {
-    if (type === "SHORT_ESSAY" || type === "LONG_ESSAY") return "ESSAY";
-    if (type === "MULTI_SELECT") return "MULTI_SELECT";
-    return type;
-  };
+  const isObjective = (type: StudioQuestion["type"]) =>
+    type === "MCQ" || type === "TRUE_FALSE" || type === "MULTI_SELECT";
 
+  // Older exams stored every essay as "ESSAY"; treat those as long essays
   const normalizeQuestionFromService = (q: any): StudioQuestion => ({
     id: q.id,
     prompt: q.prompt || "",
@@ -204,23 +202,37 @@ export default function CbtQuestionStudio({
     options: Array.isArray(q.options) ? q.options : [],
     explanation: q.explanation || "",
     section: q.section,
+    minWords: q.minWords,
+    maxWords: q.maxWords,
+    modelAnswer: q.modelAnswer || "",
+    keyTerms: Array.isArray(q.keyTerms) ? q.keyTerms : [],
+    rubric: q.rubric || undefined,
   });
 
+  // Everything the editor holds goes to the server, so nothing is lost on reload
   const toServiceQuestionPayload = (
     q: StudioQuestion,
     workspaceId: string,
   ) => ({
     workspaceId,
     prompt: q.prompt.trim(),
-    type: normalizeTypeForService(q.type),
+    type: q.type as ServiceQuestionType,
     marks: Number(q.marks) || 1,
-    options: (q.options || []).map((option, index) => ({
-      id: option.id || `opt_${index + 1}`,
-      text: option.text || "",
-      isCorrect: Boolean(option.isCorrect),
-      keyLabel: String.fromCharCode(65 + index),
-    })),
-    explanation: q.explanation || q.modelAnswer || "",
+    section: q.section?.trim() || null,
+    options: isObjective(q.type)
+      ? (q.options || []).map((option, index) => ({
+          id: option.id || `opt_${index + 1}`,
+          text: option.text || "",
+          isCorrect: Boolean(option.isCorrect),
+          keyLabel: String.fromCharCode(65 + index),
+        }))
+      : [],
+    explanation: q.explanation?.trim() || null,
+    minWords: isObjective(q.type) ? null : q.minWords || null,
+    maxWords: isObjective(q.type) ? null : q.maxWords || null,
+    modelAnswer: isObjective(q.type) ? null : q.modelAnswer?.trim() || null,
+    keyTerms: isObjective(q.type) ? null : q.keyTerms || [],
+    rubric: q.type === "LONG_ESSAY" || q.type === "SHORT_ESSAY" ? q.rubric || null : null,
   });
 
   useEffect(() => {
@@ -228,6 +240,13 @@ export default function CbtQuestionStudio({
       setExamTitle(serviceExam.title || initialTitle);
       setRoomCode(serviceExam.accessCode || initialCode);
       setDurationMins(serviceExam.durationMins || initialDurationMins);
+      setSettings((prev) => ({
+        ...prev,
+        maxTabViolations: serviceExam.maxTabViolations ?? prev.maxTabViolations,
+        shuffleQuestions: serviceExam.shuffleQuestions ?? prev.shuffleQuestions,
+        shuffleChoices: serviceExam.shuffleChoices ?? prev.shuffleChoices,
+        showInstantResults: serviceExam.showResultAfter ?? prev.showInstantResults,
+      }));
       const serviceQuestions = (serviceExam.questions || [])
         .slice()
         .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
@@ -383,14 +402,14 @@ export default function CbtQuestionStudio({
   };
 
   // Change type of current active question
-  const handleChangeQuestionType = (newType: CbtQuestionType) => {
+  const handleChangeQuestionType = (newType: StudioQuestion["type"]) => {
     if (!activeQuestion) return;
     setQuestions((prev) => {
       const copy = [...prev];
       const curr = copy[activeIdx];
       let updatedQ: StudioQuestion = { ...curr, type: newType };
 
-      if (newType === "MCQ" && (!curr.options || curr.options.length < 2)) {
+      if ((newType === "MCQ" || newType === "MULTI_SELECT") && (!curr.options || curr.options.length < 2 || curr.type === "TRUE_FALSE")) {
         updatedQ.options = [
           { id: `o_${Date.now()}_1`, text: "", isCorrect: true },
           { id: `o_${Date.now()}_2`, text: "", isCorrect: false },
@@ -398,6 +417,10 @@ export default function CbtQuestionStudio({
           { id: `o_${Date.now()}_4`, text: "", isCorrect: false },
         ];
         updatedQ.marks = 1.0;
+      } else if (newType === "MCQ") {
+        // A single-answer question keeps only the first correct option
+        const first = Math.max(0, curr.options.findIndex((o) => o.isCorrect));
+        updatedQ.options = curr.options.map((o, i) => ({ ...o, isCorrect: i === first }));
       } else if (newType === "TRUE_FALSE") {
         updatedQ.options = [
           { id: `o_${Date.now()}_1`, text: "True", isCorrect: true },
@@ -422,7 +445,9 @@ export default function CbtQuestionStudio({
       saveStoredQuestions(copy, examId);
       return copy;
     });
-    toast.info(`Converted question to ${newType.replace("_", " ")}`);
+    toast.info(
+      `Converted question to ${newType === "MULTI_SELECT" ? "multiple answers" : newType.replace("_", " ")}`,
+    );
   };
 
   // Import questions generated by ParaLearn AI
@@ -479,9 +504,20 @@ export default function CbtQuestionStudio({
     updateActiveQuestion("options", opts);
   };
 
-  // Set single correct choice (MCQ / TF)
+  // Mark the correct choice: one for MCQ / True-False, any number (at least one) for multiple answers
   const setCorrectChoice = (optIdx: number) => {
     if (!activeQuestion || !activeQuestion.options) return;
+    if (activeQuestion.type === "MULTI_SELECT") {
+      const opts = activeQuestion.options.map((o, i) =>
+        i === optIdx ? { ...o, isCorrect: !o.isCorrect } : o,
+      );
+      if (!opts.some((o) => o.isCorrect)) {
+        toast.error("A multiple-answer question needs at least one correct option.");
+        return;
+      }
+      updateActiveQuestion("options", opts);
+      return;
+    }
     const opts = activeQuestion.options.map((o, i) => ({
       ...o,
       isCorrect: i === optIdx,
@@ -496,7 +532,9 @@ export default function CbtQuestionStudio({
       toast.error("An assessment question requires at least 2 options.");
       return;
     }
-    const opts = activeQuestion.options.filter((_, i) => i !== optIdx);
+    let opts = activeQuestion.options.filter((_, i) => i !== optIdx);
+    // Never leave a question without a correct answer
+    if (!opts.some((o) => o.isCorrect)) opts = opts.map((o, i) => ({ ...o, isCorrect: i === 0 }));
     updateActiveQuestion("options", opts);
   };
 
@@ -572,7 +610,7 @@ export default function CbtQuestionStudio({
             shuffleQuestions: settings.shuffleQuestions,
             shuffleChoices: settings.shuffleChoices,
             showResultAfter: settings.showInstantResults,
-            isPublished: true,
+            isPublished: false,
           }).unwrap();
         } catch (err) {
           console.warn(
@@ -588,16 +626,10 @@ export default function CbtQuestionStudio({
       const newQuestions = questions.filter((q) => !persistedIdSet.has(q.id));
 
       await Promise.all(
-        existingQuestions.map((q) =>
-          updateQuestion({
-            id: q.id,
-            prompt: q.prompt.trim(),
-            type: normalizeTypeForService(q.type),
-            marks: Number(q.marks) || 1,
-            options: toServiceQuestionPayload(q, workspaceId).options,
-            explanation: q.explanation || q.modelAnswer || "",
-          }).unwrap(),
-        ),
+        existingQuestions.map((q) => {
+          const { workspaceId: _ws, ...payload } = toServiceQuestionPayload(q, workspaceId);
+          return updateQuestion({ id: q.id, ...(payload as any) }).unwrap();
+        }),
       );
 
       // Swap each draft's local ID for its server ID (bulk create returns questions in input order)
@@ -630,11 +662,12 @@ export default function CbtQuestionStudio({
       setServiceSyncedAt(new Date().toISOString());
       toast.success("Question bank synced to ParaLearn Cloud.");
     } catch (error: any) {
-      console.warn(
-        "[CBT Studio] Cloud sync offline/unreachable; questions stored safely in local storage:",
-        error,
+      console.warn("[CBT Studio] Saving to the server failed:", error);
+      toast.error(
+        error?.data?.message
+          ? `Not saved: ${error.data.message}`
+          : "Couldn't reach the server. Your changes are kept on this device; press Save again when you're online.",
       );
-      toast.success("Questions saved locally on this device.");
     }
   };
 
@@ -742,6 +775,16 @@ export default function CbtQuestionStudio({
                 <span>Live Monitor</span>
               </Button>
             </Link>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsBulkOpen(true)}
+              className="h-8 px-3 text-xs font-semibold border-[var(--border-fine)] rounded-[var(--radius-md)]"
+            >
+              <Upload className="w-3.5 h-3.5 mr-1" />
+              <span>Import</span>
+            </Button>
 
             <Button
               variant="outline"
@@ -1185,6 +1228,17 @@ export default function CbtQuestionStudio({
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleChangeQuestionType("MULTI_SELECT")}
+                      className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-all ${
+                        activeQuestion.type === "MULTI_SELECT"
+                          ? "bg-white text-violet-700 shadow-2xs font-bold"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Multiple answers
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleChangeQuestionType("SHORT_ESSAY")}
                       className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-all ${
                         activeQuestion.type === "SHORT_ESSAY"
@@ -1313,15 +1367,15 @@ export default function CbtQuestionStudio({
               </div>
 
               {/* ── CONDITIONAL CANVAS: MCQs & TRUE/FALSE ── */}
-              {(activeQuestion.type === "MCQ" ||
-                activeQuestion.type === "TRUE_FALSE") && (
+              {isObjective(activeQuestion.type) && (
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                      Answer Choices (Click the badge to mark the correct
-                      choice)
+                      {activeQuestion.type === "MULTI_SELECT"
+                        ? "Answer Choices (click the badges to mark every correct choice)"
+                        : "Answer Choices (Click the badge to mark the correct choice)"}
                     </label>
-                    {activeQuestion.type === "MCQ" && (
+                    {activeQuestion.type !== "TRUE_FALSE" && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -1378,7 +1432,7 @@ export default function CbtQuestionStudio({
                             className="h-10 text-sm font-normal border-[var(--border-fine)] bg-white"
                           />
 
-                          {activeQuestion.type === "MCQ" && (
+                          {activeQuestion.type !== "TRUE_FALSE" && (
                             <button
                               type="button"
                               onClick={() => deleteChoice(optIdx)}
@@ -1635,161 +1689,18 @@ export default function CbtQuestionStudio({
       </div>
 
       {/* ── SETTINGS DRAWER ──────────────────────────────────────────────── */}
-      <Sheet open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <SheetContent className="sm:max-w-md bg-white border-l border-[var(--border-fine)] p-6 space-y-6">
-          <SheetHeader>
-            <SheetTitle className="text-lg font-bold tracking-tight text-[var(--foreground)]">
-              Delivery &amp; Integrity Settings
-            </SheetTitle>
-            <SheetDescription className="text-xs text-[var(--text-secondary)]">
-              Configure exam duration, access permissions, and anti-malpractice
-              rules.
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="space-y-5 text-xs text-[var(--foreground)]">
-            {/* Duration */}
-            <div className="space-y-1.5">
-              <label className="font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                Duration (Minutes)
-              </label>
-              <Input
-                type="number"
-                min="5"
-                max="360"
-                value={durationMins}
-                onChange={(e) =>
-                  setDurationMins(parseInt(e.target.value, 10) || 60)
-                }
-                className="h-10 font-mono font-bold"
-              />
-            </div>
-
-            {/* Anti-Malpractice Threshold */}
-            <div className="space-y-1.5">
-              <label className="font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                Max Allowed Tab-Switch Violations
-              </label>
-              <Input
-                type="number"
-                min="1"
-                max="10"
-                value={settings.maxTabViolations}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    maxTabViolations: parseInt(e.target.value, 10) || 3,
-                  })
-                }
-                className="h-10 font-mono font-bold"
-              />
-              <p className="text-[11px] text-[var(--text-secondary)]">
-                Candidate is disqualified upon exceeding this count.
-              </p>
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.shuffleQuestions}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      shuffleQuestions: e.target.checked,
-                    })
-                  }
-                  className="rounded text-[var(--violet-ink)]"
-                />
-                <span className="font-medium">
-                  Shuffle Question Order for Each Student
-                </span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.shuffleChoices}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      shuffleChoices: e.target.checked,
-                    })
-                  }
-                  className="rounded text-[var(--violet-ink)]"
-                />
-                <span className="font-medium">
-                  Shuffle Answer Choices (A, B, C, D)
-                </span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.showInstantResults}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      showInstantResults: e.target.checked,
-                    })
-                  }
-                  className="rounded text-[var(--violet-ink)]"
-                />
-                <span className="font-medium">
-                  Show Instant Score &amp; Grade Upon Submission
-                </span>
-              </label>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <CbtExamSettingsSheet
+        exam={serviceExam}
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+      />
 
       {/* ── BULK UPLOAD DIALOG ───────────────────────────────────────────── */}
-      <Dialog open={isBulkOpen} onOpenChange={setIsBulkOpen}>
-        <DialogContent className="max-w-lg bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-6 space-y-4">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold tracking-tight text-[var(--foreground)]">
-              Bulk Import Questions
-            </DialogTitle>
-            <DialogDescription className="text-xs text-[var(--text-secondary)]">
-              Upload an Excel (.xlsx) file or paste formatted questions into the
-              studio.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="border-2 border-dashed border-[var(--border-fine)] rounded-[var(--radius-md)] p-8 text-center space-y-3">
-            <Upload className="w-8 h-8 text-[var(--violet-ink)] mx-auto" />
-            <div className="text-xs text-[var(--foreground)]">
-              <span className="font-bold">Click to upload .xlsx file</span> or
-              drag and drop
-            </div>
-            <p className="text-[11px] text-[var(--text-secondary)]">
-              Columns: question, type, option_a, option_b, option_c, option_d,
-              correct, marks, min_words, max_words
-            </p>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsBulkOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                toast.success("Imported questions from spreadsheet!");
-                setIsBulkOpen(false);
-              }}
-              className="bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white"
-            >
-              Confirm Import
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CbtBulkImportDialog
+        open={isBulkOpen}
+        onOpenChange={setIsBulkOpen}
+        onImport={handleImportAiQuestions}
+      />
 
       {/* ── MOBILE BOTTOM FLOATING ACTION BAR (< md) ──────────────────────── */}
       <div className="md:hidden fixed bottom-4 left-0 right-0 z-20 px-4 flex items-center justify-between pointer-events-none">

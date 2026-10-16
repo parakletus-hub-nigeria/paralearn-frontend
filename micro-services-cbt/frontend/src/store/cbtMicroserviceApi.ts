@@ -71,6 +71,8 @@ export interface CbtExamItem {
   shuffleQuestions?: boolean;
   shuffleChoices?: boolean;
   showResultAfter?: boolean;
+  accessType?: "ACCESS_CODE" | "ROSTER_ONLY";
+  instructions?: string | null;
   createdAt?: string;
   _count?: {
     questions?: number;
@@ -89,6 +91,7 @@ export interface PublicExamLobby {
   totalMarks: number;
   maxTabViolations: number;
   workspaceName: string;
+  isPublished?: boolean;
   startsAt?: string | null;
   endsAt?: string | null;
 }
@@ -336,6 +339,11 @@ export const cbtMicroserviceApi = createApi({
       invalidatesTags: (_result, _error, arg) => [{ type: "CbtExam", id: arg.id }, "CbtExam"],
     }),
 
+    deleteCbtExam: builder.mutation<{ success: boolean }, string>({
+      query: (id) => ({ url: `/exams/${encodeURIComponent(id)}`, method: "DELETE" }),
+      invalidatesTags: ["CbtExam"],
+    }),
+
     createQuestion: builder.mutation<CbtQuestion, Omit<CbtQuestion, "id"> & { workspaceId: string; type: CbtQuestionType }>({
       query: (body) => ({
         url: "/questions",
@@ -419,9 +427,12 @@ export const cbtMicroserviceApi = createApi({
       invalidatesTags: ["CbtAttempt", "CbtMonitor", "CbtCandidate"],
     }),
 
-    getResultSlip: builder.query<any, string>({
-      query: (attemptId) => `/attempts/${attemptId}/slip`,
-      providesTags: (_result, _error, attemptId) => [{ type: "CbtAttempt", id: attemptId }],
+    getResultSlip: builder.query<any, { attemptId: string; token?: string }>({
+      query: ({ attemptId, token }) => ({
+        url: `/attempts/${encodeURIComponent(attemptId)}/slip`,
+        headers: token ? { "x-attempt-token": token } : undefined,
+      }),
+      providesTags: (_result, _error, arg) => [{ type: "CbtAttempt", id: arg.attemptId }],
     }),
 
     getAttemptReview: builder.query<AttemptReviewPayload, string>({
@@ -592,6 +603,7 @@ export const {
   useDeleteCandidateMutation,
   useFetchImportableClassesMutation,
   useImportCandidatesFromParalearnMutation,
+  useDeleteCbtExamMutation,
   useGetReportCardOptionsQuery,
   useGetReportCardStatusQuery,
   useLinkReportCardMutation,

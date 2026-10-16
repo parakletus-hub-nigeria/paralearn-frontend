@@ -75,6 +75,17 @@ import {
   type CbtSyncState,
 } from "@cbt/lib/cbtOfflineSync";
 
+/** Keys that pick options A–F, in on-screen order */
+const OPTION_KEYS = ["a", "b", "c", "d", "e", "f"];
+const OBJECTIVE = new Set(["MCQ", "TRUE_FALSE", "MULTI_SELECT"]);
+const TYPE_LABELS: Record<string, string> = {
+  MCQ: "Multiple choice",
+  TRUE_FALSE: "True / False",
+  MULTI_SELECT: "Multiple answers",
+  SHORT_ESSAY: "Short Answer",
+  LONG_ESSAY: "Extended Essay",
+};
+
 /** Wall-clock and monotonic readings when this page started timing each attempt */
 const clockBases = new Map<string, { wall: number; mono: number }>();
 
@@ -290,6 +301,9 @@ export default function CandidateLiveExam({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!currentQ) return;
+      // Leave browser shortcuts (Ctrl+C, Cmd+P...) and open dialogs alone
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isSubmitDialogOpen || isRubricDialogOpen || submittingRef.current) return;
       // Don't intercept if student is in an open text input or textarea
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
@@ -300,24 +314,19 @@ export default function CandidateLiveExam({
         goToPrev();
       } else if (e.key.toLowerCase() === "f") {
         handleToggleFlag();
-      } else if (["a", "b", "c", "d"].includes(e.key.toLowerCase())) {
-        if (
-          currentQ.type === "MCQ" &&
-          currentQ.options &&
-          currentQ.options.length > 0
-        ) {
-          const keyIndex = ["a", "b", "c", "d"].indexOf(e.key.toLowerCase());
-          if (currentQ.options[keyIndex]) {
-            e.preventDefault();
-            selectChoice(currentQ.options[keyIndex].id);
-          }
+      } else if (OPTION_KEYS.includes(e.key.toLowerCase())) {
+        const option = currentQ.options?.[OPTION_KEYS.indexOf(e.key.toLowerCase())];
+        if (option && OBJECTIVE.has(currentQ.type)) {
+          e.preventDefault();
+          if (currentQ.type === "MULTI_SELECT") toggleChoice(option.id);
+          else selectChoice(option.id);
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentQ, activeQuestionIdx, session]);
+  }, [currentQ, activeQuestionIdx, session, isSubmitDialogOpen, isRubricDialogOpen]);
 
   // Actions
   const selectChoice = (choiceId: string) => {
@@ -363,6 +372,21 @@ export default function CandidateLiveExam({
       }
       pendingEssayRef.current = null;
     }, 300);
+  };
+
+  // Multiple-answer questions: add or remove one option
+  const toggleChoice = (choiceId: string) => {
+    if (!session || !currentQ || submittingRef.current) return;
+    const current = session.answers[currentQ.id];
+    const chosen = Array.isArray(current) ? current : current ? [String(current)] : [];
+    const next = chosen.includes(choiceId) ? chosen.filter((id) => id !== choiceId) : [...chosen, choiceId];
+    setSyncStatus("saving");
+    const updated = saveAnswerToSession(examCode, session.candidatePin, currentQ.id, next);
+    if (updated) {
+      setSession(updated);
+      void queueAnswer(updated, currentQ.id, next);
+      setTimeout(() => setSyncStatus("synced"), 150);
+    }
   };
 
   const handleToggleFlag = () => {
@@ -492,6 +516,45 @@ export default function CandidateLiveExam({
     void warmOfflineCache(examCode);
     return subscribeSyncState(setSyncState);
   }, [examCode]);
+
+  // While online, check with the server for extra time, a lock, or an
+  // examiner submitting the attempt from the monitor
+  useEffect(() => {
+    const check = async () => {
+      const current = sessionRef.current;
+      if (!current?.attemptId || submittingRef.current || !navigator.onLine) return;
+      try {
+        const res = await fetch(`/api/cbt/attempts/${encodeURIComponent(current.attemptId)}/status`, {
+          headers: current.attemptToken ? { "x-attempt-token": current.attemptToken } : {},
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const remote = await res.json();
+        if (remote.status === "in_progress" && remote.deadline && remote.deadline !== current.deadline) {
+          const gained = Math.round(
+            (new Date(remote.deadline).getTime() - new Date(current.deadline).getTime()) / 60000,
+          );
+          const updated = { ...current, deadline: remote.deadline };
+          saveCandidateSession(updated);
+          sessionRef.current = updated;
+          setSession(updated);
+          setSecondsRemaining(secondsLeft(updated));
+          if (gained > 0) {
+            toast.info(`Your examiner gave you ${gained} extra minute${gained === 1 ? "" : "s"}.`);
+          }
+        } else if (remote.status === "disqualified") {
+          handleFinalSubmit("malpractice");
+        } else if (remote.status === "submitted") {
+          handleFinalSubmit("manual");
+        }
+      } catch {
+        // Offline or the server is unreachable: the next check will try again
+      }
+    };
+    const timer = setInterval(check, 20000);
+    void check();
+    return () => clearInterval(timer);
+  }, []);
 
   // The submission was sent from the queue (possibly by another tab or the worker)
   useEffect(() => {
@@ -657,11 +720,7 @@ export default function CandidateLiveExam({
                       : "bg-slate-100 text-slate-700 border-slate-200"
                 }`}
               >
-                {currentQ.type === "LONG_ESSAY"
-                  ? "Extended Essay"
-                  : currentQ.type === "SHORT_ESSAY"
-                    ? "Short Answer"
-                    : currentQ.type}
+                {TYPE_LABELS[currentQ.type] || currentQ.type}
               </Badge>
 
               <span className="text-xs text-[var(--text-secondary)] font-mono">
@@ -716,52 +775,70 @@ export default function CandidateLiveExam({
             {currentQ.prompt}
           </div>
 
-          {/* ── CONDITIONAL CANVAS: MCQs & TRUE/FALSE ── */}
-          {(currentQ.type === "MCQ" || currentQ.type === "TRUE_FALSE") &&
-            currentQ.options && (
-              <div className="space-y-3 pt-2">
-                {currentQ.options.map((opt, idx) => {
-                  const isSelected = selectedAnswer === opt.id;
-                  const keyLabel =
-                    opt.keyLabel ||
-                    ["A", "B", "C", "D"][idx] ||
-                    String(idx + 1);
+          {/* ── CONDITIONAL CANVAS: MCQ, TRUE/FALSE & MULTIPLE ANSWERS ── */}
+          {OBJECTIVE.has(currentQ.type) && currentQ.options && (
+            <div
+              className="space-y-3 pt-2"
+              role={currentQ.type === "MULTI_SELECT" ? "group" : "radiogroup"}
+              aria-label="Answer options"
+            >
+              {currentQ.type === "MULTI_SELECT" && (
+                <p className="text-xs font-semibold text-[var(--text-secondary)]">
+                  Select all that apply.
+                </p>
+              )}
+              {currentQ.options.map((opt, idx) => {
+                const isMulti = currentQ.type === "MULTI_SELECT";
+                const isSelected = isMulti
+                  ? Array.isArray(selectedAnswer) && selectedAnswer.includes(opt.id)
+                  : selectedAnswer === opt.id;
+                // Letters follow the on-screen order, so they match the keyboard after shuffling
+                const keyLabel = OPTION_KEYS[idx]?.toUpperCase() || String(idx + 1);
+                const choose = () => (isMulti ? toggleChoice(opt.id) : selectChoice(opt.id));
 
-                  return (
-                    <div
-                      key={opt.id}
-                      onClick={() => selectChoice(opt.id)}
-                      className={`w-full min-h-[56px] p-3.5 sm:p-4 rounded-[var(--radius-md)] border text-left cursor-pointer transition-all flex items-center gap-3.5 ${
+                return (
+                  <div
+                    key={opt.id}
+                    role={isMulti ? "checkbox" : "radio"}
+                    aria-checked={isSelected}
+                    tabIndex={0}
+                    onClick={choose}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        choose();
+                      }
+                    }}
+                    className={`w-full min-h-[56px] p-3.5 sm:p-4 rounded-[var(--radius-md)] border text-left cursor-pointer transition-all flex items-center gap-3.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--violet-ink)] ${
+                      isSelected
+                        ? "bg-[var(--violet-tint)] border-[var(--violet-ink)] text-[var(--foreground)] shadow-xs ring-1 ring-[var(--violet-ink)]"
+                        : "bg-white border-[var(--border-fine)] text-[var(--foreground)] hover:bg-[var(--surface-subtle)] hover:border-[var(--border-medium)]"
+                    }`}
+                  >
+                    {/* Key Label Badge (square for multiple answers) */}
+                    <span
+                      className={`w-7 h-7 ${isMulti ? "rounded-md" : "rounded-full"} flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
                         isSelected
-                          ? "bg-[var(--violet-tint)] border-[var(--violet-ink)] text-[var(--foreground)] shadow-xs ring-1 ring-[var(--violet-ink)]"
-                          : "bg-white border-[var(--border-fine)] text-[var(--foreground)] hover:bg-[var(--surface-subtle)] hover:border-[var(--border-medium)]"
+                          ? "bg-[var(--violet-ink)] text-white"
+                          : "bg-[var(--surface-muted)] text-[var(--text-secondary)]"
                       }`}
                     >
-                      {/* Key Label Badge */}
-                      <span
-                        className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
-                          isSelected
-                            ? "bg-[var(--violet-ink)] text-white"
-                            : "bg-[var(--surface-muted)] text-[var(--text-secondary)]"
-                        }`}
-                      >
-                        {keyLabel}
-                      </span>
+                      {isMulti && isSelected ? <Check className="w-4 h-4" /> : keyLabel}
+                    </span>
 
-                      {/* Choice Text */}
-                      <span className="flex-1 text-sm sm:text-base font-normal leading-snug">
-                        {opt.text}
-                      </span>
+                    {/* Choice Text */}
+                    <span className="flex-1 text-sm sm:text-base font-normal leading-snug">
+                      {opt.text}
+                    </span>
 
-                      {/* Keyboard shortcut hint */}
-                      <Kbd className="hidden sm:inline-flex opacity-40">
-                        {keyLabel}
-                      </Kbd>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    {/* Keyboard shortcut hint */}
+                    <Kbd className="hidden sm:inline-flex opacity-40">{keyLabel}</Kbd>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* ── CONDITIONAL CANVAS: SHORT ESSAY (20 - 100 words) ── */}
           {currentQ.type === "SHORT_ESSAY" && (
@@ -965,7 +1042,9 @@ export default function CandidateLiveExam({
                         ? "S"
                         : q.type === "LONG_ESSAY"
                           ? "L"
-                          : "TF"}
+                          : q.type === "MULTI_SELECT"
+                            ? "M"
+                            : "TF"}
                     </span>
                   )}
 

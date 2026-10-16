@@ -306,14 +306,15 @@ async function handleGET(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       );
     }
-    const ws = await cbtServerStore.getWorkspace(exam.workspaceId);
+    const ws = await cbtServerStore.getWorkspace(examWorkspaceId(exam));
     return NextResponse.json({
       id: exam.id,
       accessCode: exam.accessCode,
       title: exam.title,
       instructions:
+        exam.instructions ||
         "Answer all questions. Your responses are saved continuously and submitted when time expires.",
-      accessType: "ACCESS_CODE",
+      accessType: exam.accessType || "ACCESS_CODE",
       durationMins: exam.durationMins,
       totalQuestions: exam.totalQuestions || 0,
       totalMarks: exam.totalMarks || 0,

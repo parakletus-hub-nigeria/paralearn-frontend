@@ -25,18 +25,50 @@ interface CandidateResultSlipProps {
   examCode: string;
 }
 
+/** Same scale the server uses */
+function waecGrade(pct: number) {
+  if (pct >= 75) return "A1";
+  if (pct >= 70) return "B2";
+  if (pct >= 65) return "B3";
+  if (pct >= 60) return "C4";
+  if (pct >= 55) return "C5";
+  if (pct >= 50) return "C6";
+  if (pct >= 45) return "D7";
+  if (pct >= 40) return "E8";
+  return "F9";
+}
+
+function gradeTint(grade: string) {
+  if (grade.startsWith("A") || grade.startsWith("B")) return "bg-[var(--emerald-tint)] text-[#065f46]";
+  if (grade.startsWith("C")) return "bg-[var(--cobalt-tint)] text-[#1e40af]";
+  if (grade.startsWith("D") || grade.startsWith("E")) return "bg-[var(--amber-tint)] text-[#92400e]";
+  return "bg-[var(--crimson-tint)] text-[#991b1b]";
+}
+
 export default function CandidateResultSlip({ examCode }: CandidateResultSlipProps) {
   const router = useRouter();
   const [session, setSession] = useState<CandidateSession | null>(null);
-  const { data: remoteSlip } = useGetResultSlipQuery(session?.attemptId || "", {
-    skip: !session?.attemptId,
-  });
+  const [pendingReviewPoll, setPendingReviewPoll] = useState(0);
+  const { data: remoteSlip } = useGetResultSlipQuery(
+    { attemptId: session?.attemptId || "", token: session?.attemptToken },
+    { skip: !session?.attemptId, pollingInterval: pendingReviewPoll },
+  );
 
   useEffect(() => {
     startCbtSync();
     const loaded = loadCandidateSession(examCode);
+    const base = `/take/${encodeURIComponent(examCode)}`;
+    // Only a finished attempt has a result slip
+    if (!loaded) {
+      router.replace(base);
+      return;
+    }
+    if (loaded.status === "in_progress") {
+      router.replace(`${base}/live`);
+      return;
+    }
     setSession(loaded);
-  }, [examCode]);
+  }, [examCode, router]);
 
   const handlePrint = () => {
     if (typeof window !== "undefined") {
@@ -44,31 +76,44 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
     }
   };
 
-  const handleRetakeOrFinish = () => {
+  const handleFinish = () => {
     clearCandidateSession(examCode, session?.candidatePin);
-    router.replace(`/take/${encodeURIComponent(examCode)}`);
+    router.replace("/take");
   };
 
-  const isPendingReview = session?.gradingStatus === "PENDING_REVIEW";
-  const isGraded = session?.gradingStatus === "GRADED";
-  const isDisqualified = (remoteSlip?.status || session?.status) === "DISQUALIFIED" || session?.status === "disqualified";
+  const status = String(remoteSlip?.status || session?.status || "").toUpperCase();
+  const isDisqualified = status === "DISQUALIFIED";
+  const resultsWithheld = Boolean(remoteSlip?.resultsWithheld) || session?.showResultAfter === false;
+  const gradingStatus = remoteSlip?.gradingStatus || session?.gradingStatus;
+  const isPendingReview = !resultsWithheld && gradingStatus === "PENDING_REVIEW";
+  const isGraded = gradingStatus === "GRADED";
 
-  const mcqScore = remoteSlip?.score ?? session?.mcqScore ?? session?.score ?? 0;
-  const essayScore = session?.essayScore ?? 0;
-  const totalScore = isGraded ? (mcqScore + essayScore) : mcqScore;
-  const grandTotalMarks = remoteSlip?.totalMarks ?? session?.totalMarks ?? 20;
-  const percentage = remoteSlip?.percentage ?? session?.percentage ?? (grandTotalMarks > 0 ? Math.round((totalScore / grandTotalMarks) * 100) : 0);
+  // Keep checking while essays are being marked, so the final result appears by itself
+  useEffect(() => {
+    setPendingReviewPoll(isPendingReview ? 30000 : 0);
+  }, [isPendingReview]);
 
-  // Calculate grade
-  const getGrade = (pct: number) => {
-    if (pct >= 75) return { letter: "A1", desc: "Excellent", tint: "bg-[var(--emerald-tint)] text-[#065f46]" };
-    if (pct >= 65) return { letter: "B2", desc: "Very Good", tint: "bg-[var(--emerald-tint)] text-[#065f46]" };
-    if (pct >= 50) return { letter: "C4", desc: "Credit", tint: "bg-[var(--cobalt-tint)] text-[#1e40af]" };
-    if (pct >= 40) return { letter: "P7", desc: "Pass", tint: "bg-[var(--amber-tint)] text-[#92400e]" };
-    return { letter: "F9", desc: "Fail", tint: "bg-[var(--crimson-tint)] text-[#991b1b]" };
-  };
+  const breakdown = remoteSlip?.resultSlip?.breakdown;
+  const objectiveScore = breakdown?.mcqScore ?? session?.mcqScore ?? 0;
+  const essayScore = breakdown?.essayScore ?? session?.essayScore ?? 0;
+  const totalScore = remoteSlip?.score ?? session?.score ?? 0;
+  const grandTotalMarks = remoteSlip?.totalMarks ?? session?.totalMarks ?? 0;
+  const percentage =
+    remoteSlip?.percentage ??
+    session?.percentage ??
+    (grandTotalMarks > 0 ? Math.round((totalScore / grandTotalMarks) * 100) : 0);
+  const grade = remoteSlip?.grade || waecGrade(percentage);
+  const feedback = remoteSlip?.examinerFeedback;
+  const submittedAt = remoteSlip?.submittedAt || session?.pendingSubmit?.submittedAt;
+  const violationCount = remoteSlip?.violations ?? session?.violations?.length ?? 0;
 
-  const gradeInfo = getGrade(percentage);
+  if (!session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 text-sm text-[var(--text-secondary)]">
+        Loading your result…
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-3 sm:p-8 font-sans text-[var(--foreground)] print:bg-white print:p-0">
@@ -81,7 +126,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white shadow-xs border border-[var(--border-fine)] mb-1">
             {isDisqualified ? (
               <AlertCircle className="w-6 h-6 text-[var(--crimson-signal)]" />
-            ) : isPendingReview ? (
+            ) : isPendingReview || resultsWithheld ? (
               <Clock className="w-6 h-6 text-amber-600" />
             ) : (
               <Award className="w-6 h-6 text-[var(--violet-ink)]" />
@@ -118,24 +163,30 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
             <div>
               <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Access PIN</span>
               <div className="font-bold font-mono text-sm text-[var(--foreground)] mt-0.5">
-                {session?.candidatePin || "WALK_IN"}
+                {session.candidatePin}
               </div>
             </div>
 
             <div>
               <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Submission Time</span>
               <div className="font-medium text-xs text-[var(--foreground)] mt-0.5">
-                {remoteSlip?.submittedAt
-                  ? `${new Date(remoteSlip.submittedAt).toLocaleDateString()} ${new Date(remoteSlip.submittedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                  : `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
+                {submittedAt
+                  ? `${new Date(submittedAt).toLocaleDateString()} ${new Date(submittedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                  : "—"}
               </div>
             </div>
 
             <div>
               <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Security Audit</span>
-              <div className="font-medium text-xs text-[var(--emerald-signal)] flex items-center gap-1 mt-0.5">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>{remoteSlip?.violations ?? session?.violations?.length ?? 0} Malpractice Flags</span>
+              <div
+                className={`font-medium text-xs flex items-center gap-1 mt-0.5 ${
+                  violationCount > 0 ? "text-[#92400e]" : "text-[var(--emerald-signal)]"
+                }`}
+              >
+                {violationCount > 0 ? <AlertCircle className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                <span>
+                  {violationCount} tab switch{violationCount === 1 ? "" : "es"} recorded
+                </span>
               </div>
             </div>
           </div>
@@ -148,6 +199,14 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
                 This attempt was flagged and locked due to exceeding allowed tab-switch and malpractice thresholds.
               </p>
             </div>
+          ) : resultsWithheld ? (
+            <div className="bg-[var(--surface-subtle)] border border-[var(--border-fine)] rounded-[var(--radius-md)] p-6 text-center space-y-2">
+              <CheckCircle2 className="w-8 h-8 mx-auto text-[var(--emerald-signal)]" />
+              <div className="font-bold text-base text-[var(--foreground)]">Your exam has been submitted</div>
+              <p className="text-xs text-[var(--text-secondary)] max-w-sm mx-auto">
+                Your examiner will release results later. Keep this slip as proof of submission.
+              </p>
+            </div>
           ) : isPendingReview ? (
             <div className="bg-amber-50/50 border border-amber-200 rounded-[var(--radius-md)] p-6 text-center space-y-3">
               <span className="text-xs font-semibold uppercase tracking-wider text-amber-800">
@@ -156,10 +215,10 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
 
               <div className="flex items-baseline justify-center gap-2">
                 <span className="text-4xl sm:text-5xl font-extrabold font-mono text-amber-950 tracking-tight">
-                  {mcqScore}
+                  {objectiveScore}
                 </span>
                 <span className="text-sm font-mono text-amber-800">
-                  MCQ Marks Awarded
+                  objective marks so far
                 </span>
               </div>
 
@@ -169,7 +228,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
                   <span>Theory &amp; Essay Questions Status:</span>
                 </div>
                 <p className="text-[11px] leading-relaxed text-amber-700">
-                  Your written short answers and long essay compositions are currently under review by your examiner using the ParaLearn AI evaluation engine. Your finalized composite grade will update automatically once verified.
+                  Your examiner is marking your written answers. This page updates by itself when your final result is ready.
                 </p>
               </div>
             </div>
@@ -192,7 +251,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono py-1">
                   <div className="bg-white p-2 rounded border border-slate-200">
                     <span className="text-slate-500 block text-[10px]">Objective MCQ</span>
-                    <span className="font-bold text-slate-800">{mcqScore} Marks</span>
+                    <span className="font-bold text-slate-800">{objectiveScore} Marks</span>
                   </div>
                   <div className="bg-white p-2 rounded border border-slate-200">
                     <span className="text-slate-500 block text-[10px]">Theory &amp; Essay</span>
@@ -202,35 +261,32 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
               )}
 
               <div>
-                <Badge className={`${gradeInfo.tint} font-bold text-xs uppercase px-3 py-1 rounded-full border-0`}>
-                  Grade: {remoteSlip?.grade || gradeInfo.letter} ({remoteSlip?.grade ? "Official" : gradeInfo.desc})
+                <Badge className={`${gradeTint(grade)} font-bold text-xs uppercase px-3 py-1 rounded-full border-0`}>
+                  Grade: {grade}
                 </Badge>
               </div>
             </div>
           )}
 
-          {/* Examiner Constructive Feedback (If Graded) */}
-          {isGraded && session?.essayFeedback && Object.keys(session.essayFeedback).length > 0 && (
+          {/* Examiner feedback */}
+          {!resultsWithheld && (feedback?.comment || Object.keys(feedback?.byQuestion || {}).length > 0) && (
             <div className="space-y-2 border-t border-[var(--border-fine)] pt-4">
               <div className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <MessageSquare className="w-3.5 h-3.5 text-violet-600" />
-                <span>Examiner Feedback &amp; Rubric Evaluation</span>
+                <span>Examiner feedback</span>
               </div>
-              <div className="space-y-2">
-                {Object.entries(session.essayFeedback).map(([qId, fb]) => (
-                  <div key={qId} className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
-                    <div className="flex justify-between font-bold text-slate-800">
-                      <span>Essay Assessment Breakdown</span>
-                      <span className="font-mono text-violet-700">{fb.score} / {fb.maxScore} Marks</span>
-                    </div>
-                    {fb.comment && (
-                      <p className="text-[11px] text-slate-600 italic">
-                        "{fb.comment}"
-                      </p>
-                    )}
-                  </div>
+              {feedback?.comment && (
+                <p className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700">
+                  {feedback.comment}
+                </p>
+              )}
+              {Object.entries(feedback?.byQuestion || {})
+                .filter(([, text]) => text)
+                .map(([qId, text], idx) => (
+                  <p key={qId} className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700">
+                    <strong>Written answer {idx + 1}:</strong> {String(text)}
+                  </p>
                 ))}
-              </div>
             </div>
           )}
 
@@ -238,10 +294,10 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
           <div className="pt-2 flex items-center justify-between text-xs text-[var(--text-secondary)] border-t border-[var(--border-fine)]">
             <div className="space-y-0.5">
               <div className="font-mono text-[11px] font-semibold text-[var(--foreground)]">
-                AUTH-PROOF-HASH
+                Attempt reference
               </div>
               <div className="font-mono text-[10px] text-[var(--text-secondary)]">
-                {Math.random().toString(36).substring(2, 10).toUpperCase()}-VERIFIED-CBT
+                {(session.attemptId || "").slice(-12).toUpperCase() || "—"}
               </div>
             </div>
 
@@ -263,11 +319,11 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
             </Button>
 
             <Button
-              onClick={handleRetakeOrFinish}
+              onClick={handleFinish}
               className="w-full sm:flex-1 h-11 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              <span>Exit / New Attempt</span>
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              <span>Finish</span>
             </Button>
           </div>
 
@@ -275,7 +331,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
 
         {/* Footnote */}
         <div className="bg-slate-50 border-t border-[var(--border-fine)] px-6 py-2.5 text-center text-[10px] text-[var(--text-secondary)] print:hidden">
-          Certified via <strong className="text-violet-700">ParaLearn CBT</strong> &bull; Digitally Signed Result Verification Token
+          Issued by <strong className="text-violet-700">ParaLearn CBT</strong>
         </div>
 
       </div>

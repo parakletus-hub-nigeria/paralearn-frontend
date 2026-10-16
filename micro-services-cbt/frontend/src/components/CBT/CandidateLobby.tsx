@@ -44,6 +44,26 @@ interface ExamMetadata {
   instructions: string;
   requiresPin: boolean;
   maxTabViolations: number;
+  isPublished: boolean;
+  startsAt: string | null;
+  endsAt: string | null;
+}
+
+/** Whether candidates can start now, and why not */
+function availabilityOf(meta: ExamMetadata, now = Date.now()) {
+  if (!meta.isPublished) {
+    return { open: false, message: "This exam isn't open yet. Check with your examiner." };
+  }
+  if (meta.startsAt && now < new Date(meta.startsAt).getTime()) {
+    return {
+      open: false,
+      message: `This exam opens ${new Date(meta.startsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.`,
+    };
+  }
+  if (meta.endsAt && now > new Date(meta.endsAt).getTime()) {
+    return { open: false, message: "This exam has closed." };
+  }
+  return { open: true, message: "" };
 }
 
 interface CandidateLobbyProps {
@@ -117,44 +137,8 @@ function CandidatePinInput({
   );
 }
 
-function getInitialExamMetadata(code: string): ExamMetadata | null {
-  const normalized = (code || "").trim().toUpperCase();
-  if (normalized === "BUSI-7642") {
-    return {
-      code: "BUSI-7642",
-      title: "Business Development Assessment - 1",
-      institutionName: "Parakletus Internship Program",
-      durationMins: 90,
-      questionCount: 30,
-      instructions:
-        "Answer all questions. Your responses are saved continuously and submitted when time expires.",
-      requiresPin: false,
-      maxTabViolations: 3,
-    };
-  }
-  if (typeof window !== "undefined") {
-    try {
-      const stored = loadStoredExams();
-      const localExam = stored.find(
-        (e) => e.accessCode?.trim().toUpperCase() === normalized,
-      );
-      if (localExam) {
-        const storedQuestions = loadStoredQuestions(localExam.id);
-        return {
-          code: localExam.accessCode,
-          title: localExam.title,
-          institutionName: "ParaLearn Assessment Center",
-          durationMins: localExam.durationMins || 60,
-          questionCount:
-            storedQuestions.length || localExam.totalQuestions || 0,
-          instructions:
-            "Answer all questions. Your responses are saved continuously and submitted when time expires.",
-          requiresPin: false,
-          maxTabViolations: localExam.maxTabViolations ?? 3,
-        };
-      }
-    } catch {}
-  }
+/** The server is the only source of exam details for candidates */
+function getInitialExamMetadata(_code: string): ExamMetadata | null {
   return null;
 }
 
@@ -182,24 +166,21 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
   const [candidateEmail, setCandidateEmail] = useState("");
   const [candidatePhone, setCandidatePhone] = useState("");
   const [candidatePin, setCandidatePin] = useState("");
-  const [studentId, setStudentId] = useState("");
   const [externalAttemptId, setExternalAttemptId] = useState("");
   const [isResuming, setIsResuming] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // Parse URL launch parameters (e.g. ?pin=849201&name=Amara&studentId=...&attemptId=...)
+  // Parse URL launch parameters (e.g. ?pin=849201&name=Amara&attemptId=...); a student id comes only from the roster
   useEffect(() => {
     if (!searchParams) return;
     const queryPin = searchParams.get("pin");
     const queryName = searchParams.get("name");
     const queryEmail = searchParams.get("email");
-    const queryStudentId = searchParams.get("studentId");
     const queryAttemptId = searchParams.get("attemptId");
 
     if (queryPin) setCandidatePin(queryPin.trim().toUpperCase());
     if (queryName) setCandidateName(queryName.trim());
     if (queryEmail) setCandidateEmail(queryEmail.trim());
-    if (queryStudentId) setStudentId(queryStudentId.trim());
     if (queryAttemptId) setExternalAttemptId(queryAttemptId.trim());
   }, [searchParams]);
 
@@ -223,6 +204,9 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
           "Answer all questions. Your responses are saved continuously and submitted when time expires.",
         requiresPin: remoteExam.accessType === "ROSTER_ONLY",
         maxTabViolations: remoteExam.maxTabViolations,
+        isPublished: remoteExam.isPublished !== false,
+        startsAt: remoteExam.startsAt || null,
+        endsAt: remoteExam.endsAt || null,
       });
       return;
     }
@@ -293,7 +277,6 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
         candidatePin: candidatePin.trim() || undefined,
         email: candidateEmail.trim() || undefined,
         phone: candidatePhone.trim() || undefined,
-        studentId: studentId.trim() || undefined,
         externalAttemptId: externalAttemptId.trim() || undefined,
         userAgent:
           typeof navigator !== "undefined" ? navigator.userAgent : undefined,
@@ -312,24 +295,33 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
         ),
       );
 
+      // On rejoin keep this device's flags; the tab-switch count comes from the server
+      const previous = loadCandidateSession(metadata.code, started.candidatePin);
+      const serverViolations = Number(started.violations) || 0;
+
       // Initialize persistent local candidate session
       saveCandidateSession({
         attemptId: started.attemptId,
+        attemptToken: started.attemptToken,
+        showResultAfter: started.showResultAfter !== false,
+        instructions: started.instructions || null,
         examId: started.examId,
         examTitle: started.examTitle,
         examCode: metadata.code,
         candidateName: started.candidateName,
         candidatePin: started.candidatePin,
-        studentId: started.studentId || studentId.trim() || undefined,
+        studentId: started.studentId || undefined,
         startedAt: now.toISOString(),
         durationMins: started.durationMins,
         deadline: started.deadline,
         clockOffsetMs: Number.isFinite(serverNow) ? serverNow - now.getTime() : 0,
         answers: restoredAnswers as Record<string, string | string[]>,
-        flaggedQuestionIds: [],
+        flaggedQuestionIds: started.isResumed ? previous?.flaggedQuestionIds || [] : [],
         questions: started.questions,
         maxTabViolations: started.maxTabViolations,
-        violations: [],
+        violations: Array.from({ length: serverViolations }, (_, i) =>
+          previous?.violations?.[i] || { type: "tab_switch", timestamp: started.serverNow, questionIdx: 0 },
+        ),
         status: "in_progress",
       });
 
@@ -397,6 +389,8 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
     );
   }
 
+  const availability = availabilityOf(metadata);
+
   return (
     <div className="cbt-surface flex flex-col items-center px-4 py-8 sm:py-12">
       <div className="mb-8">
@@ -446,15 +440,26 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
             &bull; Duration: {metadata.durationMins} Mins
           </p>
 
-          {metadata.code === "BUSI-7642" && (
+          {(metadata.startsAt || metadata.endsAt) && (
             <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span>
-                Assessment Window:{" "}
+                Assessment window:{" "}
                 <strong>
-                  Monday, Oct 5, 2026 &bull; 8:00 AM – 11:00 PM WAT
+                  {metadata.startsAt
+                    ? new Date(metadata.startsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+                    : "now"}
+                  {" – "}
+                  {metadata.endsAt
+                    ? new Date(metadata.endsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+                    : "no closing time"}
                 </strong>
               </span>
+            </div>
+          )}
+          {!availability.open && (
+            <div role="alert" className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+              {availability.message}
             </div>
           )}
         </div>
@@ -638,7 +643,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
           {/* Submit CTA Button */}
           <Button
             type="submit"
-            disabled={isVerifying}
+            disabled={isVerifying || !availability.open}
             className="w-full h-12 text-base font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)] transition-all flex items-center justify-center gap-2"
           >
             {isVerifying ? (

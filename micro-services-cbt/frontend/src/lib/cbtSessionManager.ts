@@ -32,6 +32,11 @@ export interface ExamRubric {
 
 export interface CandidateSession {
   attemptId?: string;
+  /** Proves this device owns the attempt; sent with answers, reports, submit and slip */
+  attemptToken?: string;
+  /** False when the examiner withholds scores until later */
+  showResultAfter?: boolean;
+  instructions?: string | null;
   examId?: string;
   examTitle?: string;
   examCode: string;
@@ -56,6 +61,9 @@ export interface CandidateSession {
       text: string;
       keyLabel?: string;
     }>;
+    minWords?: number;
+    maxWords?: number;
+    rubric?: ExamRubric | null;
   }>;
   maxTabViolations?: number;
   violations: Array<{

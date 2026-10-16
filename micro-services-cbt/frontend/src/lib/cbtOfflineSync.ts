@@ -281,6 +281,7 @@ export function queueAnswer(session: CandidateSession, questionId: string, value
     kind: "answer",
     attemptId: session.attemptId,
     payload: {
+      attemptToken: session.attemptToken,
       questionId,
       selectedVal: value,
       answeredAt: new Date(deviceNow(session)).toISOString(),
@@ -294,6 +295,7 @@ export function queueTelemetry(session: CandidateSession, eventType: string, que
     kind: "telemetry",
     attemptId: session.attemptId,
     payload: {
+      attemptToken: session.attemptToken,
       eventType,
       questionIdx,
       // Lets the server ignore a report it already counted
@@ -310,6 +312,7 @@ export function queueSubmission(session: CandidateSession, answers: Record<strin
     kind: "submit",
     attemptId: session.attemptId,
     payload: {
+      attemptToken: session.attemptToken,
       finalAnswers: answers,
       autoSubmitted: session.pendingSubmit.reason !== "manual",
       submittedAt: session.pendingSubmit.submittedAt,
