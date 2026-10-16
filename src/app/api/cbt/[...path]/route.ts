@@ -1,14 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import {
   cbtServerStore,
   computeWaecGrade,
   CbtConflictError,
+  CbtValidationError,
+  CbtForbiddenError,
+  CbtNotFoundError,
+  questionsForAttempt,
+  type StoredAttempt,
   publicAttemptMetadata,
+  examWorkspaceId,
   toCandidateQuestion,
 } from "@/lib/cbtServerStore";
 import { BUSI_EXAM } from "@/lib/busiAssessmentData";
-import { cbtServiceHeaders, getPrincipal, type CbtPrincipal } from "@/lib/cbtAuth";
+import {
+  attemptToken,
+  cbtServiceHeaders,
+  getPrincipal,
+  isSafeWebhookUrl,
+  verifyAttemptToken,
+  type CbtPrincipal,
+} from "@/lib/cbtAuth";
 import {
   linkReportCard,
   releaseReportCard,
@@ -67,6 +80,15 @@ function withErrorHandling(handler: Handler): Handler {
       if (err instanceof CbtConflictError) {
         return NextResponse.json({ message: err.message }, { status: 409 });
       }
+      if (err instanceof CbtValidationError) {
+        return NextResponse.json({ message: err.message }, { status: 400 });
+      }
+      if (err instanceof CbtForbiddenError) {
+        return NextResponse.json({ message: err.message }, { status: 403 });
+      }
+      if (err instanceof CbtNotFoundError) {
+        return NextResponse.json({ message: err.message }, { status: 404 });
+      }
       console.error("[CBT API] Request failed:", err);
       return NextResponse.json(
         {
@@ -88,7 +110,7 @@ function isCandidateRoute(method: string, path: string[]): boolean {
   if (method === "GET") {
     return (
       (path[0] === "exams" && path[1] === "code" && !!path[2]) ||
-      (path[0] === "attempts" && path[2] === "slip")
+      (path[0] === "attempts" && (path[2] === "slip" || path[2] === "status"))
     );
   }
   if (method === "POST" && path[0] === "attempts") {
@@ -113,7 +135,7 @@ async function ownsWorkspace(me: CbtPrincipal, workspaceId?: string | null): Pro
 
 async function ownsExam(me: CbtPrincipal, examId?: string | null): Promise<boolean> {
   const exam = examId ? await cbtServerStore.getExamById(examId) : null;
-  return !!exam && ownsWorkspace(me, exam.workspaceId);
+  return !!exam && examWorkspaceId(exam) === me.wsId;
 }
 
 async function ownsAttempt(me: CbtPrincipal, attemptId: string): Promise<boolean> {
@@ -125,6 +147,89 @@ async function ownsQuestion(me: CbtPrincipal, questionId: string): Promise<boole
   const q = await cbtServerStore.getQuestion(questionId);
   return !!q && ownsWorkspace(me, q.workspaceId);
 }
+
+/**
+ * Exam fields a client may set. Questions are attached only through
+ * POST /exams/:id/questions (which checks ownership), and the totals follow
+ * from them, so neither can be written directly.
+ */
+function examSettings(body: any) {
+  const { questionIds: _q, totalMarks: _m, totalQuestions: _n, workspaceId: _w, ...rest } = body || {};
+  return rest;
+}
+
+/**
+ * Who may act on an attempt: the candidate's device (holding the token from
+ * attempts/start) or a signed-in examiner / API key that owns the exam.
+ * Attempts from before tokens existed stay open, so nobody mid-exam is cut off.
+ */
+async function attemptAccess(
+  request: NextRequest,
+  attemptId: string,
+  body?: any
+): Promise<{ att: StoredAttempt; owner: boolean } | NextResponse> {
+  const att = await cbtServerStore.getAttemptById(attemptId);
+  if (!att) return notFound("Attempt");
+  const token =
+    request.headers.get("x-attempt-token") ||
+    body?.attemptToken ||
+    request.nextUrl.searchParams.get("token");
+  if (verifyAttemptToken(att.id, token)) return { att, owner: false };
+
+  const principal = await getPrincipal(request);
+  if (principal && (await ownsExam(principal, att.examId))) return { att, owner: true };
+  if (!att.tokenRequired && !token) return { att, owner: false };
+  return NextResponse.json(
+    { message: "This exam session isn't valid on this device. Rejoin from the exam lobby." },
+    { status: 401 }
+  );
+}
+
+/** Sends a signed webhook after the response, without holding it up */
+function dispatchWebhook(target: { url?: string; secret?: string }, payload: Record<string, any>) {
+  if (!target.url) return;
+  if (!isSafeWebhookUrl(target.url)) {
+    console.warn("[CBT Webhook] Skipped: webhook URL must be a public https address");
+    return;
+  }
+  const secret = target.secret || process.env.CBT_WEBHOOK_SECRET;
+  if (!secret) {
+    console.warn("[CBT Webhook] Skipped: the workspace has no webhook secret");
+    return;
+  }
+  const rawPayload = JSON.stringify(payload);
+  const signature = "sha256=" + crypto.createHmac("sha256", secret).update(rawPayload).digest("hex");
+  after(async () => {
+    try {
+      const res = await fetch(target.url!, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-cbt-event": payload.event,
+          "x-cbt-event-id": payload.eventId,
+          "x-cbt-timestamp": payload.timestamp,
+          "x-cbt-signature": signature,
+        },
+        body: rawPayload,
+        signal: AbortSignal.timeout(10000),
+        redirect: "manual",
+      });
+      if (!res.ok) console.warn(`[CBT Webhook] ${payload.event} got HTTP ${res.status}`);
+    } catch (err) {
+      console.warn("[CBT Webhook] Webhook dispatch error:", err);
+    }
+  });
+}
+
+/** Score fields a candidate shouldn't see when the exam withholds results */
+const WITHHELD = {
+  score: null,
+  totalMarks: null,
+  percentage: null,
+  grade: null,
+  isPassed: null,
+  resultsWithheld: true,
+};
 
 /** The caller's workspace, or null when the request names someone else's */
 async function callerWorkspace(me: CbtPrincipal, requested?: string): Promise<string | null> {
@@ -244,7 +349,7 @@ async function handleGET(request: NextRequest, { params }: RouteParams) {
   if (path[0] === "exams" && path[1]) {
     const examId = decodeURIComponent(path[1]);
     const exam = await cbtServerStore.getExamById(examId);
-    if (!exam || !(await ownsWorkspace(me, exam.workspaceId))) return notFound("Exam");
+    if (!exam || examWorkspaceId(exam) !== me.wsId) return notFound("Exam");
     const questions = await cbtServerStore.getQuestionsForExam(examId);
     const ws = await cbtServerStore.getWorkspace(exam.workspaceId);
     return NextResponse.json({
@@ -270,14 +375,45 @@ async function handleGET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(review);
   }
 
+  // 4c. /api/cbt/attempts/:id/status — the candidate's device checks for extra time or a lock
+  if (path[0] === "attempts" && path[2] === "status" && path[1]) {
+    const access = await attemptAccess(request, decodeURIComponent(path[1]));
+    if (access instanceof NextResponse) return access;
+    const { att } = access;
+    return NextResponse.json({
+      status: att.status,
+      deadline: att.deadline,
+      violations: att.violations || 0,
+      serverNow: new Date().toISOString(),
+    });
+  }
+
+  // 4d. /api/cbt/workspaces/:id/developer — API key and webhook secret, for the signed-in owner
+  if (path[0] === "workspaces" && path[2] === "developer" && path[1]) {
+    if (me.via !== "session") return forbidden();
+    if (!(await ownsWorkspace(me, decodeURIComponent(path[1])))) return forbidden();
+    const ws = await cbtServerStore.getWorkspace(me.wsId);
+    if (!ws) return notFound("Workspace");
+    return NextResponse.json({
+      apiKey: ws.apiKey || null,
+      webhookUrl: ws.webhookUrl || null,
+      webhookSecret: ws.webhookSecret || null,
+    });
+  }
+
   // 5. /api/cbt/attempts/:id/slip
   if (path[0] === "attempts" && path[2] === "slip" && path[1]) {
-    const attemptId = decodeURIComponent(path[1]);
-    const att = await cbtServerStore.getAttempt(attemptId);
-    if (!att) {
-      return NextResponse.json({ message: "Attempt not found" }, { status: 404 });
+    const access = await attemptAccess(request, decodeURIComponent(path[1]));
+    if (access instanceof NextResponse) return access;
+    const att = access.att;
+    if (att.status === "in_progress" && !access.owner) {
+      return NextResponse.json(
+        { message: "This attempt is still in progress." },
+        { status: 409 }
+      );
     }
     const exam = await cbtServerStore.getExamById(att.examId);
+    const withheld = !access.owner && exam?.showResultAfter === false;
     const score = att.score ?? 0;
     const totalMarks = att.totalMarks || exam?.totalMarks || 1;
     const percentage = att.percentage ?? Math.round((score / totalMarks) * 100);
@@ -292,7 +428,7 @@ async function handleGET(request: NextRequest, { params }: RouteParams) {
       Math.round((completedTime - startedTime) / (60 * 1000))
     );
 
-    return NextResponse.json({
+    const slip = {
       attemptId: att.id,
       externalAttemptId: att.externalAttemptId || null,
       studentId: att.studentId || null,
@@ -322,33 +458,42 @@ async function handleGET(request: NextRequest, { params }: RouteParams) {
           totalQuestions: exam?.totalQuestions || exam?.questionIds?.length || 0,
           correctCount: att.correctCount ?? 0,
           wrongCount: att.wrongCount ?? 0,
+          unansweredCount: att.unansweredCount ?? 0,
           mcqScore: att.mcqScore ?? score,
           essayScore: att.essayScore ?? 0,
         },
       },
+      examinerFeedback: att.feedback || null,
       metadata: {
         ...publicAttemptMetadata(att.metadata),
         sweepLearnerId: att.studentId || null,
         sweepAttemptId: att.externalAttemptId || null,
       },
-    });
+    };
+    return NextResponse.json(
+      withheld
+        ? {
+            ...slip,
+            ...WITHHELD,
+            gradingStatus: null,
+            examinerFeedback: null,
+            resultSlip: { ...slip.resultSlip, breakdown: null },
+          }
+        : slip
+    );
   }
 
-  // 5b. /api/cbt/sync/export-csv/:examId — CSV of scores from the CBT service
+  // 5b. /api/cbt/sync/export-csv/:examId — results sheet for the exam
   if (path[0] === "sync" && path[1] === "export-csv" && path[2]) {
     const examId = decodeURIComponent(path[2]);
     if (!(await ownsExam(me, examId))) return notFound("Exam");
-    const upstream = await fetch(
-      `${cbtBackendBase()}/sync/export-csv/${encodeURIComponent(examId)}`,
-      { headers: cbtServiceHeaders(), cache: "no-store", signal: AbortSignal.timeout(15000) }
-    );
-    return new NextResponse(await upstream.text(), {
-      status: upstream.status,
+    const exam = await cbtServerStore.getExamById(examId);
+    const csv = await cbtServerStore.examResultsCsv(examId);
+    const name = (exam?.accessCode || examId).replace(/[^A-Za-z0-9-]/g, "");
+    return new NextResponse("\uFEFF" + csv, {
       headers: {
-        "Content-Type": upstream.headers.get("content-type") || "text/csv",
-        "Content-Disposition":
-          upstream.headers.get("content-disposition") ||
-          `attachment; filename="cbt-exam-${examId}-scores.csv"`,
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${name}-results.csv"`,
       },
     });
   }
@@ -437,7 +582,7 @@ async function handlePOST(request: NextRequest, { params }: RouteParams) {
     if (body.id && (await cbtServerStore.getExamById(body.id)) && !(await ownsExam(me, body.id))) {
       return forbidden();
     }
-    const exam = await cbtServerStore.upsertExam({ ...body, workspaceId });
+    const exam = await cbtServerStore.upsertExam({ ...examSettings(body), workspaceId });
     return NextResponse.json(exam, { status: 201 });
   }
 
@@ -495,14 +640,16 @@ async function handlePOST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ message: "candidateName is required" }, { status: 400 });
     }
     const res = await cbtServerStore.startAttempt({
-      accessCode: body.accessCode,
-      candidateName: body.candidateName,
-      candidatePin: body.candidatePin,
-      email: body.email,
-      phone: body.phone,
-      studentId: body.studentId,
-      externalAttemptId: body.externalAttemptId || body.attemptId,
-      metadata: body.metadata,
+      accessCode: String(body.accessCode || ""),
+      candidateName: String(body.candidateName).trim().slice(0, 120),
+      candidatePin: body.candidatePin ? String(body.candidatePin) : undefined,
+      email: body.email ? String(body.email).slice(0, 200) : undefined,
+      phone: body.phone ? String(body.phone).slice(0, 40) : undefined,
+      externalAttemptId:
+        body.externalAttemptId || body.attemptId
+          ? String(body.externalAttemptId || body.attemptId).slice(0, 200)
+          : undefined,
+      metadata: body.metadata && typeof body.metadata === "object" ? body.metadata : undefined,
     });
     if (!res) {
       return NextResponse.json(
@@ -526,71 +673,56 @@ async function handlePOST(request: NextRequest, { params }: RouteParams) {
       remainingSeconds: res.attempt.remainingSeconds,
       violations: res.attempt.violations,
       maxTabViolations: res.exam.maxTabViolations || 3,
-      questions: res.questions.map(toCandidateQuestion),
+      showResultAfter: res.exam.showResultAfter !== false,
+      instructions: res.exam.instructions || null,
+      // Only this device holds it; answers, reports, submission and the slip need it
+      attemptToken: attemptToken(res.attempt.id),
+      questions: questionsForAttempt(res.exam, res.questions, res.attempt.id).map(toCandidateQuestion),
       restoredAnswers: res.attempt.answers || {},
     });
   }
 
   // 8. /api/cbt/attempts/:id/answer
   if (path[0] === "attempts" && path[2] === "answer" && path[1]) {
-    const attemptId = decodeURIComponent(path[1]);
-    const result = await cbtServerStore.bufferAnswer(
-      attemptId,
-      body.questionId,
-      body.selectedVal
-    );
+    const access = await attemptAccess(request, decodeURIComponent(path[1]), body);
+    if (access instanceof NextResponse) return access;
+    if (!body.questionId) {
+      return NextResponse.json({ success: false, message: "questionId is required" }, { status: 400 });
+    }
+    const result = await cbtServerStore.bufferAnswer(access.att.id, body.questionId, body.selectedVal);
     if (!result.saved) {
-      const status = result.reason === "Attempt not found" ? 404 : 409;
-      return NextResponse.json({ success: false, message: result.reason }, { status });
+      return NextResponse.json({ success: false, message: result.reason }, { status: 409 });
     }
     return NextResponse.json({ success: true });
   }
 
   // 9. /api/cbt/attempts/:id/telemetry
   if (path[0] === "attempts" && path[2] === "telemetry" && path[1]) {
-    const attemptId = decodeURIComponent(path[1]);
-    const result = await cbtServerStore.recordTelemetry(attemptId, body.eventType, body.eventId);
+    const access = await attemptAccess(request, decodeURIComponent(path[1]), body);
+    if (access instanceof NextResponse) return access;
+    const result = await cbtServerStore.recordTelemetry(access.att.id, body.eventType, body.eventId);
     return NextResponse.json(result);
   }
 
   // 10. /api/cbt/attempts/:id/submit
   if (path[0] === "attempts" && path[2] === "submit" && path[1]) {
-    const attemptId = decodeURIComponent(path[1]);
-    const res = await cbtServerStore.submitAttempt(attemptId, body.finalAnswers, {
+    const access = await attemptAccess(request, decodeURIComponent(path[1]), body);
+    if (access instanceof NextResponse) return access;
+    const res = await cbtServerStore.submitAttempt(access.att.id, body.finalAnswers, {
       claimedSubmittedAt: body.submittedAt,
     });
     if (!res) {
       return NextResponse.json({ message: "Attempt not found" }, { status: 404 });
     }
 
-    // Trigger external HMAC-signed webhook if workspace has webhookUrl (first submission only)
-    if (res.webhookUrl && !res.alreadySubmitted) {
-      const rawPayload = JSON.stringify(res.webhookPayload);
-      const secret =
-        res.webhookSecret ||
-        process.env.CBT_WEBHOOK_SECRET ||
-        "pln_whsec_default";
-      const signature =
-        "sha256=" +
-        crypto.createHmac("sha256", secret).update(rawPayload).digest("hex");
-
-      fetch(res.webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-cbt-event": res.webhookPayload.event,
-          "x-cbt-event-id": res.webhookPayload.eventId,
-          "x-cbt-timestamp": res.webhookPayload.timestamp,
-          "x-cbt-signature": signature,
-        },
-        body: rawPayload,
-        signal: AbortSignal.timeout(10000),
-      }).catch((err) => {
-        console.warn("[CBT Webhook] Webhook dispatch error:", err);
-      });
+    // Integrators hear about each attempt once, when it is first submitted
+    if (!res.alreadySubmitted) {
+      dispatchWebhook({ url: res.webhookUrl, secret: res.webhookSecret }, res.webhookPayload);
     }
 
-    return NextResponse.json({
+    const exam = await cbtServerStore.getExamById(res.attempt.examId);
+    const withheld = !access.owner && exam?.showResultAfter === false;
+    const result = {
       score: res.attempt.score,
       totalMarks: res.attempt.totalMarks,
       percentage: res.attempt.percentage,
@@ -600,19 +732,62 @@ async function handlePOST(request: NextRequest, { params }: RouteParams) {
       alreadySubmitted: res.alreadySubmitted,
       attemptId: res.attempt.id,
       externalAttemptId: res.attempt.externalAttemptId || null,
+      submittedAt: res.attempt.submittedAt,
       resultSlip: res.webhookPayload.resultSlip,
+    };
+    return NextResponse.json(
+      withheld
+        ? { ...result, ...WITHHELD, gradingStatus: null, resultSlip: { ...result.resultSlip, breakdown: null } }
+        : result
+    );
+  }
+
+  // 10a. /api/cbt/attempts/:id/extend | reinstate — invigilator actions
+  if (path[0] === "attempts" && (path[2] === "extend" || path[2] === "reinstate") && path[1]) {
+    const target = await cbtServerStore.getAttempt(decodeURIComponent(path[1]));
+    if (!target || !(await ownsExam(me, target.examId))) return notFound("Attempt");
+    const att =
+      path[2] === "extend"
+        ? await cbtServerStore.extendAttempt(target.id, Number(body.minutes))
+        : await cbtServerStore.reinstateAttempt(target.id);
+    return NextResponse.json({
+      attemptId: att.id,
+      status: att.status,
+      deadline: att.deadline,
+      violations: att.violations || 0,
     });
+  }
+
+  // 10c. /api/cbt/workspaces/:id/rotate-api-key | rotate-webhook-secret
+  if (
+    path[0] === "workspaces" &&
+    path[1] &&
+    (path[2] === "rotate-api-key" || path[2] === "rotate-webhook-secret")
+  ) {
+    if (me.via !== "session") return forbidden();
+    if (!(await ownsWorkspace(me, decodeURIComponent(path[1])))) return forbidden();
+    return path[2] === "rotate-api-key"
+      ? NextResponse.json({ apiKey: await cbtServerStore.rotateApiKey(me.wsId) })
+      : NextResponse.json({ webhookSecret: await cbtServerStore.rotateWebhookSecret(me.wsId) });
   }
 
   // 10b. /api/cbt/attempts/:id/manual-grade
   if (path[0] === "attempts" && path[2] === "manual-grade" && path[1]) {
-    if (!(await ownsAttempt(me, decodeURIComponent(path[1])))) return notFound("Attempt");
+    const target = await cbtServerStore.getAttempt(decodeURIComponent(path[1]));
+    if (!target || !(await ownsExam(me, target.examId))) return notFound("Attempt");
+    const wasGraded = target.gradingStatus === "GRADED";
     const review = await cbtServerStore.manualGradeAttempt(
-      decodeURIComponent(path[1]),
-      Array.isArray(body.answers) ? body.answers : []
+      target.id,
+      Array.isArray(body.answers) ? body.answers : [],
+      typeof body.comment === "string" ? body.comment : undefined
     );
     if (!review) {
       return NextResponse.json({ message: "Attempt not found" }, { status: 404 });
+    }
+    // Integrators get the final result once every essay has been marked
+    if (!wasGraded && review.gradingStatus === "GRADED") {
+      const graded = await cbtServerStore.gradedWebhook(target.id);
+      if (graded) dispatchWebhook(graded, graded.payload);
     }
     return NextResponse.json(review);
   }
@@ -727,7 +902,7 @@ async function handlePATCH(request: NextRequest, { params }: RouteParams) {
   if (path[0] === "exams" && path[1]) {
     const examId = decodeURIComponent(path[1]);
     if (!(await ownsExam(me, examId))) return notFound("Exam");
-    const exam = await cbtServerStore.upsertExam({ ...changes, id: examId });
+    const exam = await cbtServerStore.upsertExam({ ...examSettings(changes), id: examId });
     return NextResponse.json(exam);
   }
 
@@ -743,10 +918,21 @@ async function handlePATCH(request: NextRequest, { params }: RouteParams) {
   if (path[0] === "workspaces" && path[1]) {
     const wsId = decodeURIComponent(path[1]);
     if (!(await ownsWorkspace(me, wsId))) return forbidden();
+    if (changes.webhookUrl && !isSafeWebhookUrl(String(changes.webhookUrl))) {
+      return NextResponse.json(
+        { message: "The webhook URL must be a public https:// address." },
+        { status: 400 }
+      );
+    }
     // Credits and API keys are not self-service
     const ws = await cbtServerStore.updateWorkspace(me.wsId, {
-      name: changes.name,
-      webhookUrl: changes.webhookUrl,
+      name: typeof changes.name === "string" ? changes.name.trim().slice(0, 120) || undefined : undefined,
+      webhookUrl:
+        changes.webhookUrl === null || changes.webhookUrl === ""
+          ? ""
+          : typeof changes.webhookUrl === "string"
+            ? changes.webhookUrl.trim()
+            : undefined,
     });
     if (!ws) {
       return NextResponse.json({ message: "Workspace not found" }, { status: 404 });
@@ -761,6 +947,16 @@ export const PATCH = withErrorHandling(handlePATCH);
 
 async function handleDELETE(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
+
+  // /api/cbt/exams/:id — delete an exam nobody has taken
+  if (path[0] === "exams" && path[1] && path.length === 2) {
+    const me = await getPrincipal(request);
+    if (!me) return unauthorized();
+    const examId = decodeURIComponent(path[1]);
+    if (!(await ownsExam(me, examId))) return notFound("Exam");
+    await cbtServerStore.deleteExam(examId);
+    return NextResponse.json({ success: true });
+  }
 
   // /api/cbt/exams/:id/report-card — unlink (only before scores are released)
   if (path[0] === "exams" && path[2] === "report-card" && path[1]) {

@@ -142,6 +142,48 @@ export async function getPrincipal(request: NextRequest): Promise<CbtPrincipal |
   return null;
 }
 
+// ── Attempt tokens ────────────────────────────────────────────────────────────
+// A candidate has no account. Starting an attempt returns a token that only
+// that device holds; answers, reports, submission and the result slip need it.
+
+export function attemptToken(attemptId: string): string {
+  return crypto.createHmac("sha256", sessionSecret()).update(`attempt:${attemptId}`).digest("base64url");
+}
+
+export function verifyAttemptToken(attemptId: string, token?: string | null): boolean {
+  if (!token) return false;
+  const expected = Buffer.from(attemptToken(attemptId));
+  const actual = Buffer.from(String(token));
+  return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+}
+
+/** Webhook targets must be public HTTPS endpoints (no internal addresses) */
+export function isSafeWebhookUrl(raw: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal") || host.endsWith(".local")) {
+    return false;
+  }
+  const v4 = host.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    if (a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127)) {
+      return false;
+    }
+  }
+  if (host.includes(":")) {
+    // IPv6 literals: refuse loopback, link-local and unique-local ranges
+    if (host === "::1" || host.startsWith("fe80") || host.startsWith("fc") || host.startsWith("fd") || host === "::") return false;
+  }
+  return true;
+}
+
 // ── Passwords ─────────────────────────────────────────────────────────────────
 
 export const MIN_PASSWORD_LENGTH = 8;

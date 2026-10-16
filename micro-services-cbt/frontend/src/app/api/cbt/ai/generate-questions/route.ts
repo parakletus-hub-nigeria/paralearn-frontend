@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getPrincipal } from "@/lib/cbtAuth";
+
+const MAX_UPLOAD_BYTES = 40 * 1024 * 1024;
+const MAX_NOTES_CHARS = 200_000;
+/** Gemini reads these inline; Word and PowerPoint files must be saved as PDF first */
+const UNSUPPORTED_UPLOADS = [".doc", ".docx", ".ppt", ".pptx"];
+/** Text that goes inside the prompt: one line, no quotes, bounded */
+const promptSafe = (value: string, max: number) => value.replace(/["`\r\n]+/g, " ").trim().slice(0, max);
 
 export const maxDuration = 60; // Allow sufficient time for multimodal AI processing
 
@@ -44,19 +52,17 @@ interface RawGeneratedQuestion {
 
 export async function POST(req: NextRequest) {
   try {
+    // Examiners and API keys only: every call spends the AI quota
+    if (!(await getPrincipal(req))) {
+      return NextResponse.json({ error: "Please sign in to your CBT workspace." }, { status: 401 });
+    }
     const rawApiKey =
-      process.env.CBT_GEMINI_API_KEY ||
-      process.env.GEMINI_API_KEY ||
-      process.env.GOOGLE_API_KEY ||
-      process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      process.env.CBT_GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     const apiKey = rawApiKey ? rawApiKey.trim().replace(/^["']|["']$/g, "") : "";
     if (!apiKey) {
       return NextResponse.json(
-        {
-          error:
-            "GEMINI_API_KEY (or CBT_GEMINI_API_KEY) is not configured in server environment. Please define GEMINI_API_KEY or GOOGLE_API_KEY in your .env.local file or hosting environment variables.",
-        },
-        { status: 500 }
+        { error: "ParaLearn AI isn't set up on this server yet (GEMINI_API_KEY is missing)." },
+        { status: 503 }
       );
     }
 
@@ -67,10 +73,26 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const notesText = (formData.get("notes") as string) || "";
-    const subject = (formData.get("subject") as string) || "General Subject";
-    const difficulty = (formData.get("difficulty") as string) || "balanced"; // simple | intermediate | hard | balanced
-    const formatMode = (formData.get("formatMode") as string) || "hybrid"; // pure_mcq | hybrid | pure_essay
-    const count = Math.min(Math.max(parseInt((formData.get("count") as string) || "10", 10), 1), 50);
+    const subject = promptSafe((formData.get("subject") as string) || "", 120) || "General Subject";
+    const difficultyRaw = String(formData.get("difficulty") || "balanced").toLowerCase();
+    const difficulty = ["simple", "intermediate", "hard", "balanced"].includes(difficultyRaw) ? difficultyRaw : "balanced";
+    const formatRaw = String(formData.get("formatMode") || "hybrid").toLowerCase();
+    const formatMode = ["pure_mcq", "hybrid", "pure_essay"].includes(formatRaw) ? formatRaw : "hybrid";
+    const requested = parseInt(String(formData.get("count") || "10"), 10);
+    const count = Number.isFinite(requested) ? Math.min(Math.max(requested, 1), 50) : 10;
+
+    if (file && file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ error: "That file is larger than 40 MB. Upload a smaller file." }, { status: 413 });
+    }
+    if (file && UNSUPPORTED_UPLOADS.some((ext) => file.name.toLowerCase().endsWith(ext))) {
+      return NextResponse.json(
+        { error: "Word and PowerPoint files can't be read yet. Save the file as PDF and upload that instead." },
+        { status: 415 }
+      );
+    }
+    if (notesText.length > MAX_NOTES_CHARS) {
+      return NextResponse.json({ error: "Those notes are too long. Paste up to 200,000 characters." }, { status: 400 });
+    }
 
     if (!file && (!notesText || notesText.trim().length === 0)) {
       return NextResponse.json(
@@ -309,9 +331,9 @@ Return the result STRICTLY as a valid JSON object matching this schema:
               { id: `opt_${Date.now()}_${idx}_3`, text: "Option D", isCorrect: false },
             ];
 
-        if (!options.some((o) => o.isCorrect)) {
-          options[0].isCorrect = true;
-        }
+        // Exactly one correct option: the first one the model marked, else the first
+        const firstCorrect = Math.max(0, options.findIndex((o: any) => o.isCorrect));
+        options = options.map((o: any, oIdx: number) => ({ ...o, isCorrect: oIdx === firstCorrect }));
       }
 
       // Rubric normalization if present
