@@ -229,17 +229,48 @@ const dynamicCbtBaseQuery = async (args: any, api: any, extraOptions: any) => {
 
 
 // ── Report cards (school workspaces) ─────────────────────────────────────────
+export interface ReportCardCategory {
+  id: string;
+  name: string;
+  code: string;
+  weight: number;
+}
+
 export interface ReportCardOptions {
   tier: "ADMIN" | "TEACHER";
+  /** School admins may create a missing assessment category from the CBT */
+  canCreateCategory?: boolean;
+  suggestedCategory?: { name: string; weight: number };
   classes: Array<{
     id: string;
     name: string;
     level: number | null;
+    /** Active students who would be imported */
+    studentCount?: number;
     subjects: Array<{ id: string; name: string; code: string }>;
   }>;
-  categories: Array<{ id: string; name: string; code: string; weight: number }>;
+  categories: ReportCardCategory[];
   periods: Array<{ session: string; terms: string[] }>;
   activePeriod: { session: string; term: string } | null;
+}
+
+/** Where a school exam's scores go, chosen when it is created */
+export interface ReportCardChoice {
+  classIds: string[];
+  subjectId?: string;
+  categoryId?: string;
+  session?: string;
+  term?: string;
+  /** Practice test: import the classes but keep it off report cards */
+  practice?: boolean;
+}
+
+/** What happened after a school exam was created */
+export interface SchoolExamSetup {
+  link: ReportCardLink | null;
+  linkError: string | null;
+  imported: number;
+  importError: string | null;
 }
 
 export interface ReportCardLink {
@@ -313,7 +344,16 @@ export interface ImportCandidatesResponse {
 export const cbtMicroserviceApi = createApi({
   reducerPath: "cbtMicroserviceApi",
   baseQuery: dynamicCbtBaseQuery,
-  tagTypes: ["CbtWorkspace", "CbtExam", "CbtQuestion", "CbtCandidate", "CbtAttempt", "CbtMonitor", "CbtReportCard"],
+  tagTypes: [
+    "CbtWorkspace",
+    "CbtExam",
+    "CbtQuestion",
+    "CbtCandidate",
+    "CbtAttempt",
+    "CbtMonitor",
+    "CbtReportCard",
+    "CbtReportCardOptions",
+  ],
   endpoints: (builder) => ({
     listWorkspaceExams: builder.query<CbtExamItem[], string>({
       query: (workspaceId) => ({
@@ -323,13 +363,16 @@ export const cbtMicroserviceApi = createApi({
       providesTags: ["CbtExam"],
     }),
 
-    createCbtExam: builder.mutation<CbtExamItem, Partial<CbtExamItem> & { workspaceId: string; title: string }>({
+    createCbtExam: builder.mutation<
+      CbtExamItem & { setup?: SchoolExamSetup },
+      Partial<CbtExamItem> & { workspaceId: string; title: string; reportCard?: ReportCardChoice }
+    >({
       query: (body) => ({
         url: "/exams",
         method: "POST",
         body,
       }),
-      invalidatesTags: ["CbtExam", "CbtWorkspace"],
+      invalidatesTags: ["CbtExam", "CbtWorkspace", "CbtCandidate", "CbtReportCard"],
     }),
 
     getCbtExam: builder.query<CbtExamDetail, string>({
@@ -563,6 +606,15 @@ export const cbtMicroserviceApi = createApi({
 
     getReportCardOptions: builder.query<ReportCardOptions, void>({
       query: () => ({ url: "/report-card/options" }),
+      providesTags: ["CbtReportCardOptions"],
+    }),
+
+    createReportCardCategory: builder.mutation<
+      { category: ReportCardCategory; created: boolean },
+      { name: string; weight: number }
+    >({
+      query: (body) => ({ url: "/report-card/category", method: "POST", body }),
+      invalidatesTags: ["CbtReportCardOptions"],
     }),
 
     getReportCardStatus: builder.query<ReportCardStatus, string>({
@@ -634,6 +686,7 @@ export const {
   useExtendAttemptMutation,
   useReinstateAttemptMutation,
   useGetReportCardOptionsQuery,
+  useCreateReportCardCategoryMutation,
   useGetReportCardStatusQuery,
   useLinkReportCardMutation,
   useUnlinkReportCardMutation,

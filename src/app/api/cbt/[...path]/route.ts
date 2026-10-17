@@ -23,10 +23,15 @@ import {
   type CbtPrincipal,
 } from "@/lib/cbtAuth";
 import {
+  createReportCardCategory,
+  importableClasses,
+  importCandidates,
+  isSchool,
   linkReportCard,
   releaseReportCard,
   reportCardOptions,
   reportCardStatus,
+  setUpSchoolExam,
   unlinkReportCard,
 } from "@/lib/cbtReportCard";
 
@@ -154,7 +159,15 @@ async function ownsQuestion(me: CbtPrincipal, questionId: string): Promise<boole
  * from them, so neither can be written directly.
  */
 function examSettings(body: any) {
-  const { questionIds: _q, totalMarks: _m, totalQuestions: _n, workspaceId: _w, ...rest } = body || {};
+  const {
+    questionIds: _q,
+    totalMarks: _m,
+    totalQuestions: _n,
+    workspaceId: _w,
+    // Acted on when a school exam is created, never stored on the exam
+    reportCard: _r,
+    ...rest
+  } = body || {};
   return rest;
 }
 
@@ -580,11 +593,28 @@ async function handlePOST(request: NextRequest, { params }: RouteParams) {
   if (path[0] === "exams" && path.length === 1) {
     const workspaceId = await callerWorkspace(me, body.workspaceId);
     if (!workspaceId) return forbidden();
-    if (body.id && (await cbtServerStore.getExamById(body.id)) && !(await ownsExam(me, body.id))) {
+    const isNew = !(body.id && (await cbtServerStore.getExamById(body.id)));
+    if (!isNew && !(await ownsExam(me, body.id))) {
       return forbidden();
     }
-    const exam = await cbtServerStore.upsertExam({ ...examSettings(body), workspaceId });
-    return NextResponse.json(exam, { status: 201 });
+    // A school exam can name its classes (and report card) when it is created
+    const reportCard = body.reportCard;
+    const forClasses =
+      isNew && isSchool(me) && Array.isArray(reportCard?.classIds) && reportCard.classIds.length > 0;
+    const exam = await cbtServerStore.upsertExam({
+      ...examSettings(body),
+      // Only the imported students may sit it
+      ...(forClasses ? { accessType: "ROSTER_ONLY" } : {}),
+      workspaceId,
+    });
+    if (!forClasses) return NextResponse.json(exam, { status: 201 });
+    const setup = await setUpSchoolExam(me, exam.id, reportCard);
+    return NextResponse.json({ ...exam, setup }, { status: 201 });
+  }
+
+  // 3a. /api/cbt/report-card/category — one-click assessment category (school admins)
+  if (path[0] === "report-card" && path[1] === "category") {
+    return createReportCardCategory(me, body);
   }
 
   // 3b. /api/cbt/exams/:id/report-card(/release) — link to report cards, release scores
@@ -833,54 +863,13 @@ async function handlePOST(request: NextRequest, { params }: RouteParams) {
   }
 
   
-  // 13. /api/cbt/import/classes or /api/cbt/import/candidates
-  if (path[0] === "import" && (path[1] === "classes" || path[1] === "candidates")) {
-    if (me.type !== "INSTITUTION") {
-      return NextResponse.json(
-        { message: "Importing from ParaLearn is only available to school workspaces." },
-        { status: 403 }
-      );
-    }
-    if (path[1] === "candidates" && !(await ownsExam(me, body.examId))) return notFound("Exam");
-    try {
-      const targetUrl = `${cbtBackendBase()}/import/${path[1]}`;
-      const response = await fetch(targetUrl, {
-        method: "POST",
-        headers: cbtServiceHeaders(),
-        // The workspace and staff identity come from the session, never the client
-        body: JSON.stringify({ ...body, workspaceId: me.wsId, email: me.email }),
-      });
-      const data = await response.json().catch(() => ({}));
-
-      // Exam attempts are served from the local store, so mirror imported candidates
-      // there too — otherwise their studentId link (needed for score sync) is lost.
-      if (response.ok && path[1] === "candidates" && Array.isArray(data?.candidates)) {
-        for (const c of data.candidates) {
-          try {
-            await cbtServerStore.provisionCandidate({
-              examId: body.examId,
-              candidateName: c.candidateName,
-              candidatePin: c.candidatePin,
-              studentId: c.studentId,
-              email: c.email,
-              phone: c.phone,
-              metadata: c.metadata,
-              baseUrl: request.nextUrl.origin,
-            });
-          } catch (mirrorErr) {
-            console.warn("[cbt-import] Could not mirror candidate to local store:", mirrorErr);
-            break; // exam not in local store — remaining candidates would fail the same way
-          }
-        }
-      }
-
-      return NextResponse.json(data, { status: response.status });
-    } catch (err) {
-      return NextResponse.json(
-        { message: "Failed to connect to CBT microservice: " + (err instanceof Error ? err.message : String(err)) },
-        { status: 502 }
-      );
-    }
+  // 13. /api/cbt/import/classes or /api/cbt/import/candidates — straight from ParaLearn Core
+  if (path[0] === "import" && path[1] === "classes") {
+    return importableClasses(me);
+  }
+  if (path[0] === "import" && path[1] === "candidates") {
+    if (!(await ownsExam(me, body.examId))) return notFound("Exam");
+    return importCandidates(me, body.examId, body);
   }
 
   return NextResponse.json({ error: "Endpoint not found" }, { status: 404 });

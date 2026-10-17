@@ -21,6 +21,8 @@ export const routespath = {
   CBT_EXAMS: "/RMS/cbt/exams",
   CBT_QUESTION_BANK: "/RMS/cbt/question-bank",
   CBT_RESULTS: "/RMS/cbt/results",
+  /** ParaLearn CBT (cbt.pln.ng): staff sign in with their ParaLearn account */
+  CBT_APP: `${process.env.NEXT_PUBLIC_CBT_URL || "https://cbt.pln.ng"}/cbt/auth`,
   LESSON_GENERATOR: "/RMS/lesson-generator",
   LESSON_GENERATOR_NEW: "/RMS/lesson-generator/new",
   LESSON_GENERATOR_DETAILS: "/RMS/lesson-generator/:id",

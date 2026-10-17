@@ -437,6 +437,15 @@ export function computeWaecGrade(percentage: number): string {
   return "F9";
 }
 
+/** A 6-digit PIN not in use (re-drawn on the rare clash) */
+function uniquePin(inUse: Set<string>): string {
+  for (let i = 0; i < 1000; i++) {
+    const pin = String(crypto.randomInt(100000, 1000000));
+    if (!inUse.has(pin)) return pin;
+  }
+  throw new Error("Couldn't find a free PIN for this exam.");
+}
+
 // ── Index helpers ─────────────────────────────────────────────────────────────
 /** Builds an exam's candidate/attempt indexes from a full scan the first time they're needed */
 async function ensureExamIndex(examId: string) {
@@ -1070,23 +1079,15 @@ export const cbtServerStore = {
     if (!exam) throw new Error(`Exam ${data.examId} not found.`);
 
     const examCands = await getExamCandidates(exam.id);
-    let pin = data.candidatePin?.trim().toUpperCase();
-    if (!pin) {
-      let attempts = 0;
-      do {
-        pin = Math.floor(100000 + Math.random() * 900000).toString();
-        attempts++;
-      } while (
-        attempts < 100 &&
-        examCands.some((c) => c.candidatePin === pin)
-      );
-    }
-
+    const requestedPin = data.candidatePin?.trim().toUpperCase();
     const existing = examCands.find(
       (c) =>
-        (c.candidatePin === pin ||
-          (data.studentId && c.studentId === data.studentId))
+        (requestedPin && c.candidatePin === requestedPin) ||
+        (data.studentId && c.studentId === data.studentId)
     );
+    // A student provisioned again keeps their PIN, so printed slips stay valid
+    const pin =
+      requestedPin || existing?.candidatePin || uniquePin(new Set(examCands.map((c) => c.candidatePin)));
 
     const candId =
       existing?.id ||
@@ -1095,7 +1096,7 @@ export const cbtServerStore = {
       id: candId,
       examId: exam.id,
       candidateName: data.candidateName.trim(),
-      candidatePin: pin!,
+      candidatePin: pin,
       studentId: data.studentId || existing?.studentId || null,
       externalAttemptId:
         data.externalAttemptId || existing?.externalAttemptId || null,
@@ -1119,6 +1120,73 @@ export const cbtServerStore = {
 
     const launchUrl = `${domain}/take/${exam.accessCode}?${search.toString()}`;
     return { ...candidate, accessCode: exam.accessCode, launchUrl };
+  },
+
+  /**
+   * Adds a school's students to an exam's roster in one pass. A student already
+   * on the roster (same ParaLearn id) keeps their PIN and is updated; new
+   * students get a PIN unique within the exam.
+   */
+  async importRoster(
+    examId: string,
+    students: Array<{
+      studentId: string;
+      candidateName: string;
+      email?: string | null;
+      phone?: string | null;
+      metadata?: Record<string, any> | null;
+    }>
+  ): Promise<{ candidates: StoredCandidate[]; created: number; updated: number }> {
+    const exam = await kvAdapter.hget<StoredExam>(NS.exam, examId);
+    if (!exam) throw new CbtNotFoundError("Exam not found.");
+
+    const roster = await getExamCandidates(exam.id);
+    const byStudent = new Map(roster.filter((c) => c.studentId).map((c) => [c.studentId!, c]));
+    const pinsInUse = new Set(roster.map((c) => c.candidatePin));
+    const saved: StoredCandidate[] = [];
+    const writes: Array<() => Promise<unknown>> = [];
+    let created = 0;
+    let updated = 0;
+
+    for (const s of students) {
+      if (!s?.studentId || !String(s.candidateName || "").trim()) continue;
+      const existing = byStudent.get(s.studentId);
+      const candidate: StoredCandidate = existing
+        ? {
+            ...existing,
+            candidateName: s.candidateName.trim(),
+            email: s.email || existing.email || null,
+            phone: s.phone || existing.phone || null,
+            metadata: { ...(existing.metadata || {}), ...(s.metadata || {}) },
+          }
+        : {
+            id: `cand_${crypto.randomBytes(9).toString("hex")}`,
+            examId: exam.id,
+            candidateName: s.candidateName.trim(),
+            candidatePin: uniquePin(pinsInUse),
+            studentId: s.studentId,
+            externalAttemptId: null,
+            email: s.email || null,
+            phone: s.phone || null,
+            status: "REGISTERED",
+            metadata: s.metadata || null,
+            createdAt: new Date().toISOString(),
+          };
+      if (existing) updated++;
+      else created++;
+      pinsInUse.add(candidate.candidatePin);
+      byStudent.set(s.studentId, candidate);
+      writes.push(
+        () => kvAdapter.hset(NS.candidate, candidate.id, candidate),
+        () => kvAdapter.hashSet(IDX.examCands(exam.id), candidate.id, candidate.candidatePin)
+      );
+      saved.push(candidate);
+    }
+    // PINs are settled above, so the writes can go out in parallel batches
+    for (let i = 0; i < writes.length; i += 20) {
+      await Promise.all(writes.slice(i, i + 20).map((write) => write()));
+    }
+    return { candidates: saved, created, updated };
   },
 
   async bulkProvisionCandidates(

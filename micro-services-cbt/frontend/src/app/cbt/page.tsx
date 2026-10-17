@@ -45,6 +45,9 @@ import {
   type CbtExamItem,
 } from "@cbt/store/cbtMicroserviceApi";
 import CbtEntrance from "@cbt/components/CBT/CbtEntrance";
+import CbtSchoolExamSection, {
+  type SchoolExamChoice,
+} from "@cbt/components/CBT/CbtSchoolExamSection";
 
 type ExamStatus = "Draft" | "Ready" | "Open" | "Scheduled" | "Closed";
 function statusOf(exam: CbtExamItem, now: number): ExamStatus {
@@ -94,6 +97,8 @@ export default function CbtPortalPage() {
   const [shuffleChoices, setShuffleChoices] = useState(true);
   const [showResultAfter, setShowResultAfter] = useState(true);
   const [rosterOnly, setRosterOnly] = useState(false);
+  // School workspaces: which classes sit it and where the scores go
+  const [schoolChoice, setSchoolChoice] = useState<SchoolExamChoice | null>(null);
   const [maxTabViolations, setMaxTabViolations] = useState(3);
   const [storedExams, setStoredExams] = useState<CbtExamItem[]>([]);
   const {
@@ -228,6 +233,12 @@ export default function CbtPortalPage() {
       toast.error("Choose a closing time in the future.");
       return;
     }
+    const isSchool = examiner.type === "INSTITUTION";
+    const forClasses = isSchool && !!schoolChoice && schoolChoice.mode !== "open";
+    if (forClasses && schoolChoice?.blocker) {
+      toast.error(schoolChoice.blocker);
+      return;
+    }
     try {
       const exam = await createExam({
         workspaceId: examiner.id,
@@ -240,10 +251,35 @@ export default function CbtPortalPage() {
         shuffleQuestions,
         shuffleChoices,
         showResultAfter,
-        accessType: rosterOnly ? "ROSTER_ONLY" : "ACCESS_CODE",
+        accessType: forClasses || rosterOnly ? "ROSTER_ONLY" : "ACCESS_CODE",
         isPublished: false,
+        ...(forClasses ? { reportCard: schoolChoice!.reportCard } : {}),
       }).unwrap();
-      toast.success("Draft created");
+      const setup = exam.setup;
+      if (!setup) {
+        toast.success("Draft created");
+      } else {
+        const added = `${setup.imported} student${setup.imported === 1 ? "" : "s"} added with PINs`;
+        if (setup.link) {
+          toast.success(
+            `Draft created for ${setup.link.subject.name} (${setup.link.session} ${setup.link.term}). ${added}.`,
+          );
+        } else if (!setup.linkError) {
+          toast.success(`Practice test created. ${added}.`);
+        }
+        if (setup.linkError) {
+          toast.error(
+            `The exam was created but isn't on report cards yet: ${setup.linkError} You can link it from the exam's monitor.`,
+            { duration: 12000 },
+          );
+        }
+        if (setup.importError) {
+          toast.error(
+            `Students weren't added: ${setup.importError} Use Candidates → Import from ParaLearn to try again.`,
+            { duration: 12000 },
+          );
+        }
+      }
       setCreateOpen(false);
       router.push(`/cbt/exams/${exam.id}`);
     } catch (err) {
@@ -696,6 +732,9 @@ export default function CbtPortalPage() {
                 </div>
               )}
             </fieldset>
+            {examiner.type === "INSTITUTION" && (
+              <CbtSchoolExamSection onChange={setSchoolChoice} />
+            )}
             <fieldset>
               <legend>Exam settings</legend>
               <label className="cbt-check">
@@ -722,14 +761,16 @@ export default function CbtPortalPage() {
                 />
                 Show results after submission
               </label>
-              <label className="cbt-check">
-                <input
-                  type="checkbox"
-                  checked={rosterOnly}
-                  onChange={(e) => setRosterOnly(e.target.checked)}
-                />
-                Registered candidates only (they need the PIN you issue)
-              </label>
+              {!(examiner.type === "INSTITUTION" && schoolChoice?.mode !== "open") && (
+                <label className="cbt-check">
+                  <input
+                    type="checkbox"
+                    checked={rosterOnly}
+                    onChange={(e) => setRosterOnly(e.target.checked)}
+                  />
+                  Registered candidates only (they need the PIN you issue)
+                </label>
+              )}
               <label className="mt-3">
                 Tab-switch limit
                 <input

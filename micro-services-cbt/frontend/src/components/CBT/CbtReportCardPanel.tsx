@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { AlertTriangle, BookOpenCheck, CheckCircle2, Link2, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import CbtReportCardFields, {
+  emptySelection,
+  isSelectionComplete,
+  setupProblems,
+  useSelectionDefaults,
+  type ReportCardSelection,
+} from "./CbtReportCardFields";
 import {
   useGetReportCardOptionsQuery,
   useGetReportCardStatusQuery,
@@ -17,10 +24,6 @@ import {
 const errorMessage = (err: any, fallback: string) =>
   err?.data?.message || err?.message || fallback;
 
-const selectClass =
-  "h-9 w-full rounded-[var(--radius-md)] border border-[var(--border-fine)] bg-white px-2 text-sm";
-const labelClass =
-  "text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]";
 
 /**
  * Puts this exam on ParaLearn report cards: link it to a subject, classes,
@@ -28,8 +31,10 @@ const labelClass =
  * scores. School workspaces only.
  */
 export default function CbtReportCardPanel({ examId }: { examId: string }) {
+  // Kept current while candidates finish, so the counts match the monitor
   const { data: status, isLoading, error, refetch } = useGetReportCardStatusQuery(examId, {
     skip: !examId,
+    pollingInterval: 30000,
   });
   const [releaseReportCard, { isLoading: isReleasing }] = useReleaseReportCardMutation();
   const [unlinkReportCard, { isLoading: isUnlinking }] = useUnlinkReportCardMutation();
@@ -38,13 +43,21 @@ export default function CbtReportCardPanel({ examId }: { examId: string }) {
 
   const link = status?.link ?? null;
   const ready = status?.ready;
+  // Every result is final and not yet on report cards (or changed since)
+  const readyToSend =
+    !!link &&
+    !!ready &&
+    ready.students > 0 &&
+    ready.pendingReview === 0 &&
+    ready.inProgress === 0 &&
+    (!status?.release || status.changedSinceRelease);
 
   const handleRelease = async () => {
     try {
       const result = await releaseReportCard(examId).unwrap();
       setLastRelease(result);
       toast.success(
-        `Released ${result.saved} score${result.saved === 1 ? "" : "s"} to report cards.`,
+        `Sent ${result.saved} score${result.saved === 1 ? "" : "s"} to report cards.`,
       );
     } catch (err) {
       toast.error(errorMessage(err, "Could not release scores to report cards."));
@@ -174,13 +187,21 @@ export default function CbtReportCardPanel({ examId }: { examId: string }) {
             </p>
           )}
 
+          {readyToSend && (
+            <p className="text-sm font-medium text-[var(--violet-ink)]">
+              {status?.release
+                ? "Results have changed since they were sent. Send them again to update report cards."
+                : "All results are final. Send them to report cards so they appear in ParaLearn."}
+            </p>
+          )}
+
           <button
             className="cbt-button primary"
             disabled={isReleasing || ready.pendingReview > 0 || ready.students === 0}
             onClick={handleRelease}
           >
             {isReleasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            {status?.release ? "Release again" : "Release to report cards"}
+            {status?.release ? "Send updated scores" : "Send scores to report cards"}
           </button>
 
           {lastRelease && lastRelease.skipped.length > 0 && (
@@ -217,39 +238,21 @@ function LinkForm({
 }) {
   const { data: options, isLoading, error } = useGetReportCardOptionsQuery();
   const [linkReportCard, { isLoading: isSaving }] = useLinkReportCardMutation();
-
-  const [classIds, setClassIds] = useState<string[]>(current?.classes.map((c) => c.id) ?? []);
-  const [subjectId, setSubjectId] = useState(current?.subject.id ?? "");
-  const [categoryId, setCategoryId] = useState(current?.category.id ?? "");
-  const [session, setSession] = useState(current?.session ?? "");
-  const [term, setTerm] = useState(current?.term ?? "");
+  const [selection, setSelection] = useState<ReportCardSelection>(() =>
+    current
+      ? {
+          classIds: current.classes.map((c) => c.id),
+          subjectId: current.subject.id,
+          categoryId: current.category.id,
+          session: current.session,
+          term: current.term,
+        }
+      : emptySelection(),
+  );
   // Released scores belong to one subject and term; those can't change now
   const locked = !!current?.scoresReleased;
 
-  useEffect(() => {
-    if (!options || current) return;
-    if (options.activePeriod) {
-      setSession(options.activePeriod.session);
-      setTerm(options.activePeriod.term);
-    }
-  }, [options, current]);
-
-  // Subjects taken by every selected class
-  const subjects = useMemo(() => {
-    const chosen = options?.classes.filter((c) => classIds.includes(c.id)) ?? [];
-    if (chosen.length === 0) return [];
-    return chosen[0].subjects.filter((s) =>
-      chosen.every((c) => c.subjects.some((cs) => cs.id === s.id)),
-    );
-  }, [options, classIds]);
-
-  useEffect(() => {
-    if (subjectId && subjects.length && !subjects.some((s) => s.id === subjectId) && !locked) {
-      setSubjectId("");
-    }
-  }, [subjects, subjectId, locked]);
-
-  const terms = options?.periods.find((p) => p.session === session)?.terms ?? [];
+  useSelectionDefaults(options, selection, setSelection, !current);
 
   if (isLoading) {
     return (
@@ -265,24 +268,13 @@ function LinkForm({
       </p>
     );
   }
-  if (options.classes.length === 0) {
-    return (
-      <p className="text-sm text-[var(--text-secondary)]">
-        {options.tier === "TEACHER"
-          ? "You aren't assigned to any classes with subjects in ParaLearn yet."
-          : "No classes with subjects are set up in ParaLearn yet."}
-      </p>
-    );
-  }
 
-  const toggleClass = (id: string) =>
-    setClassIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
-
-  const canSave = classIds.length > 0 && subjectId && categoryId && session && term && !isSaving;
+  const problems = setupProblems(options, true);
+  const canSave = isSelectionComplete(options, selection) && !isSaving;
 
   const handleSave = async () => {
     try {
-      await linkReportCard({ examId, classIds, subjectId, categoryId, session, term }).unwrap();
+      await linkReportCard({ examId, ...selection }).unwrap();
       toast.success("This exam now counts toward report cards.");
       onDone();
     } catch (err) {
@@ -299,97 +291,29 @@ function LinkForm({
         </p>
       )}
 
-      <fieldset className="space-y-1.5">
-        <legend className={labelClass}>Classes</legend>
-        <div className="flex flex-wrap gap-2">
-          {options.classes.map((c) => (
-            <label
-              key={c.id}
-              className="flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-fine)] px-2.5 py-1.5 text-sm"
-            >
-              <input
-                type="checkbox"
-                checked={classIds.includes(c.id)}
-                onChange={() => toggleClass(c.id)}
-              />
-              {c.name}
-            </label>
+      {problems.length > 0 && (
+        <ul className="space-y-1.5 rounded-[var(--radius-md)] border border-amber-200 bg-amber-50 p-3">
+          {problems.map((p) => (
+            <li key={p} className="text-sm flex items-start gap-1.5">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+              {p}
+            </li>
           ))}
-        </div>
-      </fieldset>
+        </ul>
+      )}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <label className="space-y-1">
-          <span className={labelClass}>Subject</span>
-          <select
-            className={selectClass}
-            value={subjectId}
-            disabled={locked || subjects.length === 0}
-            onChange={(e) => setSubjectId(e.target.value)}
-          >
-            <option value="">
-              {classIds.length === 0
-                ? "Choose classes first"
-                : subjects.length === 0
-                  ? "No subject shared by these classes"
-                  : "Choose a subject"}
-            </option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="space-y-1">
-          <span className={labelClass}>Counts as</span>
-          <select className={selectClass} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            <option value="">Choose a category</option>
-            {options.categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.weight}%)
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="space-y-1">
-          <span className={labelClass}>Session</span>
-          <select
-            className={selectClass}
-            value={session}
-            disabled={locked}
-            onChange={(e) => {
-              setSession(e.target.value);
-              setTerm("");
-            }}
-          >
-            <option value="">Choose a session</option>
-            {options.periods.map((p) => (
-              <option key={p.session} value={p.session}>
-                {p.session}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="space-y-1">
-          <span className={labelClass}>Term</span>
-          <select className={selectClass} value={term} disabled={locked} onChange={(e) => setTerm(e.target.value)}>
-            <option value="">Choose a term</option>
-            {terms.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      {options.classes.length > 0 && (
+        <CbtReportCardFields
+          options={options}
+          value={selection}
+          onChange={setSelection}
+          locked={locked}
+        />
+      )}
 
       {locked && (
         <p className="text-xs text-[var(--text-secondary)]">
-          Scores are already on report cards, so the subject and term can&apos;t change.
+          Scores are already on report cards, so the classes, subject and term can&apos;t change.
         </p>
       )}
 

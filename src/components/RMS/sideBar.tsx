@@ -30,6 +30,7 @@ import {
   Palette,
   LogOut,
   MonitorCheck,
+  ExternalLink,
   Menu,
   Banknote,
   CreditCard,
@@ -122,6 +123,7 @@ const SideBar = ({ children }: { children: ReactNode }) => {
         { label: "Subjects", path: routespath.SUBJECTS, icon: BookOpen, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Assessments", path: routespath.ASSESSMENTS, icon: ClipboardList, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "CBT", path: routespath.CBT, icon: MonitorCheck, roles: ["admin", "principal", "vp"] },
+        { label: "ParaLearn CBT", path: routespath.CBT_APP, icon: ExternalLink, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Report Cards", path: routespath.REPORT, icon: BookOpen, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Comments", path: routespath.COMMENTS, icon: MessageSquareText, roles: ["admin", "principal", "teacher", "vp"] },
         { label: "Attendance", path: routespath.ATTENDANCE, icon: Calendar, roles: ["admin", "principal", "teacher", "vp"] },
@@ -367,6 +369,15 @@ const SidebarContentContainer = ({
                   >
                     {navItem}
                   </button>
+                );
+              }
+
+              // Other ParaLearn apps (e.g. the CBT) open in a new tab
+              if (/^https?:\/\//.test(item.path)) {
+                return (
+                  <a key={index} href={item.path} target="_blank" rel="noopener noreferrer">
+                    {navItem}
+                  </a>
                 );
               }
 

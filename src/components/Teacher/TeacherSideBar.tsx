@@ -24,6 +24,7 @@ import {
   FileEdit,
   GraduationCap,
   Sparkles,
+  ExternalLink,
   LogOut,
 } from "lucide-react";
 const logo = "/PL2 (1).svg";
@@ -50,6 +51,7 @@ export default function TeacherSideBar({ children }: { children: ReactNode }) {
       { label: "Attendance", path: routespath.TEACHER_ATTENDANCE, icon: ClipboardList },
       { label: "Comments", path: routespath.TEACHER_COMMENTS, icon: MessageSquareText },
       { label: "Reports", path: routespath.TEACHER_REPORTS, icon: BookOpen },
+      { label: "ParaLearn CBT", path: routespath.CBT_APP, icon: ExternalLink },
       { label: "Profile", path: "/profile", icon: User },
     ],
     []
@@ -114,6 +116,10 @@ export default function TeacherSideBar({ children }: { children: ReactNode }) {
                 <Link
                   key={item.path}
                   href={item.path}
+                  // Other ParaLearn apps (e.g. the CBT) open in a new tab
+                  {...(/^https?:\/\//.test(item.path)
+                    ? { target: "_blank", rel: "noopener noreferrer", prefetch: false }
+                    : {})}
                   className="flex items-center gap-3.5 px-4 py-3 transition-all duration-300"
                   style={{
                     borderRadius: "var(--radius-md)",
