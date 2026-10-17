@@ -15,6 +15,8 @@ import {
 import { cbtServerStore, type StoredWorkspace } from "@/lib/cbtServerStore";
 
 export const dynamic = "force-dynamic";
+// ParaLearn Core can be slow to answer while its host wakes up
+export const maxDuration = 60;
 
 interface RouteParams {
   params: Promise<{ action: string }>;

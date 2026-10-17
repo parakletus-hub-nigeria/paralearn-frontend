@@ -314,18 +314,26 @@ async function verifyCoreStaff(email: string, password: string): Promise<CoreSta
   const base = coreApiBase();
   if (!base) return null;
 
-  let res: Response;
-  try {
-    res = await fetch(`${base}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(10000),
-    });
-  } catch {
-    throw new CoreUnavailableError("ParaLearn sign-in is unavailable");
+  // Core can take several seconds to answer while its host wakes up, so allow
+  // for that and try once more when the connection fails or the host is busy
+  let res: Response | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      res = await fetch(`${base}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(25000),
+      });
+    } catch (err) {
+      if (attempt === 0 && !(err instanceof Error && err.name === "TimeoutError")) continue;
+      throw new CoreUnavailableError("ParaLearn sign-in is unavailable");
+    }
+    if (attempt === 0 && (res.status === 502 || res.status === 503 || res.status === 504)) continue;
+    break;
   }
+  if (!res) throw new CoreUnavailableError("ParaLearn sign-in is unavailable");
   if (res.status === 400 || res.status === 401 || res.status === 403 || res.status === 404) {
     return null;
   }
