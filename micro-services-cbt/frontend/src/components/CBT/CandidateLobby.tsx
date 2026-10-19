@@ -169,6 +169,9 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
   const [externalAttemptId, setExternalAttemptId] = useState("");
   const [isResuming, setIsResuming] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  // A PIN from the examiner's list identifies the student, so they aren't asked for their name
+  const [enrolledName, setEnrolledName] = useState<string | null>(null);
+  const [pinLookup, setPinLookup] = useState<"idle" | "checking" | "found" | "unknown">("idle");
 
   // Parse URL launch parameters (e.g. ?pin=849201&name=Amara&attemptId=...); a student id comes only from the roster
   useEffect(() => {
@@ -252,17 +255,60 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
     };
   }, [normalizedExamCode]);
 
+  useEffect(() => {
+    const code = metadata?.code;
+    const pin = candidatePin.trim();
+    if (!code || !/^\d{6}$/.test(pin)) {
+      setEnrolledName(null);
+      setPinLookup("idle");
+      return;
+    }
+    const controller = new AbortController();
+    setPinLookup("checking");
+    fetch(`/api/cbt/exams/code/${encodeURIComponent(code)}/candidate?pin=${encodeURIComponent(pin)}`, {
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          setEnrolledName(null);
+          setPinLookup("unknown");
+          return;
+        }
+        const { candidateName: name } = await res.json();
+        setEnrolledName(name);
+        setCandidateName(name);
+        setPinLookup("found");
+      })
+      .catch(() => {
+        // Offline or aborted: the student can still type their name
+        if (!controller.signal.aborted) setPinLookup("idle");
+      });
+    return () => controller.abort();
+  }, [metadata?.code, candidatePin]);
+
+  const clearEnrolled = () => {
+    setEnrolledName(null);
+    setCandidateName("");
+    setCandidatePin("");
+    setPinLookup("idle");
+  };
+
   const handleStartExam = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!metadata) return;
 
-    if (!candidateName.trim()) {
-      toast.error("Please enter your full name to proceed");
+    if (metadata.requiresPin && candidatePin.length < 4) {
+      toast.error("Please enter the access PIN issued by your examiner");
       return;
     }
 
-    if (metadata.requiresPin && candidatePin.length < 4) {
-      toast.error("Please enter the access PIN issued by your examiner");
+    if (metadata.requiresPin && pinLookup === "unknown") {
+      toast.error("That PIN isn't on this exam's list. Check the PIN on your exam slip.");
+      return;
+    }
+
+    if (!candidateName.trim() && !(metadata.requiresPin && pinLookup !== "found")) {
+      toast.error("Please enter your full name to proceed");
       return;
     }
 
@@ -273,7 +319,9 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
       // never fall back to a local-only session.
       const started: any = await startAttempt({
         accessCode: metadata.code,
-        candidateName: candidateName.trim(),
+        // Enrolled candidates are admitted by PIN under the name on the examiner's list
+        candidateName:
+          enrolledName || candidateName.trim() || (metadata.requiresPin ? "Enrolled candidate" : ""),
         candidatePin: candidatePin.trim() || undefined,
         email: candidateEmail.trim() || undefined,
         phone: candidatePhone.trim() || undefined,
@@ -466,29 +514,149 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
 
         {/* Form Body */}
         <form onSubmit={handleStartExam} className="py-6 space-y-6">
-          {/* Candidate Name */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="candidate-full-name"
-              className="text-xs font-semibold text-slate-700 flex items-center gap-1.5"
+          {metadata.requiresPin ? (
+            <>
+          {/* Access PIN: required for roster exams, optional for walk-ins rejoining */}
+          {metadata.requiresPin || isResuming ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
+                  {metadata.requiresPin
+                    ? "Access PIN / Candidate Number"
+                    : "Participant ID"}
+                </label>
+                <span className="text-xs text-[var(--text-secondary)]">
+                  {metadata.requiresPin
+                    ? "Issued by examiner"
+                    : "Restored from this device"}
+                </span>
+              </div>
+              <div className="flex justify-start">
+                <CandidatePinInput
+                  value={candidatePin}
+                  onChange={(val) => setCandidatePin(val)}
+                  length={
+                    metadata.requiresPin ? 6 : Math.max(7, candidatePin.length)
+                  }
+                />
+              </div>
+              {pinLookup === "checking" && (
+                <p className="text-xs text-[var(--text-secondary)]">Checking your PIN…</p>
+              )}
+              {pinLookup === "unknown" && metadata.requiresPin && (
+                <p className="text-xs text-[var(--crimson-signal)]" role="alert">
+                  That PIN isn&apos;t on this exam&apos;s list. Check the PIN on your exam slip.
+                </p>
+              )}
+            </div>
+          ) : (
+            <details className="text-xs text-[var(--text-secondary)]">
+              <summary className="cursor-pointer font-semibold">
+                Rejoining? Enter your participant ID
+              </summary>
+              <div className="pt-2">
+                <Input
+                  type="text"
+                  placeholder="e.g. P7KQ2MX"
+                  value={candidatePin}
+                  onChange={(e) =>
+                    setCandidatePin(e.target.value.toUpperCase())
+                  }
+                  className="h-10 font-mono uppercase rounded-[var(--radius-md)] border-[var(--border-fine)] focus-visible:ring-[var(--violet-ink)]"
+                />
+              </div>
+            </details>
+          )}
+          {enrolledName ? (
+            <div
+              className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--violet-ink)]/30 bg-[var(--violet-tint)] px-4 py-3"
+              role="status"
             >
-              <User className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-              Candidate Full Name
-            </label>
-            <Input
-              type="text"
-              required
-              id="candidate-full-name"
-              autoComplete="name"
-              placeholder="e.g. Daniel Olawale"
-              value={candidateName}
-              onChange={(e) => setCandidateName(e.target.value)}
-              className="h-11 text-base font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] focus-visible:ring-[var(--violet-ink)]"
-            />
-          </div>
-
+              <div className="flex items-center gap-2.5 min-w-0">
+                <User className="w-4 h-4 shrink-0 text-[var(--violet-ink)]" />
+                <p className="text-sm text-[var(--foreground)] min-w-0">
+                  Welcome, <strong className="break-words">{enrolledName}</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={clearEnrolled}
+                className="shrink-0 text-xs font-semibold text-[var(--violet-ink)] underline"
+              >
+                Not you?
+              </button>
+            </div>
+          ) : (
+            !metadata.requiresPin && (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="candidate-full-name"
+                className="text-xs font-semibold text-slate-700 flex items-center gap-1.5"
+              >
+                <User className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
+                Candidate Full Name
+              </label>
+              <Input
+                type="text"
+                required
+                id="candidate-full-name"
+                autoComplete="name"
+                placeholder="e.g. Daniel Olawale"
+                value={candidateName}
+                onChange={(e) => setCandidateName(e.target.value)}
+                className="h-11 text-base font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] focus-visible:ring-[var(--violet-ink)]"
+              />
+            </div>
+            )
+          )}
+            </>
+          ) : (
+            <>
+          {enrolledName ? (
+            <div
+              className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--violet-ink)]/30 bg-[var(--violet-tint)] px-4 py-3"
+              role="status"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <User className="w-4 h-4 shrink-0 text-[var(--violet-ink)]" />
+                <p className="text-sm text-[var(--foreground)] min-w-0">
+                  Welcome, <strong className="break-words">{enrolledName}</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={clearEnrolled}
+                className="shrink-0 text-xs font-semibold text-[var(--violet-ink)] underline"
+              >
+                Not you?
+              </button>
+            </div>
+          ) : (
+            !metadata.requiresPin && (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="candidate-full-name"
+                className="text-xs font-semibold text-slate-700 flex items-center gap-1.5"
+              >
+                <User className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
+                Candidate Full Name
+              </label>
+              <Input
+                type="text"
+                required
+                id="candidate-full-name"
+                autoComplete="name"
+                placeholder="e.g. Daniel Olawale"
+                value={candidateName}
+                onChange={(e) => setCandidateName(e.target.value)}
+                className="h-11 text-base font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] focus-visible:ring-[var(--violet-ink)]"
+              />
+            </div>
+            )
+          )}
           {/* Participant contact details */}
-          {!isResuming && (
+          {!isResuming && !enrolledName && !metadata.requiresPin && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
@@ -524,7 +692,6 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
               </div>
             </div>
           )}
-
           {/* Access PIN: required for roster exams, optional for walk-ins rejoining */}
           {metadata.requiresPin || isResuming ? (
             <div className="space-y-2">
@@ -550,6 +717,14 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
                   }
                 />
               </div>
+              {pinLookup === "checking" && (
+                <p className="text-xs text-[var(--text-secondary)]">Checking your PIN…</p>
+              )}
+              {pinLookup === "unknown" && metadata.requiresPin && (
+                <p className="text-xs text-[var(--crimson-signal)]" role="alert">
+                  That PIN isn&apos;t on this exam&apos;s list. Check the PIN on your exam slip.
+                </p>
+              )}
             </div>
           ) : (
             <details className="text-xs text-[var(--text-secondary)]">
@@ -568,6 +743,8 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
                 />
               </div>
             </details>
+          )}
+            </>
           )}
 
           <section

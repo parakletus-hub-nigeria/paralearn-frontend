@@ -1123,6 +1123,17 @@ export const cbtServerStore = {
   },
 
   /**
+   * The candidate an examiner enrolled with this PIN, so their lobby can greet
+   * them by name. Walk-ins aren't returned: they rejoin by typing their own name.
+   */
+  async findEnrolledCandidate(examId: string, pin: string): Promise<StoredCandidate | null> {
+    const clean = String(pin || "").trim().toUpperCase();
+    if (!clean) return null;
+    const roster = await getExamCandidates(examId);
+    return roster.find((c) => c.candidatePin === clean && !c.walkIn) || null;
+  },
+
+  /**
    * Adds a school's students to an exam's roster in one pass. A student already
    * on the roster (same ParaLearn id) keeps their PIN and is updated; new
    * students get a PIN unique within the exam.

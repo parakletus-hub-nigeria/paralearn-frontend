@@ -291,6 +291,19 @@ async function handleGET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(exams);
   }
 
+  // 2a. /api/cbt/exams/code/:code/candidate?pin= — greets an enrolled candidate by name.
+  // The PIN alone already admits them (with the roster's name), so this reveals nothing more.
+  if (path[0] === "exams" && path[1] === "code" && path[2] && path[3] === "candidate") {
+    const exam = await cbtServerStore.getExamByCode(decodeURIComponent(path[2]));
+    const candidate = exam
+      ? await cbtServerStore.findEnrolledCandidate(exam.id, searchParams.get("pin") || "")
+      : null;
+    if (!candidate) {
+      return NextResponse.json({ message: "That PIN isn't on this exam's list." }, { status: 404 });
+    }
+    return NextResponse.json({ candidateName: candidate.candidateName });
+  }
+
   // 2b. /api/cbt/exams/code/:code
   if (path[0] === "exams" && path[1] === "code" && path[2]) {
     const code = decodeURIComponent(path[2]).trim().toUpperCase();
