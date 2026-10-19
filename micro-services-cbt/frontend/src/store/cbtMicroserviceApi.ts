@@ -187,6 +187,8 @@ export interface AttemptReviewPayload {
   grade: string;
   violations: number;
   submittedAt?: string | null;
+  /** PENDING_REVIEW until every essay has marks */
+  gradingStatus?: "AUTO_SCORED" | "PENDING_REVIEW" | "GRADED";
   questions: AttemptReviewQuestion[];
 }
 

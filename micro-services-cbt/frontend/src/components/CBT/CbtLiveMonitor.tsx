@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -95,6 +95,8 @@ export default function CbtLiveMonitor({
     null,
   );
   const [gradingQuestion, setGradingQuestion] = useState<any | null>(null);
+  // The next essay to open once the grading window closes (exams with several essays)
+  const nextGradingRef = useRef<{ session: any; question: any } | null>(null);
 
   // Load questions to detect essay questions
   const [questions, setQuestions] = useState<any[]>([]);
@@ -401,18 +403,31 @@ export default function CbtLiveMonitor({
         ],
       }).unwrap();
 
+      // The attempt is only graded once every essay has marks
+      const essays = review.questions.filter((q) => q.type === "ESSAY");
+      const remaining = essays.filter((q) => q.marksAwarded === undefined || q.marksAwarded === null);
+      const status = review.gradingStatus || (remaining.length ? "PENDING_REVIEW" : "GRADED");
       setCandidates((prev) =>
         prev.map((c) =>
           c.pin === review.candidatePin
             ? {
                 ...c,
-                gradingStatus: "GRADED",
+                gradingStatus: status,
                 score: review.score,
                 totalMarks: review.totalMarks,
               }
             : c,
         ),
       );
+      if (remaining.length > 0) {
+        nextGradingRef.current = {
+          session: buildSessionFromReview(review),
+          question: { ...remaining[0], type: "LONG_ESSAY" },
+        };
+        toast.info(
+          `${review.candidateName}: essay ${essays.length - remaining.length + 1} of ${essays.length} next.`,
+        );
+      }
       refetchMonitor();
       return;
     }
@@ -1032,8 +1047,19 @@ export default function CbtLiveMonitor({
       {/* ── EXAMINER ESSAY GRADING MODAL ─────────────────────────────────── */}
       {gradingSession && gradingQuestion && (
         <CbtEssayGradingModal
+          // A fresh form for each essay
+          key={`${gradingSession.attemptId}:${gradingQuestion.id}`}
           isOpen={!!gradingSession}
-          onClose={() => setGradingSession(null)}
+          onClose={() => {
+            const next = nextGradingRef.current;
+            nextGradingRef.current = null;
+            if (next) {
+              setGradingSession(next.session);
+              setGradingQuestion(next.question);
+            } else {
+              setGradingSession(null);
+            }
+          }}
           candidateSession={gradingSession}
           questionId={gradingQuestion.id}
           questionPrompt={gradingQuestion.prompt}
