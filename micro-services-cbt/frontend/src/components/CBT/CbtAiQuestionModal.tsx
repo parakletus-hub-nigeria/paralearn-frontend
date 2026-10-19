@@ -193,8 +193,9 @@ export default function CbtAiQuestionModal({
     }, 5500);
 
     try {
-      // Large sets are asked for in parts that run side by side, so no single request
-      // runs long enough to be cut off; each part covers its own share of the material
+      // Large sets are asked for in parts, one after another, so no request runs long
+      // enough to be cut off and Gemini isn't hit with a burst it refuses as "busy";
+      // each part covers its own share of the material
       const parts = Math.ceil(questionCount / AI_PART_SIZE);
       const partCounts = Array.from({ length: parts }, (_, i) =>
         Math.floor(questionCount / parts) + (i < questionCount % parts ? 1 : 0),
@@ -237,7 +238,34 @@ export default function CbtAiQuestionModal({
         return (body.questions || []) as any[];
       };
 
-      const settled = await Promise.allSettled(partCounts.map(requestPart));
+      if (parts > 1) {
+        // Progress is shown per part instead of the generic messages
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      }
+      const settled: PromiseSettledResult<any[]>[] = [];
+      let done = 0;
+      for (const [index, count] of partCounts.entries()) {
+        if (parts > 1) {
+          setLoadingMessage(
+            `Generating questions ${done + 1}–${done + count} of ${questionCount} with ParaLearn AI...`,
+          );
+        }
+        let outcome: PromiseSettledResult<any[]>;
+        try {
+          outcome = { status: "fulfilled", value: await requestPart(count, index) };
+        } catch (err: any) {
+          // A busy or slow answer usually clears up a few seconds later: try this part once more
+          await new Promise((r) => setTimeout(r, 4000));
+          try {
+            outcome = { status: "fulfilled", value: await requestPart(count, index) };
+          } catch (retryErr) {
+            outcome = { status: "rejected", reason: retryErr };
+          }
+        }
+        settled.push(outcome);
+        done += count;
+      }
       const failures = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
       // The same question can come back from two parts; keep the first
       const seen = new Set<string>();
