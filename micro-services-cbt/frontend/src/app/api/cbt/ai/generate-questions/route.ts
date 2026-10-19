@@ -285,18 +285,27 @@ Return the result STRICTLY as a valid JSON object matching this schema:
     // so the reply always comes back before the platform cuts the request off
     const startedAt = Date.now();
     const generationConfig = { responseMimeType: "application/json", temperature: 0.2 };
+    // Gemini answers "busy" (429/503) when several requests arrive together; the same model
+    // usually succeeds a moment later, so it gets one retry before the fallbacks are tried
+    const plan = [modelName, modelName, "gemini-flash-latest", "gemini-3.8-flash"];
+    const attempts: Array<{ model: string; ms: number; error: string }> = [];
     let result;
-    let lastError: any = null;
-    for (const name of [modelName, "gemini-3.8-flash", "gemini-flash-latest"]) {
+    for (let i = 0; i < plan.length; i++) {
+      const name = plan[i];
+      const isRetry = i > 0 && plan[i - 1] === name;
+      const lastError = attempts[attempts.length - 1]?.error || "";
+      if (isRetry && !/\b(429|503)\b|overloaded|unavailable|resource.?exhausted|rate/i.test(lastError)) continue;
+      if (isRetry) await new Promise((r) => setTimeout(r, 1500));
       const remaining = AI_BUDGET_MS - (Date.now() - startedAt);
       if (remaining < MIN_ATTEMPT_MS) break;
+      const attemptStart = Date.now();
       try {
         const attempt = name === modelName ? model : genAI.getGenerativeModel({ model: name, generationConfig });
         result = await attempt.generateContent(promptParts, { timeout: remaining });
         break;
       } catch (err: any) {
-        lastError = err;
-        console.warn(`ParaLearn AI model ${name} failed after ${Date.now() - startedAt}ms: ${err?.message}`);
+        attempts.push({ model: name, ms: Date.now() - attemptStart, error: String(err?.message || err).slice(0, 300) });
+        console.warn(`ParaLearn AI model ${name} failed after ${Date.now() - attemptStart}ms: ${err?.message}`);
       }
     }
     if (!result) {
@@ -306,7 +315,7 @@ Return the result STRICTLY as a valid JSON object matching this schema:
           error: timedOut
             ? "ParaLearn AI took too long to answer. Try fewer questions or a shorter document."
             : "ParaLearn AI couldn't generate questions right now. Please try again in a moment.",
-          detail: lastError?.message,
+          attempts,
         },
         { status: timedOut ? 504 : 502 }
       );
