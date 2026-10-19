@@ -48,6 +48,13 @@ interface CbtAiQuestionModalProps {
 export type DifficultyLevel = "simple" | "intermediate" | "hard" | "balanced";
 export type AssessmentFormatMode = "hybrid" | "pure_mcq" | "pure_essay";
 
+/** Questions asked for per request; larger sets are split into parts */
+const AI_PART_SIZE = 10;
+/** Vercel refuses request bodies over 4.5 MB */
+const MAX_AI_UPLOAD_BYTES = 4 * 1024 * 1024;
+const FILE_TOO_LARGE =
+  "That file is larger than 4 MB. Upload a smaller file, or copy the notes and paste them instead.";
+
 export default function CbtAiQuestionModal({
   isOpen,
   onClose,
@@ -130,8 +137,8 @@ export default function CbtAiQuestionModal({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 40 * 1024 * 1024) {
-        toast.error("File is too large. Please select a file under 40MB.");
+      if (file.size > MAX_AI_UPLOAD_BYTES) {
+        toast.error(FILE_TOO_LARGE);
         return;
       }
       setSelectedFile(file);
@@ -142,8 +149,8 @@ export default function CbtAiQuestionModal({
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      if (file.size > 40 * 1024 * 1024) {
-        toast.error("File is too large. Maximum size is 40MB.");
+      if (file.size > MAX_AI_UPLOAD_BYTES) {
+        toast.error(FILE_TOO_LARGE);
         return;
       }
       setSelectedFile(file);
@@ -186,37 +193,71 @@ export default function CbtAiQuestionModal({
     }, 5500);
 
     try {
-      const formData = new FormData();
-      if (sourceType === "file" && selectedFile) {
-        formData.append("file", selectedFile);
-      }
-      if (sourceType === "text" || notesText.trim()) {
-        formData.append("notes", notesText);
-      }
-      formData.append("subject", subject || examTitle || "Assessment");
-      formData.append("difficulty", difficulty);
-      formData.append("formatMode", formatMode);
-      formData.append("count", questionCount.toString());
+      // Large sets are asked for in parts that run side by side, so no single request
+      // runs long enough to be cut off; each part covers its own share of the material
+      const parts = Math.ceil(questionCount / AI_PART_SIZE);
+      const partCounts = Array.from({ length: parts }, (_, i) =>
+        Math.floor(questionCount / parts) + (i < questionCount % parts ? 1 : 0),
+      );
+      const requestPart = async (count: number, index: number) => {
+        const formData = new FormData();
+        if (sourceType === "file" && selectedFile) {
+          formData.append("file", selectedFile);
+        }
+        if (sourceType === "text" || notesText.trim()) {
+          formData.append("notes", notesText);
+        }
+        formData.append("subject", subject || examTitle || "Assessment");
+        formData.append("difficulty", difficulty);
+        formData.append("formatMode", formatMode);
+        formData.append("count", count.toString());
+        formData.append("part", String(index + 1));
+        formData.append("parts", String(parts));
 
-      const res = await fetch("/api/cbt/ai/generate-questions", {
-        method: "POST",
-        body: formData,
-      });
+        const res = await fetch("/api/cbt/ai/generate-questions", {
+          method: "POST",
+          body: formData,
+        });
+        let body: any;
+        try {
+          body = await res.json();
+        } catch {
+          // The platform's own error pages aren't JSON
+          throw new Error(
+            res.status === 504
+              ? "ParaLearn AI took too long to answer. Try fewer questions or a shorter document."
+              : res.status === 413
+                ? FILE_TOO_LARGE
+                : `ParaLearn AI couldn't be reached (HTTP ${res.status}). Please try again.`,
+          );
+        }
+        if (!res.ok || !body.success) {
+          throw new Error(body.error || `Server responded with status ${res.status}.`);
+        }
+        return (body.questions || []) as any[];
+      };
 
-      let data: any = {};
-      try {
-        data = await res.json();
-      } catch {
-        throw new Error(
-          res.status === 404
-            ? "Question generator API route not found. Please restart your Next.js server."
-            : `Server returned an unparseable response (HTTP ${res.status}).`
+      const settled = await Promise.allSettled(partCounts.map(requestPart));
+      const failures = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+      // The same question can come back from two parts; keep the first
+      const seen = new Set<string>();
+      const merged = settled
+        .flatMap((r) => (r.status === "fulfilled" ? r.value : []))
+        .filter((q) => {
+          const key = String(q.prompt || "").toLowerCase().replace(/\s+/g, " ").trim();
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      if (merged.length === 0) {
+        throw failures[0]?.reason ?? new Error("No questions were generated. Please try again.");
+      }
+      if (failures.length > 0) {
+        toast.warning(
+          `Some questions couldn't be generated (${failures[0].reason?.message || "the AI didn't answer"}). Showing the ${merged.length} that were.`,
         );
       }
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || `Server responded with status ${res.status}.`);
-      }
+      const data = { questions: merged };
 
       const questionsList: StudioQuestion[] = (data.questions || []).map((q: any) => ({
         id: q.id || `q_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -406,7 +447,7 @@ export default function CbtAiQuestionModal({
                         Click to upload or drag &amp; drop lecture file
                       </p>
                       <p className="text-[11px] text-stone-500 mt-1 max-w-sm mx-auto">
-                        Supports PDF and text documents, audio (MP3, WAV) and video (MP4) up to 40MB. Save Word or PowerPoint files as PDF first.
+                        Supports PDF and text documents, audio (MP3, WAV) and video (MP4) up to 4 MB. Save Word or PowerPoint files as PDF first.
                       </p>
                     </div>
                   ) : (

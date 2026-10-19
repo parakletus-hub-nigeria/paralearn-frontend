@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getPrincipal } from "@/lib/cbtAuth";
 
-const MAX_UPLOAD_BYTES = 40 * 1024 * 1024;
+// Vercel refuses request bodies over 4.5 MB before they reach this route
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+/** Time allowed for the AI, leaving room inside maxDuration to read the upload and reply */
+const AI_BUDGET_MS = 50_000;
+/** A fallback model is only tried when at least this much of the budget is left */
+const MIN_ATTEMPT_MS = 12_000;
 const MAX_NOTES_CHARS = 200_000;
 /** Gemini reads these inline; Word and PowerPoint files must be saved as PDF first */
 const UNSUPPORTED_UPLOADS = [".doc", ".docx", ".ppt", ".pptx"];
@@ -80,9 +85,17 @@ export async function POST(req: NextRequest) {
     const formatMode = ["pure_mcq", "hybrid", "pure_essay"].includes(formatRaw) ? formatRaw : "hybrid";
     const requested = parseInt(String(formData.get("count") || "10"), 10);
     const count = Number.isFinite(requested) ? Math.min(Math.max(requested, 1), 50) : 10;
+    // Large sets are generated in parts (see CbtAiQuestionModal); each part covers its own share of the material
+    const partsRaw = parseInt(String(formData.get("parts") || "1"), 10);
+    const parts = Number.isFinite(partsRaw) ? Math.min(Math.max(partsRaw, 1), 10) : 1;
+    const partRaw = parseInt(String(formData.get("part") || "1"), 10);
+    const part = Number.isFinite(partRaw) ? Math.min(Math.max(partRaw, 1), parts) : 1;
 
     if (file && file.size > MAX_UPLOAD_BYTES) {
-      return NextResponse.json({ error: "That file is larger than 40 MB. Upload a smaller file." }, { status: 413 });
+      return NextResponse.json(
+        { error: "That file is larger than 4 MB. Upload a smaller file, or copy the notes and paste them instead." },
+        { status: 413 }
+      );
     }
     if (file && UNSUPPORTED_UPLOADS.some((ext) => file.name.toLowerCase().endsWith(ext))) {
       return NextResponse.json(
@@ -259,36 +272,44 @@ Return the result STRICTLY as a valid JSON object matching this schema:
       });
     }
 
+    if (parts > 1) {
+      promptParts.push({
+        text: `\nThis request is part ${part} of ${parts} of a larger question set made from the same material. Divide the material, in order, into ${parts} roughly equal sections and write every question from section ${part} only, so the parts do not repeat each other.`,
+      });
+    }
     promptParts.push({
       text: `\nGenerate now the array of ${count} questions in accordance with difficulty: "${difficulty}" and format mode: "${formatMode}".`,
     });
 
-    // Generate content using Gemini
+    // Generate with Gemini, falling back to other models only while the time budget allows,
+    // so the reply always comes back before the platform cuts the request off
+    const startedAt = Date.now();
+    const generationConfig = { responseMimeType: "application/json", temperature: 0.2 };
     let result;
-    try {
-      result = await model.generateContent(promptParts);
-    } catch (err: any) {
-      console.warn(`Primary model ${modelName} failed (${err?.message}), falling back to gemini-3.8-flash...`);
+    let lastError: any = null;
+    for (const name of [modelName, "gemini-3.8-flash", "gemini-flash-latest"]) {
+      const remaining = AI_BUDGET_MS - (Date.now() - startedAt);
+      if (remaining < MIN_ATTEMPT_MS) break;
       try {
-        const fallbackModel = genAI.getGenerativeModel({
-          model: "gemini-3.8-flash",
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.2,
-          },
-        });
-        result = await fallbackModel.generateContent(promptParts);
-      } catch (fbErr: any) {
-        console.warn(`Secondary model gemini-3.8-flash failed (${fbErr?.message}), falling back to gemini-flash-latest...`);
-        const tertiaryModel = genAI.getGenerativeModel({
-          model: "gemini-flash-latest",
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.2,
-          },
-        });
-        result = await tertiaryModel.generateContent(promptParts);
+        const attempt = name === modelName ? model : genAI.getGenerativeModel({ model: name, generationConfig });
+        result = await attempt.generateContent(promptParts, { timeout: remaining });
+        break;
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`ParaLearn AI model ${name} failed after ${Date.now() - startedAt}ms: ${err?.message}`);
       }
+    }
+    if (!result) {
+      const timedOut = Date.now() - startedAt >= AI_BUDGET_MS - MIN_ATTEMPT_MS;
+      return NextResponse.json(
+        {
+          error: timedOut
+            ? "ParaLearn AI took too long to answer. Try fewer questions or a shorter document."
+            : "ParaLearn AI couldn't generate questions right now. Please try again in a moment.",
+          detail: lastError?.message,
+        },
+        { status: timedOut ? 504 : 502 }
+      );
     }
 
     const response = await result.response;
