@@ -1,66 +1,105 @@
-# ParaLearn Result Management (`micro-services-rms`)
+# ParaLearn Results, offline-first (`micro-services-rms`)
 
-Frontend for the standalone result-processing product at **rms.pln.ng**. A school uploads a term's
-Excel result sheet; the RMS backend totals, grades and ranks every student, then renders each one into
-the school's report-card template. The school downloads cards per student or as a class booklet.
+**rms.pln.ng** turns a term's Excel result sheet into printable report cards **on the school's own
+laptop, with or without internet**. The only online steps are the first sign-in, with the school's
+ParaLearn K12 account, and sending the scores to ParaLearn once a connection is back.
 
-It is separate from the ParaLearn core app's school pages (`/RMS`, `src/components/RMS`) and must not
-import anything from them.
+```
+Excel sheet ─► Results worker (SheetJS + results engine) ─► IndexedDB (Dexie)
+                                                              │
+School profile (logo, colour) ─► PDF worker (pdf-lib) ◄───────┘
+                                     │
+                           class booklets saved ─► preview / download
+                                                              │
+                      when online ─► K12 backend: result_up/process-result-sheets
+```
 
-The backend is its own repository, `paralearn-rms-backend` (NestJS + Prisma + BullMQ workers). It owns
-parsing, grading, rendering and the multi-instance scaling of the render workers.
+## How a batch runs
 
-## Pages
+1. **Sign in once** (online). `POST /auth/login` on the K12 backend with the school's subdomain.
+   The school name, colour and logo are prefilled from `GET /tenant/by-subdomain/:subdomain`, and
+   the school confirms them once.
+2. **Open the result sheet** (works offline). The results worker reads the workbook and computes
+   every class completely before any card is drawn, because subject and class positions depend on
+   the whole class. Blocking problems (no subjects, no score columns) stop the batch; the rest are
+   listed as warnings with tab and row.
+3. **First card at once, then the rest.** The first student's card is drawn on the main thread in a
+   few milliseconds. The PDF worker then generates one booklet per class and saves each to IndexedDB
+   as it finishes, so Stop keeps finished classes and Resume carries on.
+4. **Sync** (when online). Scores go to `POST result_up/process-result-sheets` as a workbook rebuilt
+   from the validated data in the exact layout the K12 parser expects (title rows and admission
+   columns removed). K12 files them under the school's current term. Sync runs on load, on
+   reconnect, and every minute while scores are waiting. An expired one-hour access token is renewed
+   with K12's 7-day refresh cookie.
 
-| rms.pln.ng URL      | Page                                                                 |
-| ------------------- | -------------------------------------------------------------------- |
-| `/auth`             | Sign in, or create a school workspace                                |
-| `/`                 | Upload a result sheet; list of past uploads ("batches") with status  |
-| `/batches/:id`      | Live progress, problems found in the sheet, per-class results, PDFs  |
-| `/settings`         | School profile printed on every card (name, logo, motto, colour)     |
+Measured on a development laptop: reading and computing 80 students takes about 14 ms. 1,000 cards
+(20 classes of 50) draw in about 8 s, about 5 MB of PDFs in total. In the browser, the first card
+appears about 0.35 s after choosing the sheet.
 
-A batch goes `UPLOADED` → `PARSING` → `PARSED` (held for review) or straight to `RENDERING` →
-`COMPLETED` / `COMPLETED_WITH_ERRORS`. A sheet with an error-level problem goes to `FAILED`. The batch page polls every 2 seconds while a batch is active.
+## The Excel layout
+
+One tab per class (tab name = class name). This is the same layout the K12 backend reads.
+
+| Row | Content |
+| --- | --- |
+| 1 (or 2, under a title row) | `S/N`, `Name`, optional `Admission No`, then subject names from the next column, merged across their columns |
+| next | the score labels under each subject: `1st CA`, `2nd CA`, `Exam` (a `3rd CA` or other columns also count; `Total` is ignored and recalculated) |
+| then | one student per row |
+
+An optional **Teacher Data** tab with `Name` (plus optional `Class`), behaviour columns rated 1–5
+(a blank rating counts as 5), `Comment`, `Days Present` and `Days Opened` fills those parts of the card.
+
+Rules, all in `offline/engine/grading.ts`: each subject is out of 100. Grades are A 70+, B 60–69,
+C 50–59, D 45–49, E 40–44, F below 40. Ties share a position (1, 2, 2, 4). The average counts only the
+subjects a student sat; a subject counts as sat if any of its scores is filled. Blank, `-`, `ABS`
+and `N/A` mean not sat.
+
+## Code
+
+```
+frontend/src/
+├── app/result-studio/page.tsx   # the single page served at rms.pln.ng/
+├── proxy.ts                     # rms.* hosts -> /result-studio
+└── offline/
+    ├── engine/     # pure TypeScript: parseWorkbook, computeResults, grading, k12Workbook
+    ├── pdf/        # reportCardPdf: the card layout, drawn with pdf-lib and standard fonts
+    ├── workers/    # results.worker (Excel), pdf.worker (cards), client (promise wrappers, cancel)
+    ├── storage/    # db (Dexie tables), k12 (sign-in, refresh, sync)
+    └── ui/         # React screens, generation controller, service worker setup
+```
+
+- **Offline loading:** `public/rms-offline-sw.js`, registered only on `rms.*` hosts so it can never
+  affect the main ParaLearn app. Pages are network-first with a cached fallback; build files are
+  cache-first; `/api/*` is never cached. On the first online visit the page tells the worker every
+  file it loaded and starts both Web Workers once, so their files are cached too. Cached files are
+  served as fresh `Response`s: Turbopack's workers share one bootstrap file and read their config
+  from the URL fragment, which a stored response would overwrite.
+- **Fonts:** the PDF uses the built-in Helvetica family, so no font files are needed offline.
+  Accents are folded for the PDF (Ọlá prints as Ola), because those fonts cannot draw them.
+- **Storage:** IndexedDB database `paralearn-results-offline`. The app asks the browser for
+  persistent storage so batches aren't evicted when the disk is low.
+- **K12 calls** go through the host's `/api/proxy/*` rewrite (`K12_BACKEND_URL`), so they are
+  same-origin and the refresh cookie stays on rms.pln.ng.
 
 ## How it is served
 
-The code lives here but runs inside the main ParaLearn Next.js server, like `micro-services-cbt`.
+Like `micro-services-cbt`, the code lives here but runs inside the main ParaLearn Next.js app.
+`@rms/*` resolves to `micro-services-rms/frontend/src/*`. `src/app/result-studio/page.tsx` re-exports
+the page, and `src/app/result-studio/layout.tsx` holds its metadata and the install manifest
+(`public/rms.webmanifest`). The internal route is `/result-studio`, not `/rms`, because the host
+already has `src/app/RMS`, and on Windows the two would be the same folder.
 
-- `@rms/*` (tsconfig path) resolves to `micro-services-rms/frontend/src/*`.
-- Pages live under the internal prefix `/result-studio`, not `/rms`: the host already has `src/app/RMS`,
-  and on Windows `rms` and `RMS` are the same folder.
-- `src/proxy.ts` in the host sends `rms.*` hosts to `rmsProxy` (`frontend/src/proxy.ts`), which rewrites
-  `rms.pln.ng/x` to `/result-studio/x` and lets `/api/*` and static files through.
-  `useRmsHref()` (`lib/rmsPaths.ts`) builds links that are short on rms.pln.ng and prefixed elsewhere.
-- Host route files under `src/app/result-studio` and `src/app/api/rms` are one-line re-exports of the
-  files here. Route segment config (`dynamic`, `maxDuration`) stays in the host file.
-- The host store registers `rmsApi` from `frontend/src/store`.
+Locally, run `npm run build && npm start` and open `http://rms.localhost:3000`. The service worker is
+only registered in production builds, so `npm run dev` doesn't test offline loading.
 
-## Talking to the backend
+## Going live
 
-The browser never calls the backend directly and never sees the token:
+1. Add `rms.pln.ng` to the Vercel project and point a `CNAME` for `rms` at Vercel.
+2. No new environment variables: K12 calls use the existing `K12_BACKEND_URL`.
 
-- `/api/rms/session/login|signup` forward to the backend's `/auth/*`, keep `accessToken` in the
-  httpOnly cookie `rms_session` (path `/api/rms`), and return the rest of the body. `/logout` clears it.
-- `/api/rms/<anything>` forwards to `RMS_API_URL/<anything>` with `Authorization: Bearer <cookie>`. It
-  streams uploads and downloads and passes redirects through, so the backend can answer PDF requests
-  with a redirect to a short-lived blob-storage URL. That is preferred for class booklets, which can be
-  larger than Vercel's 4.5 MB response limit.
-- PDF and sample-sheet downloads are plain links, so the cookie rides along on navigation.
+## Not yet
 
-Uploads pass through the web server, so the page rejects files over 4 MB (Vercel's request limit is
-4.5 MB). Result sheets without embedded images are far smaller.
-
-## Environment
-
-| Variable      | Where             | Example                         |
-| ------------- | ----------------- | ------------------------------- |
-| `RMS_API_URL` | server-side only  | `https://<rms-backend-host>`    |
-
-Local development defaults to `http://localhost:8080` (the backend's docker compose port). Open `http://rms.localhost:3000`; browsers resolve
-`*.localhost` to your machine without any hosts-file change.
-
-## Going live on rms.pln.ng
-
-1. Add `rms.pln.ng` as a domain on the Vercel project and point a `CNAME` for `rms` at Vercel.
-2. Set `RMS_API_URL` in the Vercel project's environment variables.
+- K12 records only 1st CA, 2nd CA and Exam. Extra score columns print on the cards, and the app says
+  they weren't sent to ParaLearn.
+- K12 files synced scores under the school's **current** term, not the term picked in the app.
+- One laptop's batches aren't shared with another laptop; each keeps its own copy.

@@ -11,7 +11,6 @@ import { paraApi } from "./api";
 import { uniApi } from "./api/uniBaseApi";
 import { superAdminApi } from "./api/superAdminBaseApi";
 import { cbtMicroserviceApi } from "@cbt/store/cbtMicroserviceApi";
-import { rmsApi } from "@rms/store/rmsApi";
 import { RESET_STORE } from "./constants";
 
 const appReducer = combineReducers({
@@ -27,7 +26,6 @@ const appReducer = combineReducers({
   [uniApi.reducerPath]: uniApi.reducer,
   [superAdminApi.reducerPath]: superAdminApi.reducer,
   [cbtMicroserviceApi.reducerPath]: cbtMicroserviceApi.reducer,
-  [rmsApi.reducerPath]: rmsApi.reducer,
 });
 
 // Passing undefined to each slice reducer causes it to return its initialState,
@@ -51,7 +49,6 @@ export const store = configureStore({
       uniApi.middleware,
       superAdminApi.middleware,
       cbtMicroserviceApi.middleware,
-      rmsApi.middleware,
     ),
 });
 

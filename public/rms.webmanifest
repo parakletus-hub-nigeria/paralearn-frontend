@@ -1,0 +1,11 @@
+{
+  "name": "ParaLearn Results",
+  "short_name": "Results",
+  "description": "Turn a term's result sheet into printable report cards, with or without internet.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#641bc4",
+  "icons": [{ "src": "/rms-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
