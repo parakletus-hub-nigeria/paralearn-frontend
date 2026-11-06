@@ -69,8 +69,8 @@ export class CancelledError extends Error {
 const resultsClient = new WorkerClient(() => new Worker(new URL("./results.worker.ts", import.meta.url), { type: "module" }));
 const pdfClient = new WorkerClient(() => new Worker(new URL("./pdf.worker.ts", import.meta.url), { type: "module" }));
 
-export function processWorkbook(file: ArrayBuffer): Promise<ComputedResults> {
-  return resultsClient.call<ComputedResults>({ type: "process", file }, [file]);
+export function processWorkbook(file: ArrayBuffer, fileName?: string): Promise<ComputedResults> {
+  return resultsClient.call<ComputedResults>({ type: "process", file, fileName }, [file]);
 }
 
 export function buildK12WorkbookFile(classes: ClassResult[]): Promise<{ bytes: ArrayBuffer; droppedColumns: string[] }> {

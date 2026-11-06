@@ -10,11 +10,18 @@ import type { ClassResult } from "../engine/types";
  * writing the clean workbook that is synced to the K12 backend.
  */
 export type ResultsRequest =
-  | { id: number; type: "process"; file: ArrayBuffer }
+  | { id: number; type: "process"; file: ArrayBuffer; fileName?: string }
   | { id: number; type: "k12Workbook"; classes: ClassResult[] }
   | { id: number; type: "ping" };
 
 const ctx = self as unknown as DedicatedWorkerGlobalScope;
+
+/** CSVs saved by Excel are UTF-8 (often with a BOM) or Windows-1252; try UTF-8 first */
+function decodeCsv(buffer: ArrayBuffer): string {
+  const utf8 = new TextDecoder("utf-8").decode(buffer);
+  const text = utf8.includes("\uFFFD") ? new TextDecoder("windows-1252").decode(buffer) : utf8;
+  return text.replace(/^\uFEFF/, "");
+}
 
 ctx.onmessage = (event: MessageEvent<ResultsRequest>) => {
   const msg = event.data;
@@ -24,9 +31,13 @@ ctx.onmessage = (event: MessageEvent<ResultsRequest>) => {
       return;
     }
     if (msg.type === "process") {
-      const wb = XLSX.read(new Uint8Array(msg.file), { type: "array", cellDates: false });
+      // CSV cells stay text (raw) so admission numbers like 007 keep their zeros; scores are parsed later
+      const isCsv = /\.csv$/i.test(msg.fileName || "");
+      const wb = isCsv
+        ? XLSX.read(decodeCsv(msg.file), { type: "string", raw: true })
+        : XLSX.read(new Uint8Array(msg.file), { type: "array", cellDates: false });
       const sheets = wb.SheetNames.map((name) => ({
-        name,
+        name: isCsv ? msg.fileName || name : name,
         rows: XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, blankrows: true, defval: null }) as unknown[][],
       }));
       ctx.postMessage({ id: msg.id, ok: true, value: computeResults(parseWorkbookRows(sheets)) });

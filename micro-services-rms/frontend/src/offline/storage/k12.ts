@@ -188,3 +188,63 @@ export async function fetchSchoolBranding(subdomain: string): Promise<K12Brandin
     return null;
   }
 }
+
+/** "St. Mary's College, Lagos" -> "st-marys-college-lagos" (K12 needs 3-63 chars: a-z, 0-9, hyphens) */
+export function suggestSubdomain(schoolName: string): string {
+  return schoolName
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40)
+    .replace(/-+$/g, "");
+}
+
+export interface NewSchoolAccount {
+  schoolName: string;
+  subdomain: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
+
+/**
+ * Creates a school on ParaLearn for schools not using it yet (POST auth/register-school),
+ * then signs in. ParaLearn picks a free address if the requested one is taken.
+ */
+export async function registerSchool(input: NewSchoolAccount): Promise<{ session: K12Session; subdomain: string; changed: boolean }> {
+  const domain = normalizeSubdomain(input.subdomain);
+  if (!/^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$/.test(domain)) {
+    throw new K12Error("The school address needs 3 or more letters or numbers (hyphens allowed in the middle).");
+  }
+  if (input.password.length < 8) throw new K12Error("Use at least 8 characters for the password.");
+  let res: Response;
+  try {
+    res = await fetch(`${K12}/auth/register-school`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        schoolName: input.schoolName.trim(),
+        domain,
+        adminEmail: input.email.trim().toLowerCase(),
+        adminPassword: input.password,
+        adminFirstName: input.firstName.trim(),
+        adminLastName: input.lastName.trim(),
+        ...(input.phone?.trim() ? { phoneNumber: input.phone.trim() } : {}),
+      }),
+    });
+  } catch {
+    throw new K12Error("You're offline. Creating an account needs internet; after that the app works offline.");
+  }
+  if (!res.ok) throw new K12Error(await errorMessage(res, "Couldn't create the school account. Please try again."), res.status);
+  const body = await res.json();
+  const subdomain: string | undefined = body?.data?.subdomain;
+  if (!subdomain) throw new K12Error("ParaLearn created the school but didn't return its address. Try signing in.");
+  const session = await signIn({ subdomain, email: input.email, password: input.password });
+  return { session, subdomain, changed: subdomain !== domain };
+}

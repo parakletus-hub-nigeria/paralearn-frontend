@@ -8,6 +8,7 @@ import type {
   TeacherRecord,
 } from "./types";
 import { SUBJECT_MAX } from "./grading";
+import { expandFlatSheet } from "./flatSheet";
 
 /**
  * Reads the ParaLearn result-sheet layout (the same one the K12 backend's
@@ -28,6 +29,8 @@ import { SUBJECT_MAX } from "./grading";
 export interface SheetRows {
   name: string;
   rows: unknown[][];
+  /** Line in the original file for each row, when rows were rearranged (CSV template) */
+  rowNumbers?: number[];
 }
 
 const TEACHER_SHEET = /^teacher('?s)?\s*data$/i;
@@ -157,7 +160,7 @@ function parseClassSheet(sheet: SheetRows, issues: SheetIssue[]): ParsedClass | 
   for (let r = firstStudentIdx; r < rows.length; r++) {
     const row = rows[r] || [];
     const name = cellText(row[1]).replace(/\s+/g, " ");
-    const excelRow = r + 1;
+    const excelRow = sheet.rowNumbers?.[r] ?? r + 1;
     if (!name) {
       const hasScores = [...columns.keys()].some((c) => !isBlank(row[c]));
       if (hasScores) issues.push({ level: "warning", sheet: sheet.name, row: excelRow, message: "Scores without a student name; row skipped." });
@@ -277,6 +280,21 @@ export function parseWorkbookRows(sheets: SheetRows[]): ParsedWorkbook {
       continue;
     }
     if (!sheet.rows.some((r) => (r || []).some((c) => !isBlank(c)))) continue; // empty tab
+    // The CSV template (one table, Class column) becomes one class sheet per class
+    const flat = expandFlatSheet(sheet);
+    if (flat) {
+      issues.push(...flat.issues);
+      teacherRecords = teacherRecords.concat(flat.teacherRecords);
+      for (const classSheet of flat.sheets) {
+        if (classes.some((c) => c.name.toLowerCase() === classSheet.name.toLowerCase())) {
+          issues.push({ level: "error", sheet: classSheet.name, message: `Class "${classSheet.name}" appears in more than one tab.` });
+          continue;
+        }
+        const parsed = parseClassSheet(classSheet, issues);
+        if (parsed) classes.push(parsed);
+      }
+      continue;
+    }
     const parsed = parseClassSheet(sheet, issues);
     if (parsed) classes.push(parsed);
   }

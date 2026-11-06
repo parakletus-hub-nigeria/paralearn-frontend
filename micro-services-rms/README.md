@@ -1,8 +1,15 @@
 # ParaLearn Results, offline-first (`micro-services-rms`)
 
-**rms.pln.ng** turns a term's Excel result sheet into printable report cards **on the school's own
-laptop, with or without internet**. The only online steps are the first sign-in, with the school's
-ParaLearn K12 account, and sending the scores to ParaLearn once a connection is back.
+**rms.pln.ng** turns a term's result sheet into printable report cards **on the school's own
+laptop, with or without internet**. The only online steps are the first sign-in, or creating an
+account, and sending the scores to ParaLearn once a connection is back.
+
+Two kinds of school use it:
+
+- **Schools on ParaLearn K12** sign in with their existing account and open their usual Excel sheet.
+- **Schools not on ParaLearn** create a school account here (`POST auth/register-school` on the K12
+  backend), download a CSV template built for their classes and subjects, fill it in, and open it.
+  Their scores are backed up to their new ParaLearn school the same way.
 
 ```
 Excel sheet ─► Results worker (SheetJS + results engine) ─► IndexedDB (Dexie)
@@ -16,7 +23,9 @@ School profile (logo, colour) ─► PDF worker (pdf-lib) ◄──────�
 
 ## How a batch runs
 
-1. **Sign in once** (online). `POST /auth/login` on the K12 backend with the school's subdomain.
+1. **Sign in once, or create an account** (online). `POST /auth/login` on the K12 backend with the
+   school's subdomain; new schools first `POST /auth/register-school`, then sign in. K12 adds a
+   number to the address if the one asked for is taken.
    The school name, colour and logo are prefilled from `GET /tenant/by-subdomain/:subdomain`, and
    the school confirms them once.
 2. **Open the result sheet** (works offline). The results worker reads the workbook and computes
@@ -35,6 +44,22 @@ School profile (logo, colour) ─► PDF worker (pdf-lib) ◄──────�
 Measured on a development laptop: reading and computing 80 students takes about 14 ms. 1,000 cards
 (20 classes of 50) draw in about 8 s, about 5 MB of PDFs in total. In the browser, the first card
 appears about 0.35 s after choosing the sheet.
+
+## The CSV template
+
+Built in the browser from the school's classes, subjects and chosen score columns
+(`offline/engine/csvTemplate.ts`). It's one table for the whole school, one row per student:
+
+```
+Class,S/N,Student Name,Admission No,Mathematics 1st CA,Mathematics 2nd CA,Mathematics Exam,...,Teacher's Comment,Days Present,Days Opened
+JSS 1A,1,Ada Obi,007,15,18,55,...,"Neat, careful work.",60,62
+```
+
+`offline/engine/flatSheet.ts` splits it by the Class column into class sheets that go through the same
+parser as an Excel result sheet. Problems point at the line in the CSV. The file starts with a UTF-8
+BOM so Excel on Windows keeps accents. Cells are read as text, so admission numbers keep their
+leading zeros. CSVs saved as Windows-1252 are detected. The same table saved as `.xlsx` is
+recognised too.
 
 ## The Excel layout
 

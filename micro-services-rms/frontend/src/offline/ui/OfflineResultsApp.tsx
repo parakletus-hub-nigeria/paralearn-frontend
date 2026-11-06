@@ -14,6 +14,7 @@ import { plural, timeAgo, useOnline } from "./util";
 import { Wordmark } from "./Wordmark";
 import SignIn from "./SignIn";
 import NewBatch from "./NewBatch";
+import CsvTemplateCard from "./CsvTemplateCard";
 import BatchView from "./BatchView";
 import SchoolProfileForm from "./SchoolProfileForm";
 
@@ -254,7 +255,10 @@ export default function OfflineResultsApp() {
               </p>
             </div>
             <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-              <NewBatch onCreated={(id) => go(`#/batch/${id}?new`)} />
+              <div className="space-y-4">
+                <NewBatch onCreated={(id) => go(`#/batch/${id}?new`)} />
+                <CsvTemplateCard schoolName={profile.schoolName} />
+              </div>
               <section aria-labelledby="batches-heading">
                 <h2 id="batches-heading" className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)]">
                   On this laptop

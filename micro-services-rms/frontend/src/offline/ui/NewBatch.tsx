@@ -29,7 +29,7 @@ export default function NewBatch({ onCreated }: { onCreated: (batchId: string) =
     if (!f) return;
     setError(null);
     setBlocking(null);
-    if (!/\.(xlsx|xls)$/i.test(f.name)) return setError("Choose an Excel file (.xlsx or .xls).");
+    if (!/\.(xlsx|xls|csv)$/i.test(f.name)) return setError("Choose an Excel file (.xlsx or .xls) or a CSV file.");
     if (f.size > MAX_BYTES) return setError("That file is over 25 MB. Remove pictures or unused tabs and try again.");
     setFile(f);
   };
@@ -42,7 +42,7 @@ export default function NewBatch({ onCreated }: { onCreated: (batchId: string) =
     setError(null);
     setBlocking(null);
     try {
-      const results = await processWorkbook(await file.arrayBuffer());
+      const results = await processWorkbook(await file.arrayBuffer(), file.name);
       const errors = results.issues.filter((i) => i.level === "error");
       if (errors.length) {
         setBlocking(results.issues);
@@ -73,7 +73,9 @@ export default function NewBatch({ onCreated }: { onCreated: (batchId: string) =
   return (
     <form onSubmit={submit} className="rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
       <h2 className="text-lg font-bold">Open a result sheet</h2>
-      <p className="text-sm text-[var(--text-secondary)]">One tab per class. Everything is worked out on this laptop; no internet needed.</p>
+      <p className="text-sm text-[var(--text-secondary)]">
+        Your Excel sheet (one tab per class) or our filled-in CSV template. Everything is worked out on this laptop; no internet needed.
+      </p>
 
       <div
         role="button"
@@ -98,7 +100,7 @@ export default function NewBatch({ onCreated }: { onCreated: (batchId: string) =
         <input
           ref={inputRef}
           type="file"
-          accept=".xlsx,.xls"
+          accept=".xlsx,.xls,.csv"
           className="hidden"
           onChange={(e) => {
             pick(e.target.files?.[0]);
@@ -131,7 +133,7 @@ export default function NewBatch({ onCreated }: { onCreated: (batchId: string) =
           <>
             <UploadCloud className="h-8 w-8 text-[var(--violet-ink)]" />
             <p className="mt-2 font-semibold">Drop the Excel file here, or click to choose</p>
-            <p className="text-xs text-[var(--text-secondary)]">.xlsx or .xls</p>
+            <p className="text-xs text-[var(--text-secondary)]">.xlsx, .xls or .csv</p>
           </>
         )}
       </div>
