@@ -1,15 +1,21 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ImagePlus, Loader2, Save, Trash2 } from "lucide-react";
+import { ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { saveProfile, type SchoolProfile } from "../storage/db";
 import { imageToPngBytes } from "./logo";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
+
+const initials = (name: string) =>
+  (name || "S")
+    .split(/\s+/)
+    .filter((w) => /^[A-Za-z]/.test(w))
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("") || "S";
 
 /** School details printed at the top of every card; stored on this laptop */
 export default function SchoolProfileForm({
@@ -30,9 +36,12 @@ export default function SchoolProfileForm({
     () => (form.logo ? URL.createObjectURL(new Blob([form.logo.bytes as BlobPart], { type: form.logo.type === "png" ? "image/png" : "image/jpeg" })) : null),
     [form.logo]
   );
-  useEffect(() => () => {
-    if (logoUrl) URL.revokeObjectURL(logoUrl);
-  }, [logoUrl]);
+  useEffect(
+    () => () => {
+      if (logoUrl) URL.revokeObjectURL(logoUrl);
+    },
+    [logoUrl]
+  );
 
   const set = (k: Exclude<keyof SchoolProfile, "logo">) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -43,7 +52,6 @@ export default function SchoolProfileForm({
       return;
     }
     try {
-      setForm((f) => ({ ...f, logo: null }));
       const bytes = await imageToPngBytes(file);
       setForm((f) => ({ ...f, logo: { bytes, type: "png" } }));
     } catch {
@@ -71,104 +79,105 @@ export default function SchoolProfileForm({
   };
 
   const color = HEX.test(form.color) ? form.color : "#641bc4";
+  const contact = [form.address, form.phone, form.email].filter(Boolean).join("  |  ");
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      <form onSubmit={submit} className="space-y-4 rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-5 sm:p-6">
+    <div className="rms-profile">
+      <form onSubmit={submit} className="rms-form">
         {firstRun && (
-          <p className="rounded-[var(--radius-md)] bg-[var(--violet-tint)] px-3 py-2 text-sm text-[var(--violet-ink)]">
-            Check how your school appears on report cards. You can change this any time.
-          </p>
+          <p className="rms-notice info">Check how your school appears on report cards. You can change this any time.</p>
         )}
-        <div className="space-y-1.5">
-          <Label htmlFor="schoolName">School name</Label>
-          <Input id="schoolName" value={form.schoolName} onChange={set("schoolName")} required />
+        <label className="rms-field">
+          School name
+          <input id="schoolName" className="rms-input" value={form.schoolName} onChange={set("schoolName")} required />
+        </label>
+        <label className="rms-field">
+          Motto <small>Optional</small>
+          <input id="motto" className="rms-input" value={form.motto} onChange={set("motto")} placeholder="e.g. Knowledge and Integrity" />
+        </label>
+        <label className="rms-field">
+          Address <small>Optional</small>
+          <input id="address" className="rms-input" value={form.address} onChange={set("address")} />
+        </label>
+        <div className="rms-form-grid">
+          <label className="rms-field">
+            Phone <small>Optional</small>
+            <input id="phone" className="rms-input" type="tel" value={form.phone} onChange={set("phone")} />
+          </label>
+          <label className="rms-field">
+            School email <small>Optional</small>
+            <input id="email" className="rms-input" type="email" value={form.email} onChange={set("email")} />
+          </label>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="motto">Motto</Label>
-          <Input id="motto" value={form.motto} onChange={set("motto")} placeholder="e.g. Knowledge and Integrity" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="address">Address</Label>
-          <Input id="address" value={form.address} onChange={set("address")} />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" type="tel" value={form.phone} onChange={set("phone")} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="email">School email</Label>
-            <Input id="email" type="email" value={form.email} onChange={set("email")} />
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Logo</Label>
-          <div className="flex items-center gap-3">
+        <fieldset>
+          <legend>Logo and colour</legend>
+          <div className="rms-logo-row">
+            <span className="rms-logo-box" aria-hidden>
+              {logoUrl ? <img src={logoUrl} alt="" /> : <strong style={{ color }}>{initials(form.schoolName)}</strong>}
+            </span>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickLogo(e.target.files?.[0])} />
-            <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-              <ImagePlus className="mr-1.5 h-4 w-4" />
+            <button type="button" className="rms-button small" onClick={() => fileRef.current?.click()}>
+              <ImagePlus size={15} />
               {form.logo ? "Change logo" : "Add logo"}
-            </Button>
+            </button>
             {form.logo && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setForm((f) => ({ ...f, logo: null }))}>
-                <Trash2 className="mr-1.5 h-4 w-4" />
+              <button type="button" className="rms-button small quiet" onClick={() => setForm((f) => ({ ...f, logo: null }))}>
+                <Trash2 size={15} />
                 Remove
-              </Button>
+              </button>
             )}
           </div>
+          <label className="rms-field" style={{ maxWidth: 260 }}>
+            Card colour
+            <span style={{ display: "flex", gap: 8 }}>
+              <input
+                type="color"
+                aria-label="Pick card colour"
+                value={color}
+                onChange={set("color")}
+                style={{ width: 48, height: 42, borderRadius: 6, border: "1px solid #dce0e7", padding: 3, background: "#fdfdff", cursor: "pointer" }}
+              />
+              <input id="color" className="rms-input rms-num" value={form.color} onChange={set("color")} />
+            </span>
+          </label>
+        </fieldset>
+        <div className="rms-form-footer">
+          <button type="submit" className="rms-button primary" disabled={saving}>
+            {saving && <Loader2 size={16} className="animate-spin" />}
+            {firstRun ? "Save and continue" : "Save profile"}
+          </button>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="color">Card colour</Label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              aria-label="Pick card colour"
-              value={color}
-              onChange={set("color")}
-              className="h-9 w-12 cursor-pointer rounded-[var(--radius-md)] border border-[var(--border-fine)] bg-white p-1"
-            />
-            <Input id="color" value={form.color} onChange={set("color")} className="font-mono" />
-          </div>
-        </div>
-        <Button type="submit" disabled={saving}>
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-          {firstRun ? "Save and continue" : "Save profile"}
-        </Button>
       </form>
 
-      <div className="space-y-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)]">Card header preview</h2>
-        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white shadow-[var(--shadow-card)]">
-          <div className="h-2" style={{ backgroundColor: color }} />
-          <div className="flex items-center gap-4 p-5">
+      <aside aria-labelledby="card-preview" style={{ display: "grid", gap: 10 }}>
+        <h2 id="card-preview" className="rms-section-title">
+          Top of each report card
+        </h2>
+        <div className="rms-card-head">
+          <div style={{ height: 6, background: color }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 18 }}>
             {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt="" className="h-16 w-16 shrink-0 object-contain" />
+              <img src={logoUrl} alt="" style={{ width: 54, height: 54, objectFit: "contain", flexShrink: 0 }} />
             ) : (
-              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full text-lg font-bold text-white" style={{ backgroundColor: color }}>
-                {(form.schoolName || "S")
-                  .split(/\s+/)
-                  .slice(0, 2)
-                  .map((w) => w[0]?.toUpperCase())
-                  .join("")}
-              </div>
+              <span
+                style={{ width: 54, height: 54, borderRadius: "50%", background: color, color: "#fdfdff", display: "grid", placeItems: "center", fontWeight: 700, flexShrink: 0 }}
+              >
+                {initials(form.schoolName)}
+              </span>
             )}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-lg font-extrabold uppercase" style={{ color }}>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ color, fontWeight: 800, fontSize: 15, textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {form.schoolName || "Your school name"}
               </p>
-              {form.motto && <p className="truncate text-xs italic text-[var(--text-secondary)]">&ldquo;{form.motto}&rdquo;</p>}
-              <p className="truncate text-xs text-[var(--text-secondary)]">
-                {[form.address, form.phone, form.email].filter(Boolean).join(" | ") || "Address | phone | email"}
+              {form.motto && <p style={{ fontSize: 11, fontStyle: "italic", color: "var(--rms-muted)" }}>&ldquo;{form.motto}&rdquo;</p>}
+              <p style={{ fontSize: 11, color: "var(--rms-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {contact || "Address  |  phone  |  email"}
               </p>
             </div>
           </div>
         </div>
-        <p className="text-xs text-[var(--text-secondary)]">
-          Report cards already generated keep the old details. Open a batch and choose &ldquo;Redo cards&rdquo; to update them.
-        </p>
-      </div>
+        <p className="rms-section-sub">Cards already generated keep the old details. Open a batch and choose Redo cards to update them.</p>
+      </aside>
     </div>
   );
 }

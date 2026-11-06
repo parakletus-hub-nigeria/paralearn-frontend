@@ -2,24 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  CheckCircle2,
-  CloudOff,
-  CloudUpload,
-  Download,
-  FileText,
-  Loader2,
-  Play,
-  RefreshCw,
-  Square,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, CloudOff, Download, Loader2, Play, RefreshCw, Square, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import { db, deleteBatch, getClassResults, type BatchRecord, type SchoolProfile } from "../storage/db";
 import { K12Error, syncBatch } from "../storage/k12";
 import { buildReportCardsPdf } from "../pdf/reportCardPdf";
@@ -28,7 +12,8 @@ import { cancelGeneration, cardContext, clearBooklets, generateBatch, useGenerat
 import { downloadBlob, ordinal, plural, safeFileName, timeAgo, useOnline } from "./util";
 import IssueList from "./IssueList";
 
-function SyncPanel({ batch, onSignInNeeded }: { batch: BatchRecord; onSignInNeeded: () => void }) {
+/** The sync cell of the summary row */
+function SyncSummary({ batch, onSignInNeeded }: { batch: BatchRecord; onSignInNeeded: () => void }) {
   const online = useOnline();
   const s = batch.sync;
   const send = async () => {
@@ -41,116 +26,49 @@ function SyncPanel({ batch, onSignInNeeded }: { batch: BatchRecord; onSignInNeed
     }
   };
 
-  let icon = <CloudUpload className="h-5 w-5 text-[var(--text-secondary)]" />;
-  let title = "Scores not sent to ParaLearn yet";
-  let detail = online ? "They'll send automatically, or send them now." : "They'll send automatically when this laptop is back online.";
+  let chip = <span className="rms-status">Not sent yet</span>;
+  let detail = online ? "Sends automatically" : "Sends when back online";
   if (s.status === "syncing") {
-    icon = <Loader2 className="h-5 w-5 animate-spin text-[var(--violet-ink)]" />;
-    title = "Sending scores to ParaLearn…";
-    detail = "";
-  } else if (s.status === "synced") {
-    icon = <CheckCircle2 className="h-5 w-5 text-emerald-600" />;
-    title = `Scores sent to ParaLearn ${timeAgo(s.at)}`;
-    detail = s.processed ? `${plural(s.processed, "student")} recorded under the school's current term.` : "Recorded under the school's current term.";
-  } else if (s.status === "failed") {
-    icon = s.needsSignIn ? <CloudOff className="h-5 w-5 text-[var(--amber-signal)]" /> : <AlertTriangle className="h-5 w-5 text-[var(--crimson-signal)]" />;
-    title = s.needsSignIn ? "Sign in again to send scores" : "Scores couldn't be sent";
-    detail = s.error;
-  }
-
-  return (
-    <div className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5">{icon}</span>
-        <div>
-          <p className="font-semibold">{title}</p>
-          {detail && <p className="text-sm text-[var(--text-secondary)]">{detail}</p>}
-          {s.status === "synced" && s.droppedColumns?.length ? (
-            <p className="mt-1 text-xs text-amber-800">
-              ParaLearn records only 1st CA, 2nd CA and Exam, so these columns stayed on the cards only: {s.droppedColumns.slice(0, 3).join(", ")}
-              {s.droppedColumns.length > 3 ? ", …" : ""}
-            </p>
-          ) : null}
-        </div>
-      </div>
-      {s.status !== "syncing" && (
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!online}
-          onClick={s.status === "failed" && s.needsSignIn ? onSignInNeeded : send}
-          className="shrink-0"
-        >
-          {s.status === "failed" && s.needsSignIn ? "Sign in" : s.status === "synced" ? "Send again" : "Send scores now"}
-        </Button>
-      )}
-    </div>
-  );
-}
-
-function GenerationPanel({ batch, classes }: { batch: BatchRecord; classes: ClassResult[] }) {
-  const gen = useGeneration();
-  const running = gen?.batchId === batch.id;
-  const busyElsewhere = !!gen && !running;
-  const readyClasses = batch.generatedClasses.length;
-  const allReady = readyClasses === classes.length;
-
-  const start = async () => {
-    try {
-      const outcome = await generateBatch(batch.id);
-      if (outcome === "done") toast.success("All report cards are ready.");
-      else toast.info("Stopped. Finished classes are saved; resume any time.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't generate the report cards.");
-    }
-  };
-  const redo = async () => {
-    await clearBooklets(batch.id);
-    await start();
-  };
-
-  if (running && gen) {
-    const pct = gen.overallTotal ? Math.round((gen.overallDone / gen.overallTotal) * 100) : 0;
-    return (
-      <div className="rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="font-semibold">
-            Generating {gen.className}: <span className="tabular-nums">{gen.classDone} of {gen.classTotal}</span>
-          </p>
-          <Button variant="ghost" size="sm" onClick={cancelGeneration}>
-            <Square className="mr-1.5 h-3.5 w-3.5" />
-            Stop
-          </Button>
-        </div>
-        <Progress value={pct} className="mt-2 h-2" />
-        <p className="mt-2 text-xs tabular-nums text-[var(--text-secondary)]">
-          {gen.overallDone} of {gen.overallTotal} cards · finished classes are saved as they complete
-        </p>
-      </div>
+    chip = (
+      <span className="rms-status ready">
+        <Loader2 size={12} className="animate-spin" />
+        Sending
+      </span>
     );
+    detail = "Sending scores to ParaLearn";
+  } else if (s.status === "synced") {
+    chip = (
+      <span className="rms-status ok">
+        <CheckCircle2 size={12} />
+        Sent
+      </span>
+    );
+    detail = `Scores sent to ParaLearn ${timeAgo(s.at)}${s.processed ? `, ${plural(s.processed, "student")}` : ""}`;
+  } else if (s.status === "failed") {
+    chip = (
+      <span className={`rms-status ${s.needsSignIn ? "warn" : "bad"}`}>
+        <CloudOff size={12} />
+        {s.needsSignIn ? "Sign in needed" : "Not sent"}
+      </span>
+    );
+    detail = s.needsSignIn ? "Sign in again to send" : "Will retry automatically";
   }
-
+  const canAct = s.status !== "syncing" && online;
   return (
-    <div className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="font-semibold">
-          {allReady ? "All report cards are ready" : readyClasses ? `${readyClasses} of ${plural(classes.length, "class", "classes")} ready` : "Report cards not generated yet"}
-        </p>
-        <p className="text-sm text-[var(--text-secondary)]">
-          {allReady ? "Download a class booklet below, or any student's card." : "Generated one class at a time and saved on this laptop."}
-        </p>
-      </div>
-      {allReady ? (
-        <Button variant="outline" size="sm" onClick={redo} disabled={busyElsewhere} title="Redraw every card, e.g. after changing the school profile">
-          <RefreshCw className="mr-1.5 h-4 w-4" />
-          Redo cards
-        </Button>
-      ) : (
-        <Button size="sm" onClick={start} disabled={busyElsewhere}>
-          <Play className="mr-1.5 h-4 w-4" />
-          {readyClasses ? "Resume" : "Generate report cards"}
-        </Button>
-      )}
+    <div>
+      <dt>ParaLearn sync</dt>
+      <dd className="text">{chip}</dd>
+      <small>
+        {detail}
+        {canAct && (
+          <>
+            {" · "}
+            <button type="button" className="rms-link" onClick={s.status === "failed" && s.needsSignIn ? onSignInNeeded : send}>
+              {s.status === "failed" && s.needsSignIn ? "Sign in" : s.status === "synced" ? "Send again" : "Send now"}
+            </button>
+          </>
+        )}
+      </small>
     </div>
   );
 }
@@ -179,35 +97,33 @@ function CardPreview({ student, cls, profile, batch }: { student: StudentResult 
 
   if (!student) return null;
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <p className="truncate text-sm font-semibold">{student.name}</p>
-        <Button
-          size="sm"
-          variant="outline"
+    <aside className="rms-preview" aria-label="Report card preview">
+      <div className="rms-preview-head">
+        <strong>{student.name}</strong>
+        <button
+          type="button"
+          className="rms-button small"
           disabled={!bytes}
           onClick={() =>
             bytes &&
             downloadBlob(
               new Blob([bytes as BlobPart], { type: "application/pdf" }),
-              `${safeFileName(`${student.name} - ${student.className} - ${batch.term} ${batch.session.replace("/", "-")}`)}.pdf`
+              `${safeFileName(`${student.name} - ${student.className} - ${term} ${session.replace("/", "-")}`)}.pdf`
             )
           }
         >
-          <Download className="mr-1.5 h-4 w-4" />
+          <Download size={14} />
           This card
-        </Button>
+        </button>
       </div>
-      <div className="aspect-[1/1.414] w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white">
-        {url ? (
-          <iframe title={`Report card for ${student.name}`} src={`${url}#toolbar=0&view=FitH`} className="h-full w-full" />
-        ) : (
-          <Skeleton className="h-full w-full" />
-        )}
+      <div className="rms-preview-frame">
+        {url ? <iframe title={`Report card for ${student.name}`} src={`${url}#toolbar=0&view=FitH`} /> : <div className="rms-skeleton" style={{ height: "100%" }} />}
       </div>
-    </div>
+    </aside>
   );
 }
+
+const unit = { fontSize: 15, color: "var(--rms-muted)", fontWeight: 600 } as const;
 
 export default function BatchView({
   batchId,
@@ -228,6 +144,7 @@ export default function BatchView({
   const [classIdx, setClassIdx] = useState(0);
   const [studentId, setStudentId] = useState<string | null>(null);
   const started = useRef(false);
+  const gen = useGeneration();
 
   useEffect(() => {
     getClassResults(batchId).then(setClasses);
@@ -236,15 +153,27 @@ export default function BatchView({
   const cls = classes?.[classIdx] ?? null;
   const sorted = useMemo(() => (cls ? [...cls.students].sort((a, b) => a.position - b.position || a.row - b.row) : []), [cls]);
   const student = cls?.students.find((s) => s.id === studentId) || sorted[0] || null;
+  const schoolAverage = useMemo(() => {
+    const all = (classes || []).flatMap((c) => c.students.filter((s) => s.subjects.length).map((s) => s.average));
+    return all.length ? all.reduce((a, b) => a + b, 0) / all.length : 0;
+  }, [classes]);
 
-  // Newly worked-out batch: show the first card (above), then generate the rest
+  const start = useCallback(async () => {
+    try {
+      const outcome = await generateBatch(batchId);
+      if (outcome === "done") toast.success("All report cards are ready.");
+      else toast.info("Stopped. Finished classes are saved; resume any time.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't generate the report cards.");
+    }
+  }, [batchId]);
+
+  // Newly worked-out batch: show the first card (below), then generate the rest
   useEffect(() => {
     if (!autoStart || started.current || !batch || !classes || batch.generatedClasses.length) return;
     started.current = true;
-    generateBatch(batchId)
-      .then((o) => o === "done" && toast.success("All report cards are ready."))
-      .catch((err) => toast.error(err instanceof Error ? err.message : "Couldn't generate the report cards."));
-  }, [autoStart, batch, classes, batchId]);
+    start();
+  }, [autoStart, batch, classes, start]);
 
   const remove = useCallback(async () => {
     if (!window.confirm("Delete this batch and its report cards from this laptop? Scores already sent to ParaLearn stay there.")) return;
@@ -256,65 +185,148 @@ export default function BatchView({
 
   if (batch === undefined || !classes) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-72" />
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-96 w-full" />
-      </div>
+      <main className="rms-page" aria-busy>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="rms-skeleton" />
+        ))}
+      </main>
     );
   }
   if (!batch) {
     return (
-      <div className="rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-8 text-center">
-        <p className="font-semibold">This batch isn&apos;t on this laptop.</p>
-        <Button variant="link" onClick={onBack}>
-          Back to batches
-        </Button>
-      </div>
+      <main className="rms-page">
+        <div className="rms-empty">
+          <h2>This batch isn&apos;t on this laptop</h2>
+          <p>
+            <button type="button" className="rms-link" onClick={onBack}>
+              Back to result batches
+            </button>
+          </p>
+        </div>
+      </main>
     );
   }
 
+  const running = gen?.batchId === batch.id ? gen : null;
+  const busyElsewhere = !!gen && !running;
+  const readyClasses = batch.generatedClasses.length;
+  const allReady = readyClasses === classes.length;
+  const readyCards = classes.filter((_, i) => batch.generatedClasses.includes(i)).reduce((a, c) => a + c.students.length, 0);
   const booklet = booklets?.find((b) => b.index === classIdx);
   const warnings = batch.issues.filter((i) => i.level === "warning");
+  const pct = running && running.overallTotal ? running.overallDone / running.overallTotal : 0;
+
+  const redo = async () => {
+    await clearBooklets(batch.id);
+    await start();
+  };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <button onClick={onBack} className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--foreground)]">
-          <ArrowLeft className="h-4 w-4" />
-          Result batches
-        </button>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="truncate text-2xl font-extrabold tracking-tight">{batch.fileName}</h1>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              {batch.term} · {batch.session} · {plural(classes.length, "class", "classes")} · {plural(batch.totalStudents, "student")}
-            </p>
-          </div>
-          <Button variant="ghost" size="sm" onClick={remove} className="self-start text-[var(--text-secondary)]">
-            <Trash2 className="mr-1.5 h-4 w-4" />
+    <main className="rms-page">
+      <button type="button" className="rms-back" onClick={onBack}>
+        <ArrowLeft size={14} />
+        Result batches
+      </button>
+      <div className="rms-page-heading">
+        <div style={{ minWidth: 0 }}>
+          <span className="rms-eyebrow">
+            {batch.term} · {batch.session}
+          </span>
+          <h1>{batch.fileName}</h1>
+        </div>
+        <div className="rms-page-actions">
+          <button type="button" className="rms-button quiet danger" onClick={remove}>
+            <Trash2 size={15} />
             Delete
-          </Button>
+          </button>
+          {running ? (
+            <button type="button" className="rms-button" onClick={cancelGeneration}>
+              <Square size={14} />
+              Stop
+            </button>
+          ) : allReady ? (
+            <button type="button" className="rms-button" onClick={redo} disabled={busyElsewhere} title="Redraw every card, e.g. after changing the school profile">
+              <RefreshCw size={15} />
+              Redo cards
+            </button>
+          ) : (
+            <button type="button" className="rms-button primary" onClick={start} disabled={busyElsewhere}>
+              <Play size={15} />
+              {readyClasses ? "Resume" : "Generate report cards"}
+            </button>
+          )}
         </div>
       </div>
 
-      <GenerationPanel batch={batch} classes={classes} />
-      <SyncPanel batch={batch} onSignInNeeded={onSignInNeeded} />
+      <dl className="rms-summary">
+        <div>
+          <dt>Students</dt>
+          <dd>{batch.totalStudents}</dd>
+          <small>in {plural(classes.length, "class", "classes")}</small>
+        </div>
+        <div>
+          <dt>Report cards</dt>
+          <dd>
+            {running ? running.overallDone : readyCards}
+            <span style={unit}> / {batch.totalStudents}</span>
+          </dd>
+          <small>
+            {allReady
+              ? "All report cards are ready"
+              : running
+              ? `Generating ${running.className}`
+              : `${readyClasses} of ${plural(classes.length, "class", "classes")} ready`}
+          </small>
+        </div>
+        <div>
+          <dt>School average</dt>
+          <dd>
+            {schoolAverage.toFixed(1)}
+            <span style={unit}>%</span>
+          </dd>
+          <small>across every student</small>
+        </div>
+        <SyncSummary batch={batch} onSignInNeeded={onSignInNeeded} />
+      </dl>
+
+      {running && (
+        <div className="rms-progress" role="status" aria-live="polite">
+          <div className="rms-progress-row">
+            <span>
+              Generating <strong>{running.className}</strong>: <span className="rms-num">{running.classDone} of {running.classTotal}</span>
+            </span>
+            <span className="rms-num">{Math.round(pct * 100)}%</span>
+          </div>
+          <div className="rms-bar">
+            <span style={{ transform: `scaleX(${pct})` }} />
+          </div>
+        </div>
+      )}
+
+      {batch.sync.status === "failed" && batch.sync.needsSignIn && (
+        <p className="rms-notice">
+          <CloudOff size={15} />
+          <span>{batch.sync.error}</span>
+          <button type="button" className="rms-button small" onClick={onSignInNeeded}>
+            Sign in
+          </button>
+        </p>
+      )}
 
       {warnings.length > 0 && (
-        <details className="rounded-[var(--radius-lg)] border border-amber-200 bg-[var(--amber-tint)]/40 p-4">
-          <summary className="cursor-pointer font-semibold">
-            <AlertTriangle className="mr-2 inline h-4 w-4 text-[var(--amber-signal)]" />
+        <details className="rms-notice rms-issues" style={{ display: "block" }}>
+          <summary style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 600 }}>
+            <AlertTriangle size={15} />
             {plural(warnings.length, "thing")} to check in the sheet
+            <span style={{ marginLeft: "auto", fontWeight: 500, textDecoration: "underline" }}>Show</span>
           </summary>
-          <IssueList issues={warnings} className="mt-3" />
+          <IssueList issues={warnings} />
         </details>
       )}
 
-      <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Classes">
-        {classes.map((c, i) => {
-          const ready = batch.generatedClasses.includes(i);
-          return (
+      <div className="rms-toolbar">
+        <div className="rms-tabs" role="tablist" aria-label="Classes">
+          {classes.map((c, i) => (
             <button
               key={c.name + i}
               role="tab"
@@ -323,85 +335,68 @@ export default function BatchView({
                 setClassIdx(i);
                 setStudentId(null);
               }}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
-                i === classIdx
-                  ? "border-[var(--violet-ink)] bg-[var(--violet-tint)] text-[var(--violet-ink)]"
-                  : "border-[var(--border-fine)] bg-white text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
-              }`}
             >
-              {ready && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-label="cards ready" />}
+              {batch.generatedClasses.includes(i) && <CheckCircle2 size={13} style={{ color: "#1f9d6c" }} aria-label="cards ready" />}
               {c.name}
-              <span className="tabular-nums opacity-70">{c.students.length}</span>
+              <small>{c.students.length}</small>
             </button>
-          );
-        })}
+          ))}
+        </div>
+        {cls && (
+          <button
+            type="button"
+            className="rms-button small"
+            disabled={!booklet}
+            onClick={() => booklet && downloadBlob(booklet.pdf, `${safeFileName(`${cls.name} report cards - ${batch.term} ${batch.session.replace("/", "-")}`)}.pdf`)}
+          >
+            <Download size={14} />
+            {booklet ? `${cls.name} booklet (${plural(booklet.pages, "page")})` : "Booklet not generated yet"}
+          </button>
+        )}
       </div>
 
       {cls && (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
-          <section className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm text-[var(--text-secondary)]">
-                Class average <span className="font-mono font-semibold text-[var(--foreground)]">{cls.classAverage.toFixed(1)}%</span>
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={!booklet}
-                onClick={() =>
-                  booklet &&
-                  downloadBlob(booklet.pdf, `${safeFileName(`${cls.name} report cards - ${batch.term} ${batch.session.replace("/", "-")}`)}.pdf`)
-                }
-              >
-                <Download className="mr-1.5 h-4 w-4" />
-                {booklet ? `${cls.name} booklet (${plural(booklet.pages, "page")})` : "Booklet not generated yet"}
-              </Button>
-            </div>
-            <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white">
-              <table className="w-full min-w-[480px] text-sm">
-                <thead className="bg-[var(--surface-muted)] text-left text-xs uppercase tracking-wide text-[var(--text-secondary)]">
+        <div className="rms-split">
+          <section aria-label={`${cls.name} results`}>
+            <div className="rms-table-wrap">
+              <table className="rms-table">
+                <thead>
                   <tr>
-                    <th className="px-3 py-2.5 font-semibold">Pos.</th>
-                    <th className="px-3 py-2.5 font-semibold">Student</th>
-                    <th className="px-3 py-2.5 text-right font-semibold">Average</th>
-                    <th className="px-3 py-2.5 font-semibold">Grade</th>
-                    <th className="px-3 py-2.5 text-right font-semibold">Subjects</th>
+                    <th>Pos.</th>
+                    <th>Student</th>
+                    <th className="rms-hide-sm">Admission no.</th>
+                    <th className="num">Average</th>
+                    <th>Grade</th>
+                    <th className="num rms-hide-sm">Subjects</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--border-fine)]">
-                  {sorted.map((s) => {
-                    const selected = s.id === student?.id;
-                    return (
-                      <tr
-                        key={s.id}
-                        onClick={() => setStudentId(s.id)}
-                        aria-selected={selected}
-                        className={`cursor-pointer ${selected ? "bg-[var(--violet-tint)]" : "hover:bg-[var(--surface-muted)]/70"}`}
-                      >
-                        <td className="px-3 py-2 font-mono tabular-nums">{ordinal(s.position)}</td>
-                        <td className="px-3 py-2">
-                          <span className="font-semibold">{s.name}</span>
-                          {s.admissionNo && <span className="ml-2 font-mono text-xs text-[var(--text-secondary)]">{s.admissionNo}</span>}
-                        </td>
-                        <td className="px-3 py-2 text-right font-mono tabular-nums">{s.average.toFixed(1)}</td>
-                        <td className="px-3 py-2 font-semibold">{s.grade}</td>
-                        <td className="px-3 py-2 text-right tabular-nums text-[var(--text-secondary)]">{s.subjects.length}</td>
-                      </tr>
-                    );
-                  })}
+                <tbody>
+                  {sorted.map((s) => (
+                    <tr key={s.id} onClick={() => setStudentId(s.id)} aria-selected={s.id === student?.id}>
+                      <td className="rms-num" style={{ fontWeight: 600 }}>
+                        {ordinal(s.position)}
+                      </td>
+                      <td>
+                        <span className="rms-table-name">{s.name}</span>
+                      </td>
+                      <td className="mono rms-hide-sm">{s.admissionNo || "–"}</td>
+                      <td className="num">{s.average.toFixed(1)}</td>
+                      <td>
+                        <span className={`rms-status ${s.grade === "F" ? "bad" : s.grade === "A" ? "ok" : ""}`}>{s.grade}</span>
+                      </td>
+                      <td className="num rms-hide-sm">{s.subjects.length}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
-          </section>
-          <aside className="lg:sticky lg:top-20 lg:self-start">
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
-              <FileText className="h-3.5 w-3.5" />
-              Card preview
+            <p className="rms-section-sub" style={{ marginTop: 12 }}>
+              Class average <strong className="rms-num" style={{ color: "var(--rms-ink)" }}>{cls.classAverage.toFixed(1)}%</strong>. Select a student to preview their card.
             </p>
-            <CardPreview student={student} cls={cls} profile={profile} batch={batch} />
-          </aside>
+          </section>
+          <CardPreview student={student} cls={cls} profile={profile} batch={batch} />
         </div>
       )}
-    </div>
+    </main>
   );
 }

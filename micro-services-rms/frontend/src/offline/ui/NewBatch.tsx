@@ -2,10 +2,6 @@
 
 import React, { useRef, useState } from "react";
 import { AlertTriangle, FileSpreadsheet, Loader2, UploadCloud, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { processWorkbook } from "../workers/client";
 import { saveBatch, type BatchRecord } from "../storage/db";
 import type { SheetIssue } from "../engine/types";
@@ -43,8 +39,7 @@ export default function NewBatch({ onCreated }: { onCreated: (batchId: string) =
     setBlocking(null);
     try {
       const results = await processWorkbook(await file.arrayBuffer(), file.name);
-      const errors = results.issues.filter((i) => i.level === "error");
-      if (errors.length) {
+      if (results.issues.some((i) => i.level === "error")) {
         setBlocking(results.issues);
         return;
       }
@@ -71,114 +66,101 @@ export default function NewBatch({ onCreated }: { onCreated: (batchId: string) =
   };
 
   return (
-    <form onSubmit={submit} className="rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-      <h2 className="text-lg font-bold">Open a result sheet</h2>
-      <p className="text-sm text-[var(--text-secondary)]">
-        Your Excel sheet (one tab per class) or our filled-in CSV template. Everything is worked out on this laptop; no internet needed.
-      </p>
-
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label="Choose result sheet"
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && inputRef.current?.click()}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragging(false);
-          pick(e.dataTransfer.files?.[0]);
-        }}
-        className={`mt-5 flex cursor-pointer flex-col items-center justify-center rounded-[var(--radius-lg)] border-2 border-dashed px-4 py-8 text-center transition-colors ${
-          dragging ? "border-[var(--violet-ink)] bg-[var(--violet-tint)]" : "border-[var(--border-fine)] hover:border-[var(--violet-ink)]/50 hover:bg-[var(--surface-muted)]"
-        }`}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".xlsx,.xls,.csv"
-          className="hidden"
-          onChange={(e) => {
-            pick(e.target.files?.[0]);
-            e.target.value = "";
+    <section aria-labelledby="open-sheet" id="open-sheet-section">
+      <h2 id="open-sheet" className="rms-section-title">
+        Open a result sheet
+      </h2>
+      <p className="rms-section-sub">Your Excel sheet (one tab per class) or our filled-in CSV template. It&apos;s worked out on this laptop; no internet needed.</p>
+      <form onSubmit={submit} className="rms-open">
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Choose result sheet"
+          onClick={() => inputRef.current?.click()}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && inputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
           }}
-        />
-        {file ? (
-          <div className="flex items-center gap-3 text-left">
-            <FileSpreadsheet className="h-8 w-8 shrink-0 text-emerald-600" />
-            <div className="min-w-0">
-              <p className="truncate font-semibold">{file.name}</p>
-              <p className="text-xs text-[var(--text-secondary)]">{Math.ceil(file.size / 1024)} KB · click to choose another</p>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              aria-label="Remove file"
-              onClick={(e) => {
-                e.stopPropagation();
-                setFile(null);
-                setBlocking(null);
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <>
-            <UploadCloud className="h-8 w-8 text-[var(--violet-ink)]" />
-            <p className="mt-2 font-semibold">Drop the Excel file here, or click to choose</p>
-            <p className="text-xs text-[var(--text-secondary)]">.xlsx, .xls or .csv</p>
-          </>
-        )}
-      </div>
-
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="term">Term</Label>
-          <Select value={term} onValueChange={setTerm}>
-            <SelectTrigger id="term" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            pick(e.dataTransfer.files?.[0]);
+          }}
+          className={`rms-drop ${dragging ? "is-dragging" : ""}`}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={(e) => {
+              pick(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          {file ? (
+            <>
+              <FileSpreadsheet size={26} />
+              <span style={{ minWidth: 0, flex: 1 }}>
+                <strong>{file.name}</strong>
+                <small>{Math.ceil(file.size / 1024)} KB · click to choose another</small>
+              </span>
+              <button
+                type="button"
+                className="rms-icon"
+                aria-label="Remove file"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFile(null);
+                  setBlocking(null);
+                }}
+              >
+                <X size={16} />
+              </button>
+            </>
+          ) : (
+            <>
+              <UploadCloud size={26} />
+              <span>
+                <strong>Drop the file here, or click to choose</strong>
+                <small>.xlsx, .xls or .csv</small>
+              </span>
+            </>
+          )}
+        </div>
+        <div className="rms-open-fields">
+          <label className="rms-field">
+            Term
+            <select id="term" className="rms-select" value={term} onChange={(e) => setTerm(e.target.value)}>
               {TERMS.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
+                <option key={t}>{t}</option>
               ))}
-            </SelectContent>
-          </Select>
+            </select>
+          </label>
+          <label className="rms-field" style={{ maxWidth: 130 }}>
+            Session
+            <input id="session" className="rms-input rms-num" value={session} onChange={(e) => setSession(e.target.value)} placeholder="2026/2027" />
+          </label>
+          <button type="submit" className="rms-button primary" disabled={busy || !file}>
+            {busy ? <Loader2 size={16} className="animate-spin" /> : null}
+            {busy ? "Working out results" : "Work out results"}
+          </button>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="session">Session</Label>
-          <Input id="session" value={session} onChange={(e) => setSession(e.target.value)} placeholder="2026/2027" />
-        </div>
-      </div>
-
+      </form>
       {error && (
-        <p role="alert" className="mt-4 text-sm font-medium text-[var(--crimson-signal)]">
+        <p role="alert" className="rms-notice bad" style={{ marginTop: -16 }}>
+          <AlertTriangle size={15} />
           {error}
         </p>
       )}
       {blocking && (
-        <div className="mt-4 rounded-[var(--radius-lg)] border border-red-200 bg-[var(--crimson-tint)]/40 p-4">
-          <p className="flex items-center gap-2 font-semibold">
-            <AlertTriangle className="h-4 w-4 text-[var(--crimson-signal)]" />
-            Fix these in the sheet, then choose it again
-          </p>
-          <IssueList issues={blocking} className="mt-2" />
+        <div className="rms-notice bad" style={{ marginTop: -16, display: "block" }}>
+          <p style={{ fontWeight: 700, marginBottom: 6 }}>Fix these in the sheet, then choose it again</p>
+          <IssueList issues={blocking} />
         </div>
       )}
-
-      <Button type="submit" className="mt-5 w-full sm:w-auto" disabled={busy || !file}>
-        {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
-        {busy ? "Working out results" : "Work out results"}
-      </Button>
-    </form>
+    </section>
   );
 }

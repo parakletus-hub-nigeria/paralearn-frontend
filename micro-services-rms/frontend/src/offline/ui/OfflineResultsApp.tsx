@@ -1,31 +1,31 @@
 "use client";
 
-import React, { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { CheckCircle2, ChevronRight, CloudOff, CloudUpload, FileSpreadsheet, LogOut, Settings, Wifi, WifiOff } from "lucide-react";
+import { CheckCircle2, ChevronRight, CloudOff, CloudUpload, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { db, getProfile, getSession, requestPersistentStorage, type K12Session, type SchoolProfile } from "../storage/db";
+import { db, getProfile, getSession, requestPersistentStorage, type BatchRecord, type K12Session, type SchoolProfile } from "../storage/db";
 import { fetchSchoolBranding, signOut, syncPending } from "../storage/k12";
 import { fetchLogo } from "./logo";
 import { setUpOffline, type OfflineReadiness } from "./serviceWorker";
-import { plural, timeAgo, useOnline } from "./util";
-import { Wordmark } from "./Wordmark";
+import { plural, timeAgo } from "./util";
 import SignIn from "./SignIn";
 import NewBatch from "./NewBatch";
-import CsvTemplateCard from "./CsvTemplateCard";
 import BatchView from "./BatchView";
 import SchoolProfileForm from "./SchoolProfileForm";
+import TemplatePage from "./TemplatePage";
+import WorkspaceShell, { type Section } from "./WorkspaceShell";
+import "./rms-workspace.css";
 
 /** Views live in the URL hash so they work offline, with no server round trip */
-type View = { kind: "home" } | { kind: "batch"; id: string; fresh: boolean } | { kind: "profile" };
+type View = { kind: "home" } | { kind: "batch"; id: string; fresh: boolean } | { kind: "profile" } | { kind: "template" };
 
 function readView(): View {
   const h = window.location.hash;
   const batch = /^#\/batch\/([\w-]+)(\?new)?$/.exec(h);
   if (batch) return { kind: "batch", id: batch[1], fresh: !!batch[2] };
   if (h === "#/profile") return { kind: "profile" };
+  if (h === "#/template") return { kind: "template" };
   return { kind: "home" };
 }
 
@@ -39,81 +39,175 @@ function useView(): [View, (hash: string) => void] {
     () => ""
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const view = React.useMemo(() => (typeof window === "undefined" ? ({ kind: "home" } as View) : readView()), [hash]);
+  const view = useMemo(() => (typeof window === "undefined" ? ({ kind: "home" } as View) : readView()), [hash]);
   const go = useCallback((h: string) => {
     window.location.hash = h;
+    window.scrollTo({ top: 0 });
   }, []);
   return [view, go];
 }
 
-function StatusPills({ readiness }: { readiness: OfflineReadiness | null }) {
-  const online = useOnline();
-  return (
-    <div className="hidden items-center gap-2 md:flex">
-      <span
-        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-          online ? "bg-emerald-50 text-emerald-800" : "bg-[var(--amber-tint)] text-amber-900"
-        }`}
-      >
-        {online ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
-        {online ? "Online" : "Offline"}
+function SyncChip({ sync }: { sync: BatchRecord["sync"] }) {
+  if (sync.status === "synced")
+    return (
+      <span className="rms-status ok">
+        <CheckCircle2 size={12} />
+        Sent
       </span>
-      {readiness === "ready" && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--violet-tint)] px-2.5 py-1 text-xs font-semibold text-[var(--violet-ink)]" title="This app reopens without internet">
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          Works offline
-        </span>
-      )}
-    </div>
+    );
+  if (sync.status === "syncing")
+    return (
+      <span className="rms-status ready">
+        <Loader2 size={12} className="animate-spin" />
+        Sending
+      </span>
+    );
+  if (sync.status === "failed")
+    return (
+      <span className="rms-status bad">
+        <CloudOff size={12} />
+        Not sent
+      </span>
+    );
+  return (
+    <span className="rms-status">
+      <CloudUpload size={12} />
+      To send
+    </span>
   );
 }
 
-function BatchList({ onOpen }: { onOpen: (id: string) => void }) {
+function Home({ onOpen, onTemplate }: { onOpen: (id: string, fresh?: boolean) => void; onTemplate: () => void }) {
   const batches = useLiveQuery(() => db.batches.orderBy("createdAt").reverse().toArray(), []);
-  if (!batches) return <Skeleton className="h-40 w-full" />;
-  if (!batches.length) {
-    return (
-      <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--border-fine)] p-8 text-center">
-        <FileSpreadsheet className="mx-auto h-8 w-8 text-[var(--text-secondary)]" />
-        <p className="mt-2 font-semibold">No result sheets yet</p>
-        <p className="text-sm text-[var(--text-secondary)]">Each sheet you open is saved here with its report cards.</p>
-      </div>
-    );
-  }
+  const totals = useMemo(() => {
+    const list = batches || [];
+    return {
+      students: list.reduce((a, b) => a + b.totalStudents, 0),
+      ready: list.filter((b) => b.generatedClasses.length === b.classNames.length).length,
+      waiting: list.filter((b) => b.sync.status !== "synced").length,
+    };
+  }, [batches]);
+
   return (
-    <ul className="divide-y divide-[var(--border-fine)] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white">
-      {batches.map((b) => {
-        const ready = b.generatedClasses.length === b.classNames.length;
-        const sync = b.sync.status;
-        return (
-          <li key={b.id}>
-            <button onClick={() => onOpen(b.id)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[var(--surface-muted)]">
-              <FileSpreadsheet className="h-5 w-5 shrink-0 text-emerald-600" />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">{b.fileName}</span>
-                <span className="block text-xs text-[var(--text-secondary)]">
-                  {b.term} · {b.session} · {plural(b.totalStudents, "student")} · {timeAgo(b.createdAt)}
-                </span>
-              </span>
-              <span className="flex shrink-0 flex-col items-end gap-1 text-xs font-semibold">
-                <span className={ready ? "text-emerald-700" : "text-[var(--text-secondary)]"}>
-                  {ready ? "Cards ready" : `${b.generatedClasses.length}/${b.classNames.length} classes`}
-                </span>
-                <span
-                  className={`inline-flex items-center gap-1 ${
-                    sync === "synced" ? "text-emerald-700" : sync === "failed" ? "text-[var(--crimson-signal)]" : "text-[var(--text-secondary)]"
-                  }`}
-                >
-                  {sync === "synced" ? <CheckCircle2 className="h-3.5 w-3.5" /> : sync === "failed" ? <CloudOff className="h-3.5 w-3.5" /> : <CloudUpload className="h-3.5 w-3.5" />}
-                  {sync === "synced" ? "Sent" : sync === "failed" ? "Not sent" : sync === "syncing" ? "Sending" : "To send"}
-                </span>
-              </span>
-              <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-secondary)]" />
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+    <main className="rms-page">
+      <div className="rms-page-heading">
+        <div>
+          <span className="rms-eyebrow">Report cards, with or without internet</span>
+          <h1>Result batches</h1>
+        </div>
+        <div className="rms-page-actions">
+          <button type="button" className="rms-button" onClick={onTemplate}>
+            <FileText size={16} />
+            CSV template
+          </button>
+        </div>
+      </div>
+
+      <dl className="rms-summary">
+        <div>
+          <dt>Batches on this laptop</dt>
+          <dd>{batches?.length ?? "–"}</dd>
+        </div>
+        <div>
+          <dt>Students worked out</dt>
+          <dd>{batches ? totals.students : "–"}</dd>
+        </div>
+        <div>
+          <dt>Batches with cards ready</dt>
+          <dd>{batches ? totals.ready : "–"}</dd>
+        </div>
+        <div>
+          <dt>Waiting to send to ParaLearn</dt>
+          <dd>{batches ? totals.waiting : "–"}</dd>
+          <small>{totals.waiting ? "Sends when online" : "All sent"}</small>
+        </div>
+      </dl>
+
+      <NewBatch onCreated={(id) => onOpen(id, true)} />
+
+      <section aria-labelledby="batches-heading">
+        <h2 id="batches-heading" className="rms-section-title" style={{ marginBottom: 12 }}>
+          On this laptop
+        </h2>
+        {!batches ? (
+          [0, 1, 2].map((i) => <div key={i} className="rms-skeleton" />)
+        ) : !batches.length ? (
+          <div className="rms-empty">
+            <FileSpreadsheet size={28} />
+            <h2>No result sheets yet</h2>
+            <p>
+              Open your school&apos;s Excel result sheet above. No sheet?{" "}
+              <button type="button" className="rms-link" onClick={onTemplate}>
+                Download our CSV template
+              </button>
+              , fill it in and open it.
+            </p>
+          </div>
+        ) : (
+          <div className="rms-table-wrap">
+            <table className="rms-table">
+              <thead>
+                <tr>
+                  <th>Result sheet</th>
+                  <th className="num">Students</th>
+                  <th>Report cards</th>
+                  <th className="rms-hide-sm">ParaLearn</th>
+                  <th aria-label="Open" />
+                </tr>
+              </thead>
+              <tbody>
+                {batches.map((b) => {
+                  const ready = b.generatedClasses.length === b.classNames.length;
+                  return (
+                    <tr key={b.id} onClick={() => onOpen(b.id)}>
+                      <td>
+                        <a
+                          href={`#/batch/${b.id}`}
+                          className="rms-table-name"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onOpen(b.id);
+                          }}
+                        >
+                          {b.fileName}
+                        </a>
+                        <span className="rms-table-meta">
+                          <span>
+                            {b.term} · {b.session}
+                          </span>
+                          <span>{plural(b.classNames.length, "class", "classes")}</span>
+                          <span>{timeAgo(b.createdAt)}</span>
+                        </span>
+                      </td>
+                      <td className="num">{b.totalStudents}</td>
+                      <td>
+                        {ready ? (
+                          <span className="rms-status ok">
+                            <CheckCircle2 size={12} />
+                            Cards ready
+                          </span>
+                        ) : (
+                          <span className="rms-status warn">
+                            {b.generatedClasses.length}/{b.classNames.length} classes
+                          </span>
+                        )}
+                      </td>
+                      <td className="rms-hide-sm">
+                        <SyncChip sync={b.sync} />
+                      </td>
+                      <td className="num">
+                        <ChevronRight size={16} style={{ color: "var(--rms-muted)" }} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </main>
   );
 }
 
@@ -188,87 +282,55 @@ export default function OfflineResultsApp() {
 
   if (!loaded || !profile) {
     return (
-      <div className="min-h-screen bg-[var(--background)] p-6">
-        <Skeleton className="mx-auto h-64 max-w-5xl" />
+      <div className="rms-surface">
+        <main className="rms-page" aria-busy>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rms-skeleton" />
+          ))}
+        </main>
       </div>
     );
   }
 
-  if (!session || reSignIn) {
-    return <SignIn onSignedIn={onSignedIn} />;
-  }
+  if (!session || reSignIn) return <SignIn onSignedIn={onSignedIn} />;
 
-  const showProfile = profileSetup || view.kind === "profile";
+  const onProfile = profileSetup || view.kind === "profile";
+  const section: Section | null = onProfile ? "profile" : view.kind === "template" ? "template" : view.kind === "home" ? "batches" : null;
 
   return (
-    <div className="min-h-screen bg-[var(--background)] font-sans text-[var(--foreground)]">
-      <header className="sticky top-0 z-30 border-b border-[var(--border-fine)] bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-          <button onClick={() => go("#/")} aria-label="Result batches">
-            <Wordmark className="text-sm sm:text-base" />
-          </button>
-          <div className="flex items-center gap-2">
-            <StatusPills readiness={readiness} />
-            <span className="hidden max-w-[200px] truncate text-sm font-semibold lg:inline">{profile.schoolName}</span>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => go("#/profile")} aria-label="School profile" title="School profile">
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={doSignOut} aria-label="Sign out" title="Sign out">
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-        {showProfile ? (
-          <div className="space-y-6">
+    <WorkspaceShell section={section} schoolName={profile.schoolName} session={session} readiness={readiness} onNavigate={go} onSignOut={doSignOut}>
+      {onProfile ? (
+        <main className="rms-page">
+          <div className="rms-page-heading">
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">School profile</h1>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">Printed at the top of every report card. Saved on this laptop.</p>
+              <span className="rms-eyebrow">Printed at the top of every report card</span>
+              <h1>School profile</h1>
             </div>
-            <SchoolProfileForm
-              initial={profile}
-              firstRun={profileSetup}
-              onSaved={(p) => {
-                setProfile(p);
-                setProfileSetup(false);
-                go("#/");
-              }}
-            />
           </div>
-        ) : view.kind === "batch" ? (
-          <BatchView
-            key={view.id}
-            batchId={view.id}
-            profile={profile}
-            autoStart={view.fresh}
-            onBack={() => go("#/")}
-            onSignInNeeded={() => setReSignIn(true)}
+          <SchoolProfileForm
+            initial={profile}
+            firstRun={profileSetup}
+            onSaved={(p) => {
+              setProfile(p);
+              setProfileSetup(false);
+              go("#/");
+            }}
           />
-        ) : (
-          <div className="space-y-8">
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Result batches</h1>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Open a term&apos;s result sheet to work out positions and grades and print report cards, with or without internet.
-              </p>
-            </div>
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-              <div className="space-y-4">
-                <NewBatch onCreated={(id) => go(`#/batch/${id}?new`)} />
-                <CsvTemplateCard schoolName={profile.schoolName} />
-              </div>
-              <section aria-labelledby="batches-heading">
-                <h2 id="batches-heading" className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)]">
-                  On this laptop
-                </h2>
-                <BatchList onOpen={(id) => go(`#/batch/${id}`)} />
-              </section>
-            </div>
-          </div>
-        )}
-      </main>
-    </div>
+        </main>
+      ) : view.kind === "template" ? (
+        <TemplatePage schoolName={profile.schoolName} onBack={() => go("#/")} />
+      ) : view.kind === "batch" ? (
+        <BatchView
+          key={view.id}
+          batchId={view.id}
+          profile={profile}
+          autoStart={view.fresh}
+          onBack={() => go("#/")}
+          onSignInNeeded={() => setReSignIn(true)}
+        />
+      ) : (
+        <Home onOpen={(id, fresh) => go(`#/batch/${id}${fresh ? "?new" : ""}`)} onTemplate={() => go("#/template")} />
+      )}
+    </WorkspaceShell>
   );
 }
