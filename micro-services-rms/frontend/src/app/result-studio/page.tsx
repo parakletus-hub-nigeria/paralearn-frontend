@@ -17,7 +17,7 @@ function BatchList() {
   // Refresh only while some batch is still being processed
   const [pollingInterval, setPollingInterval] = useState(0);
   const { data: batches, isLoading, error } = useListBatchesQuery(undefined, { pollingInterval });
-  const anyActive = (batches || []).some((b) => isBatchActive(b.status));
+  const anyActive = (batches || []).some((b) => isBatchActive(b));
   useEffect(() => setPollingInterval(anyActive ? 4000 : 0), [anyActive]);
 
   if (isLoading) {
@@ -56,8 +56,11 @@ function BatchList() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{batch.fileName || `${batch.term}, ${batch.session}`}</p>
                 <p className="text-xs text-[var(--text-secondary)]">
-                  {batch.term} · {batch.session} · {batch.classes?.length || 0} classes ·{" "}
-                  <span className="tabular-nums">{batch.totalStudents}</span> students ·{" "}
+                  {batch.term} · {batch.session} ·{" "}
+                  <span className="tabular-nums">
+                    {batch.totalStudents} {batch.totalStudents === 1 ? "student" : "students"}
+                  </span>{" "}
+                  ·{" "}
                   {dateFormat.format(new Date(batch.createdAt))}
                 </p>
               </div>

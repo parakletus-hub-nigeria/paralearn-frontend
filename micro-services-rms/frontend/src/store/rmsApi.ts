@@ -104,7 +104,11 @@ export interface RmsUploadArgs {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 // PARSED waits for the school to press Generate; COMPLETED, COMPLETED_WITH_ERRORS and FAILED are final
 export const RMS_ACTIVE_STATUSES: RmsBatchStatus[] = ["UPLOADED", "PARSING", "RENDERING"];
-export const isBatchActive = (status?: RmsBatchStatus) => !!status && RMS_ACTIVE_STATUSES.includes(status);
+/** With autoGenerate, PARSED lasts only until the backend queues rendering, so keep polling through it */
+export const isAutoStarting = (batch?: Pick<RmsBatch, "status" | "autoGenerate">) =>
+  batch?.status === "PARSED" && batch.autoGenerate === true;
+export const isBatchActive = (batch?: Pick<RmsBatch, "status" | "autoGenerate">) =>
+  !!batch && (RMS_ACTIVE_STATUSES.includes(batch.status) || isAutoStarting(batch));
 
 /** Download URLs are plain links: the session cookie rides along on navigation */
 export const rmsDownloadUrls = {

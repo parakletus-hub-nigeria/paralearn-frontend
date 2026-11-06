@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import RmsShell from "@rms/components/ResultStudio/RmsShell";
 import BatchStatusBadge from "@rms/components/ResultStudio/BatchStatusBadge";
 import {
+  isAutoStarting,
   isBatchActive,
   rmsDownloadUrls,
   rmsErrorMessage,
@@ -30,18 +31,21 @@ const ordinal = (n?: number | null) => {
 };
 
 const isError = (issue: RmsBatchIssue) => issue.level === "error";
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 function ProgressPanel({ batch }: { batch: RmsBatch }) {
   const total = batch.totalStudents || 0;
   const done = batch.renderedCount || 0;
   const pct = typeof batch.progress === "number" ? batch.progress : total ? Math.min(100, Math.round((done / total) * 100)) : 0;
 
-  if (batch.status === "UPLOADED" || batch.status === "PARSING") {
+  if (batch.status === "UPLOADED" || batch.status === "PARSING" || isAutoStarting(batch)) {
     return (
       <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-5">
         <Loader2 className="h-5 w-5 animate-spin text-[var(--violet-ink)]" />
         <div>
-          <p className="font-semibold">{batch.status === "UPLOADED" ? "Waiting to check the sheet" : "Checking the sheet"}</p>
+          <p className="font-semibold">
+            {batch.status === "UPLOADED" ? "Waiting to check the sheet" : isAutoStarting(batch) ? "Starting report cards" : "Checking the sheet"}
+          </p>
           <p className="text-sm text-[var(--text-secondary)]">Reading every class tab, totalling scores and ranking students.</p>
         </div>
       </div>
@@ -144,11 +148,19 @@ function ClassResults({ batch }: { batch: RmsBatch }) {
     if (!classId && classes[0]) setClassId(classes[0].id);
   }, [classes, classId]);
 
-  const active = isBatchActive(batch.status);
-  const { data: students, isFetching, error } = useGetBatchStudentsQuery(
+  const active = isBatchActive(batch);
+  const { data: students, isFetching, error, refetch } = useGetBatchStudentsQuery(
     { batchId: batch.id, classId },
     { skip: !classId, pollingInterval: active ? 4000 : 0 }
   );
+  // Polling stops once the batch finishes, so reload when it moves on; otherwise the last rows stay "Pending"
+  const lastSeen = React.useRef(`${batch.status}:${batch.renderedCount}:${batch.failedCount}`);
+  useEffect(() => {
+    const now = `${batch.status}:${batch.renderedCount}:${batch.failedCount}`;
+    if (now === lastSeen.current) return;
+    lastSeen.current = now;
+    if (classId) refetch();
+  }, [batch.status, batch.renderedCount, batch.failedCount, classId, refetch]);
   const current = classes.find((c) => c.id === classId);
   const finished = batch.status === "COMPLETED" || batch.status === "COMPLETED_WITH_ERRORS";
   const classPdfReady = current?.pdfReady ?? finished;
@@ -284,7 +296,7 @@ function BatchDetail({ batchId }: { batchId: string }) {
   const [pollingInterval, setPollingInterval] = useState(2000);
   const { data: batch, isLoading, error } = useGetBatchQuery(batchId, { pollingInterval });
   useEffect(() => {
-    if (batch) setPollingInterval(isBatchActive(batch.status) ? 2000 : 0);
+    if (batch) setPollingInterval(isBatchActive(batch) ? 2000 : 0);
   }, [batch]);
 
   const [generate, { isLoading: isGenerating }] = useGenerateBatchMutation();
@@ -330,13 +342,13 @@ function BatchDetail({ batchId }: { batchId: string }) {
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-extrabold tracking-tight">{batch.fileName || `${batch.term} results`}</h1>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              {batch.term} · {batch.session} · {batch.classes?.length || 0} classes ·{" "}
-              <span className="tabular-nums">{batch.totalStudents}</span> students
+              {batch.term} · {batch.session} · {plural(batch.classes?.length || 0, "class", "classes")} ·{" "}
+              <span className="tabular-nums">{plural(batch.totalStudents, "student")}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
             <BatchStatusBadge status={batch.status} />
-            {batch.status === "PARSED" && (
+            {batch.status === "PARSED" && !isAutoStarting(batch) && (
               <Button onClick={startGeneration} disabled={isGenerating}>
                 {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                 Generate {batch.totalStudents} report cards
@@ -347,7 +359,7 @@ function BatchDetail({ batchId }: { batchId: string }) {
       </div>
 
       <ProgressPanel batch={batch} />
-      {batch.status === "PARSED" && (
+      {batch.status === "PARSED" && !isAutoStarting(batch) && (
         <p className="rounded-[var(--radius-lg)] border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
           The sheet checked out. Review the positions and grades below, then generate the report cards.
         </p>
