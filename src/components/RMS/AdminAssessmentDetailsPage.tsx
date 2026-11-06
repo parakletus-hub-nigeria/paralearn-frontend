@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
+import { assessmentLifecycle, LIFECYCLE_STYLE, publishErrorMessage, publishPrompt } from "@/lib/assessmentLifecycle";
 import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import {
   fetchAssessmentDetail,
+  publishAssessmentAdmin,
   fetchAssessmentSubmissions,
   deleteAssessment,
 } from "@/reduxToolKit/admin/adminThunks";
@@ -22,6 +24,8 @@ import {
   BarChart3,
   Calendar,
   Trash2,
+  Send,
+  EyeOff,
 } from "lucide-react";
 import { format } from "date-fns";
 import { getTenantInfo } from "@/reduxToolKit/user/userThunks";
@@ -61,6 +65,28 @@ export function AdminAssessmentDetailsPage() {
       } catch (err: any) {
         toast.error(err || "Failed to delete assessment");
       }
+    }
+  };
+
+  const [publishing, setPublishing] = useState(false);
+  const handlePublish = async () => {
+    if (!selectedAssessment) return;
+    const a: any = selectedAssessment;
+    const publish = !a.isPublished;
+    const prompt = publishPrompt(a);
+    if ("blocked" in prompt) {
+      toast.error(prompt.blocked);
+      return;
+    }
+    if (!window.confirm(prompt.question)) return;
+    setPublishing(true);
+    try {
+      await dispatch(publishAssessmentAdmin({ assessmentId: a.id, publish })).unwrap();
+      toast.success(publish ? "Assessment published" : "Assessment unpublished");
+    } catch (err) {
+      toast.error(publishErrorMessage(err));
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -105,18 +131,10 @@ export function AdminAssessmentDetailsPage() {
     );
   }
 
-  const statusLabel =
-    selectedAssessment.status === "started"
-      ? "Active"
-      : selectedAssessment.status === "ended"
-        ? "Ended"
-        : "Pending";
-  const statusStyle =
-    selectedAssessment.status === "started"
-      ? { background: "var(--emerald-tint)", color: "var(--emerald-signal)" }
-      : selectedAssessment.status === "ended"
-        ? { background: "var(--crimson-tint)", color: "var(--crimson-signal)" }
-        : { background: "var(--amber-tint)", color: "var(--amber-signal)" };
+  const lifecycle = assessmentLifecycle(selectedAssessment as any);
+  const statusLabel = LIFECYCLE_STYLE[lifecycle].label;
+  const statusStyle = { background: LIFECYCLE_STYLE[lifecycle].background, color: LIFECYCLE_STYLE[lifecycle].color };
+  const isPublished = !!(selectedAssessment as any).isPublished;
 
   return (
     <div className="w-full pb-10">
@@ -175,6 +193,19 @@ export function AdminAssessmentDetailsPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={handlePublish}
+                disabled={publishing}
+                className="rounded-xl px-4 py-2 text-sm font-semibold flex items-center gap-2 transition-opacity disabled:opacity-60"
+                style={
+                  isPublished
+                    ? { border: "1px solid var(--border-medium)", color: "var(--foreground)", background: "white" }
+                    : { background: "var(--violet-ink)", color: "white", border: "0" }
+                }
+              >
+                {isPublished ? <EyeOff className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                {publishing ? (isPublished ? "Unpublishing…" : "Publishing…") : isPublished ? "Unpublish" : "Publish"}
+              </button>
               <button
                 onClick={() =>
                   router.push(`/RMS/assessments/edit/${selectedAssessment.id}`)
