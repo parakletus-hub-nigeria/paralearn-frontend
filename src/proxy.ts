@@ -1,7 +1,13 @@
+import type { NextRequest } from "next/server";
 import { cbtProxy } from "@cbt/proxy";
+import { isRmsHost, rmsProxy } from "@rms/proxy";
 
-// CBT subdomain routing lives in micro-services-cbt/frontend; matcher config must stay in this file
-export const proxy = cbtProxy;
+// Subdomain routing lives in each micro-service's frontend; matcher config must stay in this file
+// rms.pln.ng -> micro-services-rms, everything else (incl. cbt.pln.ng) -> cbtProxy
+export function proxy(req: NextRequest) {
+  if (isRmsHost(req.headers.get("host") || "")) return rmsProxy(req);
+  return cbtProxy(req);
+}
 
 export default proxy;
 

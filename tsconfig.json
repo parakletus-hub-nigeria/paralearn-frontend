@@ -30,6 +30,9 @@
       ],
       "@cbt/*": [
         "./micro-services-cbt/frontend/src/*"
+      ],
+      "@rms/*": [
+        "./micro-services-rms/frontend/src/*"
       ]
     }
   },
