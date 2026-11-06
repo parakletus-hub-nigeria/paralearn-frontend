@@ -8,6 +8,7 @@ export const RMS_API_BASE = "/api/rms";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 export type RmsBatchStatus =
+  | "UPLOADED"
   | "PARSING"
   | "PARSED"
   | "RENDERING"
@@ -43,17 +44,17 @@ export interface RmsBatchClass {
   id: string;
   name: string;
   studentCount?: number;
-  renderedCount?: number;
-  failedCount?: number;
+  subjects?: string[];
+  status?: "PENDING" | "COMPLETED" | "FAILED";
   pdfReady?: boolean;
 }
 
+/** An error-level issue makes the parse fatal (batch FAILED); PARSED batches only carry warnings */
 export interface RmsBatchIssue {
-  severity?: "error" | "warning" | "ERROR" | "WARNING";
+  level: "error" | "warning";
   message: string;
   sheet?: string | null;
   row?: number | null;
-  column?: string | null;
 }
 
 export interface RmsBatch {
@@ -68,21 +69,29 @@ export interface RmsBatch {
   classes: RmsBatchClass[];
   issues: RmsBatchIssue[];
   autoGenerate?: boolean;
+  /** 0-100, computed by the backend */
+  progress?: number;
   error?: string | null;
   createdAt: string;
+  parsedAt?: string | null;
+  queuedAt?: string | null;
   completedAt?: string | null;
 }
 
 export interface RmsStudentRow {
   id: string;
+  classId: string;
+  /** Row in the uploaded sheet */
+  rowNumber?: number;
   name: string;
-  admissionNumber?: string | null;
-  classId?: string;
+  admissionNo?: string | null;
   average: number | null;
   grade?: string | null;
   position?: number | null;
-  status?: "PENDING" | "RENDERING" | "RENDERED" | "FAILED" | string;
+  /** DONE means the card is rendered */
+  status: "PENDING" | "DONE" | "FAILED";
   error?: string | null;
+  pdfReady?: boolean;
 }
 
 export interface RmsUploadArgs {
@@ -93,7 +102,8 @@ export interface RmsUploadArgs {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-export const RMS_ACTIVE_STATUSES: RmsBatchStatus[] = ["PARSING", "RENDERING"];
+// PARSED waits for the school to press Generate; COMPLETED, COMPLETED_WITH_ERRORS and FAILED are final
+export const RMS_ACTIVE_STATUSES: RmsBatchStatus[] = ["UPLOADED", "PARSING", "RENDERING"];
 export const isBatchActive = (status?: RmsBatchStatus) => !!status && RMS_ACTIVE_STATUSES.includes(status);
 
 /** Download URLs are plain links: the session cookie rides along on navigation */

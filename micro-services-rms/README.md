@@ -19,8 +19,8 @@ parsing, grading, rendering and the multi-instance scaling of the render workers
 | `/batches/:id`      | Live progress, problems found in the sheet, per-class results, PDFs  |
 | `/settings`         | School profile printed on every card (name, logo, motto, colour)     |
 
-A batch goes `PARSING` → `PARSED` (held for review) or straight to `RENDERING` → `COMPLETED` /
-`COMPLETED_WITH_ERRORS` / `FAILED`. The batch page polls every 2 seconds while a batch is active.
+A batch goes `UPLOADED` → `PARSING` → `PARSED` (held for review) or straight to `RENDERING` →
+`COMPLETED` / `COMPLETED_WITH_ERRORS`. A sheet with an error-level problem goes to `FAILED`. The batch page polls every 2 seconds while a batch is active.
 
 ## How it is served
 
@@ -57,7 +57,7 @@ Uploads pass through the web server, so the page rejects files over 4 MB (Vercel
 | ------------- | ----------------- | ------------------------------- |
 | `RMS_API_URL` | server-side only  | `https://<rms-backend-host>`    |
 
-Local development defaults to `http://localhost:4100`. Open `http://rms.localhost:3000`; browsers resolve
+Local development defaults to `http://localhost:8080` (the backend's docker compose port). Open `http://rms.localhost:3000`; browsers resolve
 `*.localhost` to your machine without any hosts-file change.
 
 ## Going live on rms.pln.ng

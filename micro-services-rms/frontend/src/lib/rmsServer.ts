@@ -7,7 +7,7 @@ export const RMS_COOKIE_PATH = "/api/rms";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 export function rmsBackendUrl(): string {
-  return (process.env.RMS_API_URL || "http://localhost:4100").replace(/\/+$/, "");
+  return (process.env.RMS_API_URL || "http://localhost:8080").replace(/\/+$/, "");
 }
 
 export function setRmsSession(res: NextResponse, token: string) {

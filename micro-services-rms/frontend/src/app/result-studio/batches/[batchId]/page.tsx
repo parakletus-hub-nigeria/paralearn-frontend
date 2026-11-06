@@ -29,19 +29,19 @@ const ordinal = (n?: number | null) => {
   return `${n}${suffix}`;
 };
 
-const isError = (issue: RmsBatchIssue) => issue.severity?.toString().toLowerCase() === "error";
+const isError = (issue: RmsBatchIssue) => issue.level === "error";
 
 function ProgressPanel({ batch }: { batch: RmsBatch }) {
   const total = batch.totalStudents || 0;
   const done = batch.renderedCount || 0;
-  const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 0;
+  const pct = typeof batch.progress === "number" ? batch.progress : total ? Math.min(100, Math.round((done / total) * 100)) : 0;
 
-  if (batch.status === "PARSING") {
+  if (batch.status === "UPLOADED" || batch.status === "PARSING") {
     return (
       <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-5">
         <Loader2 className="h-5 w-5 animate-spin text-[var(--violet-ink)]" />
         <div>
-          <p className="font-semibold">Checking the sheet</p>
+          <p className="font-semibold">{batch.status === "UPLOADED" ? "Waiting to check the sheet" : "Checking the sheet"}</p>
           <p className="text-sm text-[var(--text-secondary)]">Reading every class tab, totalling scores and ranking students.</p>
         </div>
       </div>
@@ -106,7 +106,7 @@ function IssuesPanel({ issues }: { issues: RmsBatchIssue[] }) {
             <span>
               {(issue.sheet || issue.row) && (
                 <span className="font-mono text-xs text-[var(--text-secondary)]">
-                  {[issue.sheet, issue.row ? `row ${issue.row}` : null, issue.column].filter(Boolean).join(" · ")}{" "}
+                  {[issue.sheet, issue.row ? `row ${issue.row}` : null].filter(Boolean).join(" · ")}{" "}
                 </span>
               )}
               {issue.message}
@@ -123,16 +123,17 @@ function IssuesPanel({ issues }: { issues: RmsBatchIssue[] }) {
   );
 }
 
-function StudentStatus({ row }: { row: RmsStudentRow }) {
-  const status = (row.status || "").toUpperCase();
-  if (status === "RENDERED") return <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-label="Report card ready" />;
-  if (status === "FAILED")
+const cardReady = (row: RmsStudentRow) => row.pdfReady === true || row.status === "DONE";
+
+function StudentStatus({ row, generating }: { row: RmsStudentRow; generating: boolean }) {
+  if (cardReady(row)) return <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-label="Report card ready" />;
+  if (row.status === "FAILED")
     return (
       <span title={row.error || "Couldn't generate this card"}>
         <XCircle className="h-4 w-4 text-[var(--crimson-signal)]" aria-label="Failed" />
       </span>
     );
-  if (status === "RENDERING") return <Loader2 className="h-4 w-4 animate-spin text-[var(--violet-ink)]" aria-label="Generating" />;
+  if (generating) return <Loader2 className="h-4 w-4 animate-spin text-[var(--violet-ink)]" aria-label="Generating" />;
   return <span className="text-xs text-[var(--text-secondary)]">Pending</span>;
 }
 
@@ -171,7 +172,7 @@ function ClassResults({ batch }: { batch: RmsBatch }) {
                 {current.name} booklet (PDF)
               </a>
             ) : (
-              <span>
+              <span className="inline-flex items-center">
                 <Download className="mr-1.5 h-4 w-4" />
                 Booklet available when finished
               </span>
@@ -237,14 +238,14 @@ function ClassResults({ batch }: { batch: RmsBatch }) {
                   </tr>
                 )
               : sorted.map((row) => {
-                  const ready = (row.status || "").toUpperCase() === "RENDERED";
+                  const ready = cardReady(row);
                   return (
                     <tr key={row.id} className="hover:bg-[var(--surface-muted)]/60">
                       <td className="px-4 py-2.5 font-mono tabular-nums">{ordinal(row.position)}</td>
                       <td className="px-4 py-2.5">
                         <span className="font-semibold">{row.name}</span>
-                        {row.admissionNumber && (
-                          <span className="ml-2 font-mono text-xs text-[var(--text-secondary)]">{row.admissionNumber}</span>
+                        {row.admissionNo && (
+                          <span className="ml-2 font-mono text-xs text-[var(--text-secondary)]">{row.admissionNo}</span>
                         )}
                       </td>
                       <td className="px-4 py-2.5 text-right font-mono tabular-nums">
@@ -252,7 +253,7 @@ function ClassResults({ batch }: { batch: RmsBatch }) {
                       </td>
                       <td className="px-4 py-2.5 font-semibold">{row.grade || "–"}</td>
                       <td className="px-4 py-2.5">
-                        <StudentStatus row={row} />
+                        <StudentStatus row={row} generating={batch.status === "RENDERING"} />
                       </td>
                       <td className="px-4 py-2.5 text-right">
                         {ready && (
@@ -318,8 +319,6 @@ function BatchDetail({ batchId }: { batchId: string }) {
     );
   }
 
-  const blockingIssues = (batch.issues || []).filter(isError).length;
-
   return (
     <div className="space-y-6">
       <div>
@@ -338,7 +337,7 @@ function BatchDetail({ batchId }: { batchId: string }) {
           <div className="flex items-center gap-3">
             <BatchStatusBadge status={batch.status} />
             {batch.status === "PARSED" && (
-              <Button onClick={startGeneration} disabled={isGenerating || blockingIssues > 0}>
+              <Button onClick={startGeneration} disabled={isGenerating}>
                 {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                 Generate {batch.totalStudents} report cards
               </Button>
@@ -348,13 +347,13 @@ function BatchDetail({ batchId }: { batchId: string }) {
       </div>
 
       <ProgressPanel batch={batch} />
-      {batch.status === "PARSED" && blockingIssues === 0 && (
+      {batch.status === "PARSED" && (
         <p className="rounded-[var(--radius-lg)] border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
           The sheet checked out. Review the positions and grades below, then generate the report cards.
         </p>
       )}
       <IssuesPanel issues={batch.issues || []} />
-      {batch.status !== "PARSING" && batch.status !== "FAILED" && <ClassResults batch={batch} />}
+      {!["UPLOADED", "PARSING", "FAILED"].includes(batch.status) && <ClassResults batch={batch} />}
     </div>
   );
 }

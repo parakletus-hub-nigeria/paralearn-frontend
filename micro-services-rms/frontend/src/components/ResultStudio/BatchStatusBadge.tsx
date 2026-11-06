@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import type { RmsBatchStatus } from "@rms/store/rmsApi";
 
 const STYLES: Record<RmsBatchStatus, { label: string; className: string; spinning?: boolean }> = {
+  UPLOADED: { label: "Queued", className: "bg-[var(--surface-muted)] text-[var(--text-secondary)]", spinning: true },
   PARSING: { label: "Checking sheet", className: "bg-[var(--violet-tint)] text-[var(--violet-ink)]", spinning: true },
   PARSED: { label: "Ready to generate", className: "bg-sky-50 text-sky-800" },
   RENDERING: { label: "Generating cards", className: "bg-[var(--violet-tint)] text-[var(--violet-ink)]", spinning: true },
