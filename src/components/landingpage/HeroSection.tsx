@@ -34,20 +34,20 @@ const HeroSection = () => {
           </div>
 
           <h1
-            className="animate-load-fade-in-up text-hero text-[2.6rem] sm:text-5xl lg:text-6xl xl:text-[4.25rem] max-w-xl"
+            className="animate-load-fade-in-up text-hero text-[2.2rem] sm:text-[2.6rem] lg:text-5xl xl:text-[3.4rem] max-w-2xl text-balance"
             style={{ animationDelay: "60ms" }}
           >
-            Restore <span className="text-[#641bc4]">calm</span> to your school
-            administration
+            Run your school. Assess your students. Generate{" "}
+            <span className="text-[#641bc4]">report cards in minutes</span>
+            &nbsp;&mdash; even with limited internet.
           </h1>
 
           <p
             className="animate-load-fade-in-up mt-6 text-base md:text-lg text-slate-600 leading-relaxed max-w-lg"
             style={{ animationDelay: "120ms" }}
           >
-            Move from chaotic paper trails and compilation bottlenecks to a
-            unified, digital system. ParaLearn simplifies result management so
-            you can focus on education, not paperwork.
+            An affordable, offline-first school management platform built
+            around the operational realities of African schools.
           </p>
 
           {/* CTAs */}
