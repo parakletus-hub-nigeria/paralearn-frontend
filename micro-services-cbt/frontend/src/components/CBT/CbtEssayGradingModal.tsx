@@ -270,7 +270,7 @@ export default function CbtEssayGradingModal({
           <div className="space-y-1 min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0">
-                <Award className="w-4 h-4 text-amber-600" />
+                <Award className="w-4 h-4 text-amber-700" />
               </span>
               <DialogTitle className="text-sm sm:text-base font-bold text-slate-900 tracking-tight truncate">
                 Examiner Essay Evaluation &amp; Grading
@@ -497,7 +497,7 @@ export default function CbtEssayGradingModal({
               {strengths.length > 0 && (
                 <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-1">
                   <span className="font-bold text-emerald-800 flex items-center gap-1">
-                    <ThumbsUp className="w-3.5 h-3.5 text-emerald-600" />
+                    <ThumbsUp className="w-3.5 h-3.5 text-emerald-700" />
                     <span>Key Strengths</span>
                   </span>
                   <ul className="list-disc list-inside text-[11px] text-emerald-700 space-y-0.5">
@@ -511,7 +511,7 @@ export default function CbtEssayGradingModal({
               {areasForImprovement.length > 0 && (
                 <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1">
                   <span className="font-bold text-amber-800 flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
                     <span>Areas for Improvement</span>
                   </span>
                   <ul className="list-disc list-inside text-[11px] text-amber-700 space-y-0.5">
@@ -552,7 +552,7 @@ export default function CbtEssayGradingModal({
               size="sm"
               onClick={handleApproveAndSave}
               disabled={isSaving}
-              className="h-9 px-5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs flex items-center gap-1.5"
+              className="h-9 px-5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-xs flex items-center gap-1.5"
             >
               {isSaving ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

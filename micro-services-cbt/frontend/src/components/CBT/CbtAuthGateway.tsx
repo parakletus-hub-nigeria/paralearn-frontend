@@ -260,7 +260,7 @@ export default function CbtAuthGateway() {
         {view === "register" && (
           <form onSubmit={handleRegister} className="p-6 space-y-4">
             <div className="bg-[var(--emerald-tint)]/60 border border-[var(--emerald-signal)]/30 rounded-[var(--radius-md)] p-3 text-xs text-[#065f46] flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[var(--emerald-signal)] shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
               <span>
                 School staff don&apos;t need an exam hall. Sign in with your ParaLearn
                 account instead.

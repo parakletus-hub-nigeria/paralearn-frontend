@@ -38,7 +38,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  border: 1px solid oklch(80% 0.015 285);
+  border: 1px solid var(--border-medium);
   border-radius: 6px;
   padding: 0 16px;
   height: 56px;
@@ -99,8 +99,8 @@
   font-weight: 600;
 }
 .cbt-candidate-steps [aria-current] span {
-  background: #f2ecfa;
-  border-color: #dfceef;
+  background: var(--violet-tint);
+  border-color: var(--violet-line);
 }
 .cbt-examiner-entry {
   border-block: 1px solid var(--cbt-line);

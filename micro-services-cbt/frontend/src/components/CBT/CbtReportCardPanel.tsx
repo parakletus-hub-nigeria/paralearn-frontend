@@ -175,7 +175,7 @@ export default function CbtReportCardPanel({ examId }: { examId: string }) {
 
           {status?.release && (
             <p className="text-sm flex flex-wrap items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-[var(--emerald-signal)]" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-700" />
               Released {new Date(status.release.releasedAt).toLocaleString()}: {status.release.saved}{" "}
               saved
               {status.release.skipped > 0 && `, ${status.release.skipped} skipped`}.
@@ -295,7 +295,7 @@ function LinkForm({
         <ul className="space-y-1.5 rounded-[var(--radius-md)] border border-amber-200 bg-amber-50 p-3">
           {problems.map((p) => (
             <li key={p} className="text-sm flex items-start gap-1.5">
-              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-700" />
               {p}
             </li>
           ))}

@@ -123,7 +123,7 @@ export default function CbtAiQuestionModal({
     {
       id: "pure_mcq",
       title: "Pure Multiple Choice (MCQ)",
-      icon: <Radio className="w-4 h-4 text-emerald-600" />,
+      icon: <Radio className="w-4 h-4 text-emerald-700" />,
       description: "100% Objective questions with single correct choice and psychometric distractors.",
     },
     {
@@ -166,7 +166,7 @@ export default function CbtAiQuestionModal({
       return <Video className="w-8 h-8 text-rose-500" />;
     }
     if (name.endsWith(".pptx") || name.endsWith(".ppt")) {
-      return <FileSpreadsheet className="w-8 h-8 text-amber-500" />;
+      return <FileSpreadsheet className="w-8 h-8 text-amber-700" />;
     }
     return <FileText className="w-8 h-8 text-violet-500" />;
   };
@@ -777,7 +777,7 @@ export default function CbtAiQuestionModal({
                                     {opt.text}
                                   </span>
                                   {opt.isCorrect && (
-                                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-1" />
+                                    <Check className="w-3.5 h-3.5 text-emerald-700 shrink-0 ml-1" />
                                   )}
                                 </div>
                               ))}
@@ -881,7 +881,7 @@ export default function CbtAiQuestionModal({
               type="button"
               size="sm"
               onClick={handleImport}
-              className="h-8 px-4 text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-xs rounded-xl inline-flex items-center gap-1.5"
+              className="h-8 px-4 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs rounded-xl inline-flex items-center gap-1.5"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Import {selectedQuestionIds.size} Questions to Exam</span>

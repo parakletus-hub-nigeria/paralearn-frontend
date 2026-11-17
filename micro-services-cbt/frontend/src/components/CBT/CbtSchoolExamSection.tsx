@@ -136,7 +136,7 @@ export default function CbtSchoolExamSection({
               <ul className="space-y-1.5 rounded-[var(--radius-md)] border border-amber-200 bg-amber-50 p-3">
                 {problems.map((p) => (
                   <li key={p} className="text-sm text-[var(--foreground)] flex items-start gap-1.5">
-                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-700" />
                     {p}
                   </li>
                 ))}

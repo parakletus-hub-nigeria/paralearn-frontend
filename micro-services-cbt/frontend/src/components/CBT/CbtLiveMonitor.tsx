@@ -612,10 +612,10 @@ export default function CbtLiveMonitor({
           </div>
 
           <div className="bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-4 shadow-xs">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--amber-signal)]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">
               Flagged (Tab Switches)
             </span>
-            <div className="text-2xl sm:text-3xl font-bold font-mono text-[var(--amber-signal)] mt-1">
+            <div className="text-2xl sm:text-3xl font-bold font-mono text-amber-700 mt-1">
               {flaggedCount}
             </div>
           </div>
@@ -630,10 +630,10 @@ export default function CbtLiveMonitor({
           </div>
 
           <div className="bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-4 shadow-xs">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--emerald-signal)]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
               Completed Submissions
             </span>
-            <div className="text-2xl sm:text-3xl font-bold font-mono text-[var(--emerald-signal)] mt-1">
+            <div className="text-2xl sm:text-3xl font-bold font-mono text-emerald-700 mt-1">
               {candidates.filter((c) => c.status === "submitted").length}
             </div>
           </div>
@@ -781,7 +781,7 @@ export default function CbtLiveMonitor({
                         {/* Violations */}
                         <td className="py-3.5 px-4">
                           {c.violations === 0 ? (
-                            <span className="text-[var(--emerald-signal)] flex items-center gap-1 font-semibold">
+                            <span className="text-emerald-700 flex items-center gap-1 font-semibold">
                               <ShieldCheck className="w-3.5 h-3.5" />
                               <span>0 Clean</span>
                             </span>
@@ -860,7 +860,7 @@ export default function CbtLiveMonitor({
                               size="sm"
                               variant="outline"
                               onClick={() => handleUnlockCandidate(c.id)}
-                              className="h-7 text-[11px] border-[var(--amber-signal)] text-[var(--amber-signal)] hover:bg-[var(--amber-tint)] font-semibold rounded-[var(--radius-md)]"
+                              className="h-7 text-[11px] border-[var(--amber-signal)] text-amber-700 hover:bg-[var(--amber-tint)] font-semibold rounded-[var(--radius-md)]"
                             >
                               Forgive &amp; Unlock
                             </Button>
@@ -1011,7 +1011,7 @@ export default function CbtLiveMonitor({
                           size="sm"
                           variant="outline"
                           onClick={() => handleUnlockCandidate(c.id)}
-                          className="w-full h-8 text-xs border-[var(--amber-signal)] text-[var(--amber-signal)] hover:bg-[var(--amber-tint)] font-semibold rounded-lg"
+                          className="w-full h-8 text-xs border-[var(--amber-signal)] text-amber-700 hover:bg-[var(--amber-tint)] font-semibold rounded-lg"
                         >
                           Forgive &amp; Unlock
                         </Button>

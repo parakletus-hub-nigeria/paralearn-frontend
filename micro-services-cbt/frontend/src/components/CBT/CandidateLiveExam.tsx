@@ -74,6 +74,7 @@ import {
   SUBMISSION_SYNCED_EVENT,
   type CbtSyncState,
 } from "@cbt/lib/cbtOfflineSync";
+import "./cbt-workspace.css";
 
 /** Keys that pick options A–F, in on-screen order */
 const OPTION_KEYS = ["a", "b", "c", "d", "e", "f"];
@@ -595,7 +596,7 @@ export default function CandidateLiveExam({
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-6 text-center">
         <div className="max-w-md rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-6 shadow-[var(--shadow-card)]">
-          <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-[var(--amber-signal)]" />
+          <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-amber-700" />
           <h1 className="text-lg font-bold text-[var(--foreground)]">
             Exam session unavailable
           </h1>
@@ -660,7 +661,7 @@ export default function CandidateLiveExam({
                 className={`w-2 h-2 rounded-full ${syncState.pending === 0 ? "bg-[var(--emerald-signal)]" : "bg-[var(--amber-signal)]"}`}
               />
             ) : (
-              <WifiOff className="w-3.5 h-3.5 text-[var(--amber-signal)]" />
+              <WifiOff className="w-3.5 h-3.5 text-amber-700" />
             )}
             <span>
               {!syncState.online
@@ -735,7 +736,7 @@ export default function CandidateLiveExam({
                   onClick={() => setIsRubricDialogOpen(true)}
                   className="h-7 px-2.5 text-xs font-semibold border-amber-200 text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-md flex items-center gap-1"
                 >
-                  <Award className="w-3.5 h-3.5 text-amber-600" />
+                  <Award className="w-3.5 h-3.5 text-amber-700" />
                   <span>View Scoring Rubric</span>
                 </Button>
               )}
@@ -845,7 +846,7 @@ export default function CandidateLiveExam({
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between text-xs text-slate-500">
                 <span className="flex items-center gap-1.5 font-medium">
-                  <AlignLeft className="w-3.5 h-3.5 text-amber-600" />
+                  <AlignLeft className="w-3.5 h-3.5 text-amber-700" />
                   <span>Short Answer Response</span>
                   {currentQ.minWords && currentQ.maxWords && (
                     <span className="text-[11px] text-slate-400">
@@ -856,7 +857,7 @@ export default function CandidateLiveExam({
                 <span
                   className={`font-mono text-xs font-bold ${
                     currentQ.minWords && essayWordCount < currentQ.minWords
-                      ? "text-amber-600"
+                      ? "text-amber-700"
                       : currentQ.maxWords && essayWordCount > currentQ.maxWords
                         ? "text-rose-600"
                         : "text-emerald-700"
@@ -877,7 +878,7 @@ export default function CandidateLiveExam({
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
                 <span>Autosaved continuously to session and cloud backup.</span>
                 {syncStatus === "saving" && (
-                  <span className="text-amber-600 font-medium">
+                  <span className="text-amber-700 font-medium">
                     Saving keystrokes...
                   </span>
                 )}
@@ -903,7 +904,7 @@ export default function CandidateLiveExam({
                   <span
                     className={`font-mono text-xs font-bold ${
                       currentQ.minWords && essayWordCount < currentQ.minWords
-                        ? "text-amber-600"
+                        ? "text-amber-700"
                         : "text-emerald-700"
                     }`}
                   >
@@ -971,7 +972,7 @@ export default function CandidateLiveExam({
             ) : (
               <Button
                 onClick={() => setIsSubmitDialogOpen(true)}
-                className="h-10 sm:h-11 px-3 sm:px-5 font-bold text-xs sm:text-sm bg-[var(--emerald-signal)] hover:bg-[var(--emerald-signal)]/90 text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
+                className="h-10 sm:h-11 px-3 sm:px-5 font-bold text-xs sm:text-sm bg-emerald-700 hover:bg-emerald-800 text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
               >
                 <span>Review &amp; Submit</span>
                 <Send className="w-3.5 h-3.5 ml-1 sm:ml-1.5" />
@@ -1099,7 +1100,7 @@ export default function CandidateLiveExam({
         <DialogContent className="max-w-lg bg-white border border-slate-200 rounded-xl p-6">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Award className="w-5 h-5 text-amber-600" />
+              <Award className="w-5 h-5 text-amber-700" />
               <span>{currentQ.rubric?.name || "Marking Rubric Criteria"}</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
@@ -1187,7 +1188,7 @@ export default function CandidateLiveExam({
                   <div className="text-[var(--text-secondary)] uppercase text-[10px]">
                     Answered
                   </div>
-                  <div className="text-base font-bold text-[var(--emerald-signal)]">
+                  <div className="text-base font-bold text-emerald-700">
                     {answeredCount}
                   </div>
                 </div>
@@ -1203,7 +1204,7 @@ export default function CandidateLiveExam({
                   <div className="text-[var(--text-secondary)] uppercase text-[10px]">
                     Flagged
                   </div>
-                  <div className="text-base font-bold text-[var(--amber-signal)]">
+                  <div className="text-base font-bold text-amber-700">
                     {flaggedCount}
                   </div>
                 </div>
@@ -1217,7 +1218,7 @@ export default function CandidateLiveExam({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleFinalSubmit("manual")}
-              className="h-10 px-5 text-xs font-bold bg-[var(--emerald-signal)] hover:bg-[var(--emerald-signal)]/90 text-white rounded-[var(--radius-md)]"
+              className="h-10 px-5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-[var(--radius-md)]"
             >
               Confirm Final Submission
             </AlertDialogAction>
@@ -1235,7 +1236,7 @@ export default function CandidateLiveExam({
           <div className="w-full max-w-sm rounded-[var(--radius-lg)] bg-white p-6 text-center shadow-xl">
             {submitState === "sending" && (
               <>
-                <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-[var(--emerald-signal)]" />
+                <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-emerald-700" />
                 <h2 className="text-lg font-bold text-[var(--foreground)]">
                   Submitting your exam…
                 </h2>
@@ -1246,7 +1247,7 @@ export default function CandidateLiveExam({
             )}
             {submitState === "queued" && (
               <>
-                <CheckCircle2 className="mx-auto mb-3 h-8 w-8 text-[var(--emerald-signal)]" />
+                <CheckCircle2 className="mx-auto mb-3 h-8 w-8 text-emerald-700" />
                 <h2 className="text-lg font-bold text-[var(--foreground)]">
                   Your exam is submitted on this device
                 </h2>
@@ -1262,7 +1263,7 @@ export default function CandidateLiveExam({
                 <Button
                   onClick={() => syncNow().then(finishIfSynced)}
                   disabled={!syncState.online}
-                  className="mt-4 h-10 w-full bg-[var(--emerald-signal)] text-sm font-bold text-white hover:bg-[var(--emerald-signal)]/90"
+                  className="mt-4 h-10 w-full bg-emerald-700 text-sm font-bold text-white hover:bg-emerald-800"
                 >
                   {syncState.online ? "Send now" : "Waiting for a connection"}
                 </Button>
@@ -1282,7 +1283,7 @@ export default function CandidateLiveExam({
                 </p>
                 <Button
                   onClick={retrySubmission}
-                  className="mt-4 h-10 w-full bg-[var(--emerald-signal)] text-sm font-bold text-white hover:bg-[var(--emerald-signal)]/90"
+                  className="mt-4 h-10 w-full bg-emerald-700 text-sm font-bold text-white hover:bg-emerald-800"
                 >
                   Try again
                 </Button>

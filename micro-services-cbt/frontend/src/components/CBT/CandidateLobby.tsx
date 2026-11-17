@@ -762,7 +762,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
           {/* Rules & Malpractice Warning Box */}
           <div className="bg-[var(--amber-tint)] border border-[var(--amber-signal)]/30 rounded-[var(--radius-md)] p-3.5 text-xs text-[#92400e] space-y-1">
             <div className="flex items-center gap-1.5 font-bold text-[13px]">
-              <AlertTriangle className="w-4 h-4 text-[var(--amber-signal)] shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
               <span>Exam Integrity Notice</span>
             </div>
             <p className="leading-relaxed">
@@ -790,7 +790,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
             <div className="grid grid-cols-1 xs:grid-cols-3 gap-1.5 sm:gap-2">
               <div className="flex items-center gap-1.5 p-1.5 sm:p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-[11px] sm:text-xs">
                 {diagnostics.browser === "ready" ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--emerald-signal)] shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                 ) : (
                   <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)] shrink-0" />
                 )}
@@ -798,7 +798,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
               </div>
               <div className="flex items-center gap-1.5 p-1.5 sm:p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-[11px] sm:text-xs">
                 {diagnostics.visibilityApi === "ready" ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--emerald-signal)] shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                 ) : (
                   <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)] shrink-0" />
                 )}
@@ -806,7 +806,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
               </div>
               <div className="flex items-center gap-1.5 p-1.5 sm:p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-[11px] sm:text-xs">
                 {diagnostics.connection === "ready" ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--emerald-signal)] shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                 ) : (
                   <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)] shrink-0" />
                 )}

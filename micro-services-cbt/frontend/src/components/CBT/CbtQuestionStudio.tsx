@@ -785,7 +785,7 @@ export default function CbtQuestionStudio({
               className="h-8 px-3 text-xs font-semibold border-[var(--border-fine)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] rounded-[var(--radius-md)] flex items-center gap-1.5"
             >
               {copiedLink ? (
-                <Check className="w-3.5 h-3.5 text-[var(--emerald-signal)]" />
+                <Check className="w-3.5 h-3.5 text-emerald-700" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
@@ -796,7 +796,7 @@ export default function CbtQuestionStudio({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-3 text-xs font-semibold border-[var(--emerald-signal)]/30 text-[var(--emerald-signal)] hover:bg-[var(--emerald-tint)]/40 rounded-[var(--radius-md)] flex items-center gap-1.5"
+                className="h-8 px-3 text-xs font-semibold border-[var(--emerald-signal)]/30 text-emerald-700 hover:bg-[var(--emerald-tint)]/40 rounded-[var(--radius-md)] flex items-center gap-1.5"
               >
                 <MonitorCheck className="w-3.5 h-3.5" />
                 <span>Live Monitor</span>
@@ -832,7 +832,7 @@ export default function CbtQuestionStudio({
             className="h-8 px-2 sm:px-3 text-xs font-semibold border-amber-200 text-amber-800 bg-amber-50/70 hover:bg-amber-100 rounded-[var(--radius-md)] flex items-center gap-1.5 shadow-2xs"
             title="Manage institutional marking rubrics"
           >
-            <Award className="w-3.5 h-3.5 text-amber-600" />
+            <Award className="w-3.5 h-3.5 text-amber-700" />
             <span className="hidden sm:inline">Rubrics</span>
           </Button>
 
@@ -883,7 +883,7 @@ export default function CbtQuestionStudio({
                   onClick={() => setIsRubricModalOpen(true)}
                   className="text-xs font-medium cursor-pointer"
                 >
-                  <Award className="w-4 h-4 mr-2 text-amber-600" />
+                  <Award className="w-4 h-4 mr-2 text-amber-700" />
                   <span>Marking Rubrics</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -898,7 +898,7 @@ export default function CbtQuestionStudio({
                     href={monitorHref}
                     className="text-xs font-medium cursor-pointer flex items-center"
                   >
-                    <MonitorCheck className="w-4 h-4 mr-2 text-emerald-600" />
+                    <MonitorCheck className="w-4 h-4 mr-2 text-emerald-700" />
                     <span>Open Live Monitor</span>
                   </Link>
                 </DropdownMenuItem>
@@ -967,7 +967,7 @@ export default function CbtQuestionStudio({
                   className={
                     isPublished
                       ? "h-7 px-2.5 text-[11px] font-semibold border-[var(--border-fine)] rounded-[var(--radius-md)]"
-                      : "h-7 px-2.5 text-[11px] font-bold bg-[var(--emerald-signal)] hover:bg-emerald-700 text-white rounded-[var(--radius-md)]"
+                      : "h-7 px-2.5 text-[11px] font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-[var(--radius-md)]"
                   }
                 >
                   {isTogglingPublish
@@ -1024,7 +1024,7 @@ export default function CbtQuestionStudio({
                     onClick={() => handleAddNewQuestion("SHORT_ESSAY")}
                     className="cursor-pointer"
                   >
-                    <AlignLeft className="w-3.5 h-3.5 mr-2 text-amber-600" />
+                    <AlignLeft className="w-3.5 h-3.5 mr-2 text-amber-700" />
                     <span>Short Essay (20-100w)</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -1038,7 +1038,7 @@ export default function CbtQuestionStudio({
                     onClick={() => handleAddNewQuestion("TRUE_FALSE")}
                     className="cursor-pointer"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-emerald-600" />
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-emerald-700" />
                     <span>True / False</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -1437,7 +1437,7 @@ export default function CbtQuestionStudio({
                             onClick={() => setCorrectChoice(optIdx)}
                             className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all ${
                               opt.isCorrect
-                                ? "bg-[var(--emerald-signal)] text-white shadow-xs"
+                                ? "bg-emerald-700 text-white shadow-xs"
                                 : "bg-[var(--surface-muted)] text-[var(--text-secondary)] hover:bg-[var(--border-fine)]"
                             }`}
                             title={
@@ -1524,7 +1524,7 @@ export default function CbtQuestionStudio({
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-amber-600" />
+                        <BookOpen className="w-3.5 h-3.5 text-amber-700" />
                         <span>Teacher Reference / Model Answer</span>
                       </span>
                       <span className="font-normal text-[11px] text-slate-500">
@@ -1633,7 +1633,7 @@ export default function CbtQuestionStudio({
                   <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-2">
-                        <Award className="w-4 h-4 text-amber-600" />
+                        <Award className="w-4 h-4 text-amber-700" />
                         <span className="text-xs font-bold text-slate-900">
                           {activeQuestion.rubric?.name ||
                             "Standard Evaluation Rubric"}
@@ -1654,7 +1654,7 @@ export default function CbtQuestionStudio({
                         onClick={() => setIsRubricModalOpen(true)}
                         className="h-7 text-xs font-semibold border-amber-300 text-amber-900 bg-white hover:bg-amber-50"
                       >
-                        <Award className="w-3 h-3 mr-1 text-amber-600" />
+                        <Award className="w-3 h-3 mr-1 text-amber-700" />
                         <span>
                           {activeQuestion.rubric
                             ? "Change Rubric Scheme"

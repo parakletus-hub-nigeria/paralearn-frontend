@@ -208,7 +208,7 @@ export default function CbtBulkImportDialog({
         {(parsed.length > 0 || errors.length > 0) && (
           <div className="space-y-2 text-xs">
             {parsed.length > 0 && (
-              <p className="font-semibold text-[var(--emerald-signal)]">
+              <p className="font-semibold text-emerald-700">
                 {parsed.length} question{parsed.length === 1 ? "" : "s"} ready to add.
               </p>
             )}

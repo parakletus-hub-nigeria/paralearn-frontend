@@ -547,7 +547,7 @@ function CandidatesPageContent() {
           </div>
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1">
             <span className="text-xs font-medium text-slate-500">Completed Sessions</span>
-            <p className="text-2xl font-extrabold text-emerald-600 font-mono">
+            <p className="text-2xl font-extrabold text-emerald-700 font-mono">
               {candidates.filter((c) => c.status === "COMPLETED").length}
             </p>
           </div>
@@ -559,7 +559,7 @@ function CandidatesPageContent() {
           </div>
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1">
             <span className="text-xs font-medium text-slate-500">Unused Passes</span>
-            <p className="text-2xl font-extrabold text-amber-600 font-mono">
+            <p className="text-2xl font-extrabold text-amber-700 font-mono">
               {candidates.filter((c) => c.status === "ENROLLED").length}
             </p>
           </div>
@@ -689,7 +689,7 @@ function CandidatesPageContent() {
                             title="Copy PIN"
                           >
                             {copiedPin === candidate.pin ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              <Check className="w-3.5 h-3.5 text-emerald-700" />
                             ) : (
                               <Copy className="w-3.5 h-3.5" />
                             )}
@@ -701,7 +701,7 @@ function CandidatesPageContent() {
                       <td className="py-3 px-4">
                         {candidate.status === "COMPLETED" && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
                             Finished
                           </span>
                         )}
@@ -753,7 +753,7 @@ function CandidatesPageContent() {
                             title="Copy link with auto-filled PIN"
                           >
                             {copiedLink === candidate.id ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-600 mr-1" />
+                              <Check className="w-3.5 h-3.5 text-emerald-700 mr-1" />
                             ) : (
                               <Copy className="w-3.5 h-3.5 mr-1 text-slate-400" />
                             )}
@@ -768,7 +768,7 @@ function CandidatesPageContent() {
                             className="h-8 px-2.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
                             title="Send PIN & Link via WhatsApp"
                           >
-                            <MessageCircle className="w-3.5 h-3.5 text-emerald-600 mr-1" />
+                            <MessageCircle className="w-3.5 h-3.5 text-emerald-700 mr-1" />
                             <span>WhatsApp</span>
                           </Button>
 
@@ -828,7 +828,7 @@ function CandidatesPageContent() {
                     <div className="shrink-0">
                       {candidate.status === "COMPLETED" && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <CheckCircle2 className="w-3 h-3 text-emerald-700" />
                           Finished
                         </span>
                       )}
@@ -866,7 +866,7 @@ function CandidatesPageContent() {
                           title="Copy PIN"
                         >
                           {copiedPin === candidate.pin ? (
-                            <Check className="w-3 h-3 text-emerald-600" />
+                            <Check className="w-3 h-3 text-emerald-700" />
                           ) : (
                             <Copy className="w-3 h-3" />
                           )}
@@ -893,7 +893,7 @@ function CandidatesPageContent() {
                       className="flex-1 h-8 text-[11px] font-semibold border-slate-200"
                     >
                       {copiedLink === candidate.id ? (
-                        <Check className="w-3 h-3 text-emerald-600 mr-1" />
+                        <Check className="w-3 h-3 text-emerald-700 mr-1" />
                       ) : (
                         <Copy className="w-3 h-3 mr-1 text-slate-400" />
                       )}
@@ -906,7 +906,7 @@ function CandidatesPageContent() {
                       onClick={() => handleSendWhatsApp(candidate)}
                       className="flex-1 h-8 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
                     >
-                      <MessageCircle className="w-3 h-3 text-emerald-600 mr-1" />
+                      <MessageCircle className="w-3 h-3 text-emerald-700 mr-1" />
                       <span>WhatsApp</span>
                     </Button>
 

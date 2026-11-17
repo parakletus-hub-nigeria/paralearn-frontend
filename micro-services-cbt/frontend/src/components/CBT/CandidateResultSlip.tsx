@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { loadCandidateSession, clearCandidateSession, CandidateSession } from "@cbt/lib/cbtSessionManager";
 import { useGetResultSlipQuery } from "@cbt/store/cbtMicroserviceApi";
 import { startCbtSync } from "@cbt/lib/cbtOfflineSync";
+import "./cbt-workspace.css";
 
 interface CandidateResultSlipProps {
   examCode: string;
@@ -127,7 +128,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
             {isDisqualified ? (
               <AlertCircle className="w-6 h-6 text-[var(--crimson-signal)]" />
             ) : isPendingReview || resultsWithheld ? (
-              <Clock className="w-6 h-6 text-amber-600" />
+              <Clock className="w-6 h-6 text-amber-700" />
             ) : (
               <Award className="w-6 h-6 text-[var(--violet-ink)]" />
             )}
@@ -180,7 +181,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
               <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Security Audit</span>
               <div
                 className={`font-medium text-xs flex items-center gap-1 mt-0.5 ${
-                  violationCount > 0 ? "text-[#92400e]" : "text-[var(--emerald-signal)]"
+                  violationCount > 0 ? "text-[#92400e]" : "text-emerald-700"
                 }`}
               >
                 {violationCount > 0 ? <AlertCircle className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
@@ -201,7 +202,7 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
             </div>
           ) : resultsWithheld ? (
             <div className="bg-[var(--surface-subtle)] border border-[var(--border-fine)] rounded-[var(--radius-md)] p-6 text-center space-y-2">
-              <CheckCircle2 className="w-8 h-8 mx-auto text-[var(--emerald-signal)]" />
+              <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-700" />
               <div className="font-bold text-base text-[var(--foreground)]">Your exam has been submitted</div>
               <p className="text-xs text-[var(--text-secondary)] max-w-sm mx-auto">
                 Your examiner will release results later. Keep this slip as proof of submission.

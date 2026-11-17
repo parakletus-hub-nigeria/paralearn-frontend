@@ -1,10 +1,23 @@
+/* Geist Mono for codes, PINs, scores and timers (Tailwind's font-mono reads --font-mono).
+   Set here, not in the main app, so only the CBT and Results apps change. */
+:root {
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
 .cbt-surface, .cbt-dialog {
-  --cbt-ink: oklch(25% 0.014 285);
-  --cbt-muted: oklch(47% 0.018 285);
-  --cbt-line: oklch(91% 0.006 285);
-  --cbt-paper: oklch(99.5% 0.002 285);
-  --cbt-wash: oklch(97.5% 0.004 285);
-  --cbt-accent: #641bc4;
+  /* Shared ParaLearn tokens (src/app/globals.css); see design-guide/CBT_DESIGN_GUIDE.md §2.2 */
+  --cbt-ink: var(--foreground);
+  --cbt-muted: var(--text-secondary);
+  --cbt-line: var(--border-fine);
+  --cbt-paper: var(--background);
+  --cbt-wash: var(--surface-subtle);
+  --cbt-accent: var(--violet-ink);
+  --violet-pressed: #5214a3;
+  --violet-wash: #f7f3ff;
+  --violet-line: #dfceef;
+  --text-strong: #334155;
+  --emerald-ink: #065f46;
+  --amber-ink: #92400e;
+  --crimson-ink: #991b1b;
   color: var(--cbt-ink);
   background: var(--cbt-paper);
   font-size: 14px;
@@ -74,10 +87,10 @@
   font-weight: 600;
 }
 .cbt-sidebar a:hover {
-  background: oklch(94% 0.007 285);
+  background: var(--surface-muted);
 }
 .cbt-sidebar nav .is-active {
-  background: oklch(94% 0.03 300);
+  background: var(--violet-tint);
   color: var(--cbt-accent);
 }
 .cbt-sidebar-secondary {
@@ -128,7 +141,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: oklch(91% 0.014 285);
+  background: var(--border-fine);
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -219,18 +232,23 @@
   border-color: var(--cbt-accent);
 }
 .cbt-button.primary:hover {
-  background: #5214a3;
+  background: var(--violet-hover);
+  border-color: var(--violet-hover);
+}
+.cbt-button.primary:active:not(:disabled) {
+  background: var(--violet-pressed);
+  border-color: var(--violet-pressed);
 }
 .cbt-button.outline {
   background: var(--cbt-paper);
-  border: 1px solid #7c3aed;
-  color: #6d28d9;
+  border: 1px solid var(--violet-ink);
+  color: var(--violet-ink);
   font-weight: 600;
 }
 .cbt-button.outline:hover {
-  background: #f5f3ff;
-  border-color: #6d28d9;
-  color: #5b21b6;
+  background: var(--violet-wash);
+  border-color: var(--violet-ink);
+  color: var(--violet-pressed);
 }
 .cbt-button:disabled,
 .cbt-icon:disabled {
@@ -354,7 +372,7 @@
   vertical-align: middle;
 }
 .cbt-exam-table tr:hover td {
-  background: oklch(98.5% 0.005 285);
+  background: var(--violet-wash);
 }
 .cbt-exam-name {
   font-weight: 700;
@@ -391,16 +409,16 @@
   color: var(--cbt-muted);
 }
 .cbt-status.open {
-  color: #116149;
-  background: #e8f5ee;
+  color: var(--emerald-ink);
+  background: var(--emerald-tint);
 }
 .cbt-status.scheduled {
-  color: #85531b;
-  background: #faf1df;
+  color: var(--amber-ink);
+  background: var(--amber-tint);
 }
 .cbt-status.ready {
-  color: #641bc4;
-  background: #f2ecfa;
+  color: var(--violet-ink);
+  background: var(--violet-tint);
 }
 .cbt-row-actions {
   display: flex;
@@ -418,8 +436,8 @@
   gap: 10px;
   align-items: center;
   padding: 12px 14px;
-  background: #fff5e5;
-  color: #795017;
+  background: var(--amber-tint);
+  color: var(--amber-ink);
   border-radius: 6px;
   margin-bottom: 20px;
   font-size: 12px;
@@ -462,7 +480,7 @@
 }
 .cbt-form input:not([type="checkbox"]),
 .cbt-form select {
-  border: 1px solid #dce0e7;
+  border: 1px solid var(--border-medium);
   border-radius: 6px;
   min-height: 42px;
   padding: 9px 11px;
@@ -480,7 +498,7 @@
 .cbt-form input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #641bc4;
+  accent-color: var(--violet-ink);
 }
 .cbt-form-grid {
   display: grid;
@@ -488,7 +506,7 @@
   gap: 14px;
 }
 .cbt-form fieldset {
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-fine);
   padding-top: 12px;
 }
 .cbt-form legend {
@@ -501,7 +519,7 @@
   justify-content: flex-end;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-fine);
 }
 .cbt-skeleton {
   height: 78px;
@@ -593,7 +611,7 @@
     display: block;
     position: fixed;
     inset: 64px 0 0;
-    background: #17132055;
+    background: rgb(15 23 42 / 0.4);
     z-index: 35;
   }
   .cbt-content {

@@ -103,7 +103,7 @@ export default function CbtWorkspaceHeader() {
           {isSchoolMode ? (
             <Building2 className="w-3.5 h-3.5 text-[var(--violet-ink)] shrink-0" />
           ) : (
-            <UserCheck className="w-3.5 h-3.5 text-[var(--emerald-signal)] shrink-0" />
+            <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
           )}
 
           <span className="font-semibold text-[var(--foreground)] truncate max-w-[90px] xs:max-w-[130px] sm:max-w-xs">
@@ -148,7 +148,7 @@ export default function CbtWorkspaceHeader() {
         {/* Candidate Credits Pill (for Standalone Tutors) */}
         {!isSchoolMode && (
           <div className="hidden sm:flex items-center gap-1.5 bg-[var(--emerald-tint)]/60 text-[#065f46] border border-[#a7f3d0] px-2.5 py-1 rounded-[var(--radius-pill)] text-xs font-mono font-bold">
-            <Coins className="w-3.5 h-3.5 text-[var(--emerald-signal)]" />
+            <Coins className="w-3.5 h-3.5 text-emerald-700" />
             <span>{standaloneWorkspace?.credits ?? 30} Credits</span>
           </div>
         )}
