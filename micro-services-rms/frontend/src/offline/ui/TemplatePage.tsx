@@ -121,7 +121,10 @@ export default function TemplatePage({ schoolName, onBack }: { schoolName: strin
                   <input type="checkbox" checked={s.scoreColumns.includes(c.key)} onChange={(e) => toggleColumn(c.key, e.target.checked)} />
                   <span>
                     {c.label}
-                    <small>{c.hint}</small>
+                    <small>
+                      {c.hint}
+                      {c.key === "CA3" && " · printed on cards, not stored in ParaLearn"}
+                    </small>
                   </span>
                 </label>
               ))}

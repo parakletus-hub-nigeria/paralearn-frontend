@@ -99,8 +99,13 @@ frontend/src/
   file it loaded and starts both Web Workers once, so their files are cached too. Cached files are
   served as fresh `Response`s: Turbopack's workers share one bootstrap file and read their config
   from the URL fragment, which a stored response would overwrite.
-- **Fonts:** the PDF uses the built-in Helvetica family, so no font files are needed offline.
-  Accents are folded for the PDF (Ọlá prints as Ola), because those fonts cannot draw them.
+- **Fonts:** the PDF uses the built-in Helvetica family, which needs no font files and draws fast.
+  Helvetica keeps accents it can draw (é, á, ò). Text with letters it can't draw, such as the
+  Yoruba and Igbo ọ, ẹ, ṣ and ń, is drawn in Noto Sans (`public/fonts/rms`, cut down to Latin,
+  SIL Open Font License), embedded only in booklets that need it, via `@pdf-lib/fontkit`.
+  pdf-lib can't position a second mark, so a tone mark on a dotted letter is dropped
+  (Ẹ̀mí prints as Ẹmí). The fonts are saved for offline use on the first online visit; if they
+  were never saved, those letters fall back to plain ones (Ọlá prints as Ola).
 - **Storage:** IndexedDB database `paralearn-results-offline`. The app asks the browser for
   persistent storage so batches aren't evicted when the disk is low.
 - **K12 calls** go through the host's `/api/proxy/*` rewrite (`K12_BACKEND_URL`), so they are

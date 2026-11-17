@@ -14,6 +14,22 @@ const K12_COMPONENTS: Array<{ key: string; label: string }> = [
   { key: "EXAM", label: "Exam" },
 ];
 
+/**
+ * The score columns in these results that print on the cards but that ParaLearn doesn't store,
+ * by label and without repeats (e.g. ["3rd CA"]), so the app can say so before and after sending.
+ */
+export function columnsParaLearnSkips(classes: ClassResult[]): string[] {
+  const labels = new Set<string>();
+  for (const cls of classes) {
+    for (const s of cls.subjects) {
+      for (const comp of s.components) {
+        if (!K12_COMPONENTS.some((k) => k.key === comp.key)) labels.add(comp.label);
+      }
+    }
+  }
+  return [...labels];
+}
+
 export interface K12Sheet {
   name: string;
   rows: (string | number)[][];

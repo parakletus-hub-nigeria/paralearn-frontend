@@ -1,11 +1,14 @@
 import { PDFDocument, PDFFont, PDFImage, PDFPage, StandardFonts, rgb, type RGB } from "pdf-lib";
 import type { ClassResult, StudentResult } from "../engine/types";
 import { GRADE_BANDS, bandLabel } from "../engine/grading";
+import { cardColours } from "./schoolColour";
 
 /**
  * Draws ParaLearn report cards with pdf-lib: one A4 page per student, one document per
- * batch. Uses the PDF standard fonts (no font files to download, so it works offline);
- * fonts and the logo are embedded once per document and reused for every page.
+ * batch. Text is drawn in the PDF standard fonts (Helvetica: nothing to download, and fast).
+ * Text with letters those fonts can't draw, such as the Yoruba and Igbo ọ, ẹ, ṣ and ń, is drawn
+ * in Noto Sans instead, embedded only in documents that need it. Fonts and the logo are
+ * embedded once per document and reused for every page.
  */
 
 export interface CardBranding {
@@ -32,7 +35,6 @@ const INK = rgb(0.09, 0.11, 0.16);
 const MUTED = rgb(0.39, 0.45, 0.55);
 const LINE = rgb(0.82, 0.85, 0.89);
 const ZEBRA = rgb(0.965, 0.973, 0.98);
-const WHITE = rgb(1, 1, 1);
 
 function hexToRgb(hex?: string | null): RGB {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
@@ -45,19 +47,104 @@ const tint = (c: RGB, amount: number) =>
   rgb(c.red + (1 - c.red) * amount, c.green + (1 - c.green) * amount, c.blue + (1 - c.blue) * amount);
 
 /**
- * Standard PDF fonts only cover Windows-1252. Fold accents (Ọlá -> Ola) and replace anything
- * else unprintable, so a Yoruba or Igbo name can never crash generation.
+ * Straight quotes and dashes, then the composed form of each letter (é as one character).
+ * A tone mark on a dotted letter (ẹ́, Ọ̀) has no single character, and pdf-lib can't position
+ * a second mark, so it would print in the wrong place; it is dropped instead (Ẹ̀mí -> Ẹmí).
  */
-export function pdfSafe(text: string | null | undefined): string {
-  if (!text) return "";
+function tidy(text: string): string {
   return String(text)
     .replace(/[‘’‚]/g, "'")
     .replace(/[“”„]/g, '"')
     .replace(/[–—]/g, "-")
     .replace(/…/g, "...")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .normalize("NFC")
+    .replace(/[̀-ͯ]/g, "");
+}
+
+/** Characters the standard fonts draw (Windows-1252: English plus é, á, ò, ü and the like) */
+const STANDARD_CHAR = /[\x20-\x7E\xA0-\xFF]/;
+/** Letters only the embedded Noto Sans covers: Latin Extended (ọ, ẹ, ṣ, ń, ụ, …) and ₦ */
+const UNICODE_ONLY = /[Ā-ɏḀ-ỿ₦]/;
+
+/**
+ * Text for the standard fonts. Letters they can't draw lose their marks (Ọlá -> Ola) and anything
+ * else becomes "?", so no name can ever crash generation.
+ */
+export function pdfSafe(text: string | null | undefined): string {
+  if (!text) return "";
+  return [...tidy(text)]
+    .map((ch) => (STANDARD_CHAR.test(ch) ? ch : ch.normalize("NFD").replace(/[̀-ͯ]/g, "")))
+    .join("")
     .replace(/[^\x20-\x7E\xA0-\xFF]/g, "?");
+}
+
+/** Text for the embedded Noto Sans, which covers every Latin letter used in Nigerian names */
+function unicodeSafe(text: string | null | undefined): string {
+  if (!text) return "";
+  return tidy(text).replace(/[^\x20-\x7E\xA0-ɏḀ-ỿ₦]/g, "?");
+}
+
+/** True when the text has letters only the embedded Noto Sans can draw */
+export function needsUnicodeFont(text: string | null | undefined): boolean {
+  return !!text && UNICODE_ONLY.test(tidy(text));
+}
+
+// ── Noto Sans, loaded only when a document needs it ─────────────────────────
+/** Noto Sans cut down to Latin letters and marks (public/fonts/rms, SIL Open Font License) */
+export const UNICODE_FONT_URLS = [
+  "/fonts/rms/NotoSans-Regular-latin.ttf",
+  "/fonts/rms/NotoSans-Bold-latin.ttf",
+  "/fonts/rms/NotoSans-Italic-latin.ttf",
+] as const;
+
+type Fontkit = Parameters<PDFDocument["registerFontkit"]>[0];
+interface UnicodeFontFiles {
+  fontkit: Fontkit;
+  regular: Uint8Array;
+  bold: Uint8Array;
+  italic: Uint8Array;
+}
+
+let unicodeFontFiles: Promise<UnicodeFontFiles | null> | null = null;
+
+/**
+ * Fetches fontkit and the Noto Sans files once (the service worker keeps them for offline use).
+ * Resolves to null when they can't be loaded, e.g. offline before they were ever saved; cards then
+ * fall back to the standard fonts, and the next call tries again.
+ */
+export function loadUnicodeFont(): Promise<UnicodeFontFiles | null> {
+  if (!unicodeFontFiles) {
+    const origin = (globalThis as { location?: { origin?: string } }).location?.origin ?? "";
+    unicodeFontFiles = Promise.all([
+      import("@pdf-lib/fontkit"),
+      ...UNICODE_FONT_URLS.map(async (url) => {
+        const res = await fetch(origin + url);
+        if (!res.ok) throw new Error(`${url}: ${res.status}`);
+        return new Uint8Array(await res.arrayBuffer());
+      }),
+    ])
+      .then(([fontkitModule, regular, bold, italic]) => {
+        const mod = fontkitModule as unknown as { default?: Fontkit };
+        return { fontkit: mod.default ?? (fontkitModule as unknown as Fontkit), regular, bold, italic };
+      })
+      .catch(() => {
+        unicodeFontFiles = null;
+        return null;
+      });
+  }
+  return unicodeFontFiles;
+}
+
+/** Each standard font's Noto Sans counterpart, set when a document embeds Noto Sans */
+const unicodeFor = new WeakMap<PDFFont, PDFFont>();
+const unicodeFonts = new WeakSet<PDFFont>();
+
+/** The font and text to draw: Noto Sans for text that needs it (when embedded), else the standard font */
+function resolve(font: PDFFont, value: string): { font: PDFFont; text: string } {
+  if (unicodeFonts.has(font)) return { font, text: unicodeSafe(value) };
+  const unicode = unicodeFor.get(font);
+  if (unicode && needsUnicodeFont(value)) return { font: unicode, text: unicodeSafe(value) };
+  return { font, text: pdfSafe(value) };
 }
 
 const ordinal = (n: number) => {
@@ -74,21 +161,23 @@ interface Fonts {
   italic: PDFFont;
 }
 
-function fit(font: PDFFont, text: string, size: number, maxWidth: number): string {
-  let t = pdfSafe(text);
-  if (font.widthOfTextAtSize(t, size) <= maxWidth) return t;
-  while (t.length > 1 && font.widthOfTextAtSize(`${t}...`, size) > maxWidth) t = t.slice(0, -1);
+function fit(font: PDFFont, value: string, size: number, maxWidth: number): string {
+  const r = resolve(font, value);
+  let t = r.text;
+  if (r.font.widthOfTextAtSize(t, size) <= maxWidth) return t;
+  while (t.length > 1 && r.font.widthOfTextAtSize(`${t}...`, size) > maxWidth) t = t.slice(0, -1);
   return `${t.trimEnd()}...`;
 }
 
-/** Wraps text into at most maxLines lines of maxWidth */
-function wrap(font: PDFFont, text: string, size: number, maxWidth: number, maxLines: number): string[] {
-  const words = pdfSafe(text).split(/\s+/).filter(Boolean);
+/** Wraps text into at most maxLines lines of maxWidth; draw every line with the returned font */
+function wrap(font: PDFFont, value: string, size: number, maxWidth: number, maxLines: number): { font: PDFFont; lines: string[] } {
+  const r = resolve(font, value);
+  const words = r.text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let line = "";
   for (const word of words) {
     const next = line ? `${line} ${word}` : word;
-    if (font.widthOfTextAtSize(next, size) <= maxWidth) {
+    if (r.font.widthOfTextAtSize(next, size) <= maxWidth) {
       line = next;
       continue;
     }
@@ -98,15 +187,15 @@ function wrap(font: PDFFont, text: string, size: number, maxWidth: number, maxLi
   }
   if (line && lines.length < maxLines) lines.push(line);
   if (lines.length === maxLines && words.join(" ") !== lines.join(" ")) {
-    lines[maxLines - 1] = fit(font, `${lines[maxLines - 1]} ...`, size, maxWidth);
+    lines[maxLines - 1] = fit(r.font, `${lines[maxLines - 1]} ...`, size, maxWidth);
   }
-  return lines;
+  return { font: r.font, lines };
 }
 
 type Align = "left" | "center" | "right";
 
-function text(page: PDFPage, value: string, x: number, y: number, size: number, font: PDFFont, color: RGB = INK, align: Align = "left", width = 0) {
-  const t = pdfSafe(value);
+function text(page: PDFPage, value: string, x: number, y: number, size: number, baseFont: PDFFont, color: RGB = INK, align: Align = "left", width = 0) {
+  const { font, text: t } = resolve(baseFont, value);
   let dx = x;
   if (align !== "left" && width > 0) {
     const w = font.widthOfTextAtSize(t, size);
@@ -133,8 +222,12 @@ function sectionTitle(page: PDFPage, fonts: Fonts, title: string, x: number, y: 
 }
 
 function drawCard(page: PDFPage, fonts: Fonts, logo: PDFImage | null, student: StudentResult, cls: ClassResult, ctx: CardContext) {
-  const accent = hexToRgb(ctx.branding.color);
-  const accentSoft = tint(accent, 0.9);
+  // The school colour fills bars and tints; text in or on it uses readable versions (see schoolColour.ts)
+  const colours = cardColours(ctx.branding.color);
+  const accent = hexToRgb(colours.fill);
+  const accentSoft = hexToRgb(colours.soft);
+  const accentText = hexToRgb(colours.text);
+  const onAccent = hexToRgb(colours.onFill);
   const W = A4.w - 2 * M;
   let y = A4.h - M;
 
@@ -154,16 +247,16 @@ function drawCard(page: PDFPage, fonts: Fonts, logo: PDFImage | null, student: S
       .slice(0, 2)
       .map((w) => w[0].toUpperCase())
       .join("");
-    text(page, initials || "S", M, y - logoSize / 2 - 7, 20, fonts.bold, WHITE, "center", logoSize);
+    text(page, initials || "S", M, y - logoSize / 2 - 7, 20, fonts.bold, onAccent, "center", logoSize);
   }
 
   const titleW = 150;
   const headX = M + logoSize + 12;
   const headW = W - logoSize - 12 - titleW - 10;
-  const nameLines = wrap(fonts.bold, ctx.branding.schoolName.toUpperCase(), 15, headW, 2);
+  const name = wrap(fonts.bold, ctx.branding.schoolName.toUpperCase(), 15, headW, 2);
   let hy = y - 14;
-  for (const line of nameLines) {
-    text(page, line, headX, hy, 15, fonts.bold, accent);
+  for (const line of name.lines) {
+    text(page, line, headX, hy, 15, name.font, accentText);
     hy -= 17;
   }
   if (ctx.branding.motto) {
@@ -175,7 +268,7 @@ function drawCard(page: PDFPage, fonts: Fonts, logo: PDFImage | null, student: S
 
   const tx = A4.w - M - titleW;
   box(page, tx, y, titleW, 58, { fill: accentSoft, border: tint(accent, 0.6) });
-  text(page, "STUDENT REPORT CARD", tx, y - 15, 8, fonts.bold, accent, "center", titleW);
+  text(page, "STUDENT REPORT CARD", tx, y - 15, 8, fonts.bold, accentText, "center", titleW);
   text(page, ctx.term, tx, y - 32, 13, fonts.bold, INK, "center", titleW);
   text(page, `${ctx.session} Session`, tx, y - 47, 8.5, fonts.regular, MUTED, "center", titleW);
 
@@ -229,7 +322,7 @@ function drawCard(page: PDFPage, fonts: Fonts, logo: PDFImage | null, student: S
   box(page, M, y, W, headH, { fill: accent });
   let cx = M;
   for (const col of cols) {
-    text(page, fit(fonts.bold, col.label, 6.5, col.w - 6), cx + 4, y - 12, 6.5, fonts.bold, WHITE, col.align, col.w - 8);
+    text(page, fit(fonts.bold, col.label, 6.5, col.w - 6), cx + 4, y - 12, 6.5, fonts.bold, onAccent, col.align, col.w - 8);
     cx += col.w;
   }
   y -= headH;
@@ -281,7 +374,7 @@ function drawCard(page: PDFPage, fonts: Fonts, logo: PDFImage | null, student: S
     const x = M + i * (tileW + gap);
     box(page, x, y, tileW, 36, { fill: i < 4 ? accentSoft : ZEBRA });
     text(page, label, x, y - 12, 6.3, fonts.bold, MUTED, "center", tileW);
-    text(page, fit(fonts.bold, value, 11.5, tileW - 6), x, y - 28, 11.5, fonts.bold, i < 4 ? accent : INK, "center", tileW);
+    text(page, fit(fonts.bold, value, 11.5, tileW - 6), x, y - 28, 11.5, fonts.bold, i < 4 ? accentText : INK, "center", tileW);
   });
   y -= 36 + 16;
 
@@ -297,7 +390,7 @@ function drawCard(page: PDFPage, fonts: Fonts, logo: PDFImage | null, student: S
     for (const [trait, rating] of traits.slice(0, 8)) {
       text(page, fit(fonts.regular, trait, 7.5, colW - 60), M + 7, ty, 7.5, fonts.regular, INK);
       for (let d = 0; d < 5; d++) {
-        page.drawCircle({ x: M + colW - 46 + d * 9, y: ty + 2.5, size: 3, color: d < rating ? accent : undefined, borderColor: accent, borderWidth: 0.6 });
+        page.drawCircle({ x: M + colW - 46 + d * 9, y: ty + 2.5, size: 3, color: d < rating ? accentText : undefined, borderColor: accentText, borderWidth: 0.6 });
       }
       ty -= 11;
     }
@@ -330,7 +423,7 @@ function drawCard(page: PDFPage, fonts: Fonts, logo: PDFImage | null, student: S
   sectionTitle(page, fonts, "Grading key", gx, y, accent);
   GRADE_BANDS.forEach((band, i) => {
     const gy = y - 14 - i * 11;
-    text(page, band.grade, gx + 7, gy, 7.5, fonts.bold, accent);
+    text(page, band.grade, gx + 7, gy, 7.5, fonts.bold, accentText);
     text(page, bandLabel(band), gx + 20, gy, 7.5, fonts.regular, INK);
     text(page, band.remark, gx, gy, 7.5, fonts.regular, MUTED, "right", colW - 4);
   });
@@ -346,8 +439,9 @@ function drawCard(page: PDFPage, fonts: Fonts, logo: PDFImage | null, student: S
   comments.forEach(([label, body], i) => {
     const x = M + i * (commentW + 10);
     box(page, x, y, commentW, 64, { border: LINE });
-    text(page, label.toUpperCase(), x + 8, y - 12, 7, fonts.bold, accent);
-    wrap(fonts.italic, body, 8.5, commentW - 16, 2).forEach((line, li) => text(page, line, x + 8, y - 26 - li * 11, 8.5, fonts.italic, INK));
+    text(page, label.toUpperCase(), x + 8, y - 12, 7, fonts.bold, accentText);
+    const comment = wrap(fonts.italic, body, 8.5, commentW - 16, 2);
+    comment.lines.forEach((line, li) => text(page, line, x + 8, y - 26 - li * 11, 8.5, comment.font, INK));
     page.drawLine({ start: { x: x + 8, y: y - 54 }, end: { x: x + commentW * 0.55, y: y - 54 }, thickness: 0.5, color: MUTED });
     text(page, "Signature & date", x + 8, y - 61, 6, fonts.regular, MUTED);
   });
@@ -356,7 +450,22 @@ function drawCard(page: PDFPage, fonts: Fonts, logo: PDFImage | null, student: S
   const on = (ctx.generatedOn || new Date()).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   page.drawLine({ start: { x: M, y: M + 12 }, end: { x: A4.w - M, y: M + 12 }, thickness: 0.5, color: LINE });
   text(page, `Generated with ParaLearn Results on ${on}`, M, M, 6.5, fonts.regular, MUTED);
-  text(page, `${pdfSafe(student.className)}  |  Row ${student.row}`, M, M, 6.5, fonts.regular, MUTED, "right", W);
+  text(page, `${student.className}  |  Row ${student.row}`, M, M, 6.5, fonts.regular, MUTED, "right", W);
+}
+
+/** Whether any text on these cards has letters only Noto Sans can draw */
+function documentNeedsUnicode(students: StudentResult[], cls: ClassResult, ctx: CardContext): boolean {
+  const b = ctx.branding;
+  const shared = [b.schoolName, b.motto, b.address, b.phone, b.email, ctx.term, ctx.session, cls.name];
+  return (
+    shared.some(needsUnicodeFont) ||
+    students.some(
+      (s) =>
+        [s.name, s.admissionNo, s.className, s.teacherComment, s.principalComment].some(needsUnicodeFont) ||
+        Object.keys(s.traits).some(needsUnicodeFont) ||
+        s.subjects.some((sub) => needsUnicodeFont(sub.subject) || needsUnicodeFont(sub.remark))
+    )
+  );
 }
 
 async function embedLogo(doc: PDFDocument, logo: CardBranding["logo"]): Promise<PDFImage | null> {
@@ -388,6 +497,21 @@ export async function buildReportCardsPdf(
     bold: await doc.embedFont(StandardFonts.HelveticaBold),
     italic: await doc.embedFont(StandardFonts.HelveticaOblique),
   };
+  if (documentNeedsUnicode(students, cls, ctx)) {
+    const files = await loadUnicodeFont();
+    if (files) {
+      doc.registerFontkit(files.fontkit);
+      const [regular, bold, italic] = await Promise.all([
+        doc.embedFont(files.regular, { subset: true }),
+        doc.embedFont(files.bold, { subset: true }),
+        doc.embedFont(files.italic, { subset: true }),
+      ]);
+      unicodeFor.set(fonts.regular, regular);
+      unicodeFor.set(fonts.bold, bold);
+      unicodeFor.set(fonts.italic, italic);
+      [regular, bold, italic].forEach((f) => unicodeFonts.add(f));
+    }
+  }
   const logo = await embedLogo(doc, ctx.branding.logo);
 
   students.forEach((student, i) => {

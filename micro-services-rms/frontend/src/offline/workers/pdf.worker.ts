@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { buildReportCardsPdf, type CardContext } from "../pdf/reportCardPdf";
+import { buildReportCardsPdf, loadUnicodeFont, type CardContext } from "../pdf/reportCardPdf";
 import type { ClassResult } from "../engine/types";
 
 /** Draws report-card PDFs off the main thread so the page stays responsive */
@@ -12,6 +12,9 @@ const ctx = self as unknown as DedicatedWorkerGlobalScope;
 ctx.onmessage = async (event: MessageEvent<PdfRequest>) => {
   const msg = event.data;
   if (msg.type === "ping") {
+    // The warm-up ping runs while online: fetch the worker's copy of fontkit and Noto Sans now,
+    // so the service worker keeps them for cards drawn offline
+    await loadUnicodeFont();
     ctx.postMessage({ id: msg.id, ok: true, value: "pong" });
     return;
   }

@@ -6,6 +6,7 @@ import { ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { saveProfile, type SchoolProfile } from "../storage/db";
 import { imageToPngBytes } from "./logo";
+import { SCHOOL_COLOUR_PRESETS, cardColours } from "../pdf/schoolColour";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -79,6 +80,8 @@ export default function SchoolProfileForm({
   };
 
   const color = HEX.test(form.color) ? form.color : "#641bc4";
+  // Same readable colours the PDF uses, so the preview matches the printed card
+  const colours = cardColours(color);
   const contact = [form.address, form.phone, form.email].filter(Boolean).join("  |  ");
 
   return (
@@ -113,7 +116,7 @@ export default function SchoolProfileForm({
           <legend>Logo and colour</legend>
           <div className="rms-logo-row">
             <span className="rms-logo-box" aria-hidden>
-              {logoUrl ? <img src={logoUrl} alt="" /> : <strong style={{ color }}>{initials(form.schoolName)}</strong>}
+              {logoUrl ? <img src={logoUrl} alt="" /> : <strong style={{ color: colours.text }}>{initials(form.schoolName)}</strong>}
             </span>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickLogo(e.target.files?.[0])} />
             <button type="button" className="rms-button small" onClick={() => fileRef.current?.click()}>
@@ -126,6 +129,20 @@ export default function SchoolProfileForm({
                 Remove
               </button>
             )}
+          </div>
+          <div className="rms-swatches" role="group" aria-label="Suggested card colours">
+            {SCHOOL_COLOUR_PRESETS.map((p) => (
+              <button
+                key={p.hex}
+                type="button"
+                className="rms-swatch"
+                style={{ background: p.hex }}
+                title={p.name}
+                aria-label={p.name}
+                aria-pressed={color.toLowerCase() === p.hex}
+                onClick={() => setForm((f) => ({ ...f, color: p.hex }))}
+              />
+            ))}
           </div>
           <label className="rms-field" style={{ maxWidth: 260 }}>
             Card colour
@@ -160,13 +177,13 @@ export default function SchoolProfileForm({
               <img src={logoUrl} alt="" style={{ width: 54, height: 54, objectFit: "contain", flexShrink: 0 }} />
             ) : (
               <span
-                style={{ width: 54, height: 54, borderRadius: "50%", background: color, color: "#fdfdff", display: "grid", placeItems: "center", fontWeight: 700, flexShrink: 0 }}
+                style={{ width: 54, height: 54, borderRadius: "50%", background: color, color: colours.onFill, display: "grid", placeItems: "center", fontWeight: 700, flexShrink: 0 }}
               >
                 {initials(form.schoolName)}
               </span>
             )}
             <div style={{ minWidth: 0 }}>
-              <p style={{ color, fontWeight: 800, fontSize: 15, textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <p style={{ color: colours.text, fontWeight: 800, fontSize: 15, textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {form.schoolName || "Your school name"}
               </p>
               {form.motto && <p style={{ fontSize: 11, fontStyle: "italic", color: "var(--rms-muted)" }}>&ldquo;{form.motto}&rdquo;</p>}
@@ -175,7 +192,21 @@ export default function SchoolProfileForm({
               </p>
             </div>
           </div>
+          {/* The subject table's heading row: white text on the colour, or dark text on a light colour */}
+          <div className="rms-card-head-table" style={{ background: color, color: colours.onFill }} aria-hidden>
+            <span>Subject</span>
+            <span>1st CA</span>
+            <span>2nd CA</span>
+            <span>Exam</span>
+            <span>Total</span>
+            <span>Grade</span>
+          </div>
         </div>
+        {colours.adjusted && (
+          <p className="rms-notice info" style={{ margin: 0 }}>
+            This is a light colour, so the cards print text in a darker shade of it to keep it readable.
+          </p>
+        )}
         <p className="rms-section-sub">Cards already generated keep the old details. Open a batch and choose Redo cards to update them.</p>
       </aside>
     </div>

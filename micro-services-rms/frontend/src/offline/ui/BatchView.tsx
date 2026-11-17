@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { AlertTriangle, ArrowLeft, CheckCircle2, CloudOff, Download, Loader2, Play, RefreshCw, Square, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, CloudOff, Download, Info, Loader2, Play, RefreshCw, Square, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { db, deleteBatch, getClassResults, type BatchRecord, type SchoolProfile } from "../storage/db";
 import { K12Error, syncBatch } from "../storage/k12";
@@ -11,6 +11,7 @@ import type { ClassResult, StudentResult } from "../engine/types";
 import { cancelGeneration, cardContext, clearBooklets, generateBatch, useGeneration } from "./generation";
 import { downloadBlob, ordinal, plural, safeFileName, timeAgo, useOnline } from "./util";
 import IssueList from "./IssueList";
+import { columnsParaLearnSkips } from "../engine/k12Workbook";
 
 /** The sync cell of the summary row */
 function SyncSummary({ batch, onSignInNeeded }: { batch: BatchRecord; onSignInNeeded: () => void }) {
@@ -73,7 +74,75 @@ function SyncSummary({ batch, onSignInNeeded }: { batch: BatchRecord; onSignInNe
   );
 }
 
+/**
+ * Whether this browser shows PDFs inside the page. Chrome on Android and other mobile browsers
+ * report false and would show an empty frame, so they get a summary and a download instead.
+ */
+function useInlinePdf(): boolean {
+  const [inline, setInline] = useState(true);
+  useEffect(() => {
+    setInline((navigator as Navigator & { pdfViewerEnabled?: boolean }).pdfViewerEnabled !== false);
+  }, []);
+  return inline;
+}
+
+/** The card's key facts as a page element, for browsers that can't show the PDF itself */
+function CardSummary({ student, onDownload }: { student: StudentResult; onDownload?: () => void }) {
+  return (
+    <div className="rms-card-summary">
+      <dl>
+        <div>
+          <dt>Class</dt>
+          <dd>{student.className}</dd>
+        </div>
+        <div>
+          <dt>Position</dt>
+          <dd className="rms-num">
+            {ordinal(student.position)} of {student.classSize}
+          </dd>
+        </div>
+        <div>
+          <dt>Average</dt>
+          <dd className="rms-num">{student.average.toFixed(1)}%</dd>
+        </div>
+        <div>
+          <dt>Grade</dt>
+          <dd>{student.grade}</dd>
+        </div>
+      </dl>
+      <table className="rms-table">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th className="num">Total</th>
+            <th>Grade</th>
+            <th className="num">Pos.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {student.subjects.map((s) => (
+            <tr key={s.subject} style={{ cursor: "default" }}>
+              <td>{s.subject}</td>
+              <td className="num">{Number.isInteger(s.total) ? s.total : s.total.toFixed(1)}</td>
+              <td>{s.grade}</td>
+              <td className="num">{ordinal(s.position)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="rms-section-sub" style={{ margin: 0 }}>
+        This browser can&apos;t show the card here. Download it to see the full card or print it.
+      </p>
+      <button type="button" className="rms-button primary" disabled={!onDownload} onClick={onDownload}>
+        <Download size={15} />
+        Download {student.name.split(/\s+/)[0]}&apos;s card
+      </button>
+    </div>
+  );
+}
+
 function CardPreview({ student, cls, profile, batch }: { student: StudentResult | null; cls: ClassResult | null; profile: SchoolProfile; batch: BatchRecord }) {
+  const inlinePdf = useInlinePdf();
   const [url, setUrl] = useState<string | null>(null);
   const [bytes, setBytes] = useState<Uint8Array | null>(null);
   const { term, session } = batch;
@@ -96,29 +165,28 @@ function CardPreview({ student, cls, profile, batch }: { student: StudentResult 
   }, [student, cls, profile, term, session]);
 
   if (!student) return null;
+  const download = () =>
+    bytes &&
+    downloadBlob(
+      new Blob([bytes as BlobPart], { type: "application/pdf" }),
+      `${safeFileName(`${student.name} - ${student.className} - ${term} ${session.replace("/", "-")}`)}.pdf`
+    );
   return (
     <aside className="rms-preview" aria-label="Report card preview">
       <div className="rms-preview-head">
         <strong>{student.name}</strong>
-        <button
-          type="button"
-          className="rms-button small"
-          disabled={!bytes}
-          onClick={() =>
-            bytes &&
-            downloadBlob(
-              new Blob([bytes as BlobPart], { type: "application/pdf" }),
-              `${safeFileName(`${student.name} - ${student.className} - ${term} ${session.replace("/", "-")}`)}.pdf`
-            )
-          }
-        >
+        <button type="button" className="rms-button small" disabled={!bytes} onClick={download}>
           <Download size={14} />
           This card
         </button>
       </div>
-      <div className="rms-preview-frame">
-        {url ? <iframe title={`Report card for ${student.name}`} src={`${url}#toolbar=0&view=FitH`} /> : <div className="rms-skeleton" style={{ height: "100%" }} />}
-      </div>
+      {inlinePdf ? (
+        <div className="rms-preview-frame">
+          {url ? <iframe title={`Report card for ${student.name}`} src={`${url}#toolbar=0&view=FitH`} /> : <div className="rms-skeleton" style={{ height: "100%" }} />}
+        </div>
+      ) : (
+        <CardSummary student={student} onDownload={bytes ? download : undefined} />
+      )}
     </aside>
   );
 }
@@ -157,6 +225,8 @@ export default function BatchView({
     const all = (classes || []).flatMap((c) => c.students.filter((s) => s.subjects.length).map((s) => s.average));
     return all.length ? all.reduce((a, b) => a + b, 0) / all.length : 0;
   }, [classes]);
+  // Score columns that print on the cards but that ParaLearn doesn't keep (e.g. a 3rd CA)
+  const skipped = useMemo(() => (classes ? columnsParaLearnSkips(classes) : []), [classes]);
 
   const start = useCallback(async () => {
     try {
@@ -313,6 +383,16 @@ export default function BatchView({
         </p>
       )}
 
+      {skipped.length > 0 && (
+        <p className="rms-notice info">
+          <Info size={15} />
+          <span>
+            {skipped.join(" and ")} {skipped.length === 1 ? "is" : "are"} printed on the cards but {skipped.length === 1 ? "isn't" : "aren't"} stored in
+            ParaLearn, which keeps only 1st CA, 2nd CA and Exam.
+          </span>
+        </p>
+      )}
+
       {warnings.length > 0 && (
         <details className="rms-notice rms-issues" style={{ display: "block" }}>
           <summary style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 600 }}>
@@ -336,7 +416,7 @@ export default function BatchView({
                 setStudentId(null);
               }}
             >
-              {batch.generatedClasses.includes(i) && <CheckCircle2 size={13} style={{ color: "#1f9d6c" }} aria-label="cards ready" />}
+              {batch.generatedClasses.includes(i) && <CheckCircle2 size={13} style={{ color: "#047857" }} aria-label="cards ready" />}
               {c.name}
               <small>{c.students.length}</small>
             </button>

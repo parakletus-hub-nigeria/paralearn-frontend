@@ -1,6 +1,7 @@
 "use client";
 
 import { warmUpWorkers } from "../workers/client";
+import { UNICODE_FONT_URLS, loadUnicodeFont } from "../pdf/reportCardPdf";
 
 export type OfflineReadiness = "unsupported" | "dev" | "installing" | "ready" | "failed";
 
@@ -27,8 +28,10 @@ export async function setUpOffline(): Promise<OfflineReadiness> {
     }
     // Loading the Web Workers once fetches their scripts while we're online
     await warmUpWorkers().catch(() => undefined);
+    // Same for Noto Sans and fontkit, used for names with letters like ọ, ẹ, ṣ and ń
+    await loadUnicodeFont();
 
-    const urls = new Set<string>(["/"]);
+    const urls = new Set<string>(["/", ...UNICODE_FONT_URLS]);
     for (const entry of performance.getEntriesByType("resource")) {
       const url = new URL(entry.name, window.location.href);
       if (url.origin === window.location.origin && !url.pathname.startsWith("/api/")) urls.add(url.pathname + url.search);

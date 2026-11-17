@@ -3,22 +3,31 @@
  * (micro-services-cbt/frontend/src/components/CBT/cbt-workspace.css) so the two ParaLearn
  * products read as one family: wash sidebar, ruled summary rows, underline tabs, flat tables.
  */
+/* Geist Mono for codes, PINs, scores and timers (Tailwind's font-mono reads --font-mono).
+   Set here, not in the main app, so only the Results and CBT apps change. */
+:root {
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
 .rms-surface {
-  --rms-ink: oklch(25% 0.014 285);
-  --rms-muted: oklch(47% 0.018 285);
-  --rms-line: oklch(91% 0.006 285);
-  --rms-paper: oklch(99.5% 0.002 285);
-  --rms-wash: oklch(97.5% 0.004 285);
-  --rms-hover: oklch(94% 0.007 285);
-  --rms-accent: #641bc4;
+  /* Shared ParaLearn tokens (src/app/globals.css); see design-guide/RMS_DESIGN_GUIDE.md §2.2 */
+  --rms-ink: var(--foreground);
+  --rms-muted: var(--text-secondary);
+  --rms-line: var(--border-fine);
+  --rms-paper: var(--background);
+  --rms-wash: var(--surface-subtle);
+  --rms-hover: var(--surface-muted);
+  --rms-accent: var(--violet-ink);
   --rms-accent-press: #5214a3;
-  --rms-accent-tint: oklch(94% 0.03 300);
-  --rms-ok: #116149;
-  --rms-ok-bg: #e8f5ee;
-  --rms-warn: #85531b;
-  --rms-warn-bg: #faf1df;
-  --rms-bad: #9f1d2b;
-  --rms-bad-bg: #fbe9ea;
+  --rms-accent-tint: var(--violet-tint);
+  --rms-accent-wash: #f7f3ff;
+  --rms-ok: #065f46;
+  --rms-ok-bg: var(--emerald-tint);
+  --rms-warn: #92400e;
+  --rms-warn-bg: var(--amber-tint);
+  --rms-bad: #991b1b;
+  --rms-bad-bg: var(--crimson-tint);
+  --rms-dot-ok: var(--emerald-signal);
+  --rms-dot-warn: var(--amber-signal);
   min-height: 100dvh;
   color: var(--rms-ink);
   background: var(--rms-paper);
@@ -51,7 +60,7 @@
   object-fit: contain;
 }
 .rms-brand span {
-  border-left: 1px solid oklch(83% 0.01 285);
+  border-left: 1px solid var(--border-medium);
   padding-left: 12px;
   font-size: 14px;
   font-weight: 600;
@@ -153,10 +162,10 @@
   flex-shrink: 0;
 }
 .rms-dot.ok {
-  background: #1f9d6c;
+  background: var(--rms-dot-ok);
 }
 .rms-dot.warn {
-  background: #d98a20;
+  background: var(--rms-dot-warn);
 }
 .rms-account-person {
   display: flex;
@@ -188,7 +197,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: oklch(91% 0.014 285);
+  background: var(--border-fine);
   font-weight: 700;
   font-size: 12px;
   flex-shrink: 0;
@@ -393,7 +402,7 @@
   gap: 14px;
   min-height: 72px;
   padding: 14px 18px;
-  border: 1px dashed oklch(80% 0.015 285);
+  border: 1px dashed var(--border-medium);
   border-radius: 6px;
   background: var(--rms-wash);
   cursor: pointer;
@@ -404,7 +413,7 @@
 .rms-drop:hover,
 .rms-drop.is-dragging {
   border-color: var(--rms-accent);
-  background: oklch(97% 0.012 300);
+  background: var(--rms-accent-wash);
 }
 .rms-drop svg {
   color: var(--rms-accent);
@@ -443,7 +452,7 @@
 .rms-input,
 .rms-select,
 .rms-textarea {
-  border: 1px solid #dce0e7;
+  border: 1px solid var(--border-medium);
   border-radius: 6px;
   min-height: 42px;
   padding: 9px 11px;
@@ -468,7 +477,7 @@
 .rms-affix {
   display: flex;
   align-items: center;
-  border: 1px solid #dce0e7;
+  border: 1px solid var(--border-medium);
   border-radius: 6px;
   background: #fdfdff;
 }
@@ -579,15 +588,15 @@
 }
 .rms-status.ready {
   color: var(--rms-accent);
-  background: #f2ecfa;
+  background: var(--rms-accent-tint);
 }
 .rms-notice {
   display: flex;
   gap: 10px;
   align-items: flex-start;
   padding: 12px 14px;
-  background: #fff5e5;
-  color: #795017;
+  background: var(--rms-warn-bg);
+  color: var(--rms-warn);
   border-radius: 6px;
   margin-bottom: 20px;
   font-size: 12px;
@@ -740,10 +749,10 @@
   transition: background 100ms ease-out;
 }
 .rms-table tbody tr:hover td {
-  background: oklch(98.5% 0.005 285);
+  background: var(--surface-subtle);
 }
 .rms-table tbody tr[aria-selected="true"] td {
-  background: #f7f3ff;
+  background: var(--rms-accent-tint);
 }
 .rms-table-name {
   font-weight: 700;
@@ -822,6 +831,31 @@
   height: 100%;
   border: 0;
 }
+/* Shown instead of the PDF frame where the browser can't display PDFs (e.g. Chrome on Android) */
+.rms-card-summary {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--rms-line);
+  border-radius: 8px;
+  background: var(--rms-paper);
+}
+.rms-card-summary dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.rms-card-summary dt {
+  font-size: 12px;
+  color: var(--rms-muted);
+}
+.rms-card-summary dd {
+  font-size: 16px;
+  font-weight: 700;
+}
+.rms-card-summary .rms-button {
+  width: 100%;
+}
 
 /* ── Profile ───────────────────────────────────────────────────────────── */
 .rms-profile {
@@ -856,6 +890,32 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.rms-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 12px;
+}
+.rms-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgb(15 23 42 / 0.12);
+  cursor: pointer;
+}
+.rms-swatch[aria-pressed="true"] {
+  outline: 2px solid var(--rms-ink);
+  outline-offset: 2px;
+}
+.rms-card-head-table {
+  display: grid;
+  grid-template-columns: 2fr repeat(5, 1fr);
+  gap: 6px;
+  padding: 7px 18px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 /* ── Sign-in ───────────────────────────────────────────────────────────── */
@@ -962,7 +1022,7 @@
     display: block;
     position: fixed;
     inset: 64px 0 0;
-    background: #17132055;
+    background: rgb(15 23 42 / 0.4);
     z-index: 35;
   }
   .rms-content {
