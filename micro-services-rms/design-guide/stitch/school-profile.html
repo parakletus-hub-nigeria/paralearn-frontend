@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Manrope:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-primary-container":"#ceb1ff","error-container":"#ffdad6","secondary-fixed":"#dde1ff","surface-container-low":"#f2f3ff","on-secondary":"#ffffff","tertiary-fixed":"#a6f2d1","surface-dim":"#d2d9f4","on-primary-fixed-variant":"#5d0abd","on-primary-fixed":"#270058","primary-container":"#641bc4","outline":"#7c7486","on-tertiary-fixed-variant":"#00513b","outline-variant":"#cdc3d7","on-secondary-fixed-variant":"#173bab","secondary-fixed-dim":"#b8c4ff","primary-fixed":"#ecdcff","on-background":"#131b2e","inverse-primary":"#d5bbff","tertiary":"#003f2d","on-secondary-container":"#00217a","surface-bright":"#faf8ff","surface-container-high":"#e2e7ff","surface-tint":"#7635d6","tertiary-fixed-dim":"#8bd6b6","on-error-container":"#93000a","surface-container-lowest":"#ffffff","on-surface":"#131b2e","secondary":"#3755c3","on-secondary-fixed":"#001453","error":"#ba1a1a","surface-variant":"#dae2fd","on-primary":"#ffffff","on-tertiary":"#ffffff","on-tertiary-container":"#83ceaf","inverse-surface":"#283044","on-surface-variant":"#4b4454","surface-container-highest":"#dae2fd","surface":"#faf8ff","inverse-on-surface":"#eef0ff","surface-container":"#eaedff","secondary-container":"#708cfd","primary-fixed-dim":"#d5bbff","on-error":"#ffffff","primary":"#49009a","background":"#faf8ff","on-tertiary-fixed":"#002116","tertiary-container":"#005941"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-md":"0.75rem","space-lg":"1rem",gutter:"1rem","space-sm":"0.5rem","space-xs":"0.25rem","margin-desktop":"2.5rem","margin-tablet":"1.5rem",margin:"1rem","space-xl":"1.5rem","gutter-desktop":"1.5rem","space-2xl":"2rem"},fontFamily:{"headline-md":["Manrope"],"data-metric":["Geist"],"label-md":["Geist"],"body-lg":["Manrope"],"headline-lg":["Manrope"],"headline-sm":["Manrope"],"body-md":["Manrope"],"headline-xl":["Manrope"],"label-sm":["Geist"],"body-sm":["Manrope"],"headline-xl-mobile":["Manrope"],"body-code":["Geist"]},fontSize:{"headline-md":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"data-metric":["22px",{lineHeight:"28px",letterSpacing:"-0.02em",fontWeight:"700"}],"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.04em",fontWeight:"600"}],"body-lg":["15px",{lineHeight:"22px",letterSpacing:"0em",fontWeight:"400"}],"headline-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"headline-sm":["16px",{lineHeight:"24px",letterSpacing:"0em",fontWeight:"600"}],"body-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"400"}],"headline-xl":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"label-sm":["11px",{lineHeight:"14px",letterSpacing:"0.05em",fontWeight:"600"}],"body-sm":["13px",{lineHeight:"18px",letterSpacing:"0.005em",fontWeight:"400"}],"headline-xl-mobile":["26px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"body-code":["13px",{lineHeight:"18px",letterSpacing:"0.02em",fontWeight:"500"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-60 bg-surface-container-lowest z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col"><div class="h-16 px-space-md flex items-center gap-space-sm bg-surface-container-low"><img alt="ParaLearn Results Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrCXBgALhxCi7zaDSSR5aE8SR-VerATeL6eB1ZM9_3rIlhvHjIQww0JFngadCiVWdH0FcpBVxDHu5bIc9cbFCQ7hG-1LHnAQz3RIJ42qw-rNSkfwUO_cNCKG5ptGsEetbGFmE3X6b1iGqXt_4RZP_VbfHRwAgWUvGsyHkyI8O2zyN7gVIVOFHTNn8ukiAqHJaxfhDqWF7xqbUZ93o_nmvJzT08zxljjm-fatc3Xqp0oi6A"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-primary leading-tight font-bold">ParaLearn</span><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Results MS</span></div></div><div class="p-space-md"><div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between"><div class="flex items-center gap-space-sm overflow-hidden"><div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-[18px]">school</span></div><div class="flex flex-col truncate"><span class="font-body-sm text-body-sm font-semibold text-on-surface truncate">Kings College Lagos</span><span class="font-label-sm text-label-sm text-on-surface-variant font-body-code truncate">kings.pln.ng</span></div></div><span class="material-symbols-outlined text-on-surface-variant text-[18px]">unfold_more</span></div></div><nav class="px-space-md flex flex-col gap-space-xs" data-active-classes="bg-primary-container text-on-primary font-semibold"><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="result-batches" href="#"><span class="material-symbols-outlined text-[20px]">table_chart</span><span>Result batches</span></a><a aria-current="page" class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg transition-all bg-primary-container text-on-primary font-semibold" data-path="school-profile" href="#"><span class="material-symbols-outlined text-[20px]">account_balance</span><span>School profile</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="csv-template" href="#"><span class="material-symbols-outlined text-[20px]">description</span><span>CSV template</span></a><a class="flex items-center justify-between px-space-md py-space-sm rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="paralearn-portal" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">open_in_new</span><span>ParaLearn Portal</span></div><span class="material-symbols-outlined text-[16px] text-outline">north_east</span></a></nav></div><div class="p-space-md flex flex-col gap-space-md"><div class="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-space-xs"><div class="flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></span><span class="font-label-md text-label-md font-semibold text-tertiary-container">Online</span></div><span class="material-symbols-outlined text-tertiary-container text-[16px]">cloud_done</span></div><div class="flex items-center gap-space-xs mt-space-xs"><span class="material-symbols-outlined text-outline text-[15px]">check_circle</span><span class="font-label-sm text-label-sm text-on-surface-variant">Ready without internet</span></div><button class="mt-space-xs w-full py-space-xs px-space-sm rounded-lg bg-surface-container-lowest text-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-space-xs hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors shadow-[0_1px_4px_rgba(0,0,0,0.04)]" type="button"><span class="material-symbols-outlined text-[16px]">download</span><span>Install app</span></button></div><div class="p-space-sm rounded-lg bg-surface-container flex items-center justify-between"><div class="flex items-center gap-space-sm overflow-hidden"><img alt="Profile" class="w-8 h-8 rounded-full object-cover shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9PQ3LtQWB3njLkgCdwloGI2fNYLJBi4CtS2U2FO6vMJ-jABG4kA3cTo01b8b9c6oiTQZl21WLjkXUoTdObZOrNQnSgs0DSjzP1ZM41beAXJsYRU3JAH_W_oIm6VH8zp4i_PDxsXb1oD1tVP8vqAacnYz928ooas1p7P-V9L9eaRty_k2AGCZc7IEzz4tyRY8SMDLIiYOGosD9MjyomcB5QZyJ5z-pUAKYAGUPRZoS"/><div class="flex flex-col truncate"><span class="font-body-sm text-body-sm font-semibold text-on-surface truncate">Mrs. Adesewa Okonjo</span><span class="font-label-sm text-label-sm text-on-surface-variant font-body-code truncate">kings.pln.ng</span></div></div><button class="p-space-xs text-on-surface-variant hover:text-error transition-colors" title="Sign out" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></aside><div class="pl-60 min-h-screen flex flex-col"><header class="fixed top-0 left-60 right-0 h-16 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40"><div class="h-16 w-full px-space-xl flex items-center justify-between"><div class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm"><span class="font-semibold text-on-surface">Kings College Lagos</span><span class="material-symbols-outlined text-[16px] text-outline">chevron_right</span><span class="font-semibold text-primary font-headline-sm text-headline-sm">Workspace</span></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md"><span class="material-symbols-outlined text-[16px] text-tertiary-container">sync_saved_locally</span><span class="font-body-code text-on-surface">All scores sent</span></div><div class="flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-md text-label-md font-semibold"><span class="w-2 h-2 rounded-full bg-tertiary-container"></span><span>Connected & Synced</span></div></div></div></header><main class="w-full pt-16 flex-1 bg-surface"><div class="flex flex-col w-full">
+<!-- Status & Local Sync Diagnostic Strip -->
+<div class="w-full bg-surface-container-low px-margin-desktop py-space-xs flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="inline-flex items-center gap-space-xs px-space-xs py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span>Local Database Active</span>
+</span>
+<span class="font-body-code text-body-code text-on-surface-variant">SQLite IndexedDB · 0 unstaged schema locks</span>
+</div>
+<div class="flex items-center gap-space-xs font-body-code text-body-code text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary-container">laptop_mac</span>
+<span>Encrypted device storage: ~/paralearn/kings-profile.blob</span>
+</div>
+</div>
+<!-- Main View Container -->
+<div class="w-full max-w-[1440px] mx-auto px-margin-desktop py-space-xl flex flex-col gap-space-xl">
+<!-- Header Section with Distinct Asymmetric Layout -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-lg">
+<div class="flex flex-col gap-space-xs max-w-2xl">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Printed at the top of every report card</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-body-code text-body-code text-on-surface-variant">Chapter 1.6</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">School profile</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">These details appear on all generated student report cards and booklets. Stored securely on this laptop.</p>
+</div>
+<!-- Quick Action Pill / State -->
+<div class="flex items-center gap-space-sm self-start md:self-auto bg-surface-container-lowest p-space-xs rounded-xl shadow-sm">
+<div class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-lg bg-surface-container text-on-surface font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px] text-primary">print</span>
+<span>A4 Sheet Ready</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-sm py-space-xs text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px] text-tertiary-container">check</span>
+<span>LASUBEB Compliant</span>
+</div>
+</div>
+</div>
+<!-- Two-Column Architecture: Left Form vs. Right Live Laser-Ledger Print Preview -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-desktop items-start">
+<!-- LEFT COLUMN: Form Controls (max ~580px spanning 7 columns) -->
+<form class="lg:col-span-7 flex flex-col gap-space-lg max-w-[620px]" id="profileForm" onsubmit="event.preventDefault(); saveSchoolProfile();">
+<!-- Notice Banner (Cobalt Information Pill) -->
+<div class="rounded-xl bg-secondary-fixed text-on-secondary-fixed-variant p-space-md flex items-start gap-space-sm shadow-sm">
+<span class="material-symbols-outlined text-secondary text-[22px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">info</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-headline-sm text-headline-sm font-semibold text-on-secondary-fixed">Report Card Identity Header</span>
+<p class="font-body-sm text-body-sm text-on-secondary-fixed-variant leading-relaxed">
+              Check how your school appears on report cards. You can change this anytime without corrupting past academic term records.
+            </p>
+</div>
+</div>
+<!-- Section 1: Institution Credentials -->
+<div class="bg-surface-container-lowest p-space-xl rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="font-body-code text-body-code px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-bold">SEC-01</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">School Identity</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Primary Ledger Info</span>
+</div>
+<!-- School Name (Required) -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface font-semibold" for="schoolNameInput">School Name <span class="text-error">*</span></label>
+<span class="font-body-code text-label-sm text-on-surface-variant">Required on WAEC / NECO records</span>
+</div>
+<input class="w-full h-10 px-space-md rounded-lg bg-surface font-body-md text-body-md text-on-surface outline-none transition-all placeholder:text-outline focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary shadow-sm" id="schoolNameInput" placeholder="e.g. Queen's College, Yaba" required="" type="text" value="Kings College Lagos"/>
+</div>
+<!-- School Motto -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface font-semibold" for="schoolMottoInput">School Motto <span class="font-body-md text-on-surface-variant font-normal">(Optional)</span></label>
+<span class="font-label-sm text-label-sm text-outline">Printed in italics below name</span>
+</div>
+<input class="w-full h-10 px-space-md rounded-lg bg-surface font-body-md text-body-md text-on-surface outline-none transition-all placeholder:text-outline focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary shadow-sm" id="schoolMottoInput" placeholder="e.g. Labor Omnia Vincit" type="text" value="Knowledge and Integrity"/>
+</div>
+<!-- School Physical Address -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-on-surface font-semibold" for="schoolAddressInput">Physical Postal Address <span class="font-body-md text-on-surface-variant font-normal">(Optional)</span></label>
+<input class="w-full h-10 px-space-md rounded-lg bg-surface font-body-md text-body-md text-on-surface outline-none transition-all placeholder:text-outline focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary shadow-sm" id="schoolAddressInput" placeholder="Street, District, State" type="text" value="3 Catholic Mission Street, Lagos Island, Lagos State"/>
+</div>
+<!-- Two-column row: Phone & Email -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-on-surface font-semibold" for="schoolPhoneInput">Official Phone Number</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-outline">call</span>
+<input class="w-full h-10 pl-9 pr-space-md rounded-lg bg-surface font-body-code text-body-md text-on-surface outline-none transition-all focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary shadow-sm" id="schoolPhoneInput" placeholder="+234 000 000 0000" type="text" value="+234 803 123 4567"/>
+</div>
+</div>
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-on-surface font-semibold" for="schoolEmailInput">Administrative Email</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-outline">mail</span>
+<input class="w-full h-10 pl-9 pr-space-md rounded-lg bg-surface font-body-code text-body-md text-on-surface outline-none transition-all focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary shadow-sm" id="schoolEmailInput" placeholder="admin@school.sch.ng" type="email" value="admin@kingscollege.sch.ng"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Crest, Brand Ink & Contrast System -->
+<div class="bg-surface-container-lowest p-space-xl rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="font-body-code text-body-code px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-bold">SEC-02</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Emblem & Ink Palette</span>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Auto Contrast Safe
+            </span>
+</div>
+<!-- Logo Upload Container -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Official School Crest / Insignia</span>
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-16 h-16 rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-center p-2 relative overflow-hidden group">
+<img class="w-full h-full object-contain" data-alt="Official high-resolution crest of Kings College Lagos featuring an academic shield, open book, and lion rampant rendered in refined dark violet and gold tones on a clean white background." id="previewEmblemThumb" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkV_rZ1icjHvXq9LX_2udRPN7lJMOP1__4QSEkDnV6iV9YOsvV8FkqI_vMz_yyO6cdmgHqRllxgFkjzUz-iZuf_U9XF-_n2DuLd8e8iay0adnTFfXgITWMtZD2QXrIGazNEsXi7Hr5Mi_WtYJM-Kb_mNa5u3UuuGaUSPZ0UM1DKHYoFbXUNCFSKBm9fCYbxT4N1ckEw0Houkyqj9svCrfS0DX94aCRZxOpg6n2AI2A"/>
+<div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-white">zoom_in</span>
+</div>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">crest-kings-lagos.png</span>
+<span class="font-body-code text-body-code text-on-surface-variant">240 × 240 px · PNG (Alpha transparent)</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5">Formats: PNG, JPG, SVG (Max 3MB)</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs shrink-0 w-full sm:w-auto">
+<label class="cursor-pointer flex-1 sm:flex-initial py-space-xs px-space-md rounded-lg bg-surface-container-lowest text-on-surface font-label-md text-label-md font-semibold flex items-center justify-center gap-space-xs shadow-sm hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px] text-primary">upload</span>
+<span>Change logo</span>
+<input accept="image/png, image/jpeg, image/svg+xml" class="hidden" onchange="handleLogoChange(event)" type="file"/>
+</label>
+<button class="py-space-xs px-space-sm rounded-lg bg-transparent text-error font-label-md text-label-md font-semibold hover:bg-error-container/30 transition-colors" onclick="removeLogo()" type="button">
+                  Remove
+                </button>
+</div>
+</div>
+</div>
+<!-- Color System: 10 Tested School Colors -->
+<div class="flex flex-col gap-space-sm pt-space-xs">
+<div class="flex justify-between items-baseline">
+<label class="font-label-md text-label-md text-on-surface font-semibold">Master Report Card Ink Colour</label>
+<span class="font-label-sm text-label-sm text-outline font-body-code">WCAG AAA ≥ 7:1 Print Legibility</span>
+</div>
+<!-- Swatches Grid -->
+<div class="grid grid-cols-5 sm:grid-cols-10 gap-2" id="paletteGrid">
+<!-- Swatch 1: ParaLearn Violet -->
+<button class="color-swatch relative h-10 rounded-lg shadow-sm flex items-center justify-center transition-transform hover:scale-105 ring-2 ring-primary ring-offset-2 ring-offset-surface-container-lowest" data-color="#641bc4" onclick="selectSchoolColor('#641bc4', 'ParaLearn Violet')" style="background-color: #641bc4;" title="ParaLearn Violet (#641bc4)" type="button">
+<span class="material-symbols-outlined text-white text-[16px] font-bold">check</span>
+</button>
+<!-- Swatch 2: Navy -->
+<button class="color-swatch relative h-10 rounded-lg shadow-sm flex items-center justify-center transition-transform hover:scale-105" data-color="#1e3a8a" onclick="selectSchoolColor('#1e3a8a', 'Navy Blue')" style="background-color: #1e3a8a;" title="Navy (#1e3a8a)" type="button"></button>
+<!-- Swatch 3: Royal Blue -->
+<button class="color-swatch relative h-10 rounded-lg shadow-sm flex items-center justify-center transition-transform hover:scale-105" data-color="#1d4ed8" onclick="selectSchoolColor('#1d4ed8', 'Royal Blue')" style="background-color: #1d4ed8;" title="Royal Blue (#1d4ed8)" type="button"></button>
+<!-- Swatch 4: Bottle Green -->
+<button class="color-swatch relative h-10 rounded-lg shadow-sm flex items-center justify-center transition-transform hover:scale-105" data-color="#166534" onclick="selectSchoolColor('#166534', 'Bottle Green')" style="background-color: #166534;" title="Bottle Green (#166534)" type="button"></button>
+<!-- Swatch 5: Maroon -->
+<button class="color-swatch relative h-10 rounded-lg shadow-sm flex items-center justify-center transition-transform hover:scale-105" data-color="#800000" onclick="selectSchoolColor('#800000', 'Maroon')" style="background-color: #800000;" title="Maroon (#800000)" type="button"></button>
+<!-- Swatch 6: Wine -->
+<button class="color-swatch relative h-10 rounded-lg shadow-sm flex items-center justify-center transition-transform hover:scale-105" data-color="#7f1d1d" onclick="selectSchoolColor('#7f1d1d', 'Deep Wine')" style="background-color: #7f1d1d;" title="Wine (#7f1d1d)" type="button"></button>
+<!-- Swatch 7: Charcoal -->
+<button class="color-swatch relative h-10 rounded-lg shadow-sm flex items-center justify-center transition-transform hover:scale-105" data-color="#1f2937" onclick="selectSchoolColor('#1f2937', 'Charcoal Slate')" style="background-color: #1f2937;" title="Charcoal (#1f2937)" type="button"></button>
+<!-- Swatch 8: Emerald -->
+<button class="color-swatch relative h-10 rounded-lg shadow-sm flex items-center justify-center transition-transform hover:scale-105" data-color="#065f46" onclick="selectSchoolColor('#065f46', 'Academic Emerald')" style="background-color: #065f46;" title="Emerald (#065f46)" type="button"></button>
+<!-- Swatch 9: Ochre / Gold (Triggers smart dark text rule) -->
+<button class="color-swatch relative h-10 rounded-lg shadow-sm flex items-center justify-center transition-transform hover:scale-105" data-color="#d97706" onclick="selectSchoolColor('#d97706', 'Colonial Gold')" style="background-color: #d97706;" title="Colonial Gold (#d97706)" type="button"></button>
+<!-- Swatch 10: Deep Plum -->
+<button class="color-swatch relative h-10 rounded-lg shadow-sm flex items-center justify-center transition-transform hover:scale-105" data-color="#4c0519" onclick="selectSchoolColor('#4c0519', 'Deep Plum')" style="background-color: #4c0519;" title="Deep Plum (#4c0519)" type="button"></button>
+</div>
+<!-- Custom Color Picker Input Field -->
+<div class="flex items-center gap-space-sm pt-space-xs">
+<div class="relative flex items-center">
+<input class="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0 p-0 shadow-sm" id="customColorPicker" onchange="onCustomColorChange(this.value)" type="color" value="#641bc4"/>
+</div>
+<div class="flex items-center gap-space-xs flex-1">
+<span class="font-body-code text-body-code text-on-surface-variant font-bold">HEX</span>
+<input class="w-32 h-10 px-space-md rounded-lg bg-surface font-body-code text-body-md text-on-surface uppercase outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary shadow-sm" id="hexColorInput" maxlength="7" oninput="onHexTextInput(this.value)" type="text" value="#641bc4"/>
+<span class="font-body-sm text-body-sm text-on-surface-variant italic pl-2 truncate" id="selectedColorName">ParaLearn Violet (Default)</span>
+</div>
+</div>
+<!-- Smart Contrast Rule Callout Box -->
+<div class="mt-space-xs p-space-sm rounded-lg bg-surface-container flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-[18px] text-tertiary-container shrink-0 mt-0.5">brightness_auto</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+<strong class="text-on-surface">School-color contrast rule:</strong> If a light colour (gold/yellow/sky blue) is picked, text automatically shifts to dark ink (<span class="font-body-code">#0f172a</span>) so report cards remain readable on laser printers.
+              </p>
+</div>
+</div>
+</div>
+<!-- Section 3: Next Term Calendar & Endorsement Stamp -->
+<div class="bg-surface-container-lowest p-space-xl rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="font-body-code text-body-code px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-bold">SEC-03</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Term Resumption & Signatures</span>
+</div>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-secondary font-bold">
+<span class="material-symbols-outlined text-[14px]">star</span> Highly Requested
+            </span>
+</div>
+<!-- Resumption Date Field -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface font-semibold" for="resumptionDateInput">Next Term Resumption Date</label>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Prints on bottom footnote</span>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-outline">event</span>
+<input class="w-full h-10 pl-9 pr-space-md rounded-lg bg-surface font-body-md text-body-md text-on-surface outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary shadow-sm" id="resumptionDateInput" placeholder="e.g. 11 January 2027" type="text" value="11 January 2027"/>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Automatically informs parents of the specific calendar return date across all printed cards.</p>
+</div>
+<!-- Principal Signature / Stamp Upload Container -->
+<div class="flex flex-col gap-space-xs pt-space-xs">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Principal Stamp & Authorized Signature</span>
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-24 h-14 rounded-lg bg-surface-container-lowest shadow-sm flex items-center justify-center p-1.5 overflow-hidden">
+<img class="w-full h-full object-contain filter contrast-125" data-alt="Monochrome digitized high-contrast signature and official circular wax-style institutional seal for Kings College Lagos administrative endorsement." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZkoEOATchougqusLOj9P1h7j__v2fWqorQ40rpp99uKXl7YRP_k0xbiVAhgJ25Cnak4ssPzXV1p5BsqEyNs5xmhFNA6W0MLzqC4-f5lFfENcrx7LCIRMiRAsGE9FIezo9q7tHfJbqGQVvrNlqp7VB90apL7IVi9UD0e4nDumi3Ho_iXATiPSa9kcQixqF3zGk1wKhnduxcI7Hrd-A4zsvFoFAnKUZQOXNPyecdXwT"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">principal-signature.png</span>
+<span class="font-body-code text-body-code text-on-surface-variant">Dark stamp imprint with transparent alpha</span>
+</div>
+</div>
+<label class="cursor-pointer py-space-xs px-space-md rounded-lg bg-surface-container-lowest text-on-surface font-label-md text-label-md font-semibold flex items-center gap-space-xs shadow-sm hover:bg-surface-container transition-colors shrink-0">
+<span class="material-symbols-outlined text-[16px] text-primary">draw</span>
+<span>Upload stamp / signature</span>
+<input accept="image/*" class="hidden" type="file"/>
+</label>
+</div>
+</div>
+</div>
+<!-- Form Submission Button & Save Status -->
+<div class="flex flex-col sm:flex-row items-center gap-space-md pt-space-xs">
+<button class="w-full sm:w-auto h-11 px-space-xl rounded-lg bg-primary text-on-primary font-headline-sm text-headline-sm font-semibold flex items-center justify-center gap-space-sm shadow-md hover:bg-primary-container transition-all active:scale-[0.98]" id="saveProfileBtn" type="submit">
+<span class="material-symbols-outlined text-[20px]">save</span>
+<span>Save profile</span>
+</button>
+<span class="font-body-code text-body-code text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary-container">lock</span>
+            Local machine encrypted cache only
+          </span>
+</div>
+</form>
+<!-- RIGHT COLUMN: Live Print Preview (Laser A4 Preview Dock) -->
+<div class="lg:col-span-5 flex flex-col gap-space-md sticky top-20">
+<!-- Preview Box Container -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-space-lg flex flex-col gap-space-md">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[18px] text-primary">visibility</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Live report card header preview</span>
+</div>
+<span class="px-space-xs py-0.5 rounded font-body-code text-label-sm bg-surface-container text-on-surface-variant font-bold uppercase tracking-wider">
+              1:1 Laser Print Scale
+            </span>
+</div>
+<!-- Exact Rendered Top of the A4 Card (Physical Paper Ledger Rendering) -->
+<div class="w-full bg-[#ffffff] rounded-lg shadow-sm p-4 flex flex-col gap-3 relative select-none">
+<!-- Top 7pt Decorative Color Bar -->
+<div class="w-full h-2 rounded-full transition-colors" id="previewColorBar" style="background-color: #641bc4;"></div>
+<!-- Ledger Header Core: Emblem, Names, Details & Session Badge -->
+<div class="flex items-start justify-between gap-3 pt-1">
+<!-- Emblem & School Identity Typography -->
+<div class="flex items-start gap-3 flex-1 min-w-0">
+<div class="w-14 h-14 rounded-lg bg-surface-container-low shrink-0 flex items-center justify-center p-1">
+<img class="w-full h-full object-contain" data-alt="Sharp monochrome crest emblem for Kings College Lagos with traditional crest motto and ribbon flourish." id="previewEmblemImg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCneaQc7OQuj_NaCt1lLCQ3ZJgZyt5RCXLrRkxt5s37MIdM9MhJ4IbpnuZVgXxw4umOOQYLpHCmOBeSTMDCauqmciy3c24bGtzQ-7sIQY7QulhA_PQuhh62fwsIbh-rYTX-RVTHYv4NbEk5bWlzn4ZglnVlGLHcIoG7WoGUPf8aEcr-MNWFxaL0mjW_G-pVdBhIfc5wNdAvKFXPxqgvN3tcQ6gD8kCUVG2SX45j5CsV"/>
+</div>
+<div class="flex flex-col min-w-0">
+<!-- Bold Uppercase School Title in Dynamic Ink -->
+<h2 class="font-headline-md text-headline-md tracking-tight font-extrabold uppercase truncate transition-colors" id="previewSchoolName" style="color: #641bc4;">
+                    KINGS COLLEGE LAGOS
+                  </h2>
+<!-- Italicized Motto -->
+<p class="font-body-sm text-body-sm italic text-on-surface-variant tracking-normal truncate" id="previewSchoolMotto">
+                    "Knowledge and Integrity"
+                  </p>
+<!-- Address, Phone & Email in Muted Ink -->
+<div class="flex flex-col gap-0.5 mt-1 font-body-code text-label-sm text-outline leading-tight">
+<span class="truncate" id="previewSchoolAddress">3 Catholic Mission Street, Lagos Island, Lagos State</span>
+<div class="flex items-center gap-2 flex-wrap">
+<span id="previewSchoolPhone">+234 803 123 4567</span>
+<span>•</span>
+<span class="truncate" id="previewSchoolEmail">admin@kingscollege.sch.ng</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Tinted Right-Aligned Badge -->
+<div class="shrink-0 flex flex-col items-end">
+<div class="px-2.5 py-1 rounded text-right transition-colors" id="previewSessionBadge" style="background-color: #ecdcff; color: #49009a;">
+<span class="font-label-sm text-label-sm font-bold uppercase tracking-wider block">STUDENT REPORT CARD</span>
+<span class="font-body-code text-label-sm block font-semibold">2026/2027 Session</span>
+</div>
+</div>
+</div>
+<!-- Scaled Preview of Academic Subject Table Header (Validating Contrast Legibility) -->
+<div class="w-full rounded mt-2 overflow-hidden">
+<div class="w-full px-2.5 py-1.5 flex items-center justify-between font-body-code text-label-sm font-bold text-white transition-colors" id="previewTableHeader" style="background-color: #641bc4;">
+<span class="w-1/3">SUBJECT TITLE</span>
+<span class="w-1/6 text-right">CA (40)</span>
+<span class="w-1/6 text-right">EXAM (60)</span>
+<span class="w-1/6 text-right">TOTAL</span>
+<span class="w-1/12 text-center">GRD</span>
+</div>
+<div class="bg-surface-container-low px-2.5 py-1 flex items-center justify-between font-body-code text-label-sm text-on-surface">
+<span class="w-1/3 font-semibold truncate">General Mathematics</span>
+<span class="w-1/6 text-right">36.0</span>
+<span class="w-1/6 text-right">54.0</span>
+<span class="w-1/6 text-right font-bold">90.0</span>
+<span class="w-1/12 text-center font-bold text-tertiary">A1</span>
+</div>
+<div class="bg-surface-container-lowest px-2.5 py-1 flex items-center justify-between font-body-code text-label-sm text-on-surface">
+<span class="w-1/3 font-semibold truncate">English Language</span>
+<span class="w-1/6 text-right">31.0</span>
+<span class="w-1/6 text-right">51.0</span>
+<span class="w-1/6 text-right font-bold">82.0</span>
+<span class="w-1/12 text-center font-bold text-tertiary">A1</span>
+</div>
+</div>
+<!-- Footer Footnote on A4: Resumption Date Preview -->
+<div class="pt-2 flex items-center justify-between font-body-code text-label-sm text-outline">
+<div class="flex items-center gap-1">
+<span class="font-semibold text-on-surface">Resumption Date:</span>
+<span class="text-primary font-bold" id="previewResumptionDate">11 January 2027</span>
+</div>
+<div class="flex items-center gap-1 text-[10px]">
+<span class="material-symbols-outlined text-[12px] text-tertiary">verified</span>
+<span>Authorized Ledger Stamp Affixed</span>
+</div>
+</div>
+</div>
+<!-- Note below preview -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-start gap-space-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-outline shrink-0 mt-0.5">history_edu</span>
+<p class="font-body-sm text-body-sm leading-snug">
+              Cards already generated keep the previous details. Open a batch and select 
+              <span class="font-semibold text-primary underline cursor-pointer hover:text-primary-container">Redo cards</span> 
+              to update them.
+            </p>
+</div>
+<!-- Quick Print Calibration Metrics -->
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<div class="p-space-sm rounded-lg bg-surface-container flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase font-semibold">Print Margin</span>
+<span class="font-data-metric text-headline-sm font-bold text-on-surface">12.7 mm (0.5")</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase font-semibold">Active Color Lum</span>
+<span class="font-data-metric text-headline-sm font-bold text-on-surface" id="previewLuminanceVal">1.82 (High ink)</span>
+</div>
+</div>
+</div>
+<!-- Academic Authority Card: Nigerian Standard Assurance -->
+<div class="bg-surface-container p-space-md rounded-xl flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-lowest text-primary flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[22px]">policy</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Official Registry Spec</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Valid for Federal Unity Colleges and State Ministry audits.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Toast Notification Simulator -->
+<div class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-space-sm px-space-lg py-space-md rounded-xl bg-inverse-surface text-inverse-on-surface shadow-xl" id="saveToast">
+<span class="material-symbols-outlined text-tertiary-fixed text-[22px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-bold text-inverse-on-surface">School profile saved</span>
+<span class="font-body-sm text-body-sm text-outline-variant">Stored locally on this laptop · Ready for batch PDF export</span>
+</div>
+</div>
+<!-- Realtime Script for Interactivity, Contrast Guard, and Print Preview -->
+<script>
+    // Live Binding for Inputs to Preview Card
+    const schoolNameInput = document.getElementById('schoolNameInput');
+    const schoolMottoInput = document.getElementById('schoolMottoInput');
+    const schoolAddressInput = document.getElementById('schoolAddressInput');
+    const schoolPhoneInput = document.getElementById('schoolPhoneInput');
+    const schoolEmailInput = document.getElementById('schoolEmailInput');
+    const resumptionDateInput = document.getElementById('resumptionDateInput');
+
+    const previewSchoolName = document.getElementById('previewSchoolName');
+    const previewSchoolMotto = document.getElementById('previewSchoolMotto');
+    const previewSchoolAddress = document.getElementById('previewSchoolAddress');
+    const previewSchoolPhone = document.getElementById('previewSchoolPhone');
+    const previewSchoolEmail = document.getElementById('previewSchoolEmail');
+    const previewResumptionDate = document.getElementById('previewResumptionDate');
+
+    const previewColorBar = document.getElementById('previewColorBar');
+    const previewTableHeader = document.getElementById('previewTableHeader');
+    const previewSessionBadge = document.getElementById('previewSessionBadge');
+    const customColorPicker = document.getElementById('customColorPicker');
+    const hexColorInput = document.getElementById('hexColorInput');
+    const selectedColorName = document.getElementById('selectedColorName');
+    const previewLuminanceVal = document.getElementById('previewLuminanceVal');
+
+    // Live sync form fields to preview
+    schoolNameInput.addEventListener('input', (e) => {
+      previewSchoolName.textContent = (e.target.value.trim() || 'SCHOOL NAME').toUpperCase();
+    });
+    schoolMottoInput.addEventListener('input', (e) => {
+      previewSchoolMotto.textContent = e.target.value.trim() ? `"${e.target.value.trim()}"` : '';
+    });
+    schoolAddressInput.addEventListener('input', (e) => {
+      previewSchoolAddress.textContent = e.target.value.trim() || 'School Physical Address';
+    });
+    schoolPhoneInput.addEventListener('input', (e) => {
+      previewSchoolPhone.textContent = e.target.value.trim() || '+234 000 000 0000';
+    });
+    schoolEmailInput.addEventListener('input', (e) => {
+      previewSchoolEmail.textContent = e.target.value.trim() || 'admin@school.sch.ng';
+    });
+    resumptionDateInput.addEventListener('input', (e) => {
+      previewResumptionDate.textContent = e.target.value.trim() || 'Upcoming Term';
+    });
+
+    // Helper: Calculate relative luminance to enforce the Smart Contrast Rule
+    function getLuminance(hex) {
+      let c = hex.replace('#', '');
+      if (c.length === 3) c = c.split('').map(x => x + x).join('');
+      const rgb = [
+        parseInt(c.substr(0, 2), 16) / 255,
+        parseInt(c.substr(2, 2), 16) / 255,
+        parseInt(c.substr(4, 2), 16) / 255
+      ].map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+      return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    }
+
+    // Apply school color with smart print contrast rule
+    function applyColor(hex, labelName) {
+      customColorPicker.value = hex;
+      hexColorInput.value = hex.toUpperCase();
+      if (labelName) selectedColorName.textContent = labelName;
+
+      const lum = getLuminance(hex);
+      previewLuminanceVal.textContent = lum.toFixed(2) + (lum > 0.4 ? ' (Light color)' : ' (High ink)');
+
+      // Color Bar and Header element
+      previewColorBar.style.backgroundColor = hex;
+      previewSchoolName.style.color = hex;
+
+      // Smart Contrast rule:
+      // If color is too light (lum > 0.4), table header text shifts to dark slate #0f172a
+      if (lum > 0.4) {
+        previewTableHeader.style.backgroundColor = hex;
+        previewTableHeader.style.color = '#0f172a';
+        previewSessionBadge.style.backgroundColor = hex;
+        previewSessionBadge.style.color = '#0f172a';
+      } else {
+        previewTableHeader.style.backgroundColor = hex;
+        previewTableHeader.style.color = '#ffffff';
+        previewSessionBadge.style.backgroundColor = '#ecdcff';
+        previewSessionBadge.style.color = '#49009a';
+      }
+
+      // Update swatch active rings
+      document.querySelectorAll('.color-swatch').forEach(btn => {
+        const btnColor = btn.getAttribute('data-color').toLowerCase();
+        if (btnColor === hex.toLowerCase()) {
+          btn.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-surface-container-lowest');
+          btn.innerHTML = '<span class="material-symbols-outlined text-white text-[16px] font-bold">check</span>';
+        } else {
+          btn.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-surface-container-lowest');
+          btn.innerHTML = '';
+        }
+      });
+    }
+
+    function selectSchoolColor(hex, label) {
+      applyColor(hex, label);
+    }
+
+    function onCustomColorChange(hex) {
+      applyColor(hex, 'Custom Ink Color');
+    }
+
+    function onHexTextInput(val) {
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        applyColor(val, 'Custom Ink Color');
+      }
+    }
+
+    function handleLogoChange(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('previewEmblemThumb').src = e.target.result;
+          document.getElementById('previewEmblemImg').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function removeLogo() {
+      const fallbackSrc = 'placeholder';
+      document.getElementById('previewEmblemThumb').src = fallbackSrc;
+      document.getElementById('previewEmblemImg').src = fallbackSrc;
+    }
+
+    // Save profile action with simulated toast
+    function saveSchoolProfile() {
+      const toast = document.getElementById('saveToast');
+      const btn = document.getElementById('saveProfileBtn');
+
+      btn.classList.add('opacity-75');
+      btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[20px]">sync</span><span>Saving...</span>';
+
+      setTimeout(() => {
+        btn.classList.remove('opacity-75');
+        btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">save</span><span>Save profile</span>';
+
+        toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+        toast.classList.add('translate-y-0', 'opacity-100');
+
+        setTimeout(() => {
+          toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+          toast.classList.remove('translate-y-0', 'opacity-100');
+        }, 4000);
+      }, 400);
+    }
+  </script>
+</div></main></div></body></html>

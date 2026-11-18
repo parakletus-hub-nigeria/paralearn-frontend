@@ -51,12 +51,23 @@ export function cardContext(profile: SchoolProfile, batch: Pick<BatchRecord, "te
       email: profile.email,
       color: profile.color,
       logo: profile.logo,
+      nextTermBegins: profile.nextTermBegins,
     },
   };
 }
 
-export function cancelGeneration() {
-  if (!state) return;
+/** Stops the run in progress; with a batch id, only if that batch is the one being generated */
+/**
+ * Identifies the school details that appear on a card, so a batch can tell when its saved booklets
+ * were made with older details. The logo counts by size and a sample of its bytes.
+ */
+export function profileFingerprint(p: SchoolProfile): string {
+  const logo = p.logo ? `${p.logo.bytes.length}:${Array.from(p.logo.bytes.subarray(0, 64)).join(".")}` : "";
+  return JSON.stringify([p.schoolName, p.motto, p.address, p.phone, p.email, p.color, p.nextTermBegins || "", logo]);
+}
+
+export function cancelGeneration(batchId?: string) {
+  if (!state || (batchId && state.batchId !== batchId)) return;
   cancelled = true;
   cancelCardDrawing();
 }
@@ -67,7 +78,9 @@ export async function generateBatch(batchId: string): Promise<"done" | "cancelle
   const batch = await db.batches.get(batchId);
   if (!batch) throw new Error("This batch no longer exists.");
   const classes = await getClassResults(batchId);
-  const ctx = cardContext(await getProfile(), batch);
+  const profile = await getProfile();
+  const ctx = cardContext(profile, batch);
+  const madeWith = profileFingerprint(profile);
   const overallTotal = classes.reduce((a, c) => a + c.students.length, 0);
   const finished = new Set(batch.generatedClasses);
   let overallDone = classes.filter((_, i) => finished.has(i)).reduce((a, c) => a + c.students.length, 0);
@@ -93,7 +106,7 @@ export async function generateBatch(batchId: string): Promise<"done" | "cancelle
           generatedAt: new Date().toISOString(),
         });
         finished.add(index);
-        await db.batches.update(batchId, { generatedClasses: [...finished].sort((a, b) => a - b) });
+        await db.batches.update(batchId, { generatedClasses: [...finished].sort((a, b) => a - b), cardsMadeWith: madeWith });
       });
       overallDone += cls.students.length;
     }
@@ -110,6 +123,6 @@ export async function generateBatch(batchId: string): Promise<"done" | "cancelle
 export async function clearBooklets(batchId: string) {
   await db.transaction("rw", db.booklets, db.batches, async () => {
     await db.booklets.where("batchId").equals(batchId).delete();
-    await db.batches.update(batchId, { generatedClasses: [] });
+    await db.batches.update(batchId, { generatedClasses: [], cardsMadeWith: undefined });
   });
 }

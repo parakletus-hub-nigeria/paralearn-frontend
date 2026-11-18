@@ -98,7 +98,18 @@ async function setSync(batchId: string, sync: BatchRecord["sync"]) {
  * POST result_up/process-result-sheets. ParaLearn files them under the school's current
  * session and term, and creates any classes, subjects or students it doesn't have yet.
  */
-export async function syncBatch(batchId: string): Promise<void> {
+/** Sends in progress, by batch: a second request for the same batch joins the first instead of uploading twice */
+const inFlight = new Map<string, Promise<void>>();
+
+export function syncBatch(batchId: string): Promise<void> {
+  const running = inFlight.get(batchId);
+  if (running) return running;
+  const run = sendBatch(batchId).finally(() => inFlight.delete(batchId));
+  inFlight.set(batchId, run);
+  return run;
+}
+
+async function sendBatch(batchId: string): Promise<void> {
   if (typeof navigator !== "undefined" && !navigator.onLine) throw new K12Error("You're offline. Scores will sync when you reconnect.");
   await setSync(batchId, { status: "syncing", startedAt: new Date().toISOString() });
   try {
@@ -149,7 +160,10 @@ export async function syncPending(): Promise<{ synced: number; failed: number }>
   const batches = await db.batches.toArray();
   let synced = 0;
   let failed = 0;
-  for (const b of batches) {
+  for (const listed of batches) {
+    // Re-read: the list is a snapshot, and "Send now" may have sent this batch since
+    const b = await db.batches.get(listed.id);
+    if (!b) continue;
     // A sync interrupted by closing the tab is left as "syncing"; retry it after two minutes
     const stuck = b.sync.status === "syncing" && Date.now() - Date.parse(b.sync.startedAt) > 120_000;
     const due = b.sync.status === "pending" || stuck || (b.sync.status === "failed" && !b.sync.needsSignIn);

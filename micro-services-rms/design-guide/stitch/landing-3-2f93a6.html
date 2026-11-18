@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Manrope:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"surface-container":"#eaedff","tertiary-fixed":"#a6f2d1","outline-variant":"#cdc3d7","primary-container":"#641bc4","surface-container-low":"#f2f3ff","surface-dim":"#d2d9f4","on-error":"#ffffff","primary-fixed":"#ecdcff","surface-container-highest":"#dae2fd","inverse-on-surface":"#eef0ff","surface-container-high":"#e2e7ff","surface-container-lowest":"#ffffff","on-surface":"#131b2e","tertiary":"#003f2d","on-secondary":"#ffffff","surface":"#faf8ff","secondary":"#3755c3","surface-bright":"#faf8ff","on-tertiary-container":"#83ceaf","secondary-fixed-dim":"#b8c4ff","on-tertiary":"#ffffff","on-background":"#131b2e","on-error-container":"#93000a","on-secondary-container":"#00217a","error-container":"#ffdad6","on-tertiary-fixed":"#002116","on-primary":"#ffffff","inverse-primary":"#d5bbff","on-secondary-fixed":"#001453","surface-variant":"#dae2fd","on-secondary-fixed-variant":"#173bab","on-tertiary-fixed-variant":"#00513b","on-primary-fixed-variant":"#5d0abd","error":"#ba1a1a","on-primary-container":"#ceb1ff","surface-tint":"#7635d6","tertiary-container":"#005941","secondary-container":"#708cfd","secondary-fixed":"#dde1ff","on-primary-fixed":"#270058","tertiary-fixed-dim":"#8bd6b6","inverse-surface":"#283044","background":"#faf8ff","primary":"#49009a","outline":"#7c7486","primary-fixed-dim":"#d5bbff","on-surface-variant":"#4b4454"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xs":"0.25rem","space-xl":"1.5rem","margin-desktop":"2.5rem","space-md":"0.75rem","margin":"1rem","space-2xl":"2rem","gutter-desktop":"1.5rem","margin-tablet":"1.5rem","space-sm":"0.5rem","space-lg":"1rem","gutter":"1rem"},"fontFamily":{"label-md":["Geist"],"label-sm":["Geist"],"headline-lg":["Manrope"],"headline-sm":["Manrope"],"body-md":["Manrope"],"headline-md":["Manrope"],"headline-xl-mobile":["Manrope"],"body-lg":["Manrope"],"data-metric":["Geist"],"body-code":["Geist"],"body-sm":["Manrope"],"headline-xl":["Manrope"]},"fontSize":{"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"600"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.05em","fontWeight":"600"}],"headline-lg":["24px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"700"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"0em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"20px","letterSpacing":"0em","fontWeight":"400"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-xl-mobile":["26px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"700"}],"body-lg":["15px",{"lineHeight":"22px","letterSpacing":"0em","fontWeight":"400"}],"data-metric":["22px",{"lineHeight":"28px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-code":["13px",{"lineHeight":"18px","letterSpacing":"0.02em","fontWeight":"500"}],"body-sm":["13px",{"lineHeight":"18px","letterSpacing":"0.005em","fontWeight":"400"}],"headline-xl":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 w-full max-w-[1440px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">menu_book</span></div><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight">ParaLearn</span><span class="font-label-sm text-label-sm px-space-xs py-[2px] rounded-full bg-surface-container-highest text-primary">Results</span></div><nav class="hidden lg:flex items-center gap-space-xs bg-surface-container-low px-space-xs py-space-xs rounded-full" data-active-classes="bg-primary-container text-on-primary-container font-bold rounded-full"><a aria-current="page" class="px-space-md py-space-xs transition-colors bg-primary-container text-on-primary-container font-bold rounded-full" data-path="landing" href="#">Features</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container px-space-md py-space-xs rounded-full transition-colors" data-path="bento" href="#">Bento</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container px-space-md py-space-xs rounded-full transition-colors" data-path="benchmark" href="#">Benchmark</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container px-space-md py-space-xs rounded-full transition-colors" data-path="report-card" href="#">Report Card</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container px-space-md py-space-xs rounded-full transition-colors" data-path="pricing" href="#">Pricing</a></nav><div class="flex items-center gap-space-md"><a class="hidden sm:inline-block font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="login" href="#">Sign in</a><a class="font-label-md text-label-md bg-primary-container text-on-primary hover:bg-primary px-space-lg py-space-sm rounded-lg transition-colors flex items-center gap-space-xs" data-path="studio" href="#"><span>Launch Free Offline Studio</span></a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface"><div class="flex flex-col w-full text-on-surface">
+<!-- HERO SECTION: Linear / Raycast Style -->
+<section class="relative w-full overflow-hidden bg-[#08090d] text-slate-100 py-16 md:py-24">
+<!-- Subtle Ambient Radial Glows -->
+<div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(100,27,196,0.28),rgba(255,255,255,0))]"></div>
+<div class="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-primary-container/15 rounded-full blur-[120px]"></div>
+<div class="pointer-events-none absolute top-1/2 -right-40 w-96 h-96 bg-secondary/15 rounded-full blur-[140px]"></div>
+<div class="relative max-w-[1440px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop flex flex-col items-center text-center">
+<!-- Eyebrow Pill -->
+<div class="inline-flex items-center gap-space-sm px-space-md py-1 rounded-full bg-surface-container-lowest/5 backdrop-blur-md border border-primary-container/40 shadow-[0_0_20px_rgba(100,27,196,0.25)] mb-space-xl">
+<span class="flex h-2 w-2 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+</span>
+<span class="font-label-sm text-label-sm tracking-widest text-slate-300 uppercase">v2.4 Engine Active</span>
+<span class="text-slate-600">•</span>
+<span class="font-label-sm text-label-sm tracking-wider text-primary-fixed-dim">100% Client-Side WASM</span>
+<span class="text-slate-600 hidden sm:inline">•</span>
+<span class="font-label-sm text-label-sm tracking-wider text-slate-300 hidden sm:inline">Zero Cloud Outage Risk</span>
+</div>
+<!-- Main Display Headline -->
+<h1 class="font-headline-xl text-3xl sm:text-5xl lg:text-[62px] lg:leading-[1.1] font-extrabold tracking-[-0.035em] max-w-4xl text-slate-100 mb-space-lg">
+        Continuous assessment in minutes.
+        <span class="block bg-gradient-to-r from-white via-primary-fixed to-secondary-fixed-dim bg-clip-text text-transparent mt-1">
+          Not sleepless nights.
+        </span>
+</h1>
+<!-- Subheadline -->
+<p class="font-body-lg text-body-lg text-slate-400 max-w-2xl mx-auto mb-space-xl leading-relaxed">
+        Transform messy Excel marksheets into official, WAEC/NECO-graded A4 report card booklets in 8 seconds. Works 100% on laptop battery with zero internet.
+      </p>
+<!-- Dual Actions & Micro-badges -->
+<div class="flex flex-col sm:flex-row items-center gap-space-md mb-space-md">
+<a class="w-full sm:w-auto px-space-xl py-3.5 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-headline-sm transition-all shadow-[0_0_30px_rgba(100,27,196,0.45)] hover:shadow-[0_0_45px_rgba(100,27,196,0.7)] flex items-center justify-center gap-space-sm group" href="#calculator">
+<span>Launch Free Offline Studio</span>
+<span class="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+</a>
+<a class="w-full sm:w-auto px-space-xl py-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-slate-700/60 font-headline-sm text-headline-sm transition-all flex items-center justify-center gap-space-sm" href="#sample-download">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Download Sample Excel (.xlsx)</span>
+</a>
+</div>
+<div class="flex items-center gap-space-md text-slate-400 font-label-sm text-label-sm mb-space-2xl">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-emerald-400 text-[14px]">check_circle</span> No credit card</span>
+<span>•</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-emerald-400 text-[14px]">check_circle</span> No per-student fee</span>
+<span>•</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-emerald-400 text-[14px]">bolt</span> Instant browser compilation</span>
+</div>
+<!-- FLAGSHIP INTERACTIVE PRODUCT HERO WINDOW -->
+<div class="w-full max-w-5xl rounded-2xl bg-slate-950/90 border border-slate-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] overflow-hidden text-left backdrop-blur-2xl">
+<!-- Window Top Chrome -->
+<div class="h-11 bg-slate-900/90 px-space-lg flex items-center justify-between border-b border-slate-800/80">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-rose-500/80"></div>
+<div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+<div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+<span class="ml-3 font-body-code text-slate-400 text-[12px] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-primary-fixed-dim">terminal</span>
+              rms.pln.ng/studio — JSS1_Continuous_Assessment_Final.xlsx
+            </span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Offline Ready
+            </span>
+<span class="font-label-sm text-label-sm text-slate-400 bg-slate-800 px-2 py-0.5 rounded">WASM v2.4</span>
+</div>
+</div>
+<!-- Triple Split Window Body -->
+<div class="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-800/80">
+<!-- Column 1: Terminal & Raw Sheets (4 cols) -->
+<div class="lg:col-span-4 p-space-lg flex flex-col justify-between bg-slate-950/60 font-body-code text-[12px]">
+<div>
+<div class="flex items-center justify-between mb-space-sm text-slate-400">
+<span class="uppercase tracking-wider font-semibold text-[11px] text-slate-300">Marksheet Ingestion</span>
+<span class="text-emerald-400 font-mono">1,248 Rows OK</span>
+</div>
+<div class="space-y-1.5 font-mono text-slate-400">
+<div class="p-2 rounded bg-slate-900/90 border border-slate-800">
+<div class="text-slate-500 text-[10px]">PARSED FILE</div>
+<div class="text-slate-200 font-medium truncate">JSS1_Continuous_Assessment_Final.xlsx</div>
+<div class="text-[11px] text-slate-400 mt-1 flex justify-between">
+<span>Sheet: Term 3 Scores</span>
+<span class="text-primary-fixed-dim">12 Subjects</span>
+</div>
+</div>
+<div class="pt-2 text-[11px] space-y-1">
+<div class="flex items-center justify-between text-slate-400">
+<span>[CA 1] (20%)</span>
+<span class="text-emerald-400 font-mono">Mapped ✓</span>
+</div>
+<div class="flex items-center justify-between text-slate-400">
+<span>[CA 2] (20%)</span>
+<span class="text-emerald-400 font-mono">Mapped ✓</span>
+</div>
+<div class="flex items-center justify-between text-slate-400">
+<span>[Final Exam] (60%)</span>
+<span class="text-emerald-400 font-mono">Mapped ✓</span>
+</div>
+<div class="flex items-center justify-between text-slate-400">
+<span>[Affective Domain]</span>
+<span class="text-primary-fixed-dim font-mono">Weighted ✓</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Pipeline Metrics -->
+<div class="mt-4 pt-3 border-t border-slate-800/80">
+<div class="flex items-center justify-between text-[11px]">
+<span class="text-slate-400">Execution time:</span>
+<span class="font-mono text-emerald-300 font-semibold">0.084s</span>
+</div>
+<div class="flex items-center justify-between text-[11px] mt-1">
+<span class="text-slate-400">Local Memory Allocated:</span>
+<span class="font-mono text-primary-fixed-dim">4.2 MB</span>
+</div>
+<div class="flex items-center justify-between text-[11px] mt-1">
+<span class="text-slate-400">Bandwidth Consumed:</span>
+<span class="font-mono text-slate-300">0.00 KB</span>
+</div>
+</div>
+</div>
+<!-- Column 2: Pipeline State (3 cols) -->
+<div class="lg:col-span-3 p-space-lg flex flex-col justify-between bg-slate-900/30">
+<div>
+<div class="font-label-sm text-label-sm uppercase tracking-wider text-slate-400 mb-space-md">Compilation Pipeline</div>
+<div class="space-y-3 font-body-sm text-[12px]">
+<div class="flex items-start gap-2.5">
+<div class="w-5 h-5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 text-[10px]">1</div>
+<div>
+<div class="text-slate-200 font-medium">Standard Deviation Normalizer</div>
+<div class="text-slate-400 text-[11px]">Outliers clamped at 100 max</div>
+</div>
+</div>
+<div class="flex items-start gap-2.5">
+<div class="w-5 h-5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 text-[10px]">2</div>
+<div>
+<div class="text-slate-200 font-medium">Dense Tie & Rank Solver</div>
+<div class="text-slate-400 text-[11px]">Equal marks share position (1st, 2nd, 2nd, 4th)</div>
+</div>
+</div>
+<div class="flex items-start gap-2.5">
+<div class="w-5 h-5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 text-[10px]">3</div>
+<div>
+<div class="text-slate-200 font-medium">WAEC 9-Point Scale Map</div>
+<div class="text-slate-400 text-[11px]">A1 (75-100) → F9 (0-39)</div>
+</div>
+</div>
+<div class="flex items-start gap-2.5">
+<div class="w-5 h-5 rounded-full bg-primary-container/40 border border-primary text-primary-fixed-dim flex items-center justify-center shrink-0 text-[10px]">4</div>
+<div>
+<div class="text-slate-100 font-medium">Vector PDF Generation</div>
+<div class="text-slate-400 text-[11px]">HP LaserJet Toner Friendly</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-800">
+<div class="flex items-center gap-2 text-slate-300 text-[11px]">
+<span class="material-symbols-outlined text-primary-fixed-dim text-[16px]">verified</span>
+<span>NECO / WAEC Compliant Format</span>
+</div>
+</div>
+</div>
+<!-- Column 3: Live Result Sheet Preview (5 cols) -->
+<div class="lg:col-span-5 p-space-lg bg-slate-900/70 flex flex-col items-center justify-center">
+<!-- White/Paper Card Mockup -->
+<div class="w-full max-w-[340px] bg-white text-slate-900 rounded-lg shadow-2xl p-4 transition-all duration-300 border border-slate-200" id="hero-report-mockup">
+<!-- Report Card Header -->
+<div class="flex items-center gap-3 pb-3 border-b border-slate-300">
+<div class="w-10 h-10 rounded bg-slate-900 text-white flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">school</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="text-[12px] font-black uppercase tracking-tight text-slate-950 truncate">KING’S COLLEGE LAGOS</div>
+<div class="text-[9px] font-mono text-slate-600">OFFICIAL TERM ASSESSMENT LEDGER • 2024/2025</div>
+</div>
+</div>
+<!-- Student Profile Micro Strip -->
+<div class="grid grid-cols-2 gap-2 my-2 text-[10px] bg-slate-100 p-2 rounded border border-slate-200">
+<div>
+<span class="text-slate-500 block text-[9px]">STUDENT NAME:</span>
+<span class="font-bold text-slate-900 truncate block">Adeyemi, Chidubem F.</span>
+</div>
+<div>
+<span class="text-slate-500 block text-[9px]">CLASS & ADMISSION:</span>
+<span class="font-mono font-semibold text-slate-900">JSS 1 Gold • #2024-0418</span>
+</div>
+</div>
+<!-- Mini Marks Ledger -->
+<div class="text-[10px] w-full">
+<div class="grid grid-cols-6 font-bold bg-slate-200/80 p-1 text-[8px] text-slate-700 uppercase">
+<span class="col-span-2">Subject</span>
+<span class="text-center">CA</span>
+<span class="text-center">Exam</span>
+<span class="text-center">Total</span>
+<span class="text-center">Grade</span>
+</div>
+<div class="divide-y divide-slate-200">
+<div class="grid grid-cols-6 py-1 px-0.5 items-center">
+<span class="col-span-2 font-medium truncate">Mathematics</span>
+<span class="text-center font-mono">38</span>
+<span class="text-center font-mono">54</span>
+<span class="text-center font-mono font-bold">92</span>
+<span class="text-center font-bold text-emerald-800">A1</span>
+</div>
+<div class="grid grid-cols-6 py-1 px-0.5 items-center bg-slate-50">
+<span class="col-span-2 font-medium truncate">English Lang.</span>
+<span class="text-center font-mono">34</span>
+<span class="text-center font-mono">49</span>
+<span class="text-center font-mono font-bold">83</span>
+<span class="text-center font-bold text-emerald-800">B2</span>
+</div>
+<div class="grid grid-cols-6 py-1 px-0.5 items-center">
+<span class="col-span-2 font-medium truncate">Basic Science</span>
+<span class="text-center font-mono">36</span>
+<span class="text-center font-mono">51</span>
+<span class="text-center font-mono font-bold">87</span>
+<span class="text-center font-bold text-emerald-800">A1</span>
+</div>
+<div class="grid grid-cols-6 py-1 px-0.5 items-center bg-slate-50">
+<span class="col-span-2 font-medium truncate">French Studies</span>
+<span class="text-center font-mono">29</span>
+<span class="text-center font-mono">42</span>
+<span class="text-center font-mono font-bold">71</span>
+<span class="text-center font-bold text-slate-800">B3</span>
+</div>
+</div>
+</div>
+<!-- Summary Stamp & Position -->
+<div class="mt-2 pt-2 border-t border-slate-300 flex items-center justify-between text-[10px]">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-slate-700">Position:</span>
+<span class="px-1.5 py-0.5 rounded bg-primary text-white font-mono font-bold text-[10px]">2nd of 48</span>
+</div>
+<div class="flex items-center gap-1 text-[9px] text-emerald-700 font-semibold">
+<span class="material-symbols-outlined text-[13px]">verified</span>
+<span>Principal Signed</span>
+</div>
+</div>
+</div>
+<!-- Print Preview Toggle -->
+<div class="flex items-center gap-2 mt-3 text-[11px] text-slate-400">
+<span class="material-symbols-outlined text-[14px] text-slate-400">print</span>
+<span>100% Vector PDF Output • Ready in 8 sec</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- BENTO GRID: "The Nightmare vs. Reality" -->
+<section class="w-full bg-[#0c0d14] text-slate-100 py-20 border-t border-slate-800/80">
+<div class="max-w-[1440px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop">
+<!-- Section Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-space-2xl gap-4">
+<div>
+<div class="font-label-sm text-label-sm text-primary-fixed-dim uppercase tracking-wider mb-2">Asymmetrical Engineering Matrix</div>
+<h2 class="font-headline-lg text-2xl md:text-4xl text-slate-100 font-extrabold tracking-tight">
+            Built for Nigeria’s toughest real-world conditions.
+          </h2>
+</div>
+<div class="text-slate-400 font-body-sm text-body-sm max-w-md">
+          Weak internet, bad laptop batteries, dirty generator diesel, and cheap black-and-white office printers shouldn’t halt academic operations.
+        </div>
+</div>
+<!-- Bento Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-space-lg">
+<!-- Bento Cell 1: Large (7 cols) - The A4 Physical Document -->
+<div class="md:col-span-7 bg-slate-950/80 rounded-2xl border border-slate-800 p-space-xl flex flex-col justify-between hover:border-primary-container/60 transition-colors">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-primary-container/20 text-primary-fixed-dim border border-primary-container/30">
+                Bento 01 • Output Fidelity
+              </span>
+<!-- Toggle switch for Monochrome vs Full Color -->
+<div class="flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[12px]">
+<button class="px-2.5 py-1 rounded text-slate-300 font-medium transition-colors bg-primary-container text-white" id="btn-mode-color" onclick="switchPrintMode('color')">Full Color</button>
+<button class="px-2.5 py-1 rounded text-slate-400 font-medium hover:text-white transition-colors" id="btn-mode-mono" onclick="switchPrintMode('mono')">HP Laser Mono</button>
+</div>
+</div>
+<h3 class="font-headline-md text-xl md:text-2xl text-slate-100 font-bold mb-space-sm">
+              “The Report Card is the Product.”
+            </h3>
+<p class="font-body-md text-slate-400 mb-space-lg">
+              Most online software produces colorful Web PDFs that smear into grey illegible mush on 12-year-old school HP LaserJet printers. ParaLearn features an auto-inverting monochrome engine with crisp hairline borders, high-contrast typography, and official WAEC grading scales.
+            </p>
+</div>
+<!-- Document Canvas Preview with dynamic color styling -->
+<div class="p-4 rounded-xl bg-white text-slate-900 border border-slate-300 transition-all duration-300" id="print-sheet-canvas">
+<div class="flex justify-between items-start border-b pb-3 mb-3" id="sheet-header-border">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-primary-container text-white flex items-center justify-center font-bold" id="sheet-badge-icon">
+                  KC
+                </div>
+<div>
+<div class="text-[13px] font-black uppercase tracking-tight" id="sheet-title-color">QUEEN’S COLLEGE YABA</div>
+<div class="text-[10px] text-slate-500 font-mono">Continuous Assessment Ledger • Senior Secondary 2</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-[10px] font-mono uppercase bg-slate-100 px-2 py-0.5 rounded text-slate-800 font-bold" id="sheet-mode-badge">Full RGB Print</div>
+<div class="text-[9px] text-slate-400 mt-1">WAEC Standard Scale</div>
+</div>
+</div>
+<!-- Subject scores table preview -->
+<div class="text-[11px] font-mono">
+<div class="grid grid-cols-12 bg-slate-100 py-1 px-2 font-bold text-slate-700 text-[10px]" id="sheet-table-head">
+<span class="col-span-5">SUBJECT</span>
+<span class="col-span-2 text-center">CA (40)</span>
+<span class="col-span-2 text-center">EX (60)</span>
+<span class="col-span-1 text-center">TOT</span>
+<span class="col-span-2 text-right">GRADE</span>
+</div>
+<div class="divide-y divide-slate-200">
+<div class="grid grid-cols-12 py-1 px-2 items-center">
+<span class="col-span-5 font-sans font-medium text-slate-800">Further Mathematics</span>
+<span class="col-span-2 text-center">36</span>
+<span class="col-span-2 text-center">58</span>
+<span class="col-span-1 text-center font-bold">94</span>
+<span class="col-span-2 text-right font-bold text-emerald-700" id="grade-badge-1">A1 (Distinction)</span>
+</div>
+<div class="grid grid-cols-12 py-1 px-2 items-center bg-slate-50/50">
+<span class="col-span-5 font-sans font-medium text-slate-800">Physics Laboratory</span>
+<span class="col-span-2 text-center">34</span>
+<span class="col-span-2 text-center">52</span>
+<span class="col-span-1 text-center font-bold">86</span>
+<span class="col-span-2 text-right font-bold text-emerald-700" id="grade-badge-2">A1 (Distinction)</span>
+</div>
+<div class="grid grid-cols-12 py-1 px-2 items-center">
+<span class="col-span-5 font-sans font-medium text-slate-800">Technical Drawing</span>
+<span class="col-span-2 text-center">31</span>
+<span class="col-span-2 text-center">44</span>
+<span class="col-span-1 text-center font-bold">75</span>
+<span class="col-span-2 text-right font-bold text-blue-700" id="grade-badge-3">B2 (Very Good)</span>
+</div>
+</div>
+</div>
+<!-- Footer summary -->
+<div class="mt-3 pt-2 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-600">
+<span>Overall: <strong>85.0%</strong> • Standing: <strong>1st of 34</strong></span>
+<span class="font-mono">Toner optimized: 0.00% color bleed</span>
+</div>
+</div>
+</div>
+<!-- Bento Cell 2: Hardware Telemetry (5 cols) -->
+<div class="md:col-span-5 bg-slate-950/80 rounded-2xl border border-slate-800 p-space-xl flex flex-col justify-between hover:border-primary-container/60 transition-colors">
+<div>
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-800/40">
+              Bento 02 • Hardware Benchmark
+            </span>
+<h3 class="font-headline-md text-xl md:text-2xl text-slate-100 font-bold mt-space-md mb-space-sm">
+              Tested on 10-year-old Core i3 Laptops
+            </h3>
+<p class="font-body-md text-slate-400 mb-space-lg">
+              Engineered with zero Electron bloatware. Native compiled Rust WASM executes directly in Google Chrome, Edge, or Firefox at hardware speeds.
+            </p>
+</div>
+<!-- Real-time metrics breakdown -->
+<div class="space-y-3 bg-slate-900/60 p-space-md rounded-xl border border-slate-800/80">
+<div>
+<div class="flex justify-between text-[12px] mb-1">
+<span class="text-slate-400">1,200 Students Total Rank & Score</span>
+<span class="font-mono text-emerald-400 font-bold">1.2 seconds</span>
+</div>
+<div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+<div class="bg-emerald-500 h-full w-[24%] rounded-full"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-[12px] mb-1">
+<span class="text-slate-400">Battery Consumption (500 Report Cards)</span>
+<span class="font-mono text-emerald-400 font-bold">< 1% drain</span>
+</div>
+<div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+<div class="bg-primary-fixed-dim h-full w-[12%] rounded-full"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-[12px] mb-1">
+<span class="text-slate-400">Active Internet Bandwidth Required</span>
+<span class="font-mono text-slate-200 font-bold">0.00 KB</span>
+</div>
+<div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+<div class="bg-slate-700 h-full w-[0%]"></div>
+</div>
+</div>
+<div class="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-emerald-400 text-[14px]">bolt</span> Native WASM Core</span>
+<span>Memory cap: 8.5MB max</span>
+</div>
+</div>
+</div>
+<!-- Bento Cell 3: The 9:00 PM Generator Crisis (6 cols) -->
+<div class="md:col-span-6 bg-slate-950/80 rounded-2xl border border-slate-800 p-space-xl flex flex-col justify-between hover:border-primary-container/60 transition-colors">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-amber-950/60 text-amber-400 border border-amber-800/40">
+                Bento 03 • Resilient Storage
+              </span>
+<!-- Toggle Network Simulation -->
+<button class="px-2.5 py-1 rounded text-[11px] font-mono bg-slate-900 border border-slate-700 text-amber-300 hover:bg-slate-800 flex items-center gap-1.5" id="btn-toggle-network" onclick="toggleSimulatedNetwork()">
+<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse" id="network-dot"></span>
+<span id="network-label">Toggle Internet Cut</span>
+</button>
+</div>
+<h3 class="font-headline-md text-xl md:text-2xl text-slate-100 font-bold mb-space-sm">
+              The 9:00 PM Generator Crisis
+            </h3>
+<p class="font-body-md text-slate-400 mb-space-lg">
+              Term reports are always due tomorrow morning. When the school generator runs out of diesel or MTN broadband goes dark, your work never disappears.
+            </p>
+</div>
+<!-- Simulated Status Banner -->
+<div class="bg-amber-950/20 border border-amber-800/40 rounded-xl p-4 transition-all" id="offline-sim-card">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-amber-400 text-[24px]">wifi_off</span>
+<div>
+<div class="text-[13px] font-bold text-amber-200">INTERNET DISCONNECTED • LOCAL WASM ACTIVE</div>
+<div class="text-[12px] text-amber-300/80 mt-0.5">
+                  100% of mark calculations, tie-breakers, PDF renders, and grade tables continue running locally. Records stored in encrypted browser IndexedDB.
+                </div>
+<div class="mt-3 flex items-center gap-3 text-[11px] font-mono text-slate-300">
+<span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700">✓ 486 marks buffered</span>
+<span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700">✓ Zero data lost</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento Cell 4: Automated Tie & Rank Solver (6 cols) -->
+<div class="md:col-span-6 bg-slate-950/80 rounded-2xl border border-slate-800 p-space-xl flex flex-col justify-between hover:border-primary-container/60 transition-colors">
+<div>
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-primary-container/20 text-primary-fixed-dim border border-primary-container/30">
+              Bento 04 • Speech Day Peace of Mind
+            </span>
+<h3 class="font-headline-md text-xl md:text-2xl text-slate-100 font-bold mt-space-md mb-space-sm">
+              Automated Tie & Rank Solver
+            </h3>
+<p class="font-body-md text-slate-400 mb-space-lg">
+              Avoid furious Speech Day confrontations with PTA parents. ParaLearn enforces dense Nigerian academic ranking logic automatically: when two students tie at 84%, both receive 2nd, and the subsequent student receives 4th.
+            </p>
+</div>
+<!-- Tie Comparison Graphic -->
+<div class="bg-slate-900/60 rounded-xl p-space-md border border-slate-800 font-mono text-[12px]">
+<div class="grid grid-cols-12 text-slate-500 pb-2 border-b border-slate-800 text-[10px]">
+<span class="col-span-6">STUDENT RECORD</span>
+<span class="col-span-3 text-center">TOTAL %</span>
+<span class="col-span-3 text-right">CALCULATED RANK</span>
+</div>
+<div class="divide-y divide-slate-800/80">
+<div class="grid grid-cols-12 py-2 items-center text-slate-300">
+<span class="col-span-6 font-sans">Bello, Mustapha</span>
+<span class="col-span-3 text-center font-bold text-white">89.4%</span>
+<span class="col-span-3 text-right text-emerald-400 font-bold">1st Position</span>
+</div>
+<div class="grid grid-cols-12 py-2 items-center bg-primary-container/10 text-slate-200">
+<span class="col-span-6 font-sans flex items-center gap-1.5">
+<span>Okeke, Somtochukwu</span>
+<span class="text-[9px] bg-primary text-white px-1 rounded">TIE</span>
+</span>
+<span class="col-span-3 text-center font-bold text-amber-300">84.0%</span>
+<span class="col-span-3 text-right text-primary-fixed-dim font-bold">2nd Position</span>
+</div>
+<div class="grid grid-cols-12 py-2 items-center bg-primary-container/10 text-slate-200">
+<span class="col-span-6 font-sans flex items-center gap-1.5">
+<span>Balogun, Zainab</span>
+<span class="text-[9px] bg-primary text-white px-1 rounded">TIE</span>
+</span>
+<span class="col-span-3 text-center font-bold text-amber-300">84.0%</span>
+<span class="col-span-3 text-right text-primary-fixed-dim font-bold">2nd Position</span>
+</div>
+<div class="grid grid-cols-12 py-2 items-center text-slate-300">
+<span class="col-span-6 font-sans">Effiong, Emmanuel</span>
+<span class="col-span-3 text-center font-bold text-white">81.5%</span>
+<span class="col-span-3 text-right text-slate-400 font-bold">4th Position</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- INTERACTIVE DIESEL & TIME SAVINGS CALCULATOR -->
+<section class="w-full bg-[#08090d] text-slate-100 py-20 border-t border-slate-800/80 relative" id="calculator">
+<div class="max-w-[1440px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop">
+<div class="text-center max-w-2xl mx-auto mb-space-2xl">
+<span class="font-label-sm text-label-sm text-primary-fixed-dim uppercase tracking-wider mb-2 block">Institutional Economy</span>
+<h2 class="font-headline-lg text-2xl md:text-4xl font-extrabold text-slate-100 tracking-tight">
+          Exam Week Savings Calculator
+        </h2>
+<p class="font-body-md text-slate-400 mt-2">
+          Move the slider to estimate how much diesel generator fuel, data bundles, and teacher overtime ParaLearn returns to your school each term.
+        </p>
+</div>
+<!-- Calculator Card -->
+<div class="max-w-4xl mx-auto bg-slate-950/90 border border-slate-800 rounded-3xl p-space-xl md:p-space-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+<!-- Slider Input Container -->
+<div class="mb-space-2xl">
+<div class="flex justify-between items-center mb-3">
+<label class="font-headline-sm text-headline-sm text-slate-200" for="student-slider">
+              Total Enrolled Students
+            </label>
+<div class="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 px-3 py-1.5 rounded-xl font-mono text-xl font-extrabold text-primary-fixed-dim">
+<span id="student-count-display">850</span>
+<span class="text-xs font-sans text-slate-400 font-normal">pupils</span>
+</div>
+</div>
+<input class="w-full h-3 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary-container focus:outline-none" id="student-slider" max="3000" min="100" oninput="updateCalculator(this.value)" step="50" type="range" value="850"/>
+<div class="flex justify-between text-[11px] font-mono text-slate-500 mt-2">
+<span>100 Students (Small Academy)</span>
+<span>1,500 Students</span>
+<span>3,000+ Students (Federal College)</span>
+</div>
+</div>
+<!-- Metric Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Metric 1: Teacher Overtime -->
+<div class="p-space-lg rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
+<span class="text-slate-400 text-[12px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-primary-fixed-dim">schedule</span>
+              Teacher Hours Saved
+            </span>
+<div class="my-3">
+<div class="font-data-metric text-data-metric text-white font-extrabold" id="calc-hours">27.2</div>
+<span class="text-[11px] text-slate-400">hours of Excel debugging</span>
+</div>
+<span class="font-label-sm text-[10px] text-emerald-400 font-mono">100% automated position sorting</span>
+</div>
+<!-- Metric 2: Generator Diesel -->
+<div class="p-space-lg rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
+<span class="text-slate-400 text-[12px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-amber-400">local_gas_station</span>
+              Diesel Cost Saved
+            </span>
+<div class="my-3">
+<div class="font-data-metric text-data-metric text-white font-extrabold" id="calc-diesel">₦42,500</div>
+<span class="text-[11px] text-slate-400">during compilation week</span>
+</div>
+<span class="font-label-sm text-[10px] text-amber-300 font-mono">Based on ₦1,250/L generator rate</span>
+</div>
+<!-- Metric 3: Speed -->
+<div class="p-space-lg rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
+<span class="text-slate-400 text-[12px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-emerald-400">speed</span>
+              Compilation Speed
+            </span>
+<div class="my-3">
+<div class="font-data-metric text-data-metric text-white font-extrabold" id="calc-speed">3.8s</div>
+<span class="text-[11px] text-slate-400">total browser batch time</span>
+</div>
+<span class="font-label-sm text-[10px] text-emerald-400 font-mono">Client-side WebAssembly</span>
+</div>
+<!-- Metric 4: Cloud Data Fee -->
+<div class="p-space-lg rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
+<span class="text-slate-400 text-[12px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary-fixed">wifi</span>
+              Bandwidth Cost
+            </span>
+<div class="my-3">
+<div class="font-data-metric text-data-metric text-emerald-400 font-extrabold">₦0.00</div>
+<span class="text-[11px] text-slate-400">zero MB consumed</span>
+</div>
+<span class="font-label-sm text-[10px] text-slate-400 font-mono">Runs entirely without internet</span>
+</div>
+</div>
+<div class="mt-space-xl pt-space-lg border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between text-slate-400 text-[13px] gap-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed-dim text-[18px]">verified_user</span>
+<span>Zero server upload — sensitive child grades remain securely on your school computer.</span>
+</div>
+<div class="font-mono text-[12px] text-slate-300">
+            Formula: Strict WAEC / NERDC Model
+          </div>
+</div>
+</div>
+</div>
+</section>
+<!-- FEATURES ENGINEERED FOR WEST AFRICAN SCHOOLS: 4-Card Matrix -->
+<section class="w-full bg-[#0c0d14] text-slate-100 py-20 border-t border-slate-800/80">
+<div class="max-w-[1440px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop">
+<div class="max-w-2xl mb-space-2xl">
+<span class="font-label-sm text-label-sm text-primary-fixed-dim uppercase tracking-wider mb-2 block">System Specialization</span>
+<h2 class="font-headline-lg text-2xl md:text-4xl font-extrabold text-slate-100 tracking-tight">
+          Engineered for Nigerian Academic Workflows
+        </h2>
+<p class="font-body-md text-slate-400 mt-2">
+          Designed after interviewing 120+ vice-principals across public, private, and mission schools.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-lg">
+<!-- Feature 1: Monochrome Laser Engine -->
+<div class="p-space-xl rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-primary-container transition-all flex flex-col justify-between">
+<div>
+<div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-primary-fixed-dim mb-space-lg">
+<span class="material-symbols-outlined text-[24px]">print</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-slate-100 font-bold mb-2">Monochrome Laser Engine</h3>
+<p class="font-body-sm text-slate-400 leading-relaxed">
+              Automatic toner inversion prevents heavy ink bleeding on fragile 70gsm newsprint and cheap HP deskjet/laser jet cartridges.
+            </p>
+</div>
+<div class="mt-space-lg pt-space-md border-t border-slate-800/80 text-[11px] font-mono text-slate-300 flex items-center justify-between">
+<span>HP LaserJet Tested</span>
+<span class="text-emerald-400">Crisp Hairlines</span>
+</div>
+</div>
+<!-- Feature 2: WAEC & NECO 9-Point Scale -->
+<div class="p-space-xl rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-primary-container transition-all flex flex-col justify-between">
+<div>
+<div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-primary-fixed-dim mb-space-lg">
+<span class="material-symbols-outlined text-[24px]">grade</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-slate-100 font-bold mb-2">WAEC & NECO 9-Point Scale</h3>
+<p class="font-body-sm text-slate-400 leading-relaxed">
+              Standardized A1 to F9 grading thresholds, cognitive weighting, and affective domain scoring (neatness, punctuality, honesty) built-in.
+            </p>
+</div>
+<div class="mt-space-lg pt-space-md border-t border-slate-800/80 text-[11px] font-mono text-slate-300 flex items-center justify-between">
+<span>NERDC Standard</span>
+<span class="text-emerald-400">Pre-Configured</span>
+</div>
+</div>
+<!-- Feature 3: Installable Desktop PWA -->
+<div class="p-space-xl rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-primary-container transition-all flex flex-col justify-between">
+<div>
+<div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-primary-fixed-dim mb-space-lg">
+<span class="material-symbols-outlined text-[24px]">desktop_windows</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-slate-100 font-bold mb-2">Installable Desktop PWA</h3>
+<p class="font-body-sm text-slate-400 leading-relaxed">
+              One click to pin directly to Windows taskbar or Mac Dock. Starts instantly without waiting for DNS queries or server handshakes.
+            </p>
+</div>
+<div class="mt-space-lg pt-space-md border-t border-slate-800/80 text-[11px] font-mono text-slate-300 flex items-center justify-between">
+<span>Windows • macOS • Linux</span>
+<span class="text-emerald-400">Offline PWA</span>
+</div>
+</div>
+<!-- Feature 4: Automatic Cloud Sync -->
+<div class="p-space-xl rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-primary-container transition-all flex flex-col justify-between">
+<div>
+<div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-primary-fixed-dim mb-space-lg">
+<span class="material-symbols-outlined text-[24px]">cloud_sync</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-slate-100 font-bold mb-2">Silent Background Sync</h3>
+<p class="font-body-sm text-slate-400 leading-relaxed">
+              Compile everything offline. Whenever the laptop connects to home WiFi or personal mobile hotspot, the finalized ledger backs up automatically.
+            </p>
+</div>
+<div class="mt-space-lg pt-space-md border-t border-slate-800/80 text-[11px] font-mono text-slate-300 flex items-center justify-between">
+<span>End-to-End Vault</span>
+<span class="text-emerald-400">Zero Conflict</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- INSTITUTIONAL TRUST & TRANSPARENT PRICING -->
+<section class="w-full bg-[#08090d] text-slate-100 py-20 border-t border-slate-800/80">
+<div class="max-w-[1440px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop">
+<!-- Trust Banner -->
+<div class="border-b border-slate-800/80 pb-space-2xl mb-space-2xl text-center">
+<span class="font-label-sm text-label-sm text-slate-400 uppercase tracking-widest block mb-4">
+          Trusted by Academic Administrators Across Nigeria
+        </span>
+<div class="flex flex-wrap items-center justify-center gap-6 md:gap-12 text-slate-400 font-headline-sm text-headline-sm opacity-80">
+<span class="hover:text-slate-200 transition-colors">Federal Government Colleges</span>
+<span>•</span>
+<span class="hover:text-slate-200 transition-colors">Lagos State Model Colleges</span>
+<span>•</span>
+<span class="hover:text-slate-200 transition-colors">Diocesan Education Boards</span>
+<span>•</span>
+<span class="hover:text-slate-200 transition-colors">Abuja Private Academies</span>
+</div>
+</div>
+<!-- Pricing Heading -->
+<div class="text-center max-w-xl mx-auto mb-space-xl">
+<span class="font-label-sm text-label-sm text-primary-fixed-dim uppercase tracking-wider mb-2 block">Honest Commercial Philosophy</span>
+<h2 class="font-headline-lg text-2xl md:text-4xl font-extrabold text-slate-100 tracking-tight">
+          No Per-Student Traps.
+        </h2>
+<p class="font-body-md text-slate-400 mt-2">
+          We do not charge per child or penalize you for growing your school. Choose offline freedom or full institution cloud sync.
+        </p>
+</div>
+<!-- 2 Plan Grid -->
+<div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<!-- Plan 1: Community Offline -->
+<div class="p-space-xl rounded-3xl bg-slate-950/80 border border-slate-800 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-center mb-space-md">
+<span class="font-label-sm text-label-sm text-slate-300 uppercase tracking-wider">Community Edition</span>
+<span class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono text-[11px]">Desktop Only</span>
+</div>
+<div class="flex items-baseline gap-2 mb-space-sm">
+<span class="text-4xl font-extrabold font-mono text-white">₦0</span>
+<span class="text-slate-400 font-body-sm">/ Forever Free</span>
+</div>
+<p class="font-body-sm text-slate-400 mb-space-lg">
+              100% offline client-side Excel mark sheet compiler for any teacher or administrator laptop.
+            </p>
+<ul class="space-y-3 font-body-sm text-slate-300 mb-space-xl">
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px]">check</span>
+<span>Unlimited Excel Marksheet parsing</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px]">check</span>
+<span>Automated WAEC 9-point scale grading</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px]">check</span>
+<span>Dense Tie & Rank solver (1st, 2nd, 2nd...)</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px]">check</span>
+<span>Laser-optimized Monochrome PDF export</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px]">check</span>
+<span>Zero internet required ever</span>
+</li>
+</ul>
+</div>
+<a class="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-headline-sm text-headline-sm text-center transition-colors" href="#calculator">
+            Use Free Studio
+          </a>
+</div>
+<!-- Plan 2: Full School Cloud -->
+<div class="p-space-xl rounded-3xl bg-slate-950 border border-primary-container relative flex flex-col justify-between shadow-[0_0_40px_rgba(100,27,196,0.25)]">
+<!-- Recommended Badge -->
+<div class="absolute -top-3.5 right-6 px-3 py-1 rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm shadow-md">
+            RECOMMENDED FOR PRINCIPALS
+          </div>
+<div>
+<div class="flex justify-between items-center mb-space-md">
+<span class="font-label-sm text-label-sm text-primary-fixed-dim uppercase tracking-wider">Full School Cloud</span>
+<span class="px-2.5 py-0.5 rounded-full bg-primary-container/20 text-primary-fixed-dim font-mono text-[11px]">Whole School</span>
+</div>
+<div class="flex items-baseline gap-2 mb-space-sm">
+<span class="text-4xl font-extrabold font-mono text-white">₦45,000</span>
+<span class="text-slate-400 font-body-sm">/ term (flat rate)</span>
+</div>
+<p class="font-body-sm text-slate-400 mb-space-lg">
+              Everything in Community, plus branded portal, cloud ledger backup, and instant parent checking.
+            </p>
+<ul class="space-y-3 font-body-sm text-slate-300 mb-space-xl">
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px]">check</span>
+<span>Custom sub-domain (<code>school.pln.ng</code>)</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px]">check</span>
+<span>Official digital watermark & Principal signature seal</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px]">check</span>
+<span>Online Parent Result Checker portal with PIN</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px]">check</span>
+<span>Automatic encrypted cloud sync on WiFi return</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px]">check</span>
+<span>Priority WhatsApp engineering support</span>
+</li>
+</ul>
+</div>
+<a class="w-full py-3 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-headline-sm text-center transition-all shadow-[0_0_20px_rgba(100,27,196,0.4)]" href="#calculator">
+            Activate Institution Portal
+          </a>
+</div>
+</div>
+</div>
+</section>
+<!-- HIGH-IMPACT CLOSING CTA -->
+<section class="w-full bg-[#08090d] text-slate-100 py-20 border-t border-slate-800/80 relative overflow-hidden">
+<div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(100,27,196,0.3),transparent_70%)]"></div>
+<div class="relative max-w-4xl mx-auto px-margin md:px-margin-tablet text-center">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container/20 border border-primary-container/40 text-primary-fixed-dim text-[12px] font-mono mb-space-lg">
+<span>No Installation Executables • Runs Purely In Browser</span>
+</div>
+<h2 class="font-headline-xl text-3xl sm:text-5xl font-extrabold text-white tracking-tight mb-space-md">
+        Ready to finish all report cards before bedtime tonight?
+      </h2>
+<p class="font-body-lg text-slate-400 max-w-xl mx-auto mb-space-xl">
+        Upload your existing teacher marksheet, review the automatic ranking, and print clean A4 booklets in under two minutes.
+      </p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-space-md">
+<a class="w-full sm:w-auto px-space-2xl py-4 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-headline-sm transition-all shadow-[0_0_35px_rgba(100,27,196,0.6)] flex items-center justify-center gap-2" href="#calculator">
+<span>Open Free Offline Studio</span>
+<span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+</a>
+<div class="flex items-center gap-2 text-slate-400 font-mono text-[12px]">
+<span>Press</span>
+<kbd class="px-2 py-1 bg-slate-900 border border-slate-700 rounded text-slate-200 font-mono text-xs shadow-inner">⌘K</kbd>
+<span>for shortcut panel</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- INTERACTIVE SCRIPTS: Bento Switchers, Network Cut Simulation, & Dynamic Savings Slider -->
+<script>
+  // 1. Bento Print Mode Switcher (Full Color vs. HP Laser Mono)
+  function switchPrintMode(mode) {
+    const sheetCanvas = document.getElementById('print-sheet-canvas');
+    const btnColor = document.getElementById('btn-mode-color');
+    const btnMono = document.getElementById('btn-mode-mono');
+    const sheetBadge = document.getElementById('sheet-badge-icon');
+    const titleColor = document.getElementById('sheet-title-color');
+    const modeBadge = document.getElementById('sheet-mode-badge');
+    const gradeBadge1 = document.getElementById('grade-badge-1');
+    const gradeBadge2 = document.getElementById('grade-badge-2');
+    const gradeBadge3 = document.getElementById('grade-badge-3');
+
+    if (mode === 'mono') {
+      btnMono.classList.remove('text-slate-400');
+      btnMono.classList.add('bg-slate-800', 'text-white');
+      btnColor.classList.remove('bg-primary-container', 'text-white');
+      btnColor.classList.add('text-slate-400');
+
+      // Change sheet to stark monochrome laser styling
+      sheetCanvas.classList.remove('border-slate-300');
+      sheetCanvas.classList.add('border-black', 'bg-white');
+      sheetBadge.classList.remove('bg-primary-container');
+      sheetBadge.classList.add('bg-black', 'text-white');
+      titleColor.classList.remove('text-primary');
+      titleColor.classList.add('text-black');
+      modeBadge.textContent = 'Monochrome Laser (Toner-Safe)';
+      modeBadge.classList.remove('bg-slate-100', 'text-slate-800');
+      modeBadge.classList.add('bg-black', 'text-white');
+
+      gradeBadge1.classList.remove('text-emerald-700');
+      gradeBadge1.classList.add('text-black');
+      gradeBadge2.classList.remove('text-emerald-700');
+      gradeBadge2.classList.add('text-black');
+      gradeBadge3.classList.remove('text-blue-700');
+      gradeBadge3.classList.add('text-black');
+    } else {
+      btnColor.classList.remove('text-slate-400');
+      btnColor.classList.add('bg-primary-container', 'text-white');
+      btnMono.classList.remove('bg-slate-800', 'text-white');
+      btnMono.classList.add('text-slate-400');
+
+      // Revert to full color
+      sheetCanvas.classList.remove('border-black');
+      sheetCanvas.classList.add('border-slate-300');
+      sheetBadge.classList.remove('bg-black');
+      sheetBadge.classList.add('bg-primary-container', 'text-white');
+      titleColor.classList.remove('text-black');
+      modeBadge.textContent = 'Full RGB Print';
+      modeBadge.classList.remove('bg-black', 'text-white');
+      modeBadge.classList.add('bg-slate-100', 'text-slate-800');
+
+      gradeBadge1.classList.add('text-emerald-700');
+      gradeBadge1.classList.remove('text-black');
+      gradeBadge2.classList.add('text-emerald-700');
+      gradeBadge2.classList.remove('text-black');
+      gradeBadge3.classList.add('text-blue-700');
+      gradeBadge3.classList.remove('text-black');
+    }
+  }
+
+  // 2. Network Toggle Simulation
+  let isOffline = true;
+  function toggleSimulatedNetwork() {
+    isOffline = !isOffline;
+    const card = document.getElementById('offline-sim-card');
+    const label = document.getElementById('network-label');
+    const dot = document.getElementById('network-dot');
+
+    if (isOffline) {
+      card.className = "bg-amber-950/20 border border-amber-800/40 rounded-xl p-4 transition-all";
+      card.innerHTML = `
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-amber-400 text-[24px]">wifi_off</span>
+          <div>
+            <div class="text-[13px] font-bold text-amber-200">INTERNET DISCONNECTED • LOCAL WASM ACTIVE</div>
+            <div class="text-[12px] text-amber-300/80 mt-0.5">
+              100% of mark calculations, tie-breakers, PDF renders, and grade tables continue running locally. Records stored in encrypted browser IndexedDB.
+            </div>
+            <div class="mt-3 flex items-center gap-3 text-[11px] font-mono text-slate-300">
+              <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700">✓ 486 marks buffered</span>
+              <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700">✓ Zero data lost</span>
+            </div>
+          </div>
+        </div>`;
+      label.textContent = "Cut Internet";
+      dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+    } else {
+      card.className = "bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-4 transition-all";
+      card.innerHTML = `
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-emerald-400 text-[24px]">cloud_done</span>
+          <div>
+            <div class="text-[13px] font-bold text-emerald-300">INTERNET RESTORED • INSTANT SYNC OK</div>
+            <div class="text-[12px] text-emerald-400/80 mt-0.5">
+              All 486 staged records cleanly reconciled with cloud ledger at school.pln.ng in 0.4 seconds. No data collisions detected.
+            </div>
+            <div class="mt-3 flex items-center gap-3 text-[11px] font-mono text-slate-300">
+              <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700">✓ Sync complete</span>
+              <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700">✓ Portals up to date</span>
+            </div>
+          </div>
+        </div>`;
+      label.textContent = "Restore Internet";
+      dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+    }
+  }
+
+  // 3. Diesel & Time Savings Dynamic Slider
+  function updateCalculator(students) {
+    document.getElementById('student-count-display').textContent = students;
+
+    // Calculations based on typical Nigerian secondary school benchmarks
+    // Average 1 teacher spends ~3.2 hours per 100 students debugging Excel formulas
+    const hoursSaved = ((students / 100) * 3.2).toFixed(1);
+    
+    // Average school runs 15kVA - 30kVA diesel gen at ~3.5L/hr for ~8-12 hours during exam marking week
+    // ~50 Naira fuel cost per student eliminated in late night generator running
+    const dieselSavingsNaira = Math.round(students * 50);
+    const formattedDiesel = new Intl.NumberFormat('en-NG').format(dieselSavingsNaira);
+
+    // WASM speed formula: roughly 0.45s per 100 students
+    const wasmSpeed = Math.max(0.4, (students * 0.0044)).toFixed(1);
+
+    document.getElementById('calc-hours').textContent = hoursSaved;
+    document.getElementById('calc-diesel').innerHTML = '₦' + formattedDiesel;
+    document.getElementById('calc-speed').textContent = wasmSpeed + 's';
+  }
+</script></main><footer class="w-full bg-surface-container-lowest py-space-2xl"><div class="w-full max-w-[1440px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop"><div class="flex flex-wrap items-center justify-between gap-space-lg pb-space-xl"><div class="flex flex-wrap items-center gap-space-sm"><span class="font-body-code text-body-code px-space-sm py-[3px] rounded-full bg-surface-container-low text-on-surface-variant">WAEC & NECO Aligned</span><span class="font-body-code text-body-code px-space-sm py-[3px] rounded-full bg-surface-container-low text-on-surface-variant">Offline WASM Engine v2.4</span><span class="font-body-code text-body-code px-space-sm py-[3px] rounded-full bg-surface-container-low text-on-surface-variant">0.00 KB Cloud Footprint</span></div><div class="flex items-center gap-space-md text-on-surface-variant"><a class="font-label-sm text-label-sm hover:text-on-surface transition-colors" data-path="documentation" href="#">Documentation</a><a class="font-label-sm text-label-sm hover:text-on-surface transition-colors" data-path="privacy" href="#">Privacy Policy</a><a class="font-label-sm text-label-sm hover:text-on-surface transition-colors" data-path="terms" href="#">Terms of Service</a><a class="font-label-sm text-label-sm hover:text-on-surface transition-colors" data-path="status" href="#">Local Status</a></div></div><div class="pt-space-md flex flex-wrap items-center justify-between gap-space-sm"><p class="font-body-sm text-body-sm text-on-surface-variant">© 2025 ParaLearn Results. Engineered for offline educational resilience.</p><p class="font-body-sm text-body-sm text-on-surface-variant">Zero cloud lock-in • Local-first storage ledger</p></div></div></footer></body></html>

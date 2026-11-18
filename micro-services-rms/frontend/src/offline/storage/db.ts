@@ -21,6 +21,8 @@ export interface SchoolProfile {
   email: string;
   color: string;
   logo: { bytes: Uint8Array; type: "png" | "jpg" } | null;
+  /** Printed on every card as "Next term begins: ...", e.g. "Monday, 12 January 2027". Optional; empty hides the line */
+  nextTermBegins?: string;
 }
 
 export type SyncState =
@@ -40,6 +42,8 @@ export interface BatchRecord {
   issues: SheetIssue[];
   /** Indexes of classes whose booklet PDF is saved; generation resumes from the rest */
   generatedClasses: number[];
+  /** Fingerprint of the school details the saved booklets were drawn with (see profileFingerprint) */
+  cardsMadeWith?: string;
   sync: SyncState;
 }
 

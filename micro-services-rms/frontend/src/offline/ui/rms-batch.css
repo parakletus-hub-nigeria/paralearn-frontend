@@ -1,0 +1,445 @@
+/* Batch view (#/batch/{id}). Layout from design-guide/stitch/batch-view; see SELECTION.md.
+   Builds on rms-workspace.css tokens and classes; everything here is scoped to .rms-batch. */
+
+.rms-batch {
+  --rms-batch-ok: #047857;
+  --rms-danger: #b91c1c;
+  --rms-danger-press: #991b1b;
+}
+
+/* ── Heading ───────────────────────────────────────────────────────────── */
+.rms-batch-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.rms-batch-title {
+  min-width: 0;
+}
+.rms-batch-term {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--rms-muted);
+}
+.rms-batch-term span:first-child {
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--rms-accent-tint);
+  color: var(--rms-accent);
+  font-weight: 600;
+}
+.rms-batch-head h1 {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.rms-batch-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 20px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--rms-muted);
+}
+.rms-batch-facts span {
+  white-space: nowrap;
+}
+.rms-batch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.rms-batch-busy {
+  margin: -12px 0 20px;
+  font-size: 12px;
+  color: var(--rms-muted);
+}
+
+/* ── Status band: cards and ParaLearn side by side ────────────────────── */
+.rms-band {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-block: 1px solid var(--rms-line);
+  margin-bottom: 24px;
+}
+.rms-band-cell {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+  padding: 16px 24px 16px 0;
+}
+.rms-band-cell + .rms-band-cell {
+  padding-left: 24px;
+  border-left: 1px solid var(--rms-line);
+}
+.rms-band-label {
+  font-size: 12px;
+  color: var(--rms-muted);
+}
+.rms-band-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 13px;
+}
+.rms-band-line .rms-status {
+  align-self: center;
+}
+.rms-band-detail {
+  min-width: 0;
+  color: var(--rms-ink);
+  line-height: 1.5;
+}
+.rms-band-detail strong {
+  font-weight: 700;
+}
+.rms-band-note {
+  font-size: 12px;
+  color: var(--rms-muted);
+}
+.rms-band-note.is-bad {
+  color: var(--rms-bad);
+}
+.rms-band-note.is-warn {
+  color: var(--rms-warn);
+}
+.rms-band-bar {
+  height: 6px;
+  border-radius: 3px;
+  max-width: 520px;
+}
+
+/* ── Notices ───────────────────────────────────────────────────────────── */
+.rms-batch .rms-notice {
+  align-items: center;
+  font-size: 13px;
+}
+.rms-batch-info {
+  margin-bottom: 16px;
+}
+.rms-batch-issues {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  background: var(--rms-warn-bg);
+  color: var(--rms-warn);
+}
+.rms-batch-issues summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+.rms-batch-issues summary::-webkit-details-marker {
+  display: none;
+}
+.rms-batch-issues summary > svg:first-child {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.rms-batch-issues summary > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.rms-batch-issues summary small {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+.rms-batch-issues-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.rms-batch-issues[open] .rms-batch-issues-chevron {
+  transform: rotate(180deg);
+}
+.rms-batch-issues-body {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 0 14px 14px 39px;
+}
+.rms-batch-issues-body .rms-issue-list {
+  margin-top: 0;
+}
+.rms-batch-issues .rms-button {
+  background: rgb(255 255 255 / 0.7);
+  border-color: rgb(146 64 14 / 0.25);
+  color: var(--rms-warn);
+}
+.rms-batch-issues .rms-button:hover {
+  background: #fffdf8;
+}
+
+/* ── Class bar: tabs, jump picker, booklet actions ────────────────────── */
+.rms-batch-classbar {
+  display: flex;
+  align-items: center;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--rms-line);
+}
+.rms-batch-tabs-wrap {
+  position: relative;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+/* A fade on the right edge says there are more classes to scroll to */
+.rms-batch-tabs {
+  gap: 4px;
+  scrollbar-width: thin;
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  padding-right: 32px;
+}
+.rms-batch-tabs button {
+  margin-bottom: -1px;
+  padding: 0 10px;
+}
+.rms-batch-tabs button:hover {
+  color: var(--rms-ink);
+}
+.rms-batch-tabs button[aria-selected="true"] small {
+  background: var(--rms-accent-tint);
+  color: var(--rms-accent);
+}
+.rms-tab-ready {
+  color: var(--rms-batch-ok);
+}
+.rms-tab-making {
+  color: var(--rms-accent);
+}
+.rms-batch-jump {
+  flex: 0 0 180px;
+}
+.rms-batch-jump .rms-select {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.rms-batch-booklet {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-left: auto;
+}
+
+/* ── Ledger and preview ────────────────────────────────────────────────── */
+.rms-batch .rms-batch-split {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+}
+.rms-ledger td {
+  padding-block: 10px;
+  height: 52px;
+}
+.rms-ledger-pos {
+  width: 64px;
+  font-weight: 600;
+  color: var(--rms-muted);
+}
+.rms-ledger tbody tr[aria-selected="true"] .rms-ledger-pos {
+  color: var(--rms-accent);
+}
+.rms-ledger-name {
+  display: block;
+  max-width: 100%;
+  padding: 2px 0;
+  text-align: left;
+  font-weight: 600;
+  color: var(--rms-ink);
+  overflow-wrap: anywhere;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.rms-ledger tbody tr[aria-selected="true"] .rms-ledger-name {
+  color: var(--rms-accent);
+  font-weight: 700;
+}
+.rms-ledger tbody tr:hover td {
+  background: var(--rms-accent-wash);
+}
+.rms-ledger tbody tr[aria-selected="true"] td {
+  background: var(--rms-accent-tint);
+}
+.rms-ledger-sub {
+  display: none;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--rms-muted);
+}
+.rms-ledger-missing {
+  font-family: var(--font-sans, inherit);
+  color: var(--rms-muted);
+}
+.rms-ledger .rms-grade {
+  min-width: 26px;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.rms-ledger-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--rms-muted);
+}
+.rms-ledger-foot strong {
+  color: var(--rms-ink);
+}
+
+.rms-batch-preview {
+  gap: 12px;
+}
+.rms-batch-preview:focus {
+  outline: none;
+}
+.rms-batch-preview .rms-preview-head {
+  align-items: flex-start;
+}
+.rms-preview-who {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.rms-preview-who strong {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rms-preview-who span {
+  font-size: 12px;
+  color: var(--rms-muted);
+}
+.rms-preview-back {
+  display: none;
+  justify-self: start;
+  margin-top: 4px;
+  font-size: 12px;
+}
+.rms-preview-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.rms-batch-preview .rms-preview-frame {
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.06);
+}
+
+/* ── Delete dialog ─────────────────────────────────────────────────────── */
+.rms-batch .rms-button.destructive {
+  background: var(--rms-danger);
+  border-color: var(--rms-danger);
+  color: #fdfdff;
+}
+.rms-batch .rms-button.destructive:hover {
+  background: var(--rms-danger-press);
+  border-color: var(--rms-danger-press);
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+/* Below 1280 the list keeps its column and the preview narrows; the admission number moves under the name */
+@media (max-width: 1280px) {
+  .rms-batch .rms-hide-md {
+    display: none;
+  }
+  .rms-ledger-sub {
+    display: block;
+  }
+  .rms-batch .rms-batch-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+    gap: 24px;
+  }
+  .rms-batch .rms-batch-preview {
+    position: sticky;
+    top: 24px;
+    max-width: none;
+  }
+  .rms-batch-preview .rms-preview-head {
+    flex-direction: column;
+  }
+}
+/* Phones: the preview moves under the list, with a way back to the chosen row */
+@media (max-width: 760px) {
+  .rms-batch .rms-batch-split {
+    grid-template-columns: 1fr;
+  }
+  .rms-batch .rms-batch-preview {
+    position: static;
+    scroll-margin-top: 80px;
+  }
+  .rms-preview-back {
+    display: inline;
+  }
+  .rms-ledger-hint {
+    display: none;
+  }
+}
+@media (max-width: 1023px) {
+  .rms-batch-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .rms-batch-head h1 {
+    font-size: 23px;
+  }
+  .rms-batch-actions {
+    justify-content: flex-start;
+  }
+  .rms-batch-booklet {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+@media (max-width: 640px) {
+  .rms-band {
+    grid-template-columns: 1fr;
+  }
+  .rms-band-cell + .rms-band-cell {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid var(--rms-line);
+  }
+  .rms-batch-actions .rms-button.primary {
+    flex: 1 1 100%;
+    order: -1;
+  }
+  .rms-batch-booklet .rms-button {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: normal;
+    text-align: left;
+  }
+  .rms-batch-jump {
+    flex: 1 1 100%;
+    order: -1;
+    padding-top: 4px;
+  }
+  .rms-batch-issues-body {
+    padding-left: 14px;
+  }
+}

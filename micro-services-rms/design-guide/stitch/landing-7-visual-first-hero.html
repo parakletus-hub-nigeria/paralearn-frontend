@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="web_standard" name="shell-type"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    @layer base {
+      html, body { margin:0; padding:0; }
+      body { overscroll-behavior:none; }
+      main > :first-child { margin-top:0!important; }
+      main > :last-child { margin-bottom:0!important; }
+    }
+    ::-webkit-scrollbar { display:none; }
+    .hero-perspective {
+      perspective: 1200px;
+    }
+    .hero-stage-card {
+      transform: rotateX(2deg) translateY(0);
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+    .hero-stage-card:hover {
+      transform: rotateX(0deg) translateY(-4px);
+    }
+    @keyframes subtlePulse {
+      0%, 100% { opacity: 0.35; transform: scale(1); }
+      50% { opacity: 0.55; transform: scale(1.05); }
+    }
+    .glow-aura {
+      animation: subtlePulse 7s infinite ease-in-out;
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-tertiary-fixed": "#002116",
+            "outline-variant": "#cdc3d7",
+            "inverse-on-surface": "#eef0ff",
+            "primary-container": "#641bc4",
+            "surface-bright": "#faf8ff",
+            "tertiary-fixed-dim": "#8bd6b6",
+            "on-secondary": "#ffffff",
+            "secondary-container": "#708cfd",
+            "background": "#faf8ff",
+            "on-surface": "#131b2e",
+            "surface-container": "#eaedff",
+            "primary": "#49009a",
+            "surface-container-high": "#e2e7ff",
+            "on-primary-container": "#ceb1ff",
+            "on-tertiary-fixed-variant": "#00513b",
+            "on-tertiary": "#ffffff",
+            "error": "#ba1a1a",
+            "on-primary": "#ffffff",
+            "on-error-container": "#93000a",
+            "secondary": "#3755c3",
+            "on-error": "#ffffff",
+            "secondary-fixed-dim": "#b8c4ff",
+            "inverse-surface": "#283044",
+            "tertiary": "#003f2d",
+            "on-background": "#131b2e",
+            "secondary-fixed": "#dde1ff",
+            "on-secondary-fixed": "#001453",
+            "outline": "#7c7486",
+            "surface-container-highest": "#dae2fd",
+            "on-primary-fixed": "#270058",
+            "surface-tint": "#7635d6",
+            "surface": "#faf8ff",
+            "inverse-primary": "#d5bbff",
+            "surface-variant": "#dae2fd",
+            "primary-fixed": "#ecdcff",
+            "tertiary-container": "#005941",
+            "on-primary-fixed-variant": "#5d0abd",
+            "primary-fixed-dim": "#d5bbff",
+            "on-secondary-container": "#00217a",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#f2f3ff",
+            "on-secondary-fixed-variant": "#173bab",
+            "tertiary-fixed": "#a6f2d1",
+            "on-surface-variant": "#4b4454",
+            "on-tertiary-container": "#83ceaf",
+            "error-container": "#ffdad6",
+            "surface-dim": "#d2d9f4"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "3xl": "1.5rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            "headline-xl": ["Manrope", "sans-serif"],
+            "headline-lg": ["Manrope", "sans-serif"],
+            "headline-md": ["Manrope", "sans-serif"],
+            "headline-sm": ["Manrope", "sans-serif"],
+            "body-lg": ["Manrope", "sans-serif"],
+            "body-md": ["Manrope", "sans-serif"],
+            "body-sm": ["Manrope", "sans-serif"],
+            "data-metric": ["Geist", "sans-serif"],
+            "body-code": ["Geist", "monospace"],
+            "label-md": ["Geist", "sans-serif"],
+            "label-sm": ["Geist", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background font-body-md text-on-surface antialiased selection:bg-primary-fixed selection:text-primary">
+<!-- HEADER -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-surface/85 backdrop-blur-md border-b border-surface-container-high/60 transition-all">
+<div class="max-w-[1440px] mx-auto h-16 px-6 lg:px-10 flex items-center justify-between">
+<!-- Brand Mark -->
+<div class="flex items-center gap-10">
+<a class="flex items-center gap-2.5 group" data-path="landing-page" href="#">
+<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm ring-1 ring-primary/20 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[19px]">menu_book</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-[17px] font-extrabold tracking-tight text-on-surface">ParaLearn</span>
+<span class="font-label-sm text-[10px] tracking-wide uppercase px-2 py-0.5 rounded-full bg-primary-fixed/60 text-primary font-bold">Results</span>
+</div>
+</a>
+<!-- Clean Nav -->
+<nav class="hidden md:flex items-center gap-7">
+<a class="font-body-md text-[13.5px] font-medium text-on-surface-variant hover:text-on-surface transition-colors" data-path="product" href="#">Product</a>
+<a class="font-body-md text-[13.5px] font-medium text-on-surface-variant hover:text-on-surface transition-colors" data-path="report-card-specs" href="#">A4 Dossier</a>
+<a class="font-body-md text-[13.5px] font-medium text-on-surface-variant hover:text-on-surface transition-colors" data-path="offline-engine" href="#">Offline Engine</a>
+<a class="font-body-md text-[13.5px] font-medium text-on-surface-variant hover:text-on-surface transition-colors" data-path="pricing-and-setup" href="#">Pricing</a>
+</nav>
+</div>
+<!-- Right Actions -->
+<div class="flex items-center gap-3">
+<a class="font-body-md text-[13.5px] font-medium text-on-surface-variant hover:text-on-surface transition-colors px-3 py-1.5" data-path="sign-in" href="#">Sign in</a>
+<a class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary-container text-on-primary hover:bg-primary transition-all font-body-md text-[13.5px] font-semibold shadow-sm hover:shadow" data-path="launch-studio" href="#">
+<span>Launch Studio</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</header>
+<main class="w-full pt-16 bg-background">
+<div class="flex flex-col w-full">
+<!-- 1. RADICALLY ELEVATED HERO SECTION (Pinterest/Dribbble SaaS Stage) -->
+<section class="w-full bg-background px-4 sm:px-6 lg:px-10 pt-10 pb-16 lg:pt-14 lg:pb-24 relative overflow-hidden">
+<!-- Ambient Glow Behind Stage -->
+<div class="glow-aura absolute top-12 left-1/2 -translate-x-1/2 w-[850px] h-[520px] rounded-full pointer-events-none -z-0" style="background: radial-gradient(circle, rgba(100, 27, 196, 0.16) 0%, rgba(112, 140, 253, 0.08) 45%, transparent 75%);"></div>
+<div class="absolute inset-0 pointer-events-none opacity-[0.03] -z-0" style="background-image: radial-gradient(#131b2e 1.5px, transparent 1.5px); background-size: 28px 28px;"></div>
+<div class="max-w-[1360px] mx-auto flex flex-col items-center gap-8 lg:gap-12 relative z-10">
+<!-- Headline & Punchy Intro -->
+<div class="flex flex-col items-center text-center max-w-4xl gap-4">
+<!-- Live Indicator Badge -->
+<div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-lowest border border-surface-container-high shadow-xs">
+<span class="flex h-2 w-2 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span>
+</span>
+<span class="font-body-code text-[11.5px] font-bold text-on-surface">100% Offline WASM Runtime</span>
+<span class="text-outline-variant font-bold">·</span>
+<span class="font-body-code text-[11.5px] font-extrabold text-primary uppercase tracking-wide">WAEC &amp; NECO Compliant</span>
+</div>
+<!-- Bold, Immediate Headline (Ultra punchy, 8 words max) -->
+<h1 class="font-headline-xl text-[40px] sm:text-[54px] lg:text-[62px] leading-[1.08] font-extrabold text-on-surface tracking-tight">
+            Turn raw Excel marks into official report cards. <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary-container to-secondary">In minutes.</span>
+</h1>
+<!-- 1-Sentence Crisp Subtitle -->
+<p class="font-body-lg text-[16px] sm:text-[18px] text-on-surface-variant max-w-2xl font-normal leading-snug">
+            Upload messy spreadsheets. Get WAEC-graded, print-ready A4 booklets in 8 seconds without internet.
+          </p>
+<!-- 2 Clean Buttons -->
+<div class="flex items-center gap-3 pt-1">
+<a class="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-primary text-on-primary hover:bg-primary-container transition-all font-body-md text-[14px] font-bold shadow-md hover:shadow-lg group" data-path="launch-studio" href="#">
+<span>Launch Free Studio</span>
+<span class="material-symbols-outlined text-[18px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+</a>
+<a class="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-surface-container-lowest border border-surface-container-high text-on-surface hover:bg-surface-container transition-all font-body-md text-[14px] font-semibold shadow-xs" data-path="download-sample" href="#">
+<span class="material-symbols-outlined text-[19px] text-secondary">visibility</span>
+<span>View Live Sample</span>
+</a>
+</div>
+</div>
+<!-- HIGH-IMPACT HERO SHOWCASE VIEWPORT -->
+<div class="w-full max-w-[1260px] relative mt-2 hero-perspective">
+<!-- FLOATING VISUAL BADGES (High contrast, clearly visible) -->
+<!-- Top-Left Floating Pill -->
+<div class="absolute -top-4 left-4 lg:left-8 z-30 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-container-lowest border border-surface-container-high shadow-[0_12px_28px_rgba(19,27,46,0.12)] ring-1 ring-primary/10">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-body-code text-[11.5px] font-extrabold text-on-surface">⚡ 0.08s Local WASM Engine</span>
+</div>
+<!-- Top-Right Floating Pill -->
+<div class="absolute -top-4 right-4 lg:right-8 z-30 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-container-lowest border border-surface-container-high shadow-[0_12px_28px_rgba(19,27,46,0.12)] ring-1 ring-secondary/10">
+<span class="material-symbols-outlined text-secondary text-[16px]">print</span>
+<span class="font-body-code text-[11.5px] font-extrabold text-on-surface">🖨️ 300 DPI Laser-Optimized (Zero Toner Waste)</span>
+</div>
+<!-- Left Floating Physical Seal Badge (Dimensional Stamp) -->
+<div class="hidden xl:flex absolute -left-6 top-1/2 -translate-y-1/2 z-30 flex-col items-center gap-1.5 p-3.5 rounded-2xl bg-surface-container-lowest border-2 border-primary/20 shadow-[0_16px_36px_rgba(19,27,46,0.15)] ring-4 ring-primary-fixed/40">
+<div class="w-12 h-12 rounded-full bg-primary/10 border-2 border-dashed border-primary flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">verified</span>
+</div>
+<div class="text-center">
+<span class="block font-body-code text-[10px] font-black uppercase text-primary tracking-wider">OFFICIAL STAMP</span>
+<span class="block font-body-code text-[9px] font-bold text-tertiary">WAEC / NECO COMPLIANT</span>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-body-code text-[9px] font-bold">
+              ✓ Verified Scale
+            </span>
+</div>
+<!-- Bottom-Left Floating Badge -->
+<div class="absolute -bottom-4 left-6 lg:left-12 z-30 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-surface-container-lowest border border-surface-container-high shadow-lg text-[11px] font-body-code font-bold text-on-surface ring-1 ring-tertiary/20">
+<span class="material-symbols-outlined text-[16px] text-tertiary">battery_charging_full</span>
+<span>🔋 100% Offline (Zero WiFi Needed)</span>
+</div>
+<!-- Bottom-Right Floating Badge -->
+<div class="absolute -bottom-4 right-6 lg:right-12 z-30 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-surface-container-lowest border border-surface-container-high shadow-lg text-[11px] font-body-code font-bold text-on-surface ring-1 ring-primary/20">
+<span class="material-symbols-outlined text-[16px] text-primary">workspace_premium</span>
+<span>Rank: 1st of 42 · Grade A1 (87.6%)</span>
+</div>
+<!-- Main Desktop Stage Container -->
+<div class="hero-stage-card rounded-2xl border border-surface-container-high bg-surface-container-lowest shadow-[0_30px_90px_rgba(73,0,154,0.14)] overflow-hidden">
+<!-- Window Topbar -->
+<div class="h-10 bg-surface-container-low/90 border-b border-surface-container-high flex items-center justify-between px-4">
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-[#ec6a5e]"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-[#f4bf4f]"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-[#62c554]"></span>
+</div>
+<span class="font-body-code text-[11px] font-semibold text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary">terminal</span> ParaLearn Studio · JSS 1 Alpha Ledger
+                </span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-body-code text-[10px] px-2 py-0.5 rounded bg-tertiary/10 text-tertiary font-bold">● Offline Mode</span>
+<span class="font-body-code text-[10px] px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">Term 1 · 2024/2025</span>
+</div>
+</div>
+<!-- Transformation Workspace Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 relative min-h-[460px]">
+<!-- LEFT: Raw Excel / Score Ledger (Ingestion Side) -->
+<div class="lg:col-span-5 bg-surface-container-low/40 p-4 sm:p-5 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-surface-container-high">
+<div class="flex flex-col gap-3">
+<!-- File Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-[#107c41] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                        XLS
+                      </div>
+<div>
+<div class="font-body-code text-[12px] font-bold text-on-surface flex items-center gap-1">
+                          Marksheet_CA_Final.xlsx
+                          <span class="material-symbols-outlined text-tertiary text-[14px]">check_circle</span>
+</div>
+<div class="font-body-code text-[10px] text-outline">42 records · CA1 + CA2 + Exam</div>
+</div>
+</div>
+<span class="font-body-code text-[10px] font-bold px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed">
+                      Auto-Parsed
+                    </span>
+</div>
+<!-- Column Match Pills -->
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest border border-surface-container-high font-body-code text-[10px] font-bold text-primary">✓ CA1 [20]</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest border border-surface-container-high font-body-code text-[10px] font-bold text-primary">✓ CA2 [20]</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest border border-surface-container-high font-body-code text-[10px] font-bold text-secondary">✓ Exam [60]</span>
+<span class="px-2 py-0.5 rounded bg-primary-fixed font-body-code text-[10px] font-black text-primary">= Tot [100]</span>
+</div>
+<!-- Spreadsheet Rows Table -->
+<div class="rounded-lg border border-surface-container-high bg-surface-container-lowest overflow-hidden shadow-2xs">
+<table class="w-full text-left font-body-code text-[11px]">
+<thead>
+<tr class="bg-surface-container/70 border-b border-surface-container-high text-on-surface-variant font-bold text-[10px]">
+<th class="py-1.5 px-2 text-center w-6">#</th>
+<th class="py-1.5 px-2">Student</th>
+<th class="py-1.5 px-1.5 text-right">CA1</th>
+<th class="py-1.5 px-1.5 text-right">CA2</th>
+<th class="py-1.5 px-1.5 text-right">Exam</th>
+<th class="py-1.5 px-2 text-right font-extrabold text-primary">Tot</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-high/60 text-on-surface">
+<tr class="bg-primary/5 font-semibold">
+<td class="py-1.5 px-2 text-center text-outline text-[10px]">1</td>
+<td class="py-1.5 px-2 font-bold text-primary">Ademola, C.</td>
+<td class="py-1.5 px-1.5 text-right text-outline">19</td>
+<td class="py-1.5 px-1.5 text-right text-outline">18</td>
+<td class="py-1.5 px-1.5 text-right text-outline">54</td>
+<td class="py-1.5 px-2 text-right font-black text-primary">91</td>
+</tr>
+<tr>
+<td class="py-1.5 px-2 text-center text-outline text-[10px]">2</td>
+<td class="py-1.5 px-2 font-medium">Bello, Aminat</td>
+<td class="py-1.5 px-1.5 text-right text-outline">17</td>
+<td class="py-1.5 px-1.5 text-right text-outline">16</td>
+<td class="py-1.5 px-1.5 text-right text-outline">48</td>
+<td class="py-1.5 px-2 text-right font-bold">81</td>
+</tr>
+<tr>
+<td class="py-1.5 px-2 text-center text-outline text-[10px]">3</td>
+<td class="py-1.5 px-2 font-medium">Chukwuma, I.</td>
+<td class="py-1.5 px-1.5 text-right text-outline">15</td>
+<td class="py-1.5 px-1.5 text-right text-outline">16</td>
+<td class="py-1.5 px-1.5 text-right text-outline">44</td>
+<td class="py-1.5 px-2 text-right font-bold">75</td>
+</tr>
+<tr>
+<td class="py-1.5 px-2 text-center text-outline text-[10px]">4</td>
+<td class="py-1.5 px-2 font-medium">Danjuma, D.</td>
+<td class="py-1.5 px-1.5 text-right text-outline">18</td>
+<td class="py-1.5 px-1.5 text-right text-outline">17</td>
+<td class="py-1.5 px-1.5 text-right text-outline">52</td>
+<td class="py-1.5 px-2 text-right font-bold">87</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Bottom Status -->
+<div class="pt-3 border-t border-surface-container-high/80 flex items-center justify-between font-body-code text-[11px]">
+<span class="text-tertiary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]">done_all</span> 12 Subjects Validated
+                  </span>
+<span class="text-outline">Ready to compile</span>
+</div>
+</div>
+<!-- CENTER CONNECTOR: Instant Transformation Spark / Arrow -->
+<div class="hidden lg:flex absolute left-[41.666%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex-col items-center gap-1">
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg ring-4 ring-surface-container-lowest animate-bounce">
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+</div>
+<span class="font-body-code text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-surface-container text-on-surface border border-surface-container-high shadow-xs">
+                  0.08s
+                </span>
+</div>
+<!-- RIGHT: Tangible Physical A4 Report Card (Dossier Side) -->
+<div class="lg:col-span-7 bg-surface-container-low/20 p-4 sm:p-6 flex flex-col justify-between relative overflow-hidden">
+<div class="flex flex-col gap-3 relative z-10">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-[13px] font-extrabold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[17px]">description</span> Official A4 Terminal Booklet
+                    </span>
+<span class="font-body-code text-[10.5px] font-bold px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed shadow-xs">
+                      Duplex Laser Ready
+                    </span>
+</div>
+<!-- Authentic Physical Document Sheet -->
+<div class="bg-surface-container-lowest rounded-xl border border-surface-container-high shadow-[0_12px_36px_rgba(19,27,46,0.08)] p-4 sm:p-5 flex flex-col gap-3">
+<!-- Crest & School Header -->
+<div class="flex items-start justify-between border-b-2 border-surface-container pb-2.5">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg bg-primary text-on-primary flex flex-col items-center justify-center font-bold text-[12px] leading-tight shadow-xs">
+<span>KCL</span>
+<span class="text-[7.5px] font-normal opacity-80">1909</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-[14px] font-black tracking-tight text-on-surface">KING'S COLLEGE LAGOS</span>
+<span class="font-body-sm text-[9.5px] text-on-surface-variant uppercase tracking-wider font-semibold">Federal Unity College · Lagos Island</span>
+<span class="font-body-code text-[9px] text-primary font-bold uppercase mt-0.5">Continuous Assessment Terminal Dossier</span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-body-code text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-surface-container border border-surface-container-high uppercase">Term 1 · 24/25</span>
+<div class="font-body-code text-[9px] text-outline mt-0.5 font-medium">Ref: KCL-2024-T1</div>
+</div>
+</div>
+<!-- Student Biodata Bar -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-surface-container-low/70 p-2 rounded-lg border border-surface-container-high/60 text-[11px] font-body-code">
+<div>
+<span class="text-[8.5px] text-outline block uppercase font-bold">Student</span>
+<span class="font-bold text-on-surface">Ademola, Chidiebere</span>
+</div>
+<div>
+<span class="text-[8.5px] text-outline block uppercase font-bold">Admin No</span>
+<span class="font-bold text-on-surface">KCL/2023/041</span>
+</div>
+<div>
+<span class="text-[8.5px] text-outline block uppercase font-bold">Class</span>
+<span class="font-bold text-on-surface">JSS 1 Alpha (42)</span>
+</div>
+<div>
+<span class="text-[8.5px] text-outline block uppercase font-bold">Rank</span>
+<span class="font-black text-primary">1st of 42 (87.6%)</span>
+</div>
+</div>
+<!-- Subject Table -->
+<div class="rounded-lg border border-surface-container-high overflow-hidden shadow-2xs">
+<table class="w-full text-left font-body-code text-[10.5px]">
+<thead>
+<tr class="bg-surface-container text-on-surface-variant font-bold border-b border-surface-container-high text-[9px] uppercase tracking-wider">
+<th class="py-1 px-2">Subject</th>
+<th class="py-1 px-1 text-right">CA1</th>
+<th class="py-1 px-1 text-right">CA2</th>
+<th class="py-1 px-1 text-right">Exam</th>
+<th class="py-1 px-1.5 text-right font-extrabold text-on-surface">Tot</th>
+<th class="py-1 px-1 text-center">Grd</th>
+<th class="py-1 px-1 text-right">Pos</th>
+<th class="py-1 px-2 text-left font-body-md text-[10px]">Remark</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-high/50 text-on-surface">
+<tr>
+<td class="py-1 px-2 font-bold">Mathematics</td>
+<td class="py-1 px-1 text-right text-outline">19</td>
+<td class="py-1 px-1 text-right text-outline">18</td>
+<td class="py-1 px-1 text-right text-outline">54</td>
+<td class="py-1 px-1.5 text-right font-black text-tertiary">91</td>
+<td class="py-1 px-1 text-center"><span class="px-1 py-0.2 rounded bg-tertiary/15 text-tertiary font-bold text-[9px]">A1</span></td>
+<td class="py-1 px-1 text-right font-medium">1st</td>
+<td class="py-1 px-2 text-on-surface-variant font-body-md text-[10px]">Distinction. Analytical clarity.</td>
+</tr>
+<tr class="bg-surface-container-low/30">
+<td class="py-1 px-2 font-bold">English Language</td>
+<td class="py-1 px-1 text-right text-outline">18</td>
+<td class="py-1 px-1 text-right text-outline">16</td>
+<td class="py-1 px-1 text-right text-outline">50</td>
+<td class="py-1 px-1.5 text-right font-black text-tertiary">84</td>
+<td class="py-1 px-1 text-center"><span class="px-1 py-0.2 rounded bg-tertiary/15 text-tertiary font-bold text-[9px]">A1</span></td>
+<td class="py-1 px-1 text-right font-medium">2nd</td>
+<td class="py-1 px-2 text-on-surface-variant font-body-md text-[10px]">Exceptional composition.</td>
+</tr>
+<tr>
+<td class="py-1 px-2 font-bold">Basic Science</td>
+<td class="py-1 px-1 text-right text-outline">19</td>
+<td class="py-1 px-1 text-right text-outline">17</td>
+<td class="py-1 px-1 text-right text-outline">52</td>
+<td class="py-1 px-1.5 text-right font-black text-tertiary">88</td>
+<td class="py-1 px-1 text-center"><span class="px-1 py-0.2 rounded bg-tertiary/15 text-tertiary font-bold text-[9px]">A1</span></td>
+<td class="py-1 px-1 text-right font-medium">1st</td>
+<td class="py-1 px-2 text-on-surface-variant font-body-md text-[10px]">Strong practical aptitude.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Barcode & Stamp Footer -->
+<div class="flex items-center justify-between pt-1 font-body-code text-[10px]">
+<div class="flex items-center gap-1.5 text-outline">
+<span class="tracking-widest font-bold">|||| | |||| |||</span>
+<span>PLN-KCL-041</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-bold text-on-surface">Avg: 87.6%</span>
+<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary-fixed text-primary font-extrabold text-[9.5px]">
+<span class="material-symbols-outlined text-[12px]">verified</span> Signed
+                        </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Status -->
+<div class="pt-3 border-t border-surface-container-high/80 flex items-center justify-between font-body-code text-[11px]">
+<span class="text-tertiary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]">print</span> 300 DPI Monochrome PDF
+                  </span>
+<span class="text-on-surface font-extrabold">Batch 42 of 42 Ready</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Social Proof Logos -->
+<div class="flex items-center justify-center gap-6 flex-wrap pt-2 text-[12px] font-body-code text-on-surface-variant">
+<span class="flex items-center gap-1.5 font-bold text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span> 240+ Schools
+          </span>
+<span class="text-outline-variant">·</span>
+<span>Lagos</span>
+<span class="text-outline-variant">·</span>
+<span>Abuja</span>
+<span class="text-outline-variant">·</span>
+<span>Port Harcourt</span>
+<span class="text-outline-variant">·</span>
+<span>Ibadan</span>
+<span class="text-outline-variant">·</span>
+<span class="font-bold text-secondary">LaserJet &amp; InkJet Ready</span>
+</div>
+</div>
+</section>
+<!-- 2. BEFORE VS AFTER: MINIMAL VISUAL CONTRAST (Almost Zero Text) -->
+<section class="w-full bg-surface-container-low px-6 lg:px-10 py-12 lg:py-16 border-y border-surface-container-high/60">
+<div class="max-w-[1240px] mx-auto flex flex-col gap-6">
+<div class="flex flex-col items-center text-center gap-1">
+<span class="font-label-sm text-[11px] uppercase tracking-wider font-extrabold text-error">The Old Way vs ParaLearn</span>
+<h2 class="font-headline-lg text-[24px] lg:text-[28px] text-on-surface font-extrabold tracking-tight">Built for Real School Infrastructure</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 border border-surface-container-high shadow-xs flex flex-col justify-between gap-4">
+<div class="flex items-center justify-between pb-2 border-b border-surface-container">
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-body-code text-[11px] font-bold">✕ No Light at 8PM</span>
+<span class="material-symbols-outlined text-outline text-[16px]">arrow_forward</span>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-body-code text-[11px] font-bold">✓ Laptop Battery</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">battery_charging_full</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-[15px] font-bold text-on-surface">100% Offline</h3>
+<p class="font-body-code text-[12px] text-on-surface-variant">Compile 2,000 booklets in complete darkness.</p>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 border border-surface-container-high shadow-xs flex flex-col justify-between gap-4">
+<div class="flex items-center justify-between pb-2 border-b border-surface-container">
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-body-code text-[11px] font-bold">✕ Excel #REF! Errors</span>
+<span class="material-symbols-outlined text-outline text-[16px]">arrow_forward</span>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-body-code text-[11px] font-bold">✓ Auto-Rank</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">bolt</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-[15px] font-bold text-on-surface">Zero Formula Errors</h3>
+<p class="font-body-code text-[12px] text-on-surface-variant">Instant WAEC 9-point scale &amp; tie handling.</p>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 border border-surface-container-high shadow-xs flex flex-col justify-between gap-4">
+<div class="flex items-center justify-between pb-2 border-b border-surface-container">
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-body-code text-[11px] font-bold">✕ Re-typing Marks</span>
+<span class="material-symbols-outlined text-outline text-[16px]">arrow_forward</span>
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed font-body-code text-[11px] font-bold">✓ 1-Click Sync</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">cloud_sync</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-[15px] font-bold text-on-surface">No Portal Typing</h3>
+<p class="font-body-code text-[12px] text-on-surface-variant">Print paper first. Push to cloud when online.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. HOW IT WORKS: 3 GRAPHICAL PUNCHY STEPS -->
+<section class="w-full bg-background px-6 lg:px-10 py-12 lg:py-16">
+<div class="max-w-[1240px] mx-auto flex flex-col gap-8">
+<div class="flex flex-col items-center text-center gap-1">
+<span class="font-label-sm text-[11px] uppercase tracking-wider font-extrabold text-primary">3 Quick Steps</span>
+<h2 class="font-headline-lg text-[24px] lg:text-[28px] text-on-surface font-extrabold tracking-tight">How It Works</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+<!-- Step 1 -->
+<div class="rounded-xl border border-surface-container-high bg-surface-container-lowest p-5 flex flex-col gap-3 group hover:border-primary/40 transition-colors">
+<div class="flex items-center justify-between">
+<span class="w-7 h-7 rounded-full bg-surface-container text-on-surface font-body-code font-black text-xs flex items-center justify-center">1</span>
+<span class="material-symbols-outlined text-secondary text-[22px]">upload_file</span>
+</div>
+<h3 class="font-headline-sm text-[16px] font-bold text-on-surface">Drop Excel Sheet</h3>
+<p class="font-body-code text-[12px] text-on-surface-variant">Supports .xlsx and .csv. Auto-maps CA1, CA2 &amp; Exam.</p>
+<div class="mt-1 px-2.5 py-1 rounded bg-surface-container font-body-code text-[11px] text-primary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check</span> Auto-detected format
+            </div>
+</div>
+<!-- Step 2 -->
+<div class="rounded-xl border border-surface-container-high bg-surface-container-lowest p-5 flex flex-col gap-3 group hover:border-primary/40 transition-colors">
+<div class="flex items-center justify-between">
+<span class="w-7 h-7 rounded-full bg-primary text-on-primary font-body-code font-black text-xs flex items-center justify-center">2</span>
+<span class="material-symbols-outlined text-primary text-[22px]">bolt</span>
+</div>
+<h3 class="font-headline-sm text-[16px] font-bold text-on-surface">Auto-Rank &amp; Grade</h3>
+<p class="font-body-code text-[12px] text-on-surface-variant">Computes aggregates, WAEC A1–F9, and remarks in 0.08s.</p>
+<div class="mt-1 px-2.5 py-1 rounded bg-surface-container font-body-code text-[11px] text-tertiary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">speed</span> 1,000 files in 8.2s
+            </div>
+</div>
+<!-- Step 3 -->
+<div class="rounded-xl border border-surface-container-high bg-surface-container-lowest p-5 flex flex-col gap-3 group hover:border-primary/40 transition-colors">
+<div class="flex items-center justify-between">
+<span class="w-7 h-7 rounded-full bg-surface-container text-on-surface font-body-code font-black text-xs flex items-center justify-center">3</span>
+<span class="material-symbols-outlined text-tertiary text-[22px]">print</span>
+</div>
+<h3 class="font-headline-sm text-[16px] font-bold text-on-surface">Batch Print PDF</h3>
+<p class="font-body-code text-[12px] text-on-surface-variant">Laser-optimized monochrome A4 dossiers ready for speech day.</p>
+<div class="mt-1 px-2.5 py-1 rounded bg-surface-container font-body-code text-[11px] text-secondary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">verified</span> 300 DPI duplex ready
+            </div>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. VISUAL BENCHMARK TELEMETRY BAR -->
+<section class="w-full bg-surface-container-low px-6 lg:px-10 py-10 border-y border-surface-container-high/60">
+<div class="max-w-[1240px] mx-auto flex flex-col gap-5">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<h3 class="font-headline-sm text-[16px] font-bold text-on-surface">Offline WASM Benchmarks</h3>
+<span class="font-body-code text-[11px] text-outline">(Tested on Core i3 / 4GB RAM)</span>
+</div>
+<div class="flex items-center gap-1 p-1 rounded-lg bg-surface-container text-[11.5px]">
+<button class="px-2.5 py-1 rounded font-body-code font-bold bg-primary text-on-primary shadow-xs" id="bench-btn-small" onclick="switchBenchmark('small')">42 Students</button>
+<button class="px-2.5 py-1 rounded font-body-code font-medium text-on-surface-variant hover:text-on-surface" id="bench-btn-med" onclick="switchBenchmark('med')">420 Students</button>
+<button class="px-2.5 py-1 rounded font-body-code font-medium text-on-surface-variant hover:text-on-surface" id="bench-btn-full" onclick="switchBenchmark('full')">2,400 Students</button>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 rounded-xl border border-surface-container-high bg-surface-container-lowest overflow-hidden divide-y md:divide-y-0 md:divide-x divide-surface-container-high">
+<div class="p-4 flex flex-col gap-0.5">
+<span class="font-body-code text-[10px] uppercase font-bold text-outline">Computation Time</span>
+<span class="font-data-metric text-[26px] font-extrabold text-on-surface tracking-tight" id="metric-calc">0.08s</span>
+<span class="font-body-code text-[11px] text-tertiary font-bold">✓ 12 Subjects</span>
+</div>
+<div class="p-4 flex flex-col gap-0.5">
+<span class="font-body-code text-[10px] uppercase font-bold text-outline">PDF Compilation</span>
+<span class="font-data-metric text-[26px] font-extrabold text-on-surface tracking-tight" id="metric-pdf">0.42s</span>
+<span class="font-body-code text-[11px] text-tertiary font-bold">✓ Duplex Print</span>
+</div>
+<div class="p-4 flex flex-col gap-0.5">
+<span class="font-body-code text-[10px] uppercase font-bold text-outline">RAM Used</span>
+<span class="font-data-metric text-[26px] font-extrabold text-on-surface tracking-tight" id="metric-ram">4.2 MB</span>
+<span class="font-body-code text-[11px] text-outline font-medium">Ultra lightweight</span>
+</div>
+<div class="p-4 flex flex-col gap-0.5">
+<span class="font-body-code text-[10px] uppercase font-bold text-outline">Internet Consumed</span>
+<span class="font-data-metric text-[26px] font-extrabold text-tertiary tracking-tight">0.00 KB</span>
+<span class="font-body-code text-[11px] text-tertiary font-bold">Zero outage risk</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 5. 4 VISUAL FEATURE CARDS -->
+<section class="w-full bg-background px-6 lg:px-10 py-12 lg:py-16">
+<div class="max-w-[1240px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Feature 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 border border-surface-container-high flex flex-col justify-between gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-[19px]">contrast</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-[14px] font-bold text-on-surface">Laser Greyscale Engine</h3>
+<p class="font-body-code text-[11px] text-on-surface-variant mt-0.5">Tuned for HP monochrome toners.</p>
+</div>
+<span class="font-body-code text-[10px] font-bold text-tertiary px-2 py-0.5 rounded bg-tertiary/10 self-start">40% Less Toner</span>
+</div>
+<!-- Feature 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 border border-surface-container-high flex flex-col justify-between gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[19px]">verified_user</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-[14px] font-bold text-on-surface">Authentic School Seal</h3>
+<p class="font-body-code text-[11px] text-on-surface-variant mt-0.5">Scanned crest &amp; verification barcode.</p>
+</div>
+<span class="font-body-code text-[10px] font-bold text-primary px-2 py-0.5 rounded bg-primary-fixed self-start">Board Sealed</span>
+</div>
+<!-- Feature 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 border border-surface-container-high flex flex-col justify-between gap-3">
+<div class="w-8 h-8 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-[19px]">grading</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-[14px] font-bold text-on-surface">WAEC 9-Point Grading</h3>
+<p class="font-body-code text-[11px] text-on-surface-variant mt-0.5">Official A1 to F9 grade boundaries.</p>
+</div>
+<div class="flex items-center gap-1 font-body-code text-[9px] font-bold">
+<span class="px-1.5 py-0.5 rounded bg-tertiary/15 text-tertiary">A1</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container">C4</span>
+<span class="px-1.5 py-0.5 rounded bg-error/10 text-error">F9</span>
+</div>
+</div>
+<!-- Feature 4 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 border border-surface-container-high flex flex-col justify-between gap-3">
+<div class="w-8 h-8 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[19px]">desktop_windows</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-[14px] font-bold text-on-surface">Desktop App (PWA)</h3>
+<p class="font-body-code text-[11px] text-on-surface-variant mt-0.5">Windows &amp; Mac desktop icon.</p>
+</div>
+<span class="font-body-code text-[10px] font-bold text-secondary px-2 py-0.5 rounded bg-secondary-fixed self-start">1-Click Install</span>
+</div>
+</div>
+</section>
+<!-- 6. PRICING: PUNCHY 2-CARD VIEW -->
+<section class="w-full bg-surface-container-low px-6 lg:px-10 py-12 lg:py-16 border-y border-surface-container-high/60">
+<div class="max-w-[880px] mx-auto flex flex-col gap-8">
+<div class="flex flex-col items-center text-center gap-1">
+<span class="font-label-sm text-[11px] uppercase tracking-wider font-extrabold text-primary">Pricing</span>
+<h2 class="font-headline-lg text-[24px] lg:text-[28px] text-on-surface font-extrabold tracking-tight">Free Offline. Optional Cloud.</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+<!-- Free Offline -->
+<div class="rounded-xl border border-surface-container-high bg-surface-container-lowest p-6 flex flex-col justify-between gap-5 shadow-xs">
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-[16px] font-bold text-on-surface">Community Offline</h3>
+<span class="font-body-code text-[10px] px-2 py-0.5 rounded bg-surface-container font-black">FREE FOREVER</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-xl text-[34px] font-black text-on-surface">₦0</span>
+<span class="font-body-code text-[12px] text-outline">/ unmetered</span>
+</div>
+<ul class="space-y-2 font-body-code text-[12px] text-on-surface-variant pt-2 border-t border-surface-container">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-tertiary text-[16px]">check</span> Unlimited student booklets</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-tertiary text-[16px]">check</span> 100% offline calculation &amp; rank</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-tertiary text-[16px]">check</span> WAEC &amp; NECO 9-point grading</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-tertiary text-[16px]">check</span> Laser monochrome printer ready</li>
+</ul>
+</div>
+<a class="w-full py-2.5 rounded-lg bg-surface-container text-on-surface font-body-md text-[13px] font-bold text-center hover:bg-surface-container-high transition-colors" data-path="create-free" href="#">Launch Free Studio</a>
+</div>
+<!-- Cloud Tier -->
+<div class="rounded-xl border-2 border-primary bg-surface-container-lowest p-6 flex flex-col justify-between gap-5 shadow-sm relative">
+<span class="absolute -top-3 right-4 px-2 py-0.5 rounded-full bg-primary text-on-primary font-body-code text-[9.5px] font-extrabold uppercase">Most Popular</span>
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-[16px] font-bold text-on-surface">School Cloud</h3>
+<span class="font-body-code text-[10px] px-2 py-0.5 rounded bg-primary-fixed text-primary font-black">ALL ARMS</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-xl text-[34px] font-black text-primary">₦45,000</span>
+<span class="font-body-code text-[12px] text-outline">/ term per school</span>
+</div>
+<ul class="space-y-2 font-body-code text-[12px] text-on-surface-variant pt-2 border-t border-surface-container">
+<li class="flex items-center gap-2 text-on-surface font-bold"><span class="material-symbols-outlined text-primary text-[16px]">verified</span> Everything in Offline tier +</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-tertiary text-[16px]">check</span> Branded portal (school.pln.ng)</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-tertiary text-[16px]">check</span> Remote parent result checking</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-tertiary text-[16px]">check</span> 1-Click offline-to-cloud sync</li>
+</ul>
+</div>
+<a class="w-full py-2.5 rounded-lg bg-primary text-on-primary font-body-md text-[13px] font-bold text-center hover:bg-primary-container transition-colors shadow-xs" data-path="setup-cloud" href="#">Activate Cloud Portal</a>
+</div>
+</div>
+</div>
+</section>
+<!-- 7. PUNCHY BOTTOM BANNER -->
+<section class="w-full bg-background px-6 lg:px-10 py-10">
+<div class="max-w-[1240px] mx-auto rounded-2xl bg-primary text-on-primary p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-5">
+<div class="flex flex-col gap-1 text-center md:text-left">
+<h2 class="font-headline-lg text-[22px] sm:text-[26px] font-black tracking-tight">Finish your report cards tonight.</h2>
+<p class="font-body-code text-[13px] text-on-primary-container">Drop your spreadsheet in and print sealed dossiers immediately.</p>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<a class="px-5 py-2.5 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container transition-all font-body-md text-[13px] font-bold shadow-xs inline-flex items-center gap-1.5" data-path="create-account" href="#">
+<span>Open Studio</span>
+<span class="material-symbols-outlined text-[16px] text-primary">arrow_forward</span>
+</a>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- FOOTER -->
+<footer class="w-full bg-surface-container-low border-t border-surface-container-high/60">
+<div class="max-w-[1440px] mx-auto px-6 lg:px-10 py-8">
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4 font-body-code text-[11.5px] text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-[14px] font-extrabold text-on-surface">ParaLearn Results</span>
+<span class="text-outline">· 100% Offline WASM Architecture</span>
+</div>
+<div class="flex items-center gap-5">
+<a class="hover:text-on-surface transition-colors" href="#">Offline Studio</a>
+<a class="hover:text-on-surface transition-colors" href="#">A4 Spec</a>
+<a class="hover:text-on-surface transition-colors" href="#">Pricing</a>
+<a class="hover:text-on-surface transition-colors" href="#">Privacy</a>
+</div>
+<p class="text-outline">© 2025 ParaLearn Results (rms.pln.ng)</p>
+</div>
+</div>
+</footer>
+<!-- Interactive Benchmark Script -->
+<script>
+  function switchBenchmark(scale) {
+    const btnSmall = document.getElementById('bench-btn-small');
+    const btnMed = document.getElementById('bench-btn-med');
+    const btnFull = document.getElementById('bench-btn-full');
+    const metricCalc = document.getElementById('metric-calc');
+    const metricPdf = document.getElementById('metric-pdf');
+    const metricRam = document.getElementById('metric-ram');
+
+    [btnSmall, btnMed, btnFull].forEach(b => {
+      b.classList.remove('bg-primary', 'text-on-primary', 'shadow-xs', 'font-bold');
+      b.classList.add('text-on-surface-variant', 'font-medium');
+    });
+
+    if (scale === 'small') {
+      btnSmall.classList.add('bg-primary', 'text-on-primary', 'shadow-xs', 'font-bold');
+      btnSmall.classList.remove('text-on-surface-variant', 'font-medium');
+      metricCalc.textContent = '0.08s';
+      metricPdf.textContent = '0.42s';
+      metricRam.textContent = '4.2 MB';
+    } else if (scale === 'med') {
+      btnMed.classList.add('bg-primary', 'text-on-primary', 'shadow-xs', 'font-bold');
+      btnMed.classList.remove('text-on-surface-variant', 'font-medium');
+      metricCalc.textContent = '0.84s';
+      metricPdf.textContent = '3.2s';
+      metricRam.textContent = '8.1 MB';
+    } else if (scale === 'full') {
+      btnFull.classList.add('bg-primary', 'text-on-primary', 'shadow-xs', 'font-bold');
+      btnFull.classList.remove('text-on-surface-variant', 'font-medium');
+      metricCalc.textContent = '2.1s';
+      metricPdf.textContent = '9.8s';
+      metricRam.textContent = '14.6 MB';
+    }
+  }
+</script>
+</body></html>

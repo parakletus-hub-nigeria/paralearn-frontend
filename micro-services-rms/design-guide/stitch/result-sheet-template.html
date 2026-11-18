@@ -1,0 +1,360 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Manrope:wght@100..900&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-primary-container":"#ceb1ff","error-container":"#ffdad6","secondary-fixed":"#dde1ff","surface-container-low":"#f2f3ff","on-secondary":"#ffffff","tertiary-fixed":"#a6f2d1","surface-dim":"#d2d9f4","on-primary-fixed-variant":"#5d0abd","on-primary-fixed":"#270058","primary-container":"#641bc4","outline":"#7c7486","on-tertiary-fixed-variant":"#00513b","outline-variant":"#cdc3d7","on-secondary-fixed-variant":"#173bab","secondary-fixed-dim":"#b8c4ff","primary-fixed":"#ecdcff","on-background":"#131b2e","inverse-primary":"#d5bbff","tertiary":"#003f2d","on-secondary-container":"#00217a","surface-bright":"#faf8ff","surface-container-high":"#e2e7ff","surface-tint":"#7635d6","tertiary-fixed-dim":"#8bd6b6","on-error-container":"#93000a","surface-container-lowest":"#ffffff","on-surface":"#131b2e","secondary":"#3755c3","on-secondary-fixed":"#001453","error":"#ba1a1a","surface-variant":"#dae2fd","on-primary":"#ffffff","on-tertiary":"#ffffff","on-tertiary-container":"#83ceaf","inverse-surface":"#283044","on-surface-variant":"#4b4454","surface-container-highest":"#dae2fd","surface":"#faf8ff","inverse-on-surface":"#eef0ff","surface-container":"#eaedff","secondary-container":"#708cfd","primary-fixed-dim":"#d5bbff","on-error":"#ffffff","primary":"#49009a","background":"#faf8ff","on-tertiary-fixed":"#002116","tertiary-container":"#005941"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-md":"0.75rem","space-lg":"1rem",gutter:"1rem","space-sm":"0.5rem","space-xs":"0.25rem","margin-desktop":"2.5rem","margin-tablet":"1.5rem",margin:"1rem","space-xl":"1.5rem","gutter-desktop":"1.5rem","space-2xl":"2rem"},fontFamily:{"headline-md":["Manrope"],"data-metric":["Geist"],"label-md":["Geist"],"body-lg":["Manrope"],"headline-lg":["Manrope"],"headline-sm":["Manrope"],"body-md":["Manrope"],"headline-xl":["Manrope"],"label-sm":["Geist"],"body-sm":["Manrope"],"headline-xl-mobile":["Manrope"],"body-code":["Geist"]},fontSize:{"headline-md":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"data-metric":["22px",{lineHeight:"28px",letterSpacing:"-0.02em",fontWeight:"700"}],"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.04em",fontWeight:"600"}],"body-lg":["15px",{lineHeight:"22px",letterSpacing:"0em",fontWeight:"400"}],"headline-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"headline-sm":["16px",{lineHeight:"24px",letterSpacing:"0em",fontWeight:"600"}],"body-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"400"}],"headline-xl":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"label-sm":["11px",{lineHeight:"14px",letterSpacing:"0.05em",fontWeight:"600"}],"body-sm":["13px",{lineHeight:"18px",letterSpacing:"0.005em",fontWeight:"400"}],"headline-xl-mobile":["26px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"body-code":["13px",{lineHeight:"18px",letterSpacing:"0.02em",fontWeight:"500"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-60 bg-surface-container-lowest z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col"><div class="h-16 px-space-md flex items-center gap-space-sm bg-surface-container-low"><div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0 shadow-xs"><svg class="w-5 h-5 text-primary-fixed" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-primary leading-tight font-bold">ParaLearn</span><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Results MS</span></div></div><div class="p-space-md"><div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between"><div class="flex items-center gap-space-sm overflow-hidden"><div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-[18px]">school</span></div><div class="flex flex-col truncate"><span class="font-body-sm text-body-sm font-semibold text-on-surface truncate">Kings College Lagos</span><span class="font-label-sm text-label-sm text-on-surface-variant font-body-code truncate">kings.pln.ng</span></div></div><span class="material-symbols-outlined text-on-surface-variant text-[18px]">unfold_more</span></div></div><nav class="px-space-md flex flex-col gap-space-xs" data-active-classes="bg-primary-container text-on-primary font-semibold"><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="result-batches" href="#"><span class="material-symbols-outlined text-[20px]">table_chart</span><span>Result batches</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="school-profile" href="#"><span class="material-symbols-outlined text-[20px]">account_balance</span><span>School profile</span></a><a aria-current="page" class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg transition-all bg-primary-container text-on-primary font-semibold" data-path="csv-template" href="#"><span class="material-symbols-outlined text-[20px]">description</span><span>CSV template</span></a><a class="flex items-center justify-between px-space-md py-space-sm rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="paralearn-portal" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">open_in_new</span><span>ParaLearn Portal</span></div><span class="material-symbols-outlined text-[16px] text-outline">north_east</span></a></nav></div><div class="p-space-md flex flex-col gap-space-md"><div class="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-space-xs"><div class="flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></span><span class="font-label-md text-label-md font-semibold text-tertiary-container">Online</span></div><span class="material-symbols-outlined text-tertiary-container text-[16px]">cloud_done</span></div><div class="flex items-center gap-space-xs mt-space-xs"><span class="material-symbols-outlined text-outline text-[15px]">check_circle</span><span class="font-label-sm text-label-sm text-on-surface-variant">Ready without internet</span></div><button class="mt-space-xs w-full py-space-xs px-space-sm rounded-lg bg-surface-container-lowest text-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-space-xs hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors shadow-[0_1px_4px_rgba(0,0,0,0.04)]" type="button"><span class="material-symbols-outlined text-[16px]">download</span><span>Install app</span></button></div><div class="p-space-sm rounded-lg bg-surface-container flex items-center justify-between"><div class="flex items-center gap-space-sm overflow-hidden"><img alt="Profile" class="w-8 h-8 rounded-full object-cover shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9PQ3LtQWB3njLkgCdwloGI2fNYLJBi4CtS2U2FO6vMJ-jABG4kA3cTo01b8b9c6oiTQZl21WLjkXUoTdObZOrNQnSgs0DSjzP1ZM41beAXJsYRU3JAH_W_oIm6VH8zp4i_PDxsXb1oD1tVP8vqAacnYz928ooas1p7P-V9L9eaRty_k2AGCZc7IEzz4tyRY8SMDLIiYOGosD9MjyomcB5QZyJ5z-pUAKYAGUPRZoS"><div class="flex flex-col truncate"><span class="font-body-sm text-body-sm font-semibold text-on-surface truncate">Mrs. Adesewa Okonjo</span><span class="font-label-sm text-label-sm text-on-surface-variant font-body-code truncate">kings.pln.ng</span></div></div><button class="p-space-xs text-on-surface-variant hover:text-error transition-colors" title="Sign out" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></aside><div class="pl-60 min-h-screen flex flex-col"><header class="fixed top-0 left-60 right-0 h-16 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40"><div class="h-16 w-full px-space-xl flex items-center justify-between"><div class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm"><span class="font-semibold text-on-surface">Kings College Lagos</span><span class="material-symbols-outlined text-[16px] text-outline">chevron_right</span><span class="font-semibold text-primary font-headline-sm text-headline-sm">Workspace</span></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md"><span class="material-symbols-outlined text-[16px] text-tertiary-container">sync_saved_locally</span><span class="font-body-code text-on-surface">All scores sent</span></div><div class="flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-md text-label-md font-semibold"><span class="w-2 h-2 rounded-full bg-tertiary-container"></span><span>Connected &amp; Synced</span></div></div></div></header><main class="w-full pt-16 flex-1 bg-surface"><div class="flex flex-col w-full">
+<!-- Subtle ambient decorative glow strictly contained -->
+<div class="relative w-full overflow-hidden">
+<div class="absolute -top-24 right-1/4 w-96 h-96 bg-primary-fixed/30 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<div class="absolute top-48 left-12 w-80 h-80 bg-secondary-fixed/40 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<div class="w-full max-w-[1440px] mx-auto px-margin-tablet lg:px-margin-desktop py-space-xl flex flex-col gap-space-xl">
+<!-- Top Header & Action Row -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-lg">
+<div class="flex flex-col gap-space-xs max-w-2xl">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+<span class="inline-flex w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span>Ledger Generation Engine · Chapter 1.7</span>
+</div>
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-primary font-bold">For schools without their own result sheet</span>
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Result sheet template</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Generate standardized mark sheets tailored to Nigerian basic and secondary education curriculums. Pre-configured for offline scoring and instantaneous zero-friction ingestion into ParaLearn Results.
+          </p>
+</div>
+<div class="flex items-center gap-space-sm shrink-0">
+<button class="h-10 px-space-lg rounded-lg bg-surface-container-lowest text-on-surface font-headline-sm text-headline-sm shadow-sm hover:bg-surface-container transition-all flex items-center gap-space-xs" id="downloadCsvBtn" type="button">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">csv</span>
+<span>Download CSV (.csv)</span>
+</button>
+<button class="h-10 px-space-lg rounded-lg bg-primary-container text-on-primary font-headline-sm text-headline-sm shadow-md hover:bg-primary transition-all flex items-center gap-space-xs" id="downloadXlsxBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">table_view</span>
+<span>Download Excel (.xlsx)</span>
+</button>
+</div>
+</div>
+<!-- Main Layout: 55% Form Config / 45% Live Preview -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-desktop items-start">
+<!-- Left Side: Form Configuration (55% -> 7 Cols) -->
+<div class="lg:col-span-7 flex flex-col gap-space-lg">
+<!-- Card 1: Classes & Stream Allocation -->
+<div class="rounded-xl bg-surface-container-lowest p-space-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">groups</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Target Classes &amp; Streams</span>
+</div>
+<span class="font-label-sm text-label-sm px-space-xs py-0.5 rounded-full bg-surface-container text-on-surface-variant font-body-code">8 tabs to create</span>
+</div>
+<!-- Interactive Pill Box & Textarea Area -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex flex-wrap gap-1.5 p-space-sm rounded-lg bg-surface-container-low min-h-[48px] items-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest font-body-code text-body-sm text-on-surface shadow-xs">
+<span>JSS 1A</span>
+<button class="text-outline hover:text-error text-xs leading-none" type="button">✕</button>
+</span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest font-body-code text-body-sm text-on-surface shadow-xs">
+<span>JSS 1B</span>
+<button class="text-outline hover:text-error text-xs leading-none" type="button">✕</button>
+</span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest font-body-code text-body-sm text-on-surface shadow-xs">
+<span>JSS 1C</span>
+<button class="text-outline hover:text-error text-xs leading-none" type="button">✕</button>
+</span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest font-body-code text-body-sm text-on-surface shadow-xs">
+<span>JSS 2A</span>
+<button class="text-outline hover:text-error text-xs leading-none" type="button">✕</button>
+</span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest font-body-code text-body-sm text-on-surface shadow-xs">
+<span>JSS 2B</span>
+<button class="text-outline hover:text-error text-xs leading-none" type="button">✕</button>
+</span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest font-body-code text-body-sm text-on-surface shadow-xs">
+<span>JSS 2C</span>
+<button class="text-outline hover:text-error text-xs leading-none" type="button">✕</button>
+</span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest font-body-code text-body-sm text-on-surface shadow-xs">
+<span>SS 1A</span>
+<button class="text-outline hover:text-error text-xs leading-none" type="button">✕</button>
+</span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest font-body-code text-body-sm text-on-surface shadow-xs">
+<span>SS 1B</span>
+<button class="text-outline hover:text-error text-xs leading-none" type="button">✕</button>
+</span>
+</div>
+<textarea class="w-full p-space-sm rounded-lg bg-surface-container-low text-on-surface font-body-code text-body-code placeholder:text-outline focus:outline-none focus:bg-surface-container-lowest transition-all" id="classInput" placeholder="Enter custom classes separated by comma or new line..." rows="2">JSS 1A, JSS 1B, JSS 1C, JSS 2A, JSS 2B, JSS 2C, SS 1A, SS 1B</textarea>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">info</span>
+<span>One class per line or comma-separated. Creates one tab per class in Excel.</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Curriculum Subjects Configuration -->
+<div class="rounded-xl bg-surface-container-lowest p-space-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">menu_book</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Curriculum Subjects</span>
+</div>
+<span class="font-label-sm text-label-sm px-space-xs py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-body-code">NERDC Compliant</span>
+</div>
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-on-surface-variant" for="subjectsList">Standardized Subject Sequence</label>
+<textarea class="w-full p-space-sm rounded-lg bg-surface-container-low text-on-surface font-body-code text-body-code placeholder:text-outline focus:outline-none focus:bg-surface-container-lowest transition-all" id="subjectsList" rows="3">Mathematics, English Language, Basic Science &amp; Technology, Social Studies, Civic Education, Business Studies, Agricultural Science, French, Yoruba / Igbo / Hausa</textarea>
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[14px] text-tertiary">check_circle</span>
+<span>Each subject is marked out of 100.</span>
+</span>
+<span class="font-body-code text-primary font-semibold">9 core subjects designated</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Continuous Assessment & Exam Columns -->
+<div class="rounded-xl bg-surface-container-lowest p-space-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">tune</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Score Columns Structure</span>
+</div>
+<div class="flex items-center gap-1 font-body-code text-label-sm px-space-xs py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-semibold">
+<span class="material-symbols-outlined text-[14px]">calculate</span>
+<span id="weightTotal">Total: 100%</span>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+<!-- Checkbox 1: 1st CA -->
+<label class="flex items-start gap-space-sm p-space-sm rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary accent-primary focus:ring-0 cursor-pointer" id="ca1Check" type="checkbox">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">1st CA (out of 20)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Mid-term test &amp; assignment mark</span>
+</div>
+</label>
+<!-- Checkbox 2: 2nd CA -->
+<label class="flex items-start gap-space-sm p-space-sm rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary accent-primary focus:ring-0 cursor-pointer" id="ca2Check" type="checkbox">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">2nd CA (out of 20)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Class practical, projects or quiz</span>
+</div>
+</label>
+<!-- Checkbox 3: 3rd CA (Optional / Not stored) -->
+<label class="flex items-start gap-space-sm p-space-sm rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<input class="mt-0.5 w-4 h-4 rounded text-primary accent-primary focus:ring-0 cursor-pointer" id="ca3Check" type="checkbox">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">3rd CA (out of 20)</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-surface-container-highest text-on-surface-variant">Optional</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Printed on cards; not stored in ParaLearn Cloud</span>
+</div>
+</label>
+<!-- Checkbox 4: Exam -->
+<label class="flex items-start gap-space-sm p-space-sm rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary accent-primary focus:ring-0 cursor-pointer" id="examCheck" type="checkbox">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Exam (out of 60)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">End of term terminal paper</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Card 4: Student Rows & Extra Ledger Columns -->
+<div class="rounded-xl bg-surface-container-lowest p-space-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">format_list_numbered</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Roster Layout &amp; Metadata</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Class ledger parameters</span>
+</div>
+<!-- Number of student rows per class -->
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex flex-col">
+<label class="font-headline-sm text-headline-sm text-on-surface" for="studentRowCount">Rows per class sheet</label>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Includes serial identifiers and blank student entries</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<input class="w-20 h-10 px-space-sm text-center rounded-lg bg-surface-container-lowest text-on-surface font-body-code text-body-md font-bold focus:outline-none focus:ring-1 focus:ring-primary shadow-xs" id="studentRowCount" max="120" min="10" type="number" value="40">
+<span class="font-label-md text-label-md text-on-surface-variant">students</span>
+</div>
+</div>
+<!-- Ancillary Columns Checkboxes -->
+<div class="flex flex-col gap-space-xs pt-space-xs">
+<label class="flex items-center gap-space-sm p-space-sm rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer">
+<input checked="" class="w-4 h-4 rounded text-primary accent-primary cursor-pointer" id="remarksCheck" type="checkbox">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Include Teacher &amp; Principal Comment columns</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Generates 'Form Master Remark' and 'Head of School Endorsement' text slots</span>
+</div>
+</label>
+<label class="flex items-center gap-space-sm p-space-sm rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer">
+<input checked="" class="w-4 h-4 rounded text-primary accent-primary cursor-pointer" id="attendanceCheck" type="checkbox">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Include Attendance columns (Days opened, Present, Absent)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Pre-fills statutory state term registers (standard 65 - 72 day counts)</span>
+</div>
+</label>
+<div class="flex flex-col gap-space-xs p-space-sm rounded-lg bg-surface-container-low/50"><label class="flex items-center gap-space-sm cursor-pointer"><input checked="" class="w-4 h-4 rounded text-primary accent-primary cursor-pointer" id="skillsCheck" type="checkbox"><div class="flex flex-col"><span class="font-body-md text-body-md font-semibold text-on-surface">Include Behaviour &amp; Skills rating columns (1 to 5 scale)</span><span class="font-label-sm text-label-sm text-on-surface-variant">Select active affective &amp; psychomotor traits to include in the ledger:</span></div></label><div class="flex flex-wrap gap-1.5 pl-6 pt-1"><label class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-lowest border border-outline-variant/40 text-xs font-body-code text-on-surface cursor-pointer hover:bg-surface-container"><input checked="" type="checkbox" class="w-3.5 h-3.5 rounded text-primary accent-primary cursor-pointer"><span>Punctuality</span></label><label class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-lowest border border-outline-variant/40 text-xs font-body-code text-on-surface cursor-pointer hover:bg-surface-container"><input checked="" type="checkbox" class="w-3.5 h-3.5 rounded text-primary accent-primary cursor-pointer"><span>Neatness</span></label><label class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-lowest border border-outline-variant/40 text-xs font-body-code text-on-surface cursor-pointer hover:bg-surface-container"><input checked="" type="checkbox" class="w-3.5 h-3.5 rounded text-primary accent-primary cursor-pointer"><span>Politeness</span></label><label class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-lowest border border-outline-variant/40 text-xs font-body-code text-on-surface cursor-pointer hover:bg-surface-container"><input checked="" type="checkbox" class="w-3.5 h-3.5 rounded text-primary accent-primary cursor-pointer"><span>Sports &amp; Games</span></label><label class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-lowest border border-outline-variant/40 text-xs font-body-code text-on-surface cursor-pointer hover:bg-surface-container"><input checked="" type="checkbox" class="w-3.5 h-3.5 rounded text-primary accent-primary cursor-pointer"><span>Honesty</span></label></div></div>
+</div>
+</div>
+</div>
+<!-- Right Side: Live Download Preview (45% -> 5 Cols) -->
+<div class="lg:col-span-5 flex flex-col gap-space-lg lg:sticky lg:top-24">
+<!-- Summary Card: What your sheet will contain -->
+<div class="rounded-xl bg-surface-container-lowest p-space-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">inventory_2</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">What your sheet will contain</span>
+</div>
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary-container animate-pulse" title="Live synced preview"></span>
+</div>
+<!-- Condensed Metric Pills -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-wrap items-center gap-x-space-md gap-y-space-xs font-body-code text-body-sm text-on-surface">
+<div class="flex items-center gap-1 font-semibold text-primary">
+<span class="material-symbols-outlined text-[16px]">tab</span>
+<span id="metricClasses">8 Classes</span>
+</div>
+<span class="text-outline">·</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">subject</span>
+<span id="metricSubjects">9 Subjects</span>
+</div>
+<span class="text-outline">·</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">view_column</span>
+<span id="metricCols">4 Score cols/subj</span>
+</div>
+<span class="text-outline">·</span>
+<div class="flex items-center gap-1 font-semibold text-tertiary">
+<span class="material-symbols-outlined text-[16px]">groups</span>
+<span id="metricCapacity">40 Rows/class (320 students total)</span>
+</div>
+</div>
+<!-- Visual Ledger Sheet Simulation with Real Sample Nigerian Names -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">preview</span>
+<span>Spreadsheet Tab: <strong class="text-on-surface">JSS 1A</strong></span>
+</span>
+<span class="font-body-code text-[11px] text-outline">Freeze-panes active on Col C</span>
+</div>
+<!-- Tabular Grid Wrapper with Horizontal Scroll -->
+<div class="relative w-full rounded-lg bg-surface-container-lowest shadow-xs overflow-hidden"><div class="w-full overflow-x-auto text-[12px]"><table class="w-full text-left font-body-code border-collapse min-w-[760px]"><thead><tr class="bg-surface-container text-on-surface"><th class="px-space-sm py-2 text-center font-bold font-headline-sm text-xs bg-surface-container-high" colspan="3">Student Identification</th><th class="px-space-sm py-2 text-center font-bold font-headline-sm text-xs bg-primary-fixed text-on-primary-fixed" colspan="4">Mathematics (100)</th><th class="px-space-sm py-2 text-center font-bold font-headline-sm text-xs bg-secondary-fixed text-on-secondary-fixed" colspan="4">English Language (100)</th><th class="px-space-sm py-2 text-center font-bold font-headline-sm text-xs bg-surface-container-high" colspan="2">Statutory</th></tr><tr class="bg-surface-container-low text-on-surface-variant font-semibold text-[11px] uppercase tracking-wider"><th class="px-space-xs py-2 text-center w-8">S/N</th><th class="px-space-sm py-2 w-24">Admission No</th><th class="px-space-sm py-2 min-w-[170px]">Student Full Name</th><th class="px-1.5 py-2 text-right bg-primary-fixed/20 text-primary">1st CA (20)</th><th class="px-1.5 py-2 text-right bg-primary-fixed/20 text-primary">2nd CA (20)</th><th class="px-1.5 py-2 text-right bg-primary-fixed/20 text-primary">Exam (60)</th><th class="px-1.5 py-2 text-right bg-primary-fixed/40 text-primary font-bold">Total</th><th class="px-1.5 py-2 text-right bg-secondary-fixed/20 text-secondary">1st CA (20)</th><th class="px-1.5 py-2 text-right bg-secondary-fixed/20 text-secondary">2nd CA (20)</th><th class="px-1.5 py-2 text-right bg-secondary-fixed/20 text-secondary">Exam (60)</th><th class="px-1.5 py-2 text-right bg-secondary-fixed/40 text-secondary font-bold">Total</th><th class="px-2 py-2 text-center">Attend.</th><th class="px-2 py-2">Teacher Remark</th></tr></thead><tbody class="divide-y divide-surface-container text-on-surface text-[12px]"><tr class="hover:bg-surface-container-low/50 transition-colors"><td class="px-space-xs py-2 text-center text-outline font-semibold">1</td><td class="px-space-sm py-2 font-mono text-on-surface-variant font-medium">KCL/2024/001</td><td class="px-space-sm py-2 font-body-md text-xs font-semibold text-on-surface whitespace-nowrap">Adebayo Oluwaseun Emmanuel</td><td class="px-1.5 py-2 text-right bg-primary-fixed/10">18</td><td class="px-1.5 py-2 text-right bg-primary-fixed/10">17</td><td class="px-1.5 py-2 text-right bg-primary-fixed/10">54</td><td class="px-1.5 py-2 text-right bg-primary-fixed/20 font-bold text-primary">89</td><td class="px-1.5 py-2 text-right bg-secondary-fixed/10">19</td><td class="px-1.5 py-2 text-right bg-secondary-fixed/10">18</td><td class="px-1.5 py-2 text-right bg-secondary-fixed/10">52</td><td class="px-1.5 py-2 text-right bg-secondary-fixed/20 font-bold text-secondary">89</td><td class="px-2 py-2 text-center font-mono">68/70</td><td class="px-2 py-2 truncate max-w-[130px] text-on-surface-variant" title="Exceptional analytical rigor and disciplined student.">Exceptional analytical...</td></tr><tr class="hover:bg-surface-container-low/50 transition-colors"><td class="px-space-xs py-2 text-center text-outline font-semibold">2</td><td class="px-space-sm py-2 font-mono text-on-surface-variant font-medium">KCL/2024/002</td><td class="px-space-sm py-2 font-body-md text-xs font-semibold text-on-surface whitespace-nowrap">Chukwu Chioma Grace</td><td class="px-1.5 py-2 text-right bg-primary-fixed/10">16</td><td class="px-1.5 py-2 text-right bg-primary-fixed/10">19</td><td class="px-1.5 py-2 text-right bg-primary-fixed/10">48</td><td class="px-1.5 py-2 text-right bg-primary-fixed/20 font-bold text-primary">83</td><td class="px-1.5 py-2 text-right bg-secondary-fixed/10">20</td><td class="px-1.5 py-2 text-right bg-secondary-fixed/10">19</td><td class="px-1.5 py-2 text-right bg-secondary-fixed/10">56</td><td class="px-1.5 py-2 text-right bg-secondary-fixed/20 font-bold text-secondary">95</td><td class="px-2 py-2 text-center font-mono">70/70</td><td class="px-2 py-2 truncate max-w-[130px] text-on-surface-variant" title="Brilliant linguist; commendable moral comportment.">Brilliant linguist; com...</td></tr><tr class="bg-surface-container-low/30 text-outline"><td class="px-space-xs py-2 text-center">3</td><td class="px-space-sm py-2 font-mono">KCL/2024/003</td><td class="px-space-sm py-2 italic">[Enter Student Name]</td><td class="px-1.5 py-2 text-right">-</td><td class="px-1.5 py-2 text-right">-</td><td class="px-1.5 py-2 text-right">-</td><td class="px-1.5 py-2 text-right font-bold">-</td><td class="px-1.5 py-2 text-right">-</td><td class="px-1.5 py-2 text-right">-</td><td class="px-1.5 py-2 text-right">-</td><td class="px-1.5 py-2 text-right font-bold">-</td><td class="px-2 py-2 text-center">-</td><td class="px-2 py-2 italic">[Remark]</td></tr></tbody></table></div><div class="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l from-surface-container-lowest to-transparent pointer-events-none flex items-center justify-end pr-1"><span class="material-symbols-outlined text-[14px] text-outline/60">chevron_right</span></div></div>
+</div>
+<!-- Soft Banner Note / Workflow Guidance -->
+<div class="flex items-start gap-space-sm p-space-sm rounded-lg bg-surface-container-low text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-primary shrink-0 mt-0.5">verified</span>
+<p class="font-body-sm text-body-sm">
+                Opens seamlessly in <strong>Microsoft Excel</strong>, <strong>Google Sheets</strong>, or <strong>WPS Office</strong>. Enter scores, save, then drop directly into <strong>Result batches</strong> for batch processing.
+              </p>
+</div><div class="p-space-sm rounded-lg bg-primary-fixed/20 border border-primary/10 flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[18px] text-primary">bolt</span><span class="font-body-sm text-body-sm text-on-surface font-medium">Template ready? Jump straight to entry.</span></div><a href="#" class="inline-flex items-center gap-1 font-label-md text-label-md text-primary font-bold hover:underline shrink-0"><span>Jump to Open Result Sheet</span><span class="material-symbols-outlined text-[15px]">arrow_forward</span></a></div>
+<!-- Format Specifications Card -->
+<div class="pt-space-xs flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">Preloaded Validation Rules</span>
+<div class="grid grid-cols-2 gap-space-xs text-on-surface font-body-code text-xs">
+<div class="p-space-xs rounded bg-surface-container flex items-center justify-between">
+<span class="text-on-surface-variant">Max CA 1 &amp; 2</span>
+<span class="font-semibold text-primary">20 pts each</span>
+</div>
+<div class="p-space-xs rounded bg-surface-container flex items-center justify-between">
+<span class="text-on-surface-variant">Max Exam Mark</span>
+<span class="font-semibold text-primary">60 pts</span>
+</div>
+<div class="p-space-xs rounded bg-surface-container flex items-center justify-between">
+<span class="text-on-surface-variant">Automated Total</span>
+<span class="font-semibold text-tertiary">=SUM(CA+Exam)</span>
+</div>
+<div class="p-space-xs rounded bg-surface-container flex items-center justify-between">
+<span class="text-on-surface-variant">Excel Protection</span>
+<span class="font-semibold text-on-surface">Formula Locked</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Secondary Help Card: Teacher Quick Guide -->
+<div class="rounded-xl bg-surface-container p-space-md flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">help_outline</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Need to upload existing registers?</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Match custom columns during batch ingest.</span>
+</div>
+</div>
+<a class="font-label-md text-label-md text-primary font-bold hover:underline flex items-center gap-0.5" href="#">
+<span>View Guide</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function initTemplateBuilder() {
+    const classInput = document.getElementById('classInput');
+    const studentRowCount = document.getElementById('studentRowCount');
+    const metricClasses = document.getElementById('metricClasses');
+    const metricCapacity = document.getElementById('metricCapacity');
+    const ca3Check = document.getElementById('ca3Check');
+    const weightTotal = document.getElementById('weightTotal');
+    const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+    const downloadXlsxBtn = document.getElementById('downloadXlsxBtn');
+
+    function updateMetrics() {
+      if (!classInput || !metricClasses || !studentRowCount || !metricCapacity) return;
+      const rawText = classInput.value || '';
+      const list = rawText.split(/[,\n]/).map(c => c.trim()).filter(Boolean);
+      const classCount = Math.max(1, list.length);
+      const rows = parseInt(studentRowCount.value, 10) || 40;
+      const totalStudents = classCount * rows;
+
+      metricClasses.textContent = `${classCount} Class${classCount > 1 ? 'es' : ''}`;
+      metricCapacity.textContent = `${rows} Rows/class (${totalStudents} students total)`;
+    }
+
+    if (classInput) {
+      classInput.addEventListener('input', updateMetrics);
+    }
+    if (studentRowCount) {
+      studentRowCount.addEventListener('input', updateMetrics);
+    }
+
+    if (ca3Check && weightTotal) {
+      ca3Check.addEventListener('change', function() {
+        if (this.checked) {
+          weightTotal.textContent = 'Total: 120% (Adjust Exam)';
+          weightTotal.classList.remove('bg-primary-fixed', 'text-on-primary-fixed-variant');
+          weightTotal.classList.add('bg-error-container', 'text-on-error-container');
+        } else {
+          weightTotal.textContent = 'Total: 100%';
+          weightTotal.classList.remove('bg-error-container', 'text-on-error-container');
+          weightTotal.classList.add('bg-primary-fixed', 'text-on-primary-fixed-variant');
+        }
+      });
+    }
+
+    // Interactive button visual triggers
+    function flashFeedback(btn, message) {
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">check_circle</span><span>${message}</span>`;
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+      }, 1800);
+    }
+
+    if (downloadCsvBtn) {
+      downloadCsvBtn.addEventListener('click', () => flashFeedback(downloadCsvBtn, 'CSV Ready!'));
+    }
+    if (downloadXlsxBtn) {
+      downloadXlsxBtn.addEventListener('click', () => flashFeedback(downloadXlsxBtn, 'Excel Generated!'));
+    }
+  })();
+</script></main></div>
+
+</body></html>

@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"outline-variant":"#cdc3d7","outline":"#7c7486","on-secondary-fixed":"#001453","secondary":"#3755c3","on-tertiary-container":"#83ceaf","primary-fixed-dim":"#d5bbff","on-secondary-container":"#00217a","tertiary-container":"#005941","on-tertiary-fixed":"#002116","on-tertiary":"#ffffff","inverse-surface":"#283044","tertiary-fixed-dim":"#8bd6b6","on-primary":"#ffffff","on-secondary-fixed-variant":"#173bab","surface-variant":"#dae2fd","error-container":"#ffdad6","primary-container":"#641bc4","on-secondary":"#ffffff","inverse-on-surface":"#eef0ff","secondary-container":"#708cfd","on-primary-container":"#ceb1ff","on-primary-fixed-variant":"#5d0abd","on-error":"#ffffff","error":"#ba1a1a","primary-fixed":"#ecdcff","on-error-container":"#93000a","surface-bright":"#faf8ff","surface-container-lowest":"#ffffff","secondary-fixed-dim":"#b8c4ff","on-tertiary-fixed-variant":"#00513b","surface-dim":"#d2d9f4","primary":"#49009a","on-background":"#131b2e","inverse-primary":"#d5bbff","on-surface":"#131b2e","tertiary-fixed":"#a6f2d1","surface-container":"#eaedff","on-surface-variant":"#4b4454","on-primary-fixed":"#270058","surface-container-high":"#e2e7ff","tertiary":"#003f2d","surface":"#faf8ff","background":"#faf8ff","surface-container-low":"#f2f3ff","surface-container-highest":"#dae2fd","secondary-fixed":"#dde1ff","surface-tint":"#7635d6"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"margin-desktop":"2.5rem","space-lg":"1rem",gutter:"1rem","space-xs":"0.25rem","margin-tablet":"1.5rem","space-md":"0.75rem","space-sm":"0.5rem","space-xl":"1.5rem","space-2xl":"2rem",margin:"1rem","gutter-desktop":"1.5rem"},fontFamily:{"headline-md":["Manrope"],"headline-lg":["Manrope"],"headline-sm":["Manrope"],"label-sm":["Geist"],"body-lg":["Manrope"],"headline-xl":["Manrope"],"data-metric":["Geist"],"body-sm":["Manrope"],"body-code":["Geist"],"label-md":["Geist"],"headline-xl-mobile":["Manrope"],"body-md":["Manrope"]},fontSize:{"headline-md":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"headline-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"headline-sm":["16px",{lineHeight:"24px",letterSpacing:"0em",fontWeight:"600"}],"label-sm":["11px",{lineHeight:"14px",letterSpacing:"0.05em",fontWeight:"600"}],"body-lg":["15px",{lineHeight:"22px",letterSpacing:"0em",fontWeight:"400"}],"headline-xl":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"data-metric":["22px",{lineHeight:"28px",letterSpacing:"-0.02em",fontWeight:"700"}],"body-sm":["13px",{lineHeight:"18px",letterSpacing:"0.005em",fontWeight:"400"}],"body-code":["13px",{lineHeight:"18px",letterSpacing:"0.02em",fontWeight:"500"}],"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.04em",fontWeight:"600"}],"headline-xl-mobile":["26px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"body-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"400"}]}}}}</script></head><body class="bg-background font-body-md text-on-surface antialiased"><div class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full bg-surface-container-low px-4 py-1.5"><div class="max-w-[1440px] mx-auto flex items-center justify-center gap-2 text-center"><span class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></span><p class="font-label-md text-label-md text-on-surface-variant"><span class="font-semibold text-primary">100% Offline Report Card Studio</span> for Nigerian &amp; West African Schools • No Internet Needed to Grade or Print</p></div></div><header class="w-full h-20"><div class="max-w-[1440px] mx-auto h-full px-margin-tablet lg:px-margin-desktop flex items-center justify-between gap-6"><div class="flex items-center gap-8"><a class="flex items-center gap-3 shrink-0" data-path="landing-page" href="#"><div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm"><span class="material-symbols-outlined text-[24px]">menu_book</span></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">ParaLearn</span><span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-primary-fixed text-on-primary-fixed uppercase font-semibold">Results</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">rms.pln.ng</span></div></a><nav class="hidden xl:flex items-center gap-1" data-active-classes="bg-surface-container text-primary font-semibold"><a class="px-3 py-2 rounded-md font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="how-it-works" href="#">How it Works</a><a class="px-3 py-2 rounded-md font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="offline-engine" href="#">Offline Engine</a><a class="px-3 py-2 rounded-md font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="report-card-specs" href="#">Report Card Specs</a><a class="px-3 py-2 rounded-md font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="excel-format" href="#">Excel Format</a><a class="px-3 py-2 rounded-md font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="pricing-and-setup" href="#">Pricing &amp; School Setup</a></nav></div><div class="flex items-center gap-3 shrink-0"><a class="hidden md:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md hover:bg-surface-container hover:text-on-surface transition-colors" data-path="sample-sheet" href="#"><span class="material-symbols-outlined text-[18px] text-secondary">download</span><span>Download Sample Sheet</span></a><a class="px-3.5 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors font-medium" data-path="sign-in" href="#">Sign in</a><a class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary-container text-on-primary hover:bg-primary transition-colors shadow-sm font-body-md text-body-md font-semibold" data-path="create-account" href="#"><span>Create Free School Account</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span></a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header></div><main class="w-full pt-28 bg-background"><div class="flex flex-col w-full">
+<!-- Top Offline Status Rib -->
+<section class="w-full bg-surface-container-high px-margin-tablet lg:px-margin-desktop py-2">
+<div class="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3 text-on-surface">
+<div class="flex items-center gap-2.5">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary-container"></span>
+<span class="font-label-sm text-label-sm font-semibold tracking-wide uppercase text-tertiary">Local Engine Online</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant hidden md:inline">• Client-side wasm runtime active • No cloud dependency required</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1 font-data-metric text-label-sm"><span class="material-symbols-outlined text-[15px] text-tertiary">bolt</span>0.00 KB bandwidth needed for PDF generation</span>
+<span class="hidden sm:inline font-body-sm text-body-sm text-outline">|</span>
+<span class="hidden sm:inline">Build v2.4-lagos-lga</span>
+</div>
+</div>
+</section>
+<!-- 1. HERO SECTION -->
+<section class="w-full bg-background px-margin-tablet lg:px-margin-desktop py-12 lg:py-20 relative overflow-hidden">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-12 lg:gap-16">
+<!-- Copy Block -->
+<div class="flex flex-col items-start gap-6 max-w-4xl">
+<div class="inline-flex flex-wrap items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container text-on-surface shadow-sm">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm font-semibold text-tertiary">
+<span class="material-symbols-outlined text-[16px] text-tertiary">offline_pin</span>
+            100% OFFLINE CAPABLE
+          </span>
+<span class="text-outline font-label-sm text-label-sm">•</span>
+<span class="font-label-sm text-label-sm font-semibold tracking-wider text-primary uppercase">Offline-First Academic Results for Nigerian Schools</span>
+<span class="material-symbols-outlined text-[16px] text-secondary">bolt</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl lg:text-[44px] lg:leading-[52px] font-bold text-on-surface tracking-tight">
+          Turn Your Excel Score Sheet into Professional A4 Report Cards. Tonight. <span class="text-primary-container">With Zero Internet.</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed max-w-3xl">
+          Built for exam officers, principals, and secretaries during end-of-term rush. Works entirely on your office laptop through power cuts and data outages. Generates 1,000 official report cards in 8 seconds, ready for black-and-white laser printing, and syncs scores to ParaLearn Cloud whenever internet returns.
+        </p>
+<!-- CTA Buttons -->
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto pt-2">
+<a class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-primary-container text-on-primary hover:bg-primary transition-all shadow-md font-body-md text-body-md font-semibold" data-path="create-account" href="#">
+<span>Create School Account (60 Seconds)</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</a>
+<a class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container transition-all shadow-sm font-body-md text-body-md font-semibold" data-path="download-sample" href="#">
+<span class="material-symbols-outlined text-[20px] text-secondary">file_download</span>
+<span>Download Sample Excel Sheet (.xlsx)</span>
+</a>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span>Already have a school address?</span>
+<a class="text-primary font-semibold hover:underline flex items-center gap-0.5" data-path="school-subdomain" href="#">
+            Sign in to your school domain (e.g. kings.pln.ng)
+            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</a>
+</div>
+<!-- Trust Badges Strip -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 w-full">
+<div class="flex items-center gap-2 p-2.5 rounded-lg bg-surface-container-low shadow-sm">
+<span class="material-symbols-outlined text-tertiary text-[18px]">power_off</span>
+<span class="font-label-sm text-label-sm font-medium text-on-surface">Survives NEPA/PHCN Outages</span>
+</div>
+<div class="flex items-center gap-2 p-2.5 rounded-lg bg-surface-container-low shadow-sm">
+<span class="material-symbols-outlined text-tertiary text-[18px]">credit_card_off</span>
+<span class="font-label-sm text-label-sm font-medium text-on-surface">No Per-Student Surcharge</span>
+</div>
+<div class="flex items-center gap-2 p-2.5 rounded-lg bg-surface-container-low shadow-sm">
+<span class="material-symbols-outlined text-tertiary text-[18px]">verified</span>
+<span class="font-label-sm text-label-sm font-medium text-on-surface">WAEC &amp; NECO 9-Point Scale</span>
+</div>
+<div class="flex items-center gap-2 p-2.5 rounded-lg bg-surface-container-low shadow-sm">
+<span class="material-symbols-outlined text-tertiary text-[18px]">lock</span>
+<span class="font-label-sm text-label-sm font-medium text-on-surface">100% Private Local File Data</span>
+</div>
+</div>
+</div>
+<!-- Split Interactive Hero Showcase: Excel to A4 Card -->
+<div class="w-full rounded-xl bg-surface-container-lowest p-4 sm:p-6 shadow-xl flex flex-col gap-6">
+<div class="flex flex-wrap items-center justify-between gap-4 pb-2">
+<div class="flex items-center gap-3">
+<span class="w-3 h-3 rounded-full bg-error"></span>
+<span class="w-3 h-3 rounded-full bg-secondary-container"></span>
+<span class="w-3 h-3 rounded-full bg-tertiary-container"></span>
+<span class="font-body-code text-body-code text-on-surface font-semibold pl-2">PARALEARN RUNTIME PIPELINE: RAW SHEET → HIGH-DENSITY A4 REPORT</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">Class: JSS 1A</span>
+<span class="px-2.5 py-1 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold">42/42 Processed</span>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+<!-- Left: Excel Sheet Preview -->
+<div class="lg:col-span-5 bg-surface-container-low rounded-lg p-4 flex flex-col justify-between shadow-sm">
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">table_chart</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Input: Term3_JSS1A.xlsx</span>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">Sheet 1 of 8</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">The teacher's raw markbook. Messy column widths, direct assessment inputs, zero formatting cleanup needed.</p>
+<!-- Mock Spreadsheet Table -->
+<div class="overflow-x-auto rounded bg-surface-container-lowest p-2 shadow-inner">
+<table class="w-full text-left font-body-code text-body-code">
+<thead>
+<tr class="bg-surface-container text-on-surface-variant text-[11px] font-semibold">
+<th class="p-1.5">ADM NO</th>
+<th class="p-1.5">NAME</th>
+<th class="p-1.5 text-right">CA1 (20)</th>
+<th class="p-1.5 text-right">CA2 (20)</th>
+<th class="p-1.5 text-right">EXAM (60)</th>
+<th class="p-1.5 text-right">TOT</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 text-[12px] text-on-surface">
+<tr class="bg-surface-container-lowest hover:bg-surface-container-low">
+<td class="p-1.5 font-bold">KC/2023/041</td>
+<td class="p-1.5 truncate max-w-[120px]">Adeyemi, Chidubem</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">19</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">18</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">54</td>
+<td class="p-1.5 text-right font-bold text-primary font-data-metric text-[12px]">91</td>
+</tr>
+<tr class="bg-surface-container-low/50 hover:bg-surface-container-low">
+<td class="p-1.5 font-bold">KC/2023/042</td>
+<td class="p-1.5 truncate max-w-[120px]">Bello, Aminat K.</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">17</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">16</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">48</td>
+<td class="p-1.5 text-right font-bold text-primary font-data-metric text-[12px]">81</td>
+</tr>
+<tr class="bg-surface-container-lowest hover:bg-surface-container-low">
+<td class="p-1.5 font-bold">KC/2023/043</td>
+<td class="p-1.5 truncate max-w-[120px]">Chukwuma, Ifeanyi</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">14</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">15</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">44</td>
+<td class="p-1.5 text-right font-bold text-primary font-data-metric text-[12px]">73</td>
+</tr>
+<tr class="bg-surface-container-low/50 hover:bg-surface-container-low">
+<td class="p-1.5 font-bold">KC/2023/044</td>
+<td class="p-1.5 truncate max-w-[120px]">Danjuma, David S.</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">18</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">17</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">52</td>
+<td class="p-1.5 text-right font-bold text-primary font-data-metric text-[12px]">87</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Transformation Arrow / Micro Indicator -->
+<div class="pt-4 flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1.5 text-secondary font-semibold">
+<span class="material-symbols-outlined text-[16px] animate-spin">autorenew</span>
+                Parsing 12 Subjects • Ties Resolved
+              </span>
+<span class="font-data-metric text-label-sm text-tertiary">0.08s</span>
+</div>
+</div>
+<!-- Middle: Process Connector (Visual bridge) -->
+<div class="hidden lg:flex lg:col-span-1 flex-col items-center justify-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined text-[24px]">arrow_forward</span>
+</div>
+<span class="font-label-sm text-[10px] uppercase font-bold text-on-surface-variant text-center tracking-wider">Local WASM</span>
+</div>
+<!-- Right: Output A4 Report Card Showcase -->
+<div class="lg:col-span-6 bg-surface-container-lowest rounded-lg p-5 shadow-md flex flex-col justify-between">
+<div class="flex flex-col gap-4">
+<!-- Official Document Header (Kings College Lagos Style) -->
+<div class="flex items-start justify-between pb-3 bg-surface-container-low p-3 rounded-lg">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded bg-primary text-on-primary flex items-center justify-center font-bold text-headline-sm">
+                    KC
+                  </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface leading-tight">KING'S COLLEGE LAGOS</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">3 Catholic Mission St, Lagos Island • Est. 1909</span>
+<span class="font-label-sm text-[10px] text-tertiary font-bold tracking-widest uppercase">Continuous Assessment Term Dossier</span>
+</div>
+</div>
+<div class="text-right flex flex-col items-end">
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-data-metric text-label-sm uppercase font-bold">OFFICIAL TRANSCRIPT</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">Term 3, 2024/2025</span>
+</div>
+</div>
+<!-- Student Profile Strip -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-surface-container p-2.5 rounded text-on-surface font-body-sm text-body-sm">
+<div><span class="text-on-surface-variant text-[11px] block font-semibold">PUPIL NAME:</span><span class="font-bold">ADEYEMI, Chidubem</span></div>
+<div><span class="text-on-surface-variant text-[11px] block font-semibold">ADMISSION NO:</span><span class="font-data-metric text-body-sm font-bold">KC/2023/041</span></div>
+<div><span class="text-on-surface-variant text-[11px] block font-semibold">CLASS / ARM:</span><span class="font-bold">JSS 1 - ALPHA (42 Pupils)</span></div>
+<div><span class="text-on-surface-variant text-[11px] block font-semibold">OVERALL RANK:</span><span class="font-data-metric text-body-sm font-bold text-primary">1st of 42 (91.4% Avg)</span></div>
+</div>
+<!-- Sample Subject Table inside card -->
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm text-body-sm">
+<thead>
+<tr class="bg-surface-container-high text-on-surface text-[11px] font-bold uppercase">
+<th class="p-1.5">Subject</th>
+<th class="p-1.5 text-right">CA1 (20)</th>
+<th class="p-1.5 text-right">CA2 (20)</th>
+<th class="p-1.5 text-right">Exam (60)</th>
+<th class="p-1.5 text-right font-bold">Total</th>
+<th class="p-1.5 text-center">Grade</th>
+<th class="p-1.5 text-right">Pos</th>
+<th class="p-1.5">Remarks</th>
+</tr>
+</thead>
+<tbody class="text-on-surface text-[12px]">
+<tr class="bg-surface-container-lowest">
+<td class="p-1.5 font-bold">Mathematics</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">19</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">18</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">54</td>
+<td class="p-1.5 text-right font-bold font-data-metric text-[12px] text-tertiary">91</td>
+<td class="p-1.5 text-center"><span class="px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-bold text-[10px]">A1</span></td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">1st</td>
+<td class="p-1.5 text-on-surface-variant text-[11px]">Distinction • Outstanding grasp</td>
+</tr>
+<tr class="bg-surface-container-low/40">
+<td class="p-1.5 font-bold">English Studies</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">18</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">17</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">51</td>
+<td class="p-1.5 text-right font-bold font-data-metric text-[12px] text-tertiary">86</td>
+<td class="p-1.5 text-center"><span class="px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-bold text-[10px]">A1</span></td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">2nd</td>
+<td class="p-1.5 text-on-surface-variant text-[11px]">Fluent articulation in prose</td>
+</tr>
+<tr class="bg-surface-container-lowest">
+<td class="p-1.5 font-bold">Basic Science &amp; Tech</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">20</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">19</td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">55</td>
+<td class="p-1.5 text-right font-bold font-data-metric text-[12px] text-tertiary">94</td>
+<td class="p-1.5 text-center"><span class="px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-bold text-[10px]">A1</span></td>
+<td class="p-1.5 text-right font-data-metric text-[12px]">1st</td>
+<td class="p-1.5 text-on-surface-variant text-[11px]">Exceptional practical scores</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Principal Stamp & Verification Barcode -->
+<div class="flex items-center justify-between pt-2 px-2">
+<div class="flex items-center gap-2">
+<div class="w-16 h-8 bg-surface-container rounded flex items-center justify-center font-body-code text-[9px] text-on-surface-variant">
+                    |||| | ||||| ||
+                  </div>
+<span class="font-label-sm text-[10px] text-on-surface-variant">ID: PLN-KCL-24-041</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-[11px] font-bold">STAMPED OFFICIAL</span>
+<span class="material-symbols-outlined text-primary text-[20px]">verified_user</span>
+</div>
+</div>
+</div>
+<div class="pt-4 flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span class="text-tertiary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">print</span>
+                Laser Ready (Optimized 300 DPI Monochrome PDF)
+              </span>
+<a class="text-primary hover:underline font-semibold" href="#">Inspect Full A4 PDF (2 Pages) →</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. THE REALITY OF END-OF-TERM (The Problem We Solve) -->
+<section class="w-full bg-surface-container-low px-margin-tablet lg:px-margin-desktop py-16 lg:py-24">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-12">
+<div class="flex flex-col items-center text-center gap-3 max-w-3xl mx-auto">
+<span class="font-label-sm text-label-sm uppercase font-bold text-error tracking-wider">The Reality of Nigerian End-of-Term</span>
+<h2 class="font-headline-lg text-headline-lg lg:text-headline-xl text-on-surface font-bold">
+          Why End-of-Term Report Cards Are a Nightmare Today
+        </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+          In secondary and primary schools across Lagos, Ibadan, Abuja, and Port Harcourt, speech day is preceded by three nights of generator fumes, frozen portals, and broken formulas.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Crisis Column 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-4">
+<div class="w-12 h-12 rounded-lg bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">power_off</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">The Generator &amp; Data Crunch</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Power cuts strike without warning at 8:00 PM while compiling results. Hotspots lag, school cloud portals timeout mid-upload, and you run out of mobile data subscriptions before a single sheet finishes processing.
+            </p>
+</div>
+<div class="p-3.5 rounded-lg bg-surface-container flex items-start gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[20px] shrink-0 mt-0.5">check_circle</span>
+<p class="font-body-sm text-body-sm text-on-surface font-medium">
+<strong class="text-tertiary font-bold">With ParaLearn:</strong> Your laptop's battery is all you need. Compile 2,000 students while disconnected in an airplane or in total darkness.
+            </p>
+</div>
+</div>
+<!-- Crisis Column 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-4">
+<div class="w-12 h-12 rounded-lg bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">function</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Excel Formula Disasters</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              One accidental <code class="font-body-code text-[12px] bg-surface-container px-1 rounded">#REF!</code> or deleted cell breaks rank computations for an entire class. Subject teachers manually assign duplicate ranks like 1st, 2nd, 3rd instead of statutory tie sequences (1st, 2nd, 2nd, 4th).
+            </p>
+</div>
+<div class="p-3.5 rounded-lg bg-surface-container flex items-start gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[20px] shrink-0 mt-0.5">check_circle</span>
+<p class="font-body-sm text-body-sm text-on-surface font-medium">
+<strong class="text-tertiary font-bold">With ParaLearn:</strong> The local WASM engine standardizes rankings, class medians, affective domains, and grade tiers automatically without a single Excel macro.
+            </p>
+</div>
+</div>
+<!-- Crisis Column 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-4">
+<div class="w-12 h-12 rounded-lg bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">keyboard_double_arrow_right</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Re-typing Into Cloud Portals</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Exam officers spend 4 grueling days after printing report cards re-entering thousands of marks into legacy web portals just so parents can check grades on their phones.
+            </p>
+</div>
+<div class="p-3.5 rounded-lg bg-surface-container flex items-start gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[20px] shrink-0 mt-0.5">check_circle</span>
+<p class="font-body-sm text-body-sm text-on-surface font-medium">
+<strong class="text-tertiary font-bold">With ParaLearn:</strong> Generate local PDFs first for laser printing. When internet returns, click one button to sync the validated ledger straight to ParaLearn Cloud.
+            </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. HOW IT WORKS (3 Simple Steps) -->
+<section class="w-full bg-background px-margin-tablet lg:px-margin-desktop py-16 lg:py-24">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-12">
+<div class="flex flex-col items-center text-center gap-3 max-w-2xl mx-auto">
+<span class="font-label-sm text-label-sm uppercase font-bold text-primary tracking-wider">Dead-Simple 3-Minute Routine</span>
+<h2 class="font-headline-lg text-headline-lg lg:text-headline-xl text-on-surface font-bold">
+          From Score Sheet to Sealed Report Cards in 3 Steps
+        </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+          No training seminars. No specialized IT consultants. If your teachers already type continuous assessment scores into Excel, you are 95% done.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Step 1 -->
+<div class="flex flex-col gap-4 bg-surface-container-lowest p-6 rounded-xl shadow-sm">
+<div class="flex items-center justify-between">
+<span class="w-10 h-10 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-headline-sm text-headline-sm font-bold">01</span>
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant">Step One</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Open your existing result sheet</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Drop in your school's normal Excel file (one tab per class) or our free standard CSV template. ParaLearn doesn't lock you into rigid proprietary database structures. Keep using your familiar workflow.
+          </p>
+<div class="mt-auto pt-4 p-3 rounded bg-surface-container-low flex items-center gap-2 font-body-code text-body-code text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-[18px]">attachment</span>
+<span class="truncate">Supported: .xlsx, .xls, .csv, Google Sheets export</span>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col gap-4 bg-surface-container-lowest p-6 rounded-xl shadow-sm">
+<div class="flex items-center justify-between">
+<span class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-headline-sm text-headline-sm font-bold">02</span>
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant">Step Two</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Work out results offline in seconds</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            The local browser engine calculates total CA + Exam, computes percentiles, ranks positions across classes, formats automated remarks, and draws high-resolution PDF booklets on your machine.
+          </p>
+<div class="mt-auto pt-4 p-3 rounded bg-surface-container-low flex items-center gap-2 font-body-code text-body-code text-on-surface-variant">
+<span class="material-symbols-outlined text-tertiary text-[18px]">speed</span>
+<span>Speed: 1,000 student cards compiled in 8.2s</span>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col gap-4 bg-surface-container-lowest p-6 rounded-xl shadow-sm">
+<div class="flex items-center justify-between">
+<span class="w-10 h-10 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-headline-sm text-headline-sm font-bold">03</span>
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant">Step Three</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Print booklets &amp; auto-sync to cloud</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Send crisp PDF class bundles straight to your monochrome laser printer. Hand out physical cards to parents on Speech &amp; Prize Day, while scores quietly sync online for remote parent lookup.
+          </p>
+<div class="mt-auto pt-4 p-3 rounded bg-surface-container-low flex items-center gap-2 font-body-code text-body-code text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-[18px]">cloud_sync</span>
+<span>Zero-friction cloud synchronization</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. INTERACTIVE BENCHMARK / SPEED CALCULATOR -->
+<section class="w-full bg-surface-container-low px-margin-tablet lg:px-margin-desktop py-16 lg:py-24">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-10">
+<div class="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-6">
+<div class="flex flex-col gap-2 max-w-2xl">
+<span class="font-label-sm text-label-sm uppercase font-bold text-secondary tracking-wider">Local WASM Benchmarks</span>
+<h2 class="font-headline-lg text-headline-lg lg:text-headline-xl text-on-surface font-bold">
+            See How Fast Your School Generates Cards
+          </h2>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Tested on mid-range HP and Dell laptops commonly found in Nigerian school administrative offices (Core i3 / 8GB RAM). Zero cloud roundtrips.
+          </p>
+</div>
+<!-- Scale Toggle Buttons -->
+<div class="flex items-center gap-2 p-1 bg-surface-container rounded-lg shrink-0">
+<button class="px-4 py-2 rounded-md font-label-md text-label-md font-semibold transition-all bg-primary-container text-on-primary shadow-sm" id="bench-btn-small" onclick="switchBenchmark('small')">
+            8 Classes (320 Students)
+          </button>
+<button class="px-4 py-2 rounded-md font-label-md text-label-md font-semibold transition-all text-on-surface-variant hover:text-on-surface" id="bench-btn-med" onclick="switchBenchmark('med')">
+            24 Classes (1,150 Students)
+          </button>
+<button class="px-4 py-2 rounded-md font-label-md text-label-md font-semibold transition-all text-on-surface-variant hover:text-on-surface" id="bench-btn-full" onclick="switchBenchmark('full')">
+            Full School (2,400 Students)
+          </button>
+</div>
+</div>
+<!-- Performance Metrics Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col justify-between gap-3">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-md text-label-md uppercase font-semibold">Calculation &amp; Ranking</span>
+<span class="material-symbols-outlined text-secondary text-[22px]">calculate</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-metric text-[32px] text-on-surface font-bold" id="metric-calc">1.2 seconds</span>
+<span class="font-body-sm text-body-sm text-tertiary font-medium">Auto-ranks 12 subjects across all arms</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col justify-between gap-3">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-md text-label-md uppercase font-semibold">Local PDF Compilation</span>
+<span class="material-symbols-outlined text-primary text-[22px]">picture_as_pdf</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-metric text-[32px] text-on-surface font-bold" id="metric-pdf">3.8 seconds</span>
+<span class="font-body-sm text-body-sm text-tertiary font-medium">Ready for immediate batch print</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col justify-between gap-3">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-md text-label-md uppercase font-semibold">Peak RAM Footprint</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]">memory</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-metric text-[32px] text-on-surface font-bold" id="metric-ram">4.2 MB</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Runs smoothly on 4GB RAM laptops</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col justify-between gap-3">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-md text-label-md uppercase font-semibold">Internet Data Consumed</span>
+<span class="material-symbols-outlined text-tertiary text-[22px]">wifi_off</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-metric text-[32px] text-tertiary font-bold">0.00 KB</span>
+<span class="font-body-sm text-body-sm text-tertiary font-bold">True 100% Zero Data Outage Proof</span>
+</div>
+</div>
+</div>
+<!-- Live Speed Simulation Bar -->
+<div class="bg-surface-container-lowest p-4 sm:p-5 rounded-xl shadow-sm flex flex-col gap-3">
+<div class="flex items-center justify-between text-on-surface">
+<span class="font-body-md text-body-md font-semibold flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span>
+            Simulated Batch Processing Progress
+          </span>
+<span class="font-data-metric text-body-sm text-tertiary font-bold" id="sim-status">Complete: 320/320 Dossiers Ready</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full transition-all duration-500" id="sim-bar" style="width: 100%;"></div>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant font-body-sm text-[12px]">
+<span>Single A4 Duplex Booklet per pupil</span>
+<span>Automatic Greyscale Inversion Applied</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 5. BUILT FOR THE NIGERIAN CLASSROOM & PRINTER (Feature Highlights) -->
+<section class="w-full bg-background px-margin-tablet lg:px-margin-desktop py-16 lg:py-24">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-12">
+<div class="flex flex-col items-center text-center gap-3 max-w-3xl mx-auto">
+<span class="font-label-sm text-label-sm uppercase font-bold text-tertiary tracking-wider">Engineered for Local Infrastructure</span>
+<h2 class="font-headline-lg text-headline-lg lg:text-headline-xl text-on-surface font-bold">
+          Features Built Specifically for Nigerian Schools &amp; Printers
+        </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+          We didn't take an American or British template and rename it. Every component addresses power supply realities, toner limitations, and Ministry of Education compliance.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Feature 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">contrast</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Laser Greyscale Engine</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Most school printers are black-and-white HP LaserJets or photocopiers. Our engine converts crests and yellow score badges into crisp high-contrast halftones so text remains pin-sharp.
+          </p>
+<div class="mt-auto pt-2 font-label-sm text-label-sm text-secondary font-semibold">
+            Zero washed-out yellow text →
+          </div>
+</div>
+<!-- Feature 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">workspace_premium</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Authentic School Identity</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Embeds your official school crest, Latin motto, principal signature, scanned security stamp, and custom affective domain ratings (Punctuality, Neatness, Politeness) on every sheet.
+          </p>
+<div class="mt-auto pt-2 font-label-sm text-label-sm text-secondary font-semibold">
+            Board-approved official layout →
+          </div>
+</div>
+<!-- Feature 3 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">rule</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">WAEC &amp; NECO 9-Point Grading</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Standard Nigerian secondary grading pre-configured: 75–100 (A1 Excellent), 70–74 (B2 Very Good), 65–69 (B3 Good), down to F9 Fail. Customizable for primary school letter grading (A*, A, B, C).
+          </p>
+<div class="mt-auto pt-2 font-label-sm text-label-sm text-secondary font-semibold">
+            Compliant with State Ministries →
+          </div>
+</div>
+<!-- Feature 4 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">desktop_windows</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Installable Desktop PWA</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Install directly onto your Windows 10/11, Mac, or ChromeOS laptop with 1-click. Appears as a desktop icon and launches instantly with full disk access without opening a browser tab.
+          </p>
+<div class="mt-auto pt-2 font-label-sm text-label-sm text-secondary font-semibold">
+            One-click desktop shortcut →
+          </div>
+</div>
+</div>
+<!-- Detail Showcase Banner -->
+<div class="bg-surface-container p-6 sm:p-8 rounded-xl shadow-sm flex flex-col lg:flex-row items-center justify-between gap-8">
+<div class="flex flex-col gap-3 max-w-2xl">
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold uppercase">Laser Optimization Spec</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">300 DPI Vector Typography</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold">Engineered to Cut Printing Costs by 40%</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            By avoiding ink-heavy solid black backgrounds and utilizing crisp line weights, ParaLearn report cards conserve printer toner cartridges. Print 2,500 sheets from a standard HP 85A toner without fading.
+          </p>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+<a class="px-5 py-3 rounded-lg bg-primary text-on-primary font-body-md text-body-md font-semibold hover:bg-on-primary-fixed-variant transition-colors shadow-sm" data-path="download-sample" href="#">
+            Download PDF Sample Printout
+          </a>
+</div>
+</div>
+</div>
+</section>
+<!-- 6. TESTIMONIALS & TRUST FROM SCHOOL LEADERS -->
+<section class="w-full bg-surface-container-low px-margin-tablet lg:px-margin-desktop py-16 lg:py-24">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-12">
+<div class="flex flex-col items-center text-center gap-3 max-w-2xl mx-auto">
+<span class="font-label-sm text-label-sm uppercase font-bold text-primary tracking-wider">Trusted by Principals &amp; Exam Officers</span>
+<h2 class="font-headline-lg text-headline-lg lg:text-headline-xl text-on-surface font-bold">
+          Proven Under High-Pressure Speech Day Deadlines
+        </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+          Hear how schools across Nigeria eradicated end-of-term stress and delivered flawless report cards on schedule.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Quote 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col justify-between gap-6">
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed italic">
+            "During 3rd Term rush, the transformer in Yaba blew two days before Speech &amp; Prize Day. With our previous cloud portal we would have postponed the event. With ParaLearn, our exam secretary compiled all 1,200 students on her laptop battery in two hours. Lifesaver."
+          </p>
+<div class="flex items-center gap-3 pt-4 bg-surface-container-low/50 p-3 rounded-lg">
+<div class="w-10 h-10 rounded-full bg-primary-fixed text-primary flex items-center justify-center font-bold">
+              OA
+            </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Mr. Olumide Adeleke</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Vice Principal Academics, Lagos</span>
+</div>
+</div>
+</div>
+<!-- Quote 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col justify-between gap-6">
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed italic">
+            "Our teachers used to bring USB flash drives with broken Excel formulas. One class teacher ranked two pupils with the same 84% score as 2nd and 3rd place! ParaLearn's tie-handling and WAEC grade boundaries eliminated all manual arguments with parents."
+          </p>
+<div class="flex items-center gap-3 pt-4 bg-surface-container-low/50 p-3 rounded-lg">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed text-secondary flex items-center justify-center font-bold">
+              HN
+            </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Mrs. Hauwa Nwachukwu</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Head of School, Garki Abuja</span>
+</div>
+</div>
+</div>
+<!-- Quote 3 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col justify-between gap-6">
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed italic">
+            "We have 1,800 students in Port Harcourt. The print output is gorgeous. On our black-and-white LaserJet printer, the crest and subject score tables look like an authentic government bank bond document. The parents were genuinely impressed."
+          </p>
+<div class="flex items-center gap-3 pt-4 bg-surface-container-low/50 p-3 rounded-lg">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed text-tertiary flex items-center justify-center font-bold">
+              EB
+            </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Elder Barisi Briggs</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Proprietor, Port Harcourt</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 7. PRICING & GETTING STARTED -->
+<section class="w-full bg-background px-margin-tablet lg:px-margin-desktop py-16 lg:py-24">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-12">
+<div class="flex flex-col items-center text-center gap-3 max-w-2xl mx-auto">
+<span class="font-label-sm text-label-sm uppercase font-bold text-primary tracking-wider">Transparent Institutional Pricing</span>
+<h2 class="font-headline-lg text-headline-lg lg:text-headline-xl text-on-surface font-bold">
+          Start Free. Scale With Full Cloud Backup.
+        </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+          No hidden per-pupil scratch-card levies. Honest software engineered to empower Nigerian institutions.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
+<!-- Tier 1: Free Starter -->
+<div class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col justify-between gap-8">
+<div class="flex flex-col gap-6">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface">Community Offline</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant">For individual exam officers &amp; smaller schools</span>
+</div>
+<span class="px-3 py-1 rounded-full bg-surface-container text-on-surface font-bold font-data-metric text-label-sm">FREE</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-xl text-headline-xl font-bold text-on-surface">₦0</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/ forever</span>
+</div>
+<ul class="space-y-3 font-body-md text-body-md text-on-surface-variant">
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">check</span>
+<span>100% Offline Excel to PDF generation</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">check</span>
+<span>Unlimited classes &amp; student report cards</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">check</span>
+<span>WAEC/NECO 9-Point grading standard</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">check</span>
+<span>Monochrome laser printer optimization</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">check</span>
+<span>Local storage on your PC</span>
+</li>
+</ul>
+</div>
+<a class="w-full py-3 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md font-semibold text-center hover:bg-surface-container-high transition-colors shadow-sm" data-path="create-free" href="#">
+            Launch Free Offline Studio
+          </a>
+</div>
+<!-- Tier 2: Cloud Integrated -->
+<div class="bg-surface-container-lowest rounded-xl p-8 shadow-xl flex flex-col justify-between gap-8 relative overflow-hidden">
+<div class="absolute top-0 right-0 bg-primary-container text-on-primary px-4 py-1 rounded-bl-lg font-label-sm text-label-sm font-bold uppercase tracking-wider">
+            Most Popular
+          </div>
+<div class="flex flex-col gap-6">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface">Full School Cloud</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Accredited domain &amp; remote parent checking</span>
+</div>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-xl text-headline-xl font-bold text-primary">₦45,000</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/ term / whole school</span>
+</div>
+<ul class="space-y-3 font-body-md text-body-md text-on-surface">
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-[18px]">verified</span>
+<span class="font-semibold">Everything in Free Offline tier, plus:</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">check</span>
+<span>Branded subdomain (e.g. <span class="font-body-code text-[12px] bg-surface-container px-1 rounded">kings.pln.ng</span>)</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">check</span>
+<span>1-Click Auto-sync from offline app to cloud</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">check</span>
+<span>Parents can view &amp; download reports online</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">check</span>
+<span>SMS / WhatsApp term result notifications</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">check</span>
+<span>Priority WhatsApp hotline support for exam officer</span>
+</li>
+</ul>
+</div>
+<a class="w-full py-3 rounded-lg bg-primary-container text-on-primary font-body-md text-body-md font-semibold text-center hover:bg-primary transition-colors shadow-md" data-path="setup-cloud" href="#">
+            Activate School Portal (Free 1st Term Trial)
+          </a>
+</div>
+</div>
+<!-- Final Action Conversion Banner -->
+<div class="bg-primary text-on-primary rounded-xl p-8 lg:p-12 shadow-xl flex flex-col md:flex-row items-center justify-between gap-8 mt-6">
+<div class="flex flex-col gap-3 max-w-xl text-center md:text-left">
+<span class="font-label-sm text-label-sm uppercase font-bold text-primary-fixed tracking-wider">Ready Before Bedtime Tonight</span>
+<h2 class="font-headline-lg text-headline-lg lg:text-headline-xl font-bold">
+            Ready to finish report cards before bedtime tonight?
+          </h2>
+<p class="font-body-md text-body-md text-on-primary-container">
+            No internet setup required to start. Open the offline engine, select your spreadsheet, and see your first class booklet within 60 seconds.
+          </p>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-4 shrink-0 w-full sm:w-auto">
+<a class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container transition-all font-body-md text-body-md font-bold shadow-md" data-path="create-account" href="#">
+<span>Create Your Free School Account</span>
+<span class="material-symbols-outlined text-[20px] text-primary">arrow_forward</span>
+</a>
+<a class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-lg bg-primary-container text-on-primary hover:bg-primary-container/80 transition-all font-body-md text-body-md font-semibold" data-path="explore-sample" href="#">
+<span>Explore Sample Batch</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+<!-- Interactive Benchmark Micro-script -->
+<script>
+    function switchBenchmark(scale) {
+      const btnSmall = document.getElementById('bench-btn-small');
+      const btnMed = document.getElementById('bench-btn-med');
+      const btnFull = document.getElementById('bench-btn-full');
+      const metricCalc = document.getElementById('metric-calc');
+      const metricPdf = document.getElementById('metric-pdf');
+      const metricRam = document.getElementById('metric-ram');
+      const simStatus = document.getElementById('sim-status');
+      const simBar = document.getElementById('sim-bar');
+
+      const activeClasses = ['bg-primary-container', 'text-on-primary', 'shadow-sm'];
+      const inactiveClasses = ['text-on-surface-variant'];
+
+      // Reset styles
+      [btnSmall, btnMed, btnFull].forEach(b => {
+        b.classList.remove('bg-primary-container', 'text-on-primary', 'shadow-sm');
+        b.classList.add('text-on-surface-variant');
+      });
+
+      if (scale === 'small') {
+        btnSmall.classList.add('bg-primary-container', 'text-on-primary', 'shadow-sm');
+        btnSmall.classList.remove('text-on-surface-variant');
+        metricCalc.textContent = '1.2 seconds';
+        metricPdf.textContent = '3.8 seconds';
+        metricRam.textContent = '4.2 MB';
+        simStatus.textContent = 'Complete: 320/320 Dossiers Ready';
+        simBar.style.width = '100%';
+      } else if (scale === 'med') {
+        btnMed.classList.add('bg-primary-container', 'text-on-primary', 'shadow-sm');
+        btnMed.classList.remove('text-on-surface-variant');
+        metricCalc.textContent = '3.8 seconds';
+        metricPdf.textContent = '12.4 seconds';
+        metricRam.textContent = '8.2 MB';
+        simStatus.textContent = 'Complete: 1,150/1,150 Dossiers Ready';
+        simBar.style.width = '100%';
+      } else if (scale === 'full') {
+        btnFull.classList.add('bg-primary-container', 'text-on-primary', 'shadow-sm');
+        btnFull.classList.remove('text-on-surface-variant');
+        metricCalc.textContent = '7.9 seconds';
+        metricPdf.textContent = '24.1 seconds';
+        metricRam.textContent = '16.4 MB';
+        simStatus.textContent = 'Complete: 2,400/2,400 Dossiers Ready';
+        simBar.style.width = '100%';
+      }
+    }
+  </script>
+</div></main><footer class="w-full bg-surface-container-low mt-20"><div class="max-w-[1440px] mx-auto px-margin-tablet lg:px-margin-desktop py-16"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12"><div class="lg:col-span-2 space-y-4"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-on-primary"><span class="material-symbols-outlined text-[20px]">menu_book</span></div><span class="font-headline-sm text-headline-sm text-on-surface font-bold">ParaLearn Results</span></div><p class="font-body-md text-body-md text-on-surface-variant max-w-sm">High-fidelity offline report sheet and term ledger infrastructure engineered specifically for basic, junior, and senior secondary institutions across West Africa.</p><div class="flex flex-wrap items-center gap-2 pt-2"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container font-label-sm text-label-sm text-tertiary font-semibold"><span class="material-symbols-outlined text-[14px] text-tertiary">verified</span>WAEC &amp; NECO Compliant</span><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container font-label-sm text-label-sm text-secondary font-semibold"><span class="material-symbols-outlined text-[14px] text-secondary">bolt</span>Instant Offline Engine</span></div></div><div class="space-y-3"><p class="font-label-md text-label-md uppercase font-bold text-on-surface tracking-wider">School Products</p><ul class="space-y-2.5 font-body-md text-body-md"><li tabindex="-1"><a class="text-on-surface-variant hover:text-on-surface transition-colors" data-path="offline-engine" href="#">Offline Result Studio</a></li><li tabindex="-1"><a class="text-on-surface-variant hover:text-on-surface transition-colors" data-path="paralearn-cbt" href="#">ParaLearn CBT System</a></li><li tabindex="-1"><a class="text-on-surface-variant hover:text-on-surface transition-colors" data-path="report-card-specs" href="#">Transcript &amp; Ledger Engine</a></li><li tabindex="-1"><a class="text-on-surface-variant hover:text-on-surface transition-colors" data-path="excel-format" href="#">Standard Sheet Templates</a></li></ul></div><div class="space-y-3"><p class="font-label-md text-label-md uppercase font-bold text-on-surface tracking-wider">Institutional Links</p><ul class="space-y-2.5 font-body-md text-body-md"><li tabindex="-1"><a class="text-on-surface-variant hover:text-on-surface transition-colors" data-path="main-portal" href="#">ParaLearn Main Portal</a></li><li tabindex="-1"><a class="text-on-surface-variant hover:text-on-surface transition-colors" data-path="school-directory" href="#">School Address Lookup</a></li><li tabindex="-1"><a class="text-on-surface-variant hover:text-on-surface transition-colors" data-path="ministry-guidelines" href="#">State Ministry Formats</a></li><li tabindex="-1"><a class="text-on-surface-variant hover:text-on-surface transition-colors" data-path="pricing-and-setup" href="#">Pricing &amp; Subscriptions</a></li></ul></div><div class="space-y-3"><p class="font-label-md text-label-md uppercase font-bold text-on-surface tracking-wider">Verification &amp; Support</p><p class="font-body-sm text-body-sm text-on-surface-variant">Verify an accredited school code or get technical deployment support for your local LAN terminal.</p><div class="flex items-center gap-2 pt-1"><a class="font-label-md text-label-md text-primary font-semibold hover:text-on-primary-fixed-variant transition-colors" data-path="support-desk" href="#">Access Support Desk →</a></div></div></div><div class="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 font-body-sm text-body-sm text-on-surface-variant"><p>© 2025 ParaLearn Results (rms.pln.ng). Engineered for West African Education Systems.</p><div class="flex items-center gap-6"><a class="hover:text-on-surface transition-colors" data-path="privacy-policy" href="#">Privacy Policy</a><a class="hover:text-on-surface transition-colors" data-path="terms-of-service" href="#">Terms of Service</a><a class="hover:text-on-surface transition-colors" data-path="offline-data-charter" href="#">Data Ownership Guarantee</a></div></div></div></footer></body></html>

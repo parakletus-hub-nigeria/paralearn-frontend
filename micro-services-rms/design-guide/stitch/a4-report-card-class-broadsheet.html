@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Manrope:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-primary-container":"#ceb1ff","error-container":"#ffdad6","secondary-fixed":"#dde1ff","surface-container-low":"#f2f3ff","on-secondary":"#ffffff","tertiary-fixed":"#a6f2d1","surface-dim":"#d2d9f4","on-primary-fixed-variant":"#5d0abd","on-primary-fixed":"#270058","primary-container":"#641bc4","outline":"#7c7486","on-tertiary-fixed-variant":"#00513b","outline-variant":"#cdc3d7","on-secondary-fixed-variant":"#173bab","secondary-fixed-dim":"#b8c4ff","primary-fixed":"#ecdcff","on-background":"#131b2e","inverse-primary":"#d5bbff","tertiary":"#003f2d","on-secondary-container":"#00217a","surface-bright":"#faf8ff","surface-container-high":"#e2e7ff","surface-tint":"#7635d6","tertiary-fixed-dim":"#8bd6b6","on-error-container":"#93000a","surface-container-lowest":"#ffffff","on-surface":"#131b2e","secondary":"#3755c3","on-secondary-fixed":"#001453","error":"#ba1a1a","surface-variant":"#dae2fd","on-primary":"#ffffff","on-tertiary":"#ffffff","on-tertiary-container":"#83ceaf","inverse-surface":"#283044","on-surface-variant":"#4b4454","surface-container-highest":"#dae2fd","surface":"#faf8ff","inverse-on-surface":"#eef0ff","surface-container":"#eaedff","secondary-container":"#708cfd","primary-fixed-dim":"#d5bbff","on-error":"#ffffff","primary":"#49009a","background":"#faf8ff","on-tertiary-fixed":"#002116","tertiary-container":"#005941"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-md":"0.75rem","space-lg":"1rem",gutter:"1rem","space-sm":"0.5rem","space-xs":"0.25rem","margin-desktop":"2.5rem","margin-tablet":"1.5rem",margin:"1rem","space-xl":"1.5rem","gutter-desktop":"1.5rem","space-2xl":"2rem"},fontFamily:{"headline-md":["Manrope"],"data-metric":["Geist"],"label-md":["Geist"],"body-lg":["Manrope"],"headline-lg":["Manrope"],"headline-sm":["Manrope"],"body-md":["Manrope"],"headline-xl":["Manrope"],"label-sm":["Geist"],"body-sm":["Manrope"],"headline-xl-mobile":["Manrope"],"body-code":["Geist"]},fontSize:{"headline-md":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"data-metric":["22px",{lineHeight:"28px",letterSpacing:"-0.02em",fontWeight:"700"}],"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.04em",fontWeight:"600"}],"body-lg":["15px",{lineHeight:"22px",letterSpacing:"0em",fontWeight:"400"}],"headline-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"headline-sm":["16px",{lineHeight:"24px",letterSpacing:"0em",fontWeight:"600"}],"body-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"400"}],"headline-xl":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"label-sm":["11px",{lineHeight:"14px",letterSpacing:"0.05em",fontWeight:"600"}],"body-sm":["13px",{lineHeight:"18px",letterSpacing:"0.005em",fontWeight:"400"}],"headline-xl-mobile":["26px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"body-code":["13px",{lineHeight:"18px",letterSpacing:"0.02em",fontWeight:"500"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-60 bg-surface-container-lowest z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col"><div class="h-16 px-space-md flex items-center gap-space-sm bg-surface-container-low"><div class="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center shrink-0 shadow-sm text-primary-fixed"><svg class="w-5 h-5 fill-current" viewbox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm0 2.22l7.78 4.25L12 13.72 4.22 9.47 12 5.22zM6.9 12.82l5.1 2.78 5.1-2.78v4.36L12 19.54l-5.1-2.36v-4.36z"></path></svg></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-primary leading-tight font-bold">ParaLearn</span><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Results MS</span></div></div><div class="p-space-md"><div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between"><div class="flex items-center gap-space-sm overflow-hidden"><div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-[18px]">school</span></div><div class="flex flex-col truncate"><span class="font-body-sm text-body-sm font-semibold text-on-surface truncate">Kings College Lagos</span><span class="font-label-sm text-label-sm text-on-surface-variant font-body-code truncate">kings.pln.ng</span></div></div><span class="material-symbols-outlined text-on-surface-variant text-[18px]">unfold_more</span></div></div><nav class="px-space-md flex flex-col gap-space-xs" data-active-classes="bg-primary-container text-on-primary font-semibold"><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="result-batches" href="#"><span class="material-symbols-outlined text-[20px]">table_chart</span><span>Result batches</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="school-profile" href="#"><span class="material-symbols-outlined text-[20px]">account_balance</span><span>School profile</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="csv-template" href="#"><span class="material-symbols-outlined text-[20px]">description</span><span>CSV template</span></a><a class="flex items-center justify-between px-space-md py-space-sm rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="paralearn-portal" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">open_in_new</span><span>ParaLearn Portal</span></div><span class="material-symbols-outlined text-[16px] text-outline">north_east</span></a></nav></div><div class="p-space-md flex flex-col gap-space-md"><div class="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-space-xs"><div class="flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></span><span class="font-label-md text-label-md font-semibold text-tertiary-container">Online</span></div><span class="material-symbols-outlined text-tertiary-container text-[16px]">cloud_done</span></div><div class="flex items-center gap-space-xs mt-space-xs"><span class="material-symbols-outlined text-outline text-[15px]">check_circle</span><span class="font-label-sm text-label-sm text-on-surface-variant">Ready without internet</span></div><button class="mt-space-xs w-full py-space-xs px-space-sm rounded-lg bg-surface-container-lowest text-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-space-xs hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors shadow-[0_1px_4px_rgba(0,0,0,0.04)]" type="button"><span class="material-symbols-outlined text-[16px]">download</span><span>Install app</span></button></div><div class="p-space-sm rounded-lg bg-surface-container flex items-center justify-between"><div class="flex items-center gap-space-sm overflow-hidden"><img alt="Profile" class="w-8 h-8 rounded-full object-cover shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9PQ3LtQWB3njLkgCdwloGI2fNYLJBi4CtS2U2FO6vMJ-jABG4kA3cTo01b8b9c6oiTQZl21WLjkXUoTdObZOrNQnSgs0DSjzP1ZM41beAXJsYRU3JAH_W_oIm6VH8zp4i_PDxsXb1oD1tVP8vqAacnYz928ooas1p7P-V9L9eaRty_k2AGCZc7IEzz4tyRY8SMDLIiYOGosD9MjyomcB5QZyJ5z-pUAKYAGUPRZoS"/><div class="flex flex-col truncate"><span class="font-body-sm text-body-sm font-semibold text-on-surface truncate">Mrs. Adesewa Okonjo</span><span class="font-label-sm text-label-sm text-on-surface-variant font-body-code truncate">kings.pln.ng</span></div></div><button class="p-space-xs text-on-surface-variant hover:text-error transition-colors" title="Sign out" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></aside><div class="pl-60 min-h-screen flex flex-col"><header class="fixed top-0 left-60 right-0 h-16 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40"><div class="h-16 w-full px-space-xl flex items-center justify-between"><div class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm"><span class="font-semibold text-on-surface">Kings College Lagos</span><span class="material-symbols-outlined text-[16px] text-outline">chevron_right</span><span class="font-semibold text-primary font-headline-sm text-headline-sm">Workspace</span></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md"><span class="material-symbols-outlined text-[16px] text-tertiary-container">sync_saved_locally</span><span class="font-body-code text-on-surface">All scores sent</span></div><div class="flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-md text-label-md font-semibold"><span class="w-2 h-2 rounded-full bg-tertiary-container"></span><span>Connected &amp; Synced</span></div></div></div></header><main class="w-full pt-16 flex-1 bg-surface"><div class="flex flex-col w-full">
+<!-- Interactive & Printing Control Header Ribbon -->
+<div class="w-full bg-surface-container-lowest shadow-sm px-margin-desktop py-space-md sticky top-16 z-30 flex flex-wrap items-center justify-between gap-space-md">
+<!-- View Switcher & Class Pill -->
+<div class="flex items-center gap-space-md flex-wrap">
+<div class="flex items-center bg-surface-container-low p-1 rounded-xl">
+<button class="px-space-md py-space-xs rounded-lg font-headline-sm text-headline-sm transition-all duration-200 bg-primary-container text-on-primary shadow-sm flex items-center gap-space-xs" id="viewToggleCard" onclick="switchView('card')">
+<span class="material-symbols-outlined text-[18px]">badge</span>
+<span>Student Report Card (A4)</span>
+</button>
+<button class="px-space-md py-space-xs rounded-lg font-headline-sm text-headline-sm transition-all duration-200 text-on-surface-variant hover:text-on-surface flex items-center gap-space-xs" id="viewToggleBroadsheet" onclick="switchView('broadsheet')">
+<span class="material-symbols-outlined text-[18px]">grid_on</span>
+<span>Class Broadsheet (A3 Master Roll)</span>
+</button>
+</div>
+<div class="h-6 w-px bg-surface-variant hidden md:block"></div>
+<!-- Student Selector (For Report Card Mode) -->
+<div class="flex items-center gap-space-xs" id="studentSelectorGroup">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider hidden sm:inline" for="studentSelect">Student:</label>
+<div class="relative">
+<select class="appearance-none bg-surface-container-low font-headline-sm text-headline-sm text-on-surface py-space-xs pl-space-md pr-8 rounded-lg outline-none focus:bg-surface-container-lowest transition-colors cursor-pointer" id="studentSelect" onchange="changeStudent(this.value)">
+<option selected="" value="adebayo">Adebayo Oluwaseun Emmanuel (1st • 88.6%)</option>
+<option value="chukwu">Chukwu Chioma Grace (2nd • 85.2%)</option>
+<option value="ibrahim">Ibrahim Danjuma Musa (3rd • 82.4%)</option>
+<option value="okonkwo">Okonkwo Blessing Ngozi (4th • 80.9%)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-2 text-[18px] text-on-surface-variant pointer-events-none">unfold_more</span>
+</div>
+</div>
+<!-- Broadsheet Arm Filter (For Broadsheet Mode) -->
+<div class="hidden items-center gap-space-xs" id="broadsheetArmGroup">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Arm:</span>
+<div class="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg">
+<button class="px-2 py-1 rounded font-body-code text-body-code bg-primary-container text-on-primary">JSS 1A (40)</button>
+<button class="px-2 py-1 rounded font-body-code text-body-code text-on-surface-variant hover:bg-surface-container">JSS 1B (42)</button>
+<button class="px-2 py-1 rounded font-body-code text-body-code text-on-surface-variant hover:bg-surface-container">JSS 1C (39)</button>
+<button class="px-2 py-1 rounded font-body-code text-body-code text-on-surface-variant hover:bg-surface-container">JSS 2A (38)</button>
+</div>
+</div>
+</div>
+<!-- Production Print Controls & Toggles -->
+<div class="flex items-center gap-space-sm flex-wrap">
+<!-- Greyscale & Stamp Toggles -->
+<label class="flex items-center gap-space-xs cursor-pointer px-space-sm py-space-xs rounded-lg hover:bg-surface-container-low text-on-surface-variant font-label-md text-label-md select-none">
+<input class="sr-only peer" id="greyscaleToggle" onchange="toggleGreyscale(this.checked)" type="checkbox"/>
+<span class="w-4 h-4 rounded bg-surface-container-high peer-checked:bg-primary flex items-center justify-center text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<span>Laser Greyscale Proof</span>
+</label>
+<label class="flex items-center gap-space-xs cursor-pointer px-space-sm py-space-xs rounded-lg hover:bg-surface-container-low text-on-surface-variant font-label-md text-label-md select-none">
+<input checked="" class="sr-only peer" id="stampToggle" onchange="toggleStamp(this.checked)" type="checkbox"/>
+<span class="w-4 h-4 rounded bg-surface-container-high peer-checked:bg-primary flex items-center justify-center text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<span>Official Seal &amp; Stamp</span>
+</label>
+<div class="h-6 w-px bg-surface-variant hidden sm:block"></div>
+<!-- Broadsheet Export Button (contextual) -->
+<button class="px-space-md py-space-xs rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors font-headline-sm text-headline-sm flex items-center gap-space-xs shadow-sm" onclick="alert('Exporting verified JSS 1A Master Roll to Excel (.xlsx) with embedded formula cells...')">
+<span class="material-symbols-outlined text-[18px] text-tertiary-container">table_view</span>
+<span>Export .XLSX</span>
+</button>
+<!-- Print Button -->
+<button class="px-space-lg py-space-xs rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-all font-headline-sm text-headline-sm flex items-center gap-space-xs shadow-md" onclick="window.print()">
+<span class="material-symbols-outlined text-[18px]">print</span>
+<span>Print Document</span>
+</button>
+</div>
+</div>
+<!-- Verification Notice & Inspection Ribbon -->
+<div class="w-full bg-surface-container px-margin-desktop py-2 flex items-center justify-between text-on-surface-variant font-label-md text-label-md">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-tertiary-container text-[16px]">verified</span>
+<span>Session: <strong>First Term 2026/2027</strong> • Class: <strong>JSS 1A</strong> • Offline Validation Hash: <code class="font-body-code text-on-surface">#PLN-LAG-26T1-0941</code></span>
+</div>
+<div class="hidden sm:flex items-center gap-space-md">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary-container"></span> Engine: ParaLearn Academic v2.4</span>
+<span>Paper Target: ISO A4 Standard (32pt edge bounds)</span>
+</div>
+</div>
+<!-- MAIN CANVAS / PREVIEW WORKSPACE -->
+<div class="w-full px-4 sm:px-margin-desktop py-space-xl flex justify-center items-start overflow-x-auto bg-surface-container-low">
+<!-- ========================================================================= -->
+<!-- VIEW A: A4 INDIVIDUAL STUDENT REPORT CARD (PORTRAIT 1:1.414 RATIO)      -->
+<!-- ========================================================================= -->
+<div class="w-full max-w-[850px] bg-surface-container-lowest text-on-surface shadow-2xl rounded-none relative p-6 sm:p-10 font-body-md transition-all" id="reportCardView">
+<!-- Top Full-Width 7pt Academic Accent Bar -->
+<div class="w-full h-[7px] bg-primary-container -mt-6 sm:-mt-10 -mx-6 sm:-mx-10 mb-6 sm:mb-8" style="width: calc(100% + 48px); sm:width: calc(100% + 80px);"></div>
+<!-- Document Header: Crest, Name, Motto, Address & Title Box -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-space-md pb-6">
+<!-- Left: Crest + Identity -->
+<div class="flex items-center gap-space-md text-center sm:text-left">
+<!-- Kings College Crest Vector Illustration -->
+<div class="w-20 h-20 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0 shadow-md p-2">
+<svg class="w-full h-full fill-current text-primary-fixed" viewbox="0 0 100 100">
+<!-- Crest Lion & Shield Outline -->
+<path d="M50 5 L88 22 C88 58 50 95 50 95 C50 95 12 58 12 22 Z" fill="#49009a" stroke="#d5bbff" stroke-width="3"></path>
+<!-- Book & Torch Symbolism -->
+<path d="M30 45 Q50 35 70 45 L70 65 Q50 55 30 65 Z" fill="#ecdcff"></path>
+<path d="M50 30 L50 60" stroke="#49009a" stroke-width="2"></path>
+<circle cx="50" cy="24" fill="#facc15" r="5"></circle>
+<!-- Crown / Stars -->
+<polygon fill="#facc15" points="50,12 54,20 63,20 56,25 58,33 50,28 42,33 44,25 37,20 46,20"></polygon>
+</svg>
+</div>
+<div class="flex flex-col">
+<h1 class="font-headline-lg text-headline-lg tracking-wide text-primary font-bold uppercase leading-none">Kings College Lagos</h1>
+<p class="font-headline-sm text-headline-sm italic text-secondary font-semibold mt-1">Knowledge and Integrity</p>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1 leading-snug">
+              3 Catholic Mission Street, Lagos Island, Lagos State, Nigeria<br/>
+              Tel: +234 803 123 4567 • Email: <span class="font-body-code">admin@kingscollege.sch.ng</span> • Web: <span class="font-body-code">kings.pln.ng</span>
+</p>
+</div>
+</div>
+<!-- Right: Official Term Title Box -->
+<div class="bg-surface-container-low p-space-md rounded-xl text-center sm:text-right shrink-0 min-w-[200px]">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold block">Official Transcript</span>
+<span class="font-headline-md text-headline-md text-on-surface font-bold block mt-0.5">STUDENT REPORT CARD</span>
+<div class="mt-2 inline-flex items-center gap-space-xs px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-md text-label-md">
+<span>FIRST TERM</span>
+<span>•</span>
+<span>2026/2027</span>
+</div>
+</div>
+</div>
+<!-- Student Metadata Card / High-Density Grid -->
+<div class="bg-surface-container-low rounded-xl p-space-md mb-6 grid grid-cols-2 sm:grid-cols-4 gap-x-space-md gap-y-space-sm font-body-sm text-body-sm">
+<div>
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant block font-semibold">Student Full Name</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface" id="cardStudentName">Adebayo Oluwaseun Emmanuel</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant block font-semibold">Admission Number</span>
+<span class="font-data-metric text-data-metric font-bold text-primary" id="cardStudentAdm">ADM-2026-014</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant block font-semibold">Class &amp; Arm</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">JSS 1A (Junior Secondary)</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant block font-semibold">Position in Class</span>
+<span class="font-data-metric text-data-metric font-bold text-tertiary-container" id="cardStudentPos">1st of 40 Students</span>
+</div>
+<div class="pt-2">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant block font-semibold">Total Score / Max</span>
+<span class="font-data-metric text-data-metric font-bold text-on-surface" id="cardStudentTotal">779 <span class="font-body-sm text-body-sm text-on-surface-variant font-normal">/ 900</span></span>
+</div>
+<div class="pt-2">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant block font-semibold">Overall Average</span>
+<span class="font-data-metric text-data-metric font-bold text-primary" id="cardStudentAvg">88.6%</span>
+</div>
+<div class="pt-2">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant block font-semibold">Term Attendance</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">70 / 72 Days <span class="text-tertiary-container text-body-sm font-normal">(97.2%)</span></span>
+</div>
+<div class="pt-2">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant block font-semibold">House &amp; Club</span>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Hyde-Johnson • JETS Club</span>
+</div>
+</div>
+<!-- WAEC / NECO Standard Academic Performance Ledger Table -->
+<div class="w-full overflow-x-auto mb-6">
+<table class="w-full text-left font-body-sm text-body-sm border-collapse">
+<thead>
+<tr class="bg-primary-container text-on-primary font-headline-sm text-headline-sm">
+<th class="py-2.5 px-3 rounded-l-lg font-bold">SUBJECT</th>
+<th class="py-2.5 px-2 text-right">CA 1<br/><span class="font-label-sm text-label-sm opacity-80 font-normal">(20)</span></th>
+<th class="py-2.5 px-2 text-right">CA 2<br/><span class="font-label-sm text-label-sm opacity-80 font-normal">(20)</span></th>
+<th class="py-2.5 px-2 text-right">EXAM<br/><span class="font-label-sm text-label-sm opacity-80 font-normal">(60)</span></th>
+<th class="py-2.5 px-2 text-right font-bold">TOTAL<br/><span class="font-label-sm text-label-sm opacity-80 font-normal">(100)</span></th>
+<th class="py-2.5 px-2 text-center">GRD</th>
+<th class="py-2.5 px-2 text-center">POS</th>
+<th class="py-2.5 px-2 text-right">AVG</th>
+<th class="py-2.5 px-2 text-right">HIGH</th>
+<th class="py-2.5 px-2 text-right">LOW</th>
+<th class="py-2.5 px-3 rounded-r-lg font-bold">REMARK</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container font-body-code text-body-code" id="cardSubjectsBody">
+<!-- Row 1: Mathematics -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-3 font-headline-sm text-headline-sm font-semibold text-on-surface">Mathematics</td>
+<td class="py-2 px-2 text-right">18</td>
+<td class="py-2 px-2 text-right">19</td>
+<td class="py-2 px-2 text-right">57</td>
+<td class="py-2 px-2 text-right font-bold text-primary font-data-metric text-headline-sm">94</td>
+<td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold text-label-md">A1</span></td>
+<td class="py-2 px-2 text-center font-bold">1st</td>
+<td class="py-2 px-2 text-right text-on-surface-variant">64.2</td>
+<td class="py-2 px-2 text-right text-tertiary-container font-semibold">94</td>
+<td class="py-2 px-2 text-right text-error font-semibold">38</td>
+<td class="py-2 px-3 font-body-sm text-body-sm text-tertiary-container font-semibold">Distinction</td>
+</tr>
+<!-- Row 2: English Language -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-3 font-headline-sm text-headline-sm font-semibold text-on-surface">English Language</td>
+<td class="py-2 px-2 text-right">17</td>
+<td class="py-2 px-2 text-right">18</td>
+<td class="py-2 px-2 text-right">52</td>
+<td class="py-2 px-2 text-right font-bold text-primary font-data-metric text-headline-sm">87</td>
+<td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold text-label-md">A1</span></td>
+<td class="py-2 px-2 text-center font-bold">2nd</td>
+<td class="py-2 px-2 text-right text-on-surface-variant">62.5</td>
+<td class="py-2 px-2 text-right text-tertiary-container font-semibold">89</td>
+<td class="py-2 px-2 text-right text-error font-semibold">42</td>
+<td class="py-2 px-3 font-body-sm text-body-sm text-tertiary-container font-semibold">Excellent</td>
+</tr>
+<!-- Row 3: Basic Science -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-3 font-headline-sm text-headline-sm font-semibold text-on-surface">Basic Science &amp; Tech</td>
+<td class="py-2 px-2 text-right">19</td>
+<td class="py-2 px-2 text-right">18</td>
+<td class="py-2 px-2 text-right">54</td>
+<td class="py-2 px-2 text-right font-bold text-primary font-data-metric text-headline-sm">91</td>
+<td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold text-label-md">A1</span></td>
+<td class="py-2 px-2 text-center font-bold">1st</td>
+<td class="py-2 px-2 text-right text-on-surface-variant">59.8</td>
+<td class="py-2 px-2 text-right text-tertiary-container font-semibold">91</td>
+<td class="py-2 px-2 text-right text-error font-semibold">35</td>
+<td class="py-2 px-3 font-body-sm text-body-sm text-tertiary-container font-semibold">Distinction</td>
+</tr>
+<!-- Row 4: Civic Education -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-3 font-headline-sm text-headline-sm font-semibold text-on-surface">Civic Education</td>
+<td class="py-2 px-2 text-right">16</td>
+<td class="py-2 px-2 text-right">17</td>
+<td class="py-2 px-2 text-right">50</td>
+<td class="py-2 px-2 text-right font-bold text-primary font-data-metric text-headline-sm">83</td>
+<td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold text-label-md">A1</span></td>
+<td class="py-2 px-2 text-center font-bold">3rd</td>
+<td class="py-2 px-2 text-right text-on-surface-variant">68.0</td>
+<td class="py-2 px-2 text-right text-tertiary-container font-semibold">88</td>
+<td class="py-2 px-2 text-right text-error font-semibold">50</td>
+<td class="py-2 px-3 font-body-sm text-body-sm text-primary font-semibold">Very Good</td>
+</tr>
+<!-- Row 5: Social Studies -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-3 font-headline-sm text-headline-sm font-semibold text-on-surface">Social Studies</td>
+<td class="py-2 px-2 text-right">18</td>
+<td class="py-2 px-2 text-right">17</td>
+<td class="py-2 px-2 text-right">51</td>
+<td class="py-2 px-2 text-right font-bold text-primary font-data-metric text-headline-sm">86</td>
+<td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold text-label-md">A1</span></td>
+<td class="py-2 px-2 text-center font-bold">2nd</td>
+<td class="py-2 px-2 text-right text-on-surface-variant">63.4</td>
+<td class="py-2 px-2 text-right text-tertiary-container font-semibold">90</td>
+<td class="py-2 px-2 text-right text-error font-semibold">44</td>
+<td class="py-2 px-3 font-body-sm text-body-sm text-tertiary-container font-semibold">Excellent</td>
+</tr>
+<!-- Row 6: Agricultural Science -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-3 font-headline-sm text-headline-sm font-semibold text-on-surface">Agricultural Science</td>
+<td class="py-2 px-2 text-right">17</td>
+<td class="py-2 px-2 text-right">19</td>
+<td class="py-2 px-2 text-right">55</td>
+<td class="py-2 px-2 text-right font-bold text-primary font-data-metric text-headline-sm">91</td>
+<td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold text-label-md">A1</span></td>
+<td class="py-2 px-2 text-center font-bold">1st</td>
+<td class="py-2 px-2 text-right text-on-surface-variant">61.2</td>
+<td class="py-2 px-2 text-right text-tertiary-container font-semibold">91</td>
+<td class="py-2 px-2 text-right text-error font-semibold">40</td>
+<td class="py-2 px-3 font-body-sm text-body-sm text-tertiary-container font-semibold">Distinction</td>
+</tr>
+<!-- Row 7: Business Studies -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-3 font-headline-sm text-headline-sm font-semibold text-on-surface">Business Studies</td>
+<td class="py-2 px-2 text-right">16</td>
+<td class="py-2 px-2 text-right">18</td>
+<td class="py-2 px-2 text-right">49</td>
+<td class="py-2 px-2 text-right font-bold text-primary font-data-metric text-headline-sm">83</td>
+<td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold text-label-md">A1</span></td>
+<td class="py-2 px-2 text-center font-bold">4th</td>
+<td class="py-2 px-2 text-right text-on-surface-variant">65.5</td>
+<td class="py-2 px-2 text-right text-tertiary-container font-semibold">87</td>
+<td class="py-2 px-2 text-right text-error font-semibold">48</td>
+<td class="py-2 px-3 font-body-sm text-body-sm text-primary font-semibold">Very Good</td>
+</tr>
+<!-- Row 8: French Language -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-3 font-headline-sm text-headline-sm font-semibold text-on-surface">French Language</td>
+<td class="py-2 px-2 text-right">15</td>
+<td class="py-2 px-2 text-right">16</td>
+<td class="py-2 px-2 text-right">48</td>
+<td class="py-2 px-2 text-right font-bold text-primary font-data-metric text-headline-sm">79</td>
+<td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-bold text-label-md">B2</span></td>
+<td class="py-2 px-2 text-center font-bold">2nd</td>
+<td class="py-2 px-2 text-right text-on-surface-variant">54.1</td>
+<td class="py-2 px-2 text-right text-tertiary-container font-semibold">82</td>
+<td class="py-2 px-2 text-right text-error font-semibold">30</td>
+<td class="py-2 px-3 font-body-sm text-body-sm text-secondary font-semibold">Credit</td>
+</tr>
+<!-- Row 9: Yoruba Language -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-3 font-headline-sm text-headline-sm font-semibold text-on-surface">Yoruba Language</td>
+<td class="py-2 px-2 text-right">18</td>
+<td class="py-2 px-2 text-right">17</td>
+<td class="py-2 px-2 text-right">50</td>
+<td class="py-2 px-2 text-right font-bold text-primary font-data-metric text-headline-sm">85</td>
+<td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold text-label-md">A1</span></td>
+<td class="py-2 px-2 text-center font-bold">3rd</td>
+<td class="py-2 px-2 text-right text-on-surface-variant">58.7</td>
+<td class="py-2 px-2 text-right text-tertiary-container font-semibold">88</td>
+<td class="py-2 px-2 text-right text-error font-semibold">36</td>
+<td class="py-2 px-3 font-body-sm text-body-sm text-tertiary-container font-semibold">Excellent</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Domain Splits: Affective Domain & Grading System -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md mb-6">
+<!-- Behavioral & Psychomotor Skills (1 - 5 Rating) -->
+<div class="bg-surface-container-low rounded-xl p-space-md">
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">AFFECTIVE &amp; PSYCHOMOTOR DOMAIN</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Scale: 1 (Poor) - 5 (Exemplary)</span>
+</div>
+<div class="grid grid-cols-2 gap-x-4 gap-y-2 font-body-sm text-body-sm">
+<div class="flex items-center justify-between">
+<span>Punctuality:</span>
+<span class="font-data-metric text-headline-sm font-bold text-primary">5 / 5</span>
+</div>
+<div class="flex items-center justify-between">
+<span>Neatness &amp; Uniform:</span>
+<span class="font-data-metric text-headline-sm font-bold text-primary">5 / 5</span>
+</div>
+<div class="flex items-center justify-between">
+<span>Politeness &amp; Respect:</span>
+<span class="font-data-metric text-headline-sm font-bold text-primary">5 / 5</span>
+</div>
+<div class="flex items-center justify-between">
+<span>Honesty &amp; Integrity:</span>
+<span class="font-data-metric text-headline-sm font-bold text-primary">5 / 5</span>
+</div>
+<div class="flex items-center justify-between">
+<span>Classroom Leadership:</span>
+<span class="font-data-metric text-headline-sm font-bold text-primary">4 / 5</span>
+</div>
+<div class="flex items-center justify-between">
+<span>Sports &amp; Athletics:</span>
+<span class="font-data-metric text-headline-sm font-bold text-primary">4 / 5</span>
+</div>
+</div>
+</div>
+<!-- Official Grading Legend & Interpretation Key -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between">
+<span class="font-headline-sm text-headline-sm text-primary font-bold mb-space-xs">STATUTORY GRADING SCALE</span>
+<div class="grid grid-cols-3 gap-2 font-body-code text-body-code">
+<div class="p-1 rounded bg-surface-container text-center">
+<span class="font-bold text-tertiary-container">A1 (75-100)</span>
+<span class="block text-label-sm text-on-surface-variant">Distinction</span>
+</div>
+<div class="p-1 rounded bg-surface-container text-center">
+<span class="font-bold text-secondary">B2 (65-74)</span>
+<span class="block text-label-sm text-on-surface-variant">Very Good</span>
+</div>
+<div class="p-1 rounded bg-surface-container text-center">
+<span class="font-bold text-secondary">B3 (60-64)</span>
+<span class="block text-label-sm text-on-surface-variant">Good</span>
+</div>
+<div class="p-1 rounded bg-surface-container text-center">
+<span class="font-bold text-on-surface">C4 (55-59)</span>
+<span class="block text-label-sm text-on-surface-variant">Credit</span>
+</div>
+<div class="p-1 rounded bg-surface-container text-center">
+<span class="font-bold text-on-surface">C5 (50-54)</span>
+<span class="block text-label-sm text-on-surface-variant">Credit</span>
+</div>
+<div class="p-1 rounded bg-surface-container text-center">
+<span class="font-bold text-on-surface">C6 (45-49)</span>
+<span class="block text-label-sm text-on-surface-variant">Pass</span>
+</div>
+<div class="p-1 rounded bg-surface-container text-center">
+<span class="font-bold text-error">D7 (40-44)</span>
+<span class="block text-label-sm text-on-surface-variant">Fair</span>
+</div>
+<div class="p-1 rounded bg-surface-container text-center">
+<span class="font-bold text-error">E8 (35-39)</span>
+<span class="block text-label-sm text-on-surface-variant">Weak</span>
+</div>
+<div class="p-1 rounded bg-surface-container text-center">
+<span class="font-bold text-error">F9 (0-34)</span>
+<span class="block text-label-sm text-on-surface-variant">Fail</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Remarks, Official Signatures & College Seal -->
+<div class="bg-surface-container-low rounded-xl p-space-md mb-6 relative overflow-hidden">
+<!-- Class Teacher Remark -->
+<div class="mb-4">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold block mb-1">Class Form Teacher's Remark &amp; Assessment</span>
+<p class="font-body-md text-body-md italic text-on-surface">
+            "An exceptionally diligent, brilliant, and well-mannered student. Adebayo maintains exemplary focus across both humanities and the sciences. He holds the benchmark for JSS 1A."
+          </p>
+<div class="flex items-center justify-between mt-3 text-on-surface-variant font-label-md text-label-md">
+<span>Teacher: <strong>Mr. Babatunde Jinadu, B.Sc. (Ed)</strong></span>
+<span>Date: <strong>18th December 2026</strong></span>
+</div>
+</div>
+<div class="h-px bg-surface-variant my-4"></div>
+<!-- Principal Remark & Endorsement -->
+<div class="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md">
+<div class="max-w-md">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold block mb-1">Principal's Statutory Endorsement</span>
+<p class="font-body-md text-body-md italic text-on-surface">
+              "Outstanding terminal performance. Commended for top-tier academic excellence. Maintain this fine dedication in the second term."
+            </p>
+<div class="mt-3 text-on-surface-variant font-label-md text-label-md">
+<span>Principal: <strong>Chief A. I. Balogun, M.Ed., FSTAN</strong></span>
+</div>
+</div>
+<!-- Official School Seal / Stamp Container (Toggleable) -->
+<div class="shrink-0 relative flex items-center justify-center p-2" id="schoolStampBox">
+<!-- Simulated Red/Violet Institutional Ink Seal -->
+<div class="w-32 h-32 rounded-full border-2 border-dashed border-primary-container p-1 flex items-center justify-center text-primary-container rotate-[-8deg] select-none opacity-85">
+<div class="w-full h-full rounded-full border border-primary-container flex flex-col items-center justify-center text-center p-1">
+<span class="font-label-sm text-[9px] uppercase tracking-wider font-extrabold leading-none">Kings College Lagos</span>
+<span class="material-symbols-outlined text-[20px] my-0.5">verified</span>
+<span class="font-label-sm text-[8px] uppercase tracking-wider font-bold leading-tight">Office of the Principal</span>
+<span class="font-body-code text-[8px] font-semibold text-tertiary">18 DEC 2026</span>
+<span class="font-label-sm text-[7px] uppercase tracking-tight">Verified Document</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Resumption Notice & Security Verification Strip -->
+<div class="rounded-xl bg-surface-container p-space-sm flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+<div>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">NEXT TERM RESUMPTION:</span>
+<span class="font-body-md text-body-md text-on-surface ml-1">Monday, 11th January 2027. All clearance requirements apply.</span>
+</div>
+<div class="flex items-center gap-space-xs font-body-code text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] text-tertiary-container">qr_code_2</span>
+<span>SEC-ID: PLN-LAG-KC-2026-9041</span>
+</div>
+</div>
+<!-- Laser Print Micro-Footer -->
+<div class="w-full text-center mt-6 pt-3 border-t border-surface-container-high text-on-surface-variant font-body-code text-label-sm flex flex-wrap justify-between items-center">
+<span>Generated with ParaLearn Results Engine v2.4 (Offline Verified)</span>
+<span>Student Ledger Row: 01 • JSS 1A Master Roll</span>
+<span>Page 1 of 1</span>
+</div>
+</div>
+<!-- ========================================================================= -->
+<!-- VIEW B: CLASS MASTER BROADSHEET (A3 / LANDSCAPE COMPOSITE LEDGER)        -->
+<!-- ========================================================================= -->
+<div class="w-full max-w-[1400px] bg-surface-container-lowest text-on-surface shadow-2xl rounded-xl p-6 sm:p-8 hidden" id="broadsheetView">
+<!-- Broadsheet Header -->
+<div class="flex flex-col lg:flex-row items-start lg:items-center justify-between pb-6 border-b border-surface-variant gap-space-md">
+<div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-primary-container text-on-primary font-body-code text-label-md font-bold uppercase">Master Ledger</span>
+<span class="font-headline-lg text-headline-lg font-bold text-primary">KINGS COLLEGE LAGOS — CLASS MASTER BROADSHEET</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+            Academic Session: <strong>2026/2027</strong> • Term: <strong>First Term</strong> • Class: <strong>JSS 1A</strong> • Class Form Tutor: <strong>Mr. Babatunde Jinadu</strong> • Students Enrolled: <strong>40</strong>
+</p>
+</div>
+<!-- Broadsheet Summary Quick Stats -->
+<div class="flex items-center gap-space-md bg-surface-container-low p-space-sm rounded-xl">
+<div class="text-right">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant block font-semibold">Class Highest Average</span>
+<span class="font-data-metric text-data-metric text-tertiary-container font-bold">88.6%</span>
+</div>
+<div class="h-8 w-px bg-surface-variant"></div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant block font-semibold">Class Mean Average</span>
+<span class="font-data-metric text-data-metric text-primary font-bold">66.4%</span>
+</div>
+<div class="h-8 w-px bg-surface-variant"></div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant block font-semibold">Class Lowest Average</span>
+<span class="font-data-metric text-data-metric text-error font-bold">42.1%</span>
+</div>
+</div>
+</div>
+<!-- Broadsheet Matrix Scroll Container -->
+<div class="w-full overflow-x-auto mt-6">
+<table class="w-full text-left font-body-code text-body-sm border-collapse min-w-[1200px]">
+<thead>
+<tr class="bg-surface-container text-on-surface-variant text-label-md uppercase font-semibold">
+<th class="py-2 px-3 sticky left-0 bg-surface-container z-10">POS</th>
+<th class="py-2 px-3 sticky left-12 bg-surface-container z-10 min-w-[200px]">STUDENT NAME</th>
+<th class="py-2 px-3">ADM NO.</th>
+<!-- Multi-subject condensed headers (CA + Exam = Total) -->
+<th class="py-2 px-2 text-center bg-surface-container-high text-primary">MATH<br/><span class="text-[10px] font-normal">(100)</span></th>
+<th class="py-2 px-2 text-center bg-surface-container-high text-primary">ENG<br/><span class="text-[10px] font-normal">(100)</span></th>
+<th class="py-2 px-2 text-center bg-surface-container-high text-primary">B.SCI<br/><span class="text-[10px] font-normal">(100)</span></th>
+<th class="py-2 px-2 text-center bg-surface-container-high text-primary">CIVIC<br/><span class="text-[10px] font-normal">(100)</span></th>
+<th class="py-2 px-2 text-center bg-surface-container-high text-primary">SOC<br/><span class="text-[10px] font-normal">(100)</span></th>
+<th class="py-2 px-2 text-center bg-surface-container-high text-primary">AGRIC<br/><span class="text-[10px] font-normal">(100)</span></th>
+<th class="py-2 px-2 text-center bg-surface-container-high text-primary">BUS<br/><span class="text-[10px] font-normal">(100)</span></th>
+<th class="py-2 px-2 text-center bg-surface-container-high text-primary">FREN<br/><span class="text-[10px] font-normal">(100)</span></th>
+<th class="py-2 px-2 text-center bg-surface-container-high text-primary">YOR<br/><span class="text-[10px] font-normal">(100)</span></th>
+<!-- Aggregate summary columns -->
+<th class="py-2 px-3 text-right bg-primary-container text-on-primary font-bold">TOTAL<br/><span class="text-[10px] font-normal">(900)</span></th>
+<th class="py-2 px-3 text-right bg-primary-container text-on-primary font-bold">AVG %</th>
+<th class="py-2 px-3 text-center bg-primary-container text-on-primary font-bold">TIER</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container font-body-code text-body-code">
+<!-- Student 1 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-lowest font-medium">
+<td class="py-2.5 px-3 sticky left-0 bg-surface-container-lowest z-10 font-bold text-tertiary-container">1st</td>
+<td class="py-2.5 px-3 sticky left-12 bg-surface-container-lowest z-10 font-headline-sm text-headline-sm font-semibold text-on-surface">Adebayo Oluwaseun Emmanuel</td>
+<td class="py-2.5 px-3 text-on-surface-variant">ADM-2026-014</td>
+<td class="py-2.5 px-2 text-center font-bold text-tertiary-container">94</td>
+<td class="py-2.5 px-2 text-center font-bold text-tertiary-container">87</td>
+<td class="py-2.5 px-2 text-center font-bold text-tertiary-container">91</td>
+<td class="py-2.5 px-2 text-center">83</td>
+<td class="py-2.5 px-2 text-center">86</td>
+<td class="py-2.5 px-2 text-center font-bold text-tertiary-container">91</td>
+<td class="py-2.5 px-2 text-center">83</td>
+<td class="py-2.5 px-2 text-center">79</td>
+<td class="py-2.5 px-2 text-center">85</td>
+<td class="py-2.5 px-3 text-right font-data-metric text-headline-sm font-bold text-primary">779</td>
+<td class="py-2.5 px-3 text-right font-bold text-tertiary-container">88.6%</td>
+<td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold text-label-sm">Distinction</span></td>
+</tr>
+<!-- Student 2 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-lowest font-medium">
+<td class="py-2.5 px-3 sticky left-0 bg-surface-container-lowest z-10 font-bold text-primary">2nd</td>
+<td class="py-2.5 px-3 sticky left-12 bg-surface-container-lowest z-10 font-headline-sm text-headline-sm font-semibold text-on-surface">Chukwu Chioma Grace</td>
+<td class="py-2.5 px-3 text-on-surface-variant">ADM-2026-008</td>
+<td class="py-2.5 px-2 text-center">90</td>
+<td class="py-2.5 px-2 text-center font-bold text-tertiary-container">89</td>
+<td class="py-2.5 px-2 text-center">88</td>
+<td class="py-2.5 px-2 text-center font-bold text-tertiary-container">88</td>
+<td class="py-2.5 px-2 text-center font-bold text-tertiary-container">90</td>
+<td class="py-2.5 px-2 text-center">85</td>
+<td class="py-2.5 px-2 text-center font-bold text-tertiary-container">87</td>
+<td class="py-2.5 px-2 text-center">76</td>
+<td class="py-2.5 px-2 text-center">74</td>
+<td class="py-2.5 px-3 text-right font-data-metric text-headline-sm font-bold text-primary">767</td>
+<td class="py-2.5 px-3 text-right font-bold text-tertiary-container">85.2%</td>
+<td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold text-label-sm">Distinction</span></td>
+</tr>
+<!-- Student 3 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-lowest font-medium">
+<td class="py-2.5 px-3 sticky left-0 bg-surface-container-lowest z-10 font-bold text-secondary">3rd</td>
+<td class="py-2.5 px-3 sticky left-12 bg-surface-container-lowest z-10 font-headline-sm text-headline-sm font-semibold text-on-surface">Ibrahim Danjuma Musa</td>
+<td class="py-2.5 px-3 text-on-surface-variant">ADM-2026-022</td>
+<td class="py-2.5 px-2 text-center">88</td>
+<td class="py-2.5 px-2 text-center">81</td>
+<td class="py-2.5 px-2 text-center">85</td>
+<td class="py-2.5 px-2 text-center">84</td>
+<td class="py-2.5 px-2 text-center">80</td>
+<td class="py-2.5 px-2 text-center">86</td>
+<td class="py-2.5 px-2 text-center">82</td>
+<td class="py-2.5 px-2 text-center font-bold text-tertiary-container">82</td>
+<td class="py-2.5 px-2 text-center">74</td>
+<td class="py-2.5 px-3 text-right font-data-metric text-headline-sm font-bold text-primary">742</td>
+<td class="py-2.5 px-3 text-right font-bold text-secondary">82.4%</td>
+<td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-bold text-label-sm">Excellent</span></td>
+</tr>
+<!-- Student 4 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-lowest font-medium">
+<td class="py-2.5 px-3 sticky left-0 bg-surface-container-lowest z-10 font-semibold text-on-surface">4th</td>
+<td class="py-2.5 px-3 sticky left-12 bg-surface-container-lowest z-10 font-headline-sm text-headline-sm font-semibold text-on-surface">Okonkwo Blessing Ngozi</td>
+<td class="py-2.5 px-3 text-on-surface-variant">ADM-2026-045</td>
+<td class="py-2.5 px-2 text-center">84</td>
+<td class="py-2.5 px-2 text-center">85</td>
+<td class="py-2.5 px-2 text-center">80</td>
+<td class="py-2.5 px-2 text-center">79</td>
+<td class="py-2.5 px-2 text-center">83</td>
+<td class="py-2.5 px-2 text-center">82</td>
+<td class="py-2.5 px-2 text-center">81</td>
+<td class="py-2.5 px-2 text-center">70</td>
+<td class="py-2.5 px-2 text-center font-bold text-tertiary-container">88</td>
+<td class="py-2.5 px-3 text-right font-data-metric text-headline-sm font-bold text-primary">732</td>
+<td class="py-2.5 px-3 text-right font-bold text-secondary">81.3%</td>
+<td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-bold text-label-sm">Excellent</span></td>
+</tr>
+<!-- Student 5 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-lowest font-medium">
+<td class="py-2.5 px-3 sticky left-0 bg-surface-container-lowest z-10 font-semibold text-on-surface">5th</td>
+<td class="py-2.5 px-3 sticky left-12 bg-surface-container-lowest z-10 font-headline-sm text-headline-sm font-semibold text-on-surface">Bello Abdulrahman Kayode</td>
+<td class="py-2.5 px-3 text-on-surface-variant">ADM-2026-031</td>
+<td class="py-2.5 px-2 text-center">82</td>
+<td class="py-2.5 px-2 text-center">78</td>
+<td class="py-2.5 px-2 text-center">79</td>
+<td class="py-2.5 px-2 text-center">80</td>
+<td class="py-2.5 px-2 text-center">76</td>
+<td class="py-2.5 px-2 text-center">84</td>
+<td class="py-2.5 px-2 text-center">75</td>
+<td class="py-2.5 px-2 text-center">68</td>
+<td class="py-2.5 px-2 text-center">80</td>
+<td class="py-2.5 px-3 text-right font-data-metric text-headline-sm font-bold text-primary">702</td>
+<td class="py-2.5 px-3 text-right font-bold text-on-surface">78.0%</td>
+<td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface font-bold text-label-sm">Very Good</span></td>
+</tr>
+<!-- Student 6 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-lowest font-medium">
+<td class="py-2.5 px-3 sticky left-0 bg-surface-container-lowest z-10 font-semibold text-on-surface">6th</td>
+<td class="py-2.5 px-3 sticky left-12 bg-surface-container-lowest z-10 font-headline-sm text-headline-sm font-semibold text-on-surface">Fatunla Titilayo Mary</td>
+<td class="py-2.5 px-3 text-on-surface-variant">ADM-2026-067</td>
+<td class="py-2.5 px-2 text-center">75</td>
+<td class="py-2.5 px-2 text-center">82</td>
+<td class="py-2.5 px-2 text-center">76</td>
+<td class="py-2.5 px-2 text-center">78</td>
+<td class="py-2.5 px-2 text-center">74</td>
+<td class="py-2.5 px-2 text-center">80</td>
+<td class="py-2.5 px-2 text-center">78</td>
+<td class="py-2.5 px-2 text-center">72</td>
+<td class="py-2.5 px-2 text-center">81</td>
+<td class="py-2.5 px-3 text-right font-data-metric text-headline-sm font-bold text-primary">696</td>
+<td class="py-2.5 px-3 text-right font-bold text-on-surface">77.3%</td>
+<td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface font-bold text-label-sm">Very Good</span></td>
+</tr>
+<!-- Bottom Master Averages -->
+<tr class="bg-surface-container font-bold text-on-surface">
+<td class="py-3 px-3 text-right uppercase tracking-wider text-label-md" colspan="3">Subject Class Means:</td>
+<td class="py-3 px-2 text-center text-primary">64.2</td>
+<td class="py-3 px-2 text-center text-primary">62.5</td>
+<td class="py-3 px-2 text-center text-primary">59.8</td>
+<td class="py-3 px-2 text-center text-primary">68.0</td>
+<td class="py-3 px-2 text-center text-primary">63.4</td>
+<td class="py-3 px-2 text-center text-primary">61.2</td>
+<td class="py-3 px-2 text-center text-primary">65.5</td>
+<td class="py-3 px-2 text-center text-primary">54.1</td>
+<td class="py-3 px-2 text-center text-primary">58.7</td>
+<td class="py-3 px-3 text-right font-data-metric text-headline-sm">597.4</td>
+<td class="py-3 px-3 text-right text-tertiary-container">66.4%</td>
+<td class="py-3 px-3 text-center">Class Pass</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Broadsheet Official Ledger Sign-off Signatures -->
+<div class="mt-8 pt-6 border-t border-surface-variant flex flex-col md:flex-row items-center justify-between gap-space-lg text-on-surface-variant font-label-md text-label-md">
+<div class="flex flex-col gap-1">
+<span class="font-bold text-on-surface">FORM TUTOR SIGNATURE:</span>
+<div class="h-8 border-b border-dashed border-outline-variant w-48"></div>
+<span>Mr. Babatunde Jinadu</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-bold text-on-surface">EXAM OFFICER SIGNATURE:</span>
+<div class="h-8 border-b border-dashed border-outline-variant w-48"></div>
+<span>Dr. K. N. Ezenwa</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-bold text-on-surface">PRINCIPAL'S EXECUTIVE AUDIT:</span>
+<div class="h-8 border-b border-dashed border-outline-variant w-48"></div>
+<span>Chief A. I. Balogun</span>
+</div>
+<div class="text-right">
+<span class="block font-bold text-on-surface">SEALED &amp; REGISTERED</span>
+<span class="font-body-code">18 DEC 2026 • 15:42 GMT+1</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Script for Student Switch, Broadsheet Mode, Greyscale Proof & Stamp -->
+<script>
+    const studentData = {
+      adebayo: {
+        name: "Adebayo Oluwaseun Emmanuel",
+        adm: "ADM-2026-014",
+        pos: "1st of 40 Students",
+        total: "779",
+        avg: "88.6%",
+        subjects: [
+          { name: "Mathematics", ca1: 18, ca2: 19, exam: 57, total: 94, grd: "A1", pos: "1st", avg: "64.2", high: 94, low: 38, remark: "Distinction" },
+          { name: "English Language", ca1: 17, ca2: 18, exam: 52, total: 87, grd: "A1", pos: "2nd", avg: "62.5", high: 89, low: 42, remark: "Excellent" },
+          { name: "Basic Science & Tech", ca1: 19, ca2: 18, exam: 54, total: 91, grd: "A1", pos: "1st", avg: "59.8", high: 91, low: 35, remark: "Distinction" },
+          { name: "Civic Education", ca1: 16, ca2: 17, exam: 50, total: 83, grd: "A1", pos: "3rd", avg: "68.0", high: 88, low: 50, remark: "Very Good" },
+          { name: "Social Studies", ca1: 18, ca2: 17, exam: 51, total: 86, grd: "A1", pos: "2nd", avg: "63.4", high: 90, low: 44, remark: "Excellent" },
+          { name: "Agricultural Science", ca1: 17, ca2: 19, exam: 55, total: 91, grd: "A1", pos: "1st", avg: "61.2", high: 91, low: 40, remark: "Distinction" },
+          { name: "Business Studies", ca1: 16, ca2: 18, exam: 49, total: 83, grd: "A1", pos: "4th", avg: "65.5", high: 87, low: 48, remark: "Very Good" },
+          { name: "French Language", ca1: 15, ca2: 16, exam: 48, total: 79, grd: "B2", pos: "2nd", avg: "54.1", high: 82, low: 30, remark: "Credit" },
+          { name: "Yoruba Language", ca1: 18, ca2: 17, exam: 50, total: 85, grd: "A1", pos: "3rd", avg: "58.7", high: 88, low: 36, remark: "Excellent" }
+        ]
+      },
+      chukwu: {
+        name: "Chukwu Chioma Grace",
+        adm: "ADM-2026-008",
+        pos: "2nd of 40 Students",
+        total: "767",
+        avg: "85.2%",
+        subjects: [
+          { name: "Mathematics", ca1: 17, ca2: 18, exam: 55, total: 90, grd: "A1", pos: "2nd", avg: "64.2", high: 94, low: 38, remark: "Distinction" },
+          { name: "English Language", ca1: 18, ca2: 19, exam: 52, total: 89, grd: "A1", pos: "1st", avg: "62.5", high: 89, low: 42, remark: "Distinction" },
+          { name: "Basic Science & Tech", ca1: 17, ca2: 18, exam: 53, total: 88, grd: "A1", pos: "2nd", avg: "59.8", high: 91, low: 35, remark: "Distinction" },
+          { name: "Civic Education", ca1: 18, ca2: 18, exam: 52, total: 88, grd: "A1", pos: "1st", avg: "68.0", high: 88, low: 50, remark: "Distinction" },
+          { name: "Social Studies", ca1: 19, ca2: 18, exam: 53, total: 90, grd: "A1", pos: "1st", avg: "63.4", high: 90, low: 44, remark: "Distinction" },
+          { name: "Agricultural Science", ca1: 16, ca2: 17, exam: 52, total: 85, grd: "A1", pos: "2nd", avg: "61.2", high: 91, low: 40, remark: "Excellent" },
+          { name: "Business Studies", ca1: 18, ca2: 18, exam: 51, total: 87, grd: "A1", pos: "1st", avg: "65.5", high: 87, low: 48, remark: "Distinction" },
+          { name: "French Language", ca1: 15, ca2: 15, exam: 46, total: 76, grd: "B2", pos: "3rd", avg: "54.1", high: 82, low: 30, remark: "Credit" },
+          { name: "Yoruba Language", ca1: 14, ca2: 15, exam: 45, total: 74, grd: "B2", pos: "5th", avg: "58.7", high: 88, low: 36, remark: "Credit" }
+        ]
+      },
+      ibrahim: {
+        name: "Ibrahim Danjuma Musa",
+        adm: "ADM-2026-022",
+        pos: "3rd of 40 Students",
+        total: "742",
+        avg: "82.4%",
+        subjects: [
+          { name: "Mathematics", ca1: 17, ca2: 17, exam: 54, total: 88, grd: "A1", pos: "3rd", avg: "64.2", high: 94, low: 38, remark: "Distinction" },
+          { name: "English Language", ca1: 16, ca2: 17, exam: 48, total: 81, grd: "A1", pos: "4th", avg: "62.5", high: 89, low: 42, remark: "Very Good" },
+          { name: "Basic Science & Tech", ca1: 17, ca2: 17, exam: 51, total: 85, grd: "A1", pos: "3rd", avg: "59.8", high: 91, low: 35, remark: "Excellent" },
+          { name: "Civic Education", ca1: 17, ca2: 17, exam: 50, total: 84, grd: "A1", pos: "2nd", avg: "68.0", high: 88, low: 50, remark: "Very Good" },
+          { name: "Social Studies", ca1: 16, ca2: 16, exam: 48, total: 80, grd: "A1", pos: "4th", avg: "63.4", high: 90, low: 44, remark: "Very Good" },
+          { name: "Agricultural Science", ca1: 17, ca2: 17, exam: 52, total: 86, grd: "A1", pos: "2nd", avg: "61.2", high: 91, low: 40, remark: "Excellent" },
+          { name: "Business Studies", ca1: 16, ca2: 17, exam: 49, total: 82, grd: "A1", pos: "5th", avg: "65.5", high: 87, low: 48, remark: "Very Good" },
+          { name: "French Language", ca1: 16, ca2: 17, exam: 49, total: 82, grd: "A1", pos: "1st", avg: "54.1", high: 82, low: 30, remark: "Excellent" },
+          { name: "Yoruba Language", ca1: 15, ca2: 14, exam: 45, total: 74, grd: "B2", pos: "5th", avg: "58.7", high: 88, low: 36, remark: "Credit" }
+        ]
+      },
+      okonkwo: {
+        name: "Okonkwo Blessing Ngozi",
+        adm: "ADM-2026-045",
+        pos: "4th of 40 Students",
+        total: "732",
+        avg: "81.3%",
+        subjects: [
+          { name: "Mathematics", ca1: 16, ca2: 16, exam: 52, total: 84, grd: "A1", pos: "4th", avg: "64.2", high: 94, low: 38, remark: "Very Good" },
+          { name: "English Language", ca1: 17, ca2: 17, exam: 51, total: 85, grd: "A1", pos: "3rd", avg: "62.5", high: 89, low: 42, remark: "Excellent" },
+          { name: "Basic Science & Tech", ca1: 16, ca2: 16, exam: 48, total: 80, grd: "A1", pos: "4th", avg: "59.8", high: 91, low: 35, remark: "Very Good" },
+          { name: "Civic Education", ca1: 16, ca2: 16, exam: 47, total: 79, grd: "B2", pos: "4th", avg: "68.0", high: 88, low: 50, remark: "Credit" },
+          { name: "Social Studies", ca1: 17, ca2: 17, exam: 49, total: 83, grd: "A1", pos: "3rd", avg: "63.4", high: 90, low: 44, remark: "Very Good" },
+          { name: "Agricultural Science", ca1: 16, ca2: 17, exam: 49, total: 82, grd: "A1", pos: "3rd", avg: "61.2", high: 91, low: 40, remark: "Very Good" },
+          { name: "Business Studies", ca1: 16, ca2: 16, exam: 49, total: 81, grd: "A1", pos: "6th", avg: "65.5", high: 87, low: 48, remark: "Very Good" },
+          { name: "French Language", ca1: 14, ca2: 14, exam: 42, total: 70, grd: "B2", pos: "4th", avg: "54.1", high: 82, low: 30, remark: "Credit" },
+          { name: "Yoruba Language", ca1: 18, ca2: 18, exam: 52, total: 88, grd: "A1", pos: "1st", avg: "58.7", high: 88, low: 36, remark: "Distinction" }
+        ]
+      }
+    };
+
+    function switchView(mode) {
+      const cardView = document.getElementById('reportCardView');
+      const broadsheetView = document.getElementById('broadsheetView');
+      const btnCard = document.getElementById('viewToggleCard');
+      const btnBroadsheet = document.getElementById('viewToggleBroadsheet');
+      const studentGroup = document.getElementById('studentSelectorGroup');
+      const armGroup = document.getElementById('broadsheetArmGroup');
+
+      if (mode === 'card') {
+        cardView.classList.remove('hidden');
+        broadsheetView.classList.add('hidden');
+        btnCard.className = "px-space-md py-space-xs rounded-lg font-headline-sm text-headline-sm transition-all duration-200 bg-primary-container text-on-primary shadow-sm flex items-center gap-space-xs";
+        btnBroadsheet.className = "px-space-md py-space-xs rounded-lg font-headline-sm text-headline-sm transition-all duration-200 text-on-surface-variant hover:text-on-surface flex items-center gap-space-xs";
+        studentGroup.classList.remove('hidden');
+        armGroup.classList.add('hidden');
+      } else {
+        cardView.classList.add('hidden');
+        broadsheetView.classList.remove('hidden');
+        btnBroadsheet.className = "px-space-md py-space-xs rounded-lg font-headline-sm text-headline-sm transition-all duration-200 bg-primary-container text-on-primary shadow-sm flex items-center gap-space-xs";
+        btnCard.className = "px-space-md py-space-xs rounded-lg font-headline-sm text-headline-sm transition-all duration-200 text-on-surface-variant hover:text-on-surface flex items-center gap-space-xs";
+        studentGroup.classList.add('hidden');
+        armGroup.classList.remove('hidden');
+        armGroup.classList.add('flex');
+      }
+    }
+
+    function changeStudent(key) {
+      const data = studentData[key];
+      if (!data) return;
+
+      document.getElementById('cardStudentName').innerText = data.name;
+      document.getElementById('cardStudentAdm').innerText = data.adm;
+      document.getElementById('cardStudentPos').innerText = data.pos;
+      document.getElementById('cardStudentTotal').innerHTML = `${data.total} <span class="font-body-sm text-body-sm text-on-surface-variant font-normal">/ 900</span>`;
+      document.getElementById('cardStudentAvg').innerText = data.avg;
+
+      const tbody = document.getElementById('cardSubjectsBody');
+      tbody.innerHTML = data.subjects.map(s => `
+        <tr class="hover:bg-surface-container-low transition-colors">
+          <td class="py-2 px-3 font-headline-sm text-headline-sm font-semibold text-on-surface">${s.name}</td>
+          <td class="py-2 px-2 text-right">${s.ca1}</td>
+          <td class="py-2 px-2 text-right">${s.ca2}</td>
+          <td class="py-2 px-2 text-right">${s.exam}</td>
+          <td class="py-2 px-2 text-right font-bold text-primary font-data-metric text-headline-sm">${s.total}</td>
+          <td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full ${s.grd === 'A1' ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant' : 'bg-secondary-fixed text-on-secondary-fixed-variant'} font-bold text-label-md">${s.grd}</span></td>
+          <td class="py-2 px-2 text-center font-bold">${s.pos}</td>
+          <td class="py-2 px-2 text-right text-on-surface-variant">${s.avg}</td>
+          <td class="py-2 px-2 text-right text-tertiary-container font-semibold">${s.high}</td>
+          <td class="py-2 px-2 text-right text-error font-semibold">${s.low}</td>
+          <td class="py-2 px-3 font-body-sm text-body-sm ${s.grd === 'A1' ? 'text-tertiary-container' : 'text-secondary'} font-semibold">${s.remark}</td>
+        </tr>
+      `).join('');
+    }
+
+    function toggleGreyscale(enabled) {
+      const card = document.getElementById('reportCardView');
+      const broadsheet = document.getElementById('broadsheetView');
+      if (enabled) {
+        card.classList.add('grayscale', 'contrast-125');
+        broadsheet.classList.add('grayscale', 'contrast-125');
+      } else {
+        card.classList.remove('grayscale', 'contrast-125');
+        broadsheet.classList.remove('grayscale', 'contrast-125');
+      }
+    }
+
+    function toggleStamp(enabled) {
+      const stamp = document.getElementById('schoolStampBox');
+      if (enabled) {
+        stamp.classList.remove('opacity-0');
+      } else {
+        stamp.classList.add('opacity-0');
+      }
+    }
+  </script>
+</div></main></div>
+</body></html>
