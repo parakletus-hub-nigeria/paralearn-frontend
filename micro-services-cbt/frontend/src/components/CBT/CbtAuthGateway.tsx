@@ -13,14 +13,21 @@ import {
   Eye,
   EyeOff,
   KeyRound,
-  ShieldCheck,
   CheckCircle2,
+  AlertCircle,
+  Info,
+  Loader2,
+  LogIn,
+  UserPlus,
+  Repeat,
+  User,
+  School,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cbtApi, type ExaminerWorkspace, type WorkspaceChoice } from "@cbt/lib/cbtSessionManager";
 import CbtBrand from "./CbtBrand";
+import "./cbt-workspace.css";
+import "./cbt-auth.css";
 
 type View = "signin" | "register" | "choose";
 
@@ -29,7 +36,8 @@ const MIN_PASSWORD_LENGTH = 8;
 const HEADINGS: Record<View, { title: string; subtitle: string }> = {
   signin: {
     title: "Sign in to ParaLearn CBT",
-    subtitle: "Use your ParaLearn school account or your exam hall account.",
+    subtitle:
+      "School staff use their ParaLearn email and password. Tutors and exam centres use their exam hall account.",
   },
   register: {
     title: "Create a free exam hall",
@@ -41,10 +49,6 @@ const HEADINGS: Record<View, { title: string; subtitle: string }> = {
   },
 };
 
-const labelClass =
-  "text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]";
-const inputClass =
-  "h-10 text-sm font-medium rounded-[var(--radius-md)] border-[var(--border-fine)]";
 
 export default function CbtAuthGateway() {
   const router = useRouter();
@@ -53,6 +57,8 @@ export default function CbtAuthGateway() {
   const [view, setView] = useState<View>("signin");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // Shown inside the form as well as in the toast, so the reason stays next to the fields
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [signInData, setSignInData] = useState({ email: "", password: "" });
   const [registerData, setRegisterData] = useState({
@@ -85,6 +91,7 @@ export default function CbtAuthGateway() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     setIsLoading(true);
     try {
       const result = await cbtApi.signIn(signInData.email.trim(), signInData.password);
@@ -95,7 +102,9 @@ export default function CbtAuthGateway() {
         enterWorkspace(result.workspace);
       }
     } catch (err: any) {
-      toast.error(err.message || "Sign-in failed. Please check your details.");
+      const message = err.message || "Sign-in failed. Please check your details.";
+      setFormError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -107,9 +116,11 @@ export default function CbtAuthGateway() {
     try {
       enterWorkspace(await cbtApi.chooseWorkspace(selection.token, workspaceId));
     } catch (err: any) {
-      toast.error(err.message || "Could not open that workspace.");
+      const message = err.message || "Could not open that workspace.";
+      toast.error(message);
       setSelection(null);
       setView("signin");
+      setFormError(`${message} Sign in again to choose a workspace.`);
     } finally {
       setIsLoading(false);
     }
@@ -117,8 +128,11 @@ export default function CbtAuthGateway() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     if (registerData.password.length < MIN_PASSWORD_LENGTH) {
-      toast.error(`Choose a password of at least ${MIN_PASSWORD_LENGTH} characters.`);
+      const message = `Choose a password of at least ${MIN_PASSWORD_LENGTH} characters.`;
+      setFormError(message);
+      toast.error(message);
       return;
     }
     setIsLoading(true);
@@ -132,273 +146,334 @@ export default function CbtAuthGateway() {
       toast.success(`Exam hall "${workspace.name}" is ready.`);
       router.push("/cbt");
     } catch (err: any) {
-      toast.error(err.message || "Could not create your exam hall.");
+      const message = err.message || "Could not create your exam hall.";
+      setFormError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const passwordToggle = (
     <button
       type="button"
       onClick={() => setShowPassword(!showPassword)}
       aria-label={showPassword ? "Hide password" : "Show password"}
-      className="absolute right-3 top-2.5 text-[var(--text-secondary)] hover:text-[var(--foreground)]"
+      className="cbt-auth-eye"
     >
-      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
     </button>
   );
 
+  const switchView = (next: View) => {
+    setFormError(null);
+    setSelection(null);
+    setView(next);
+  };
+
+  const errorNote = formError ? (
+    <p className="cbt-auth-error" role="alert">
+      <AlertCircle size={16} aria-hidden />
+      <span>{formError}</span>
+    </p>
+  ) : null;
+
   const submitButton = (label: string, busyLabel: string) => (
-    <Button
-      type="submit"
-      disabled={isLoading}
-      className="w-full h-11 text-sm font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)] flex items-center justify-center gap-2 mt-2"
-    >
+    <button type="submit" disabled={isLoading} aria-busy={isLoading} className="cbt-button primary cbt-auth-submit">
       {isLoading ? (
-        <span>{busyLabel}</span>
+        <>
+          <Loader2 size={16} className="animate-spin" />
+          <span>{busyLabel}</span>
+        </>
       ) : (
         <>
           <span>{label}</span>
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight size={16} />
         </>
       )}
-    </Button>
+    </button>
   );
 
+  const tabs: Array<{ view: View; label: string; icon: typeof LogIn }> = [
+    { view: "signin", label: "Sign in", icon: LogIn },
+    { view: "register", label: "Create hall", icon: UserPlus },
+  ];
+  if (view === "choose") tabs.push({ view: "choose", label: "Choose workspace", icon: Repeat });
+
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-3 sm:p-6 font-sans text-[var(--foreground)]">
-      <div className="mb-6 text-center space-y-1">
-        <div className="flex justify-center mb-7">
-          <CbtBrand />
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--foreground)]">
-          {HEADINGS[view].title}
-        </h1>
-        <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
-          {HEADINGS[view].subtitle}
-        </p>
-      </div>
+    <div className="cbt-surface cbt-auth">
+      <div className="cbt-auth-bg" aria-hidden />
+      <header className="cbt-auth-header">
+        <CbtBrand />
+        <nav aria-label="Other entrances">
+          <Link href="/cbt" className="cbt-auth-back">
+            <ArrowLeft size={15} aria-hidden />
+            <span>ParaLearn CBT home</span>
+          </Link>
+          <Link href="/take" className="cbt-button">
+            <KeyRound size={15} aria-hidden />
+            Candidate entrance
+          </Link>
+        </nav>
+      </header>
 
-      <div className="w-full max-w-md mb-3 flex items-center justify-start">
-        <Link
-          href="/cbt"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#641bc4] transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to CBT Portal</span>
-        </Link>
-      </div>
-
-      <div className="w-full max-w-md bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
-        {view === "signin" && (
-          <form onSubmit={handleSignIn} className="p-6 space-y-4">
-            <div className="bg-[var(--surface-subtle)] border border-[var(--border-fine)] rounded-[var(--radius-md)] p-3 text-xs text-[var(--text-secondary)] flex items-start gap-2">
-              <ShieldCheck className="w-4 h-4 text-[var(--violet-ink)] shrink-0 mt-0.5" />
-              <span>
-                School staff sign in with their ParaLearn email and password, and go
-                straight to their school&apos;s workspace.
-              </span>
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="cbt-email" className={labelClass}>
-                Email address
-              </label>
-              <div className="relative">
-                <Input
-                  id="cbt-email"
-                  type="email"
-                  required
-                  autoComplete="username"
-                  placeholder="you@school.com"
-                  value={signInData.email}
-                  onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
-                  className={`${inputClass} pl-9`}
-                />
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="cbt-password" className={labelClass}>
-                Password
-              </label>
-              <div className="relative">
-                <Input
-                  id="cbt-password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  autoComplete="current-password"
-                  placeholder="••••••••••••"
-                  value={signInData.password}
-                  onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
-                  className={`${inputClass} pl-9 pr-10`}
-                />
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                {passwordToggle}
-              </div>
-            </div>
-
-            {submitButton("Sign in", "Signing in...")}
-
-            <div className="text-center pt-2">
+      <main className="cbt-auth-main">
+        <div className="cbt-auth-card">
+          <div className="cbt-auth-tabs" role="tablist" aria-label="Examiner access">
+            {tabs.map(({ view: v, label, icon: Icon }) => (
               <button
+                key={v}
+                id={`cbt-auth-tab-${v}`}
                 type="button"
-                onClick={() => setView("register")}
-                className="text-xs text-slate-500 hover:text-[var(--violet-ink)] font-semibold transition-colors"
+                role="tab"
+                aria-selected={view === v}
+                aria-controls="cbt-auth-panel"
+                className={view === v ? "is-active" : ""}
+                disabled={v === "choose"}
+                onClick={() => {
+                  if (v === "choose") return;
+                  switchView(v);
+                }}
               >
-                Running your own exams?{" "}
-                <span className="underline text-[var(--violet-ink)]">
-                  Create a free exam hall
-                </span>
+                <Icon size={15} aria-hidden />
+                {label}
               </button>
-            </div>
-          </form>
-        )}
-
-        {view === "register" && (
-          <form onSubmit={handleRegister} className="p-6 space-y-4">
-            <div className="bg-[var(--emerald-tint)]/60 border border-[var(--emerald-signal)]/30 rounded-[var(--radius-md)] p-3 text-xs text-[#065f46] flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-              <span>
-                School staff don&apos;t need an exam hall. Sign in with your ParaLearn
-                account instead.
-              </span>
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="cbt-name" className={labelClass}>
-                Your full name
-              </label>
-              <Input
-                id="cbt-name"
-                type="text"
-                required
-                placeholder="e.g. Samuel Adekunle"
-                value={registerData.fullName}
-                onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
-                className={inputClass}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="cbt-centre" className={labelClass}>
-                Tutorial centre / brand name
-              </label>
-              <Input
-                id="cbt-centre"
-                type="text"
-                placeholder="e.g. Apex JAMB & WAEC Academy (optional)"
-                value={registerData.centreName}
-                onChange={(e) => setRegisterData({ ...registerData, centreName: e.target.value })}
-                className={inputClass}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="cbt-register-email" className={labelClass}>
-                Email address
-              </label>
-              <Input
-                id="cbt-register-email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="tutor@gmail.com"
-                value={registerData.email}
-                onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                className={inputClass}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="cbt-register-password" className={labelClass}>
-                Create password
-              </label>
-              <div className="relative">
-                <Input
-                  id="cbt-register-password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  minLength={MIN_PASSWORD_LENGTH}
-                  autoComplete="new-password"
-                  placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
-                  value={registerData.password}
-                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                  className={`${inputClass} pr-10`}
-                />
-                {passwordToggle}
-              </div>
-            </div>
-
-            {submitButton("Create exam hall", "Creating your exam hall...")}
-
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={() => setView("signin")}
-                className="text-xs text-slate-500 hover:text-[var(--violet-ink)] font-semibold transition-colors"
-              >
-                Already have an account?{" "}
-                <span className="underline text-[var(--violet-ink)]">Sign in</span>
-              </button>
-            </div>
-          </form>
-        )}
-
-        {view === "choose" && selection && (
-          <div className="p-6 space-y-3">
-            {selection.choices.map((choice) => {
-              const isSchool = choice.type === "INSTITUTION";
-              const Icon = isSchool ? Building2 : UserCheck;
-              return (
-                <button
-                  key={choice.workspaceId}
-                  type="button"
-                  disabled={isLoading}
-                  onClick={() => handleChoose(choice.workspaceId)}
-                  className="w-full text-left p-4 rounded-[var(--radius-md)] border border-[var(--border-fine)] hover:border-[var(--violet-ink)] hover:bg-[var(--surface-subtle)] transition-colors flex items-center gap-3 disabled:opacity-60"
-                >
-                  <Icon className="w-5 h-5 text-[var(--violet-ink)] shrink-0" />
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-bold text-[var(--foreground)] truncate">
-                      {choice.name}
-                    </span>
-                    <span className="block text-xs text-[var(--text-secondary)]">
-                      {isSchool
-                        ? "School workspace, with your ParaLearn classes and students"
-                        : "Your independent exam hall"}
-                    </span>
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              onClick={() => {
-                setSelection(null);
-                setView("signin");
-              }}
-              className="w-full text-center pt-1 text-xs text-slate-500 hover:text-[var(--violet-ink)] font-semibold"
-            >
-              Use a different account
-            </button>
+            ))}
           </div>
-        )}
 
-        <div className="bg-[var(--surface-subtle)] border-t border-[var(--border-fine)] px-6 py-3.5 flex items-center justify-between text-xs text-[var(--text-secondary)]">
-          <span>Taking an examination?</span>
-          <a
-            href="/take"
-            className="font-bold text-[var(--violet-ink)] hover:underline flex items-center gap-1"
+          <div
+            className="cbt-auth-body"
+            id="cbt-auth-panel"
+            role="tabpanel"
+            aria-labelledby={`cbt-auth-tab-${view}`}
           >
-            <KeyRound className="w-3.5 h-3.5" />
-            <span>Enter Exam Code &rarr;</span>
-          </a>
+            <p className="cbt-auth-eyebrow">Examiner and invigilator portal</p>
+            <h1>{HEADINGS[view].title}</h1>
+            <p className="cbt-auth-sub">{HEADINGS[view].subtitle}</p>
+
+            {view === "signin" && (
+              <form onSubmit={handleSignIn} className="cbt-auth-form">
+                <div className="cbt-auth-field">
+                  <label htmlFor="cbt-email">Email address</label>
+                  <div className="cbt-auth-input">
+                    <Mail size={17} aria-hidden />
+                    <input
+                      id="cbt-email"
+                      type="email"
+                      required
+                      autoComplete="username"
+                      placeholder="you@school.com"
+                      value={signInData.email}
+                      onChange={(e) => {
+                        setFormError(null);
+                        setSignInData({ ...signInData, email: e.target.value });
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="cbt-auth-field">
+                  <label htmlFor="cbt-password">Password</label>
+                  <div className="cbt-auth-input">
+                    <Lock size={17} aria-hidden />
+                    <input
+                      id="cbt-password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      autoComplete="current-password"
+                      placeholder="Your password"
+                      value={signInData.password}
+                      onChange={(e) => {
+                        setFormError(null);
+                        setSignInData({ ...signInData, password: e.target.value });
+                      }}
+                    />
+                    {passwordToggle}
+                  </div>
+                </div>
+
+                {errorNote}
+                {submitButton("Sign in to workspace", "Signing in...")}
+              </form>
+            )}
+
+            {view === "register" && (
+              <form onSubmit={handleRegister} className="cbt-auth-form">
+                <div className="cbt-auth-note is-info">
+                  <Info size={17} aria-hidden />
+                  <p>
+                    School staff don&apos;t need an exam hall.{" "}
+                    <button type="button" className="cbt-auth-inline-link" onClick={() => switchView("signin")}>
+                      Sign in with your ParaLearn account
+                    </button>{" "}
+                    instead.
+                  </p>
+                </div>
+
+                <div className="cbt-auth-field">
+                  <label htmlFor="cbt-name">Your full name</label>
+                  <div className="cbt-auth-input">
+                    <User size={17} aria-hidden />
+                    <input
+                      id="cbt-name"
+                      type="text"
+                      required
+                      autoComplete="name"
+                      placeholder="e.g. Samuel Adekunle"
+                      value={registerData.fullName}
+                      onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="cbt-auth-field">
+                  <label htmlFor="cbt-centre">
+                    Tutorial centre or brand name <small>Optional</small>
+                  </label>
+                  <div className="cbt-auth-input">
+                    <School size={17} aria-hidden />
+                    <input
+                      id="cbt-centre"
+                      type="text"
+                      placeholder="e.g. Apex JAMB & WAEC Academy"
+                      value={registerData.centreName}
+                      onChange={(e) => setRegisterData({ ...registerData, centreName: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="cbt-auth-field">
+                  <label htmlFor="cbt-register-email">Email address</label>
+                  <div className="cbt-auth-input">
+                    <Mail size={17} aria-hidden />
+                    <input
+                      id="cbt-register-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      placeholder="tutor@gmail.com"
+                      value={registerData.email}
+                      onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="cbt-auth-field">
+                  <label htmlFor="cbt-register-password">Create password</label>
+                  <div className="cbt-auth-input">
+                    <Lock size={17} aria-hidden />
+                    <input
+                      id="cbt-register-password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={MIN_PASSWORD_LENGTH}
+                      autoComplete="new-password"
+                      aria-describedby="cbt-register-password-hint"
+                      placeholder="Create a password"
+                      value={registerData.password}
+                      onChange={(e) => {
+                        setFormError(null);
+                        setRegisterData({ ...registerData, password: e.target.value });
+                      }}
+                    />
+                    {passwordToggle}
+                  </div>
+                  <p
+                    id="cbt-register-password-hint"
+                    className={`cbt-auth-hint ${
+                      registerData.password.length >= MIN_PASSWORD_LENGTH ? "is-met" : ""
+                    }`}
+                  >
+                    {registerData.password.length >= MIN_PASSWORD_LENGTH ? (
+                      <CheckCircle2 size={14} aria-hidden />
+                    ) : null}
+                    At least {MIN_PASSWORD_LENGTH} characters
+                  </p>
+                </div>
+
+                {errorNote}
+                {submitButton("Create exam hall", "Creating your exam hall...")}
+              </form>
+            )}
+
+            {view === "choose" && selection && (
+              <div className="cbt-auth-choices">
+                {selection.choices.map((choice) => {
+                  const isSchool = choice.type === "INSTITUTION";
+                  const Icon = isSchool ? Building2 : UserCheck;
+                  return (
+                    <button
+                      key={choice.workspaceId}
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => handleChoose(choice.workspaceId)}
+                      className="cbt-auth-choice"
+                    >
+                      <span className="cbt-auth-choice-icon">
+                        <Icon size={18} aria-hidden />
+                      </span>
+                      <span className="cbt-auth-choice-text">
+                        <strong>{choice.name}</strong>
+                        <small>
+                          {isSchool
+                            ? "School workspace, with your ParaLearn classes and students"
+                            : "Your independent exam hall"}
+                        </small>
+                      </span>
+                      <ArrowRight size={16} aria-hidden />
+                    </button>
+                  );
+                })}
+                <button type="button" onClick={() => switchView("signin")} className="cbt-auth-link">
+                  Use a different account
+                </button>
+              </div>
+            )}
+          </div>
+
+          {view !== "choose" && (
+            <div className="cbt-auth-foot">
+              {view === "signin" ? (
+                <>
+                  <span>Running your own mock exams without a school?</span>
+                  <button type="button" className="cbt-auth-link" onClick={() => switchView("register")}>
+                    Create a free exam hall
+                    <ArrowRight size={14} aria-hidden />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span>Already have an account?</span>
+                  <button type="button" className="cbt-auth-link" onClick={() => switchView("signin")}>
+                    Sign in
+                    <ArrowRight size={14} aria-hidden />
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
-      </div>
+
+        <aside className="cbt-auth-candidate" aria-label="For candidates">
+          <span className="cbt-auth-candidate-icon">
+            <KeyRound size={18} aria-hidden />
+          </span>
+          <p>
+            <strong>Are you a student or candidate?</strong>
+            No account or password needed. You only need the exam code from your examiner.
+          </p>
+          <Link href="/take" className="cbt-button">
+            Enter exam code
+            <ArrowRight size={15} aria-hidden />
+          </Link>
+        </aside>
+      </main>
+
+      <footer className="cbt-auth-footer">
+        <span>&copy; {new Date().getFullYear()} ParaLearn CBT</span>
+        <Link href="/cbt/api-docs">Developer API</Link>
+      </footer>
     </div>
   );
 }

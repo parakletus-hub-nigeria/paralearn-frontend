@@ -1,32 +1,26 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
-  Sparkles,
-  Award,
-  Check,
-  X,
-  Loader2,
-  BookOpen,
-  Edit3,
-  MessageSquare,
-  ThumbsUp,
   AlertCircle,
-  HelpCircle,
+  BookOpen,
+  Check,
   FileText,
+  Loader2,
+  MessageSquare,
+  Sparkles,
+  ThumbsUp,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import "./cbt-monitor.css";
 import {
   RubricCriterion,
   ExamRubric,
@@ -45,6 +39,10 @@ interface CbtEssayGradingModalProps {
   keyTerms?: string[];
   rubric?: ExamRubric;
   onGraded: (updatedSession: CandidateSession) => void | Promise<void>;
+  /** Render inside the page (the monitor's Essay marking tab) instead of as a dialog */
+  inline?: boolean;
+  /** Where the queue stands, e.g. "3 more after this one", shown beside Approve */
+  queueNote?: string;
 }
 
 export default function CbtEssayGradingModal({
@@ -59,7 +57,10 @@ export default function CbtEssayGradingModal({
   keyTerms,
   rubric,
   onGraded,
+  inline = false,
+  queueNote,
 }: CbtEssayGradingModalProps) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const studentAnswer = (candidateSession.answers[questionId] as string) || "";
   const studentWordCount = studentAnswer.trim()
     ? studentAnswer.trim().split(/\s+/).length
@@ -196,7 +197,7 @@ export default function CbtEssayGradingModal({
       setAreasForImprovement(evalData.areasForImprovement || []);
 
       toast.success(
-        "ParaLearn AI suggested scores & feedback generated! Review and adjust before approval.",
+        "Suggested marks are filled in. Check them before you approve.",
       );
     } catch (err: any) {
       console.error(err);
@@ -247,9 +248,7 @@ export default function CbtEssayGradingModal({
     setIsSaving(true);
     try {
       await onGraded(updatedSession);
-      toast.success(
-        `Essay grade approved: ${currentTotalAwarded} / ${questionMarks} Marks!`,
-      );
+      toast.success(`Marks saved: ${currentTotalAwarded} / ${questionMarks}.`);
       onClose();
     } catch (err: any) {
       toast.error(
@@ -262,309 +261,278 @@ export default function CbtEssayGradingModal({
     }
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] bg-white border border-slate-200 rounded-2xl p-0 overflow-hidden flex flex-col shadow-2xl">
-        {/* Header */}
-        <DialogHeader className="p-4 sm:p-6 border-b border-slate-100 bg-slate-50/70 flex flex-row items-center justify-between shrink-0 gap-2">
-          <div className="space-y-1 min-w-0">
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-              <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0">
-                <Award className="w-4 h-4 text-amber-700" />
-              </span>
-              <DialogTitle className="text-sm sm:text-base font-bold text-slate-900 tracking-tight truncate">
-                Examiner Essay Evaluation &amp; Grading
-              </DialogTitle>
-              <Badge
-                variant="outline"
-                className="text-[10px] font-mono bg-white text-slate-700 truncate"
-              >
-                {candidateSession.candidateName} &bull; PIN:{" "}
-                {candidateSession.candidatePin}
-              </Badge>
-            </div>
-            <DialogDescription className="text-xs text-slate-500">
-              Score candidate response against marking rubrics, with 1-click
-              ParaLearn AI grading assistance.
-            </DialogDescription>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-slate-700 shrink-0"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </DialogHeader>
+  // Inline: each script that opens takes focus, so marking continues from the keyboard
+  useEffect(() => {
+    if (inline) titleRef.current?.focus();
+  }, [inline]);
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
-          {/* Question Prompt Card */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Question Prompt (
-                {questionType === "LONG_ESSAY"
-                  ? "Comprehensive Essay"
-                  : "Short Answer"}
-                )
-              </span>
-              <Badge
-                variant="outline"
-                className="font-mono text-xs font-bold text-violet-700 bg-violet-50 border-violet-200"
-              >
-                Total: {questionMarks} Marks
-              </Badge>
-            </div>
-            <p className="text-sm font-semibold text-slate-900 leading-relaxed">
-              {questionPrompt}
-            </p>
+  // Ctrl+Enter (or Cmd+Enter) approves from anywhere in the form
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !isSaving) {
+      e.preventDefault();
+      handleApproveAndSave();
+    }
+  };
 
-            {/* Model Answer Toggle */}
-            {modelAnswer && (
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModelAnswer(!showModelAnswer)}
-                  className="text-xs font-semibold text-violet-700 hover:text-violet-900 flex items-center gap-1"
-                >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span>
-                    {showModelAnswer
-                      ? "Hide Benchmark Model Answer"
-                      : "View Benchmark Model Answer"}
-                  </span>
-                </button>
-                {showModelAnswer && (
-                  <div className="mt-2 p-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 leading-relaxed">
-                    <strong>Model Answer: </strong>
-                    {modelAnswer}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+  const Title = inline ? "h2" : DialogTitle;
+  const Description = inline ? "p" : DialogDescription;
 
-          {/* Student Response Card */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-blue-600" />
-                <span>Candidate's Submitted Response</span>
-              </label>
-              <span className="text-xs font-mono text-slate-500 font-semibold">
-                {studentWordCount} words &bull; {studentAnswer.length} chars
-              </span>
-            </div>
+  const header = (
+    <div className="cbt-grade-head">
+      <div className="cbt-grade-who">
+        <Title
+          className="cbt-grade-title"
+          ref={titleRef}
+          tabIndex={inline ? -1 : undefined}
+        >
+          {candidateSession.candidateName}
+          <span className="cbt-grade-pin">
+            PIN {candidateSession.candidatePin}
+          </span>
+        </Title>
+        <Description className="cbt-grade-sub">
+          {questionType === "LONG_ESSAY" ? "Essay" : "Short answer"} ·{" "}
+          {questionMarks} marks. Mark against the rubric, or let ParaLearn AI
+          suggest marks for you to check.
+        </Description>
+      </div>
+      <button
+        type="button"
+        className="cbt-icon"
+        onClick={onClose}
+        aria-label={inline ? "Close this script" : "Close"}
+        title={inline ? "Close this script" : "Close"}
+      >
+        <X size={17} />
+      </button>
+    </div>
+  );
 
-            <div className="p-4 rounded-xl border border-slate-200 bg-white min-h-[120px] text-sm text-slate-900 leading-relaxed whitespace-pre-wrap select-text font-normal shadow-2xs">
-              {studentAnswer || (
-                <span className="text-slate-400 italic">
-                  No response submitted by candidate.
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* 1-Click AI Assist Banner */}
-          <div className="p-4 rounded-xl bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-violet-900">
-                <Sparkles className="w-4 h-4 text-violet-600 animate-pulse" />
-                <span>1-Click ParaLearn AI Grading Assistance</span>
-              </div>
-              <p className="text-[11px] text-violet-700 leading-tight">
-                Analyzes student's text against the rubric, autofilling criteria
-                scores and constructive feedback comments.
-              </p>
-            </div>
-
-            <Button
+  const body = (
+    <div className="cbt-grade-body">
+      <section className="cbt-grade-question">
+        <div className="cbt-grade-label">
+          <span>Question</span>
+          <span className="cbt-grade-marks">{questionMarks} marks</span>
+        </div>
+        <p className="cbt-grade-prompt">{questionPrompt}</p>
+        {modelAnswer && (
+          <>
+            <button
               type="button"
-              size="sm"
-              disabled={isAiGrading}
-              onClick={handleAiGrade}
-              className="bg-violet-700 hover:bg-violet-800 text-white text-xs font-bold px-3.5 h-9 rounded-xl shadow-xs shrink-0 flex items-center gap-1.5"
+              onClick={() => setShowModelAnswer(!showModelAnswer)}
+              className="cbt-grade-link"
+              aria-expanded={showModelAnswer}
             >
-              {isAiGrading ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Evaluating Response...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Score with ParaLearn AI</span>
-                </>
-              )}
-            </Button>
-          </div>
+              <BookOpen size={14} aria-hidden />
+              {showModelAnswer ? "Hide model answer" : "Show model answer"}
+            </button>
+            {showModelAnswer && (
+              <p className="cbt-grade-model">{modelAnswer}</p>
+            )}
+          </>
+        )}
+      </section>
 
-          {/* Rubric Criteria Scoring List */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                Marking Rubric Criteria ({criteriaList.length} Items)
-              </label>
-              <div className="text-xs font-mono font-bold">
-                Awarded:{" "}
-                <span className="text-emerald-700">{currentTotalAwarded}</span>{" "}
-                / {questionMarks} Marks
-              </div>
-            </div>
+      <section>
+        <div className="cbt-grade-label">
+          <span>
+            <FileText size={14} aria-hidden />
+            Candidate&apos;s answer
+          </span>
+          <span className="cbt-grade-num">
+            {studentWordCount} words · {studentAnswer.length} characters
+          </span>
+        </div>
+        <div className="cbt-grade-answer">
+          {studentAnswer || <em>No answer submitted.</em>}
+        </div>
+      </section>
 
-            <div className="space-y-3">
-              {criteriaList.map((crit) => {
-                const currentScore = scores[crit.id] ?? 0;
-                const feedbackText = criterionFeedback[crit.id] || "";
+      <section className="cbt-grade-ai">
+        <div>
+          <strong>
+            <Sparkles size={15} aria-hidden />
+            Suggest marks with ParaLearn AI
+          </strong>
+          <p>
+            Reads the answer against the rubric and fills in marks and comments.
+            Nothing is saved until you approve.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="cbt-button"
+          disabled={isAiGrading}
+          onClick={handleAiGrade}
+        >
+          {isAiGrading ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <Sparkles size={15} />
+          )}
+          {isAiGrading ? "Reading the answer…" : "Suggest marks"}
+        </button>
+      </section>
 
-                return (
-                  <div
-                    key={crit.id}
-                    className="p-4 rounded-xl border border-slate-200 bg-white space-y-3"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div>
-                        <span className="text-xs font-bold text-slate-900">
-                          {crit.title}
-                        </span>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                          {crit.description}
-                        </p>
-                      </div>
-
-                      {/* Score Input */}
-                      <div className="flex items-center gap-2 shrink-0">
-                        <label className="text-xs font-semibold text-slate-500">
-                          Score:
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max={crit.maxMarks}
-                          step="0.5"
-                          value={currentScore}
-                          onChange={(e) =>
-                            handleScoreChange(
-                              crit.id,
-                              parseFloat(e.target.value) || 0,
-                              crit.maxMarks,
-                            )
-                          }
-                          className="w-16 h-8 text-center font-mono font-bold text-xs"
-                        />
-                        <span className="text-xs font-mono text-slate-500">
-                          / {crit.maxMarks}m
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Criterion Feedback */}
-                    {feedbackText && (
-                      <p className="text-[11px] text-violet-700 bg-violet-50/70 p-2 rounded-lg border border-violet-100">
-                        <strong>AI Observation: </strong>
-                        {feedbackText}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Overall Constructive Feedback */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-              <MessageSquare className="w-3.5 h-3.5 text-violet-600" />
-              <span>
-                Examiner Constructive Commentary (Shared with candidate on
-                Result Slip)
-              </span>
-            </label>
-            <Textarea
-              rows={3}
-              value={overallComment}
-              onChange={(e) => setOverallComment(e.target.value)}
-              placeholder="Provide constructive feedback highlighting student strengths and concrete recommendations for improvement..."
-              className="text-xs leading-relaxed rounded-xl border-slate-200"
-            />
-          </div>
-
-          {/* Strengths & Improvements tags if available */}
-          {(strengths.length > 0 || areasForImprovement.length > 0) && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              {strengths.length > 0 && (
-                <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-1">
-                  <span className="font-bold text-emerald-800 flex items-center gap-1">
-                    <ThumbsUp className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Key Strengths</span>
+      <section>
+        <div className="cbt-grade-label">
+          <span>Rubric ({criteriaList.length})</span>
+          <span className="cbt-grade-num">
+            Awarded <b>{currentTotalAwarded}</b> / {questionMarks}
+          </span>
+        </div>
+        <ul className="cbt-grade-criteria">
+          {criteriaList.map((crit) => {
+            const currentScore = scores[crit.id] ?? 0;
+            const feedbackText = criterionFeedback[crit.id] || "";
+            const inputId = `crit-${questionId}-${crit.id}`;
+            return (
+              <li key={crit.id}>
+                <div className="cbt-grade-crit-row">
+                  <label htmlFor={inputId}>
+                    <strong>{crit.title}</strong>
+                    {crit.description && <small>{crit.description}</small>}
+                  </label>
+                  <span className="cbt-grade-score">
+                    <input
+                      id={inputId}
+                      type="number"
+                      min="0"
+                      max={crit.maxMarks}
+                      step="0.5"
+                      value={currentScore}
+                      onChange={(e) =>
+                        handleScoreChange(
+                          crit.id,
+                          parseFloat(e.target.value) || 0,
+                          crit.maxMarks,
+                        )
+                      }
+                    />
+                    <span>/ {crit.maxMarks}</span>
                   </span>
-                  <ul className="list-disc list-inside text-[11px] text-emerald-700 space-y-0.5">
-                    {strengths.map((s, i) => (
-                      <li key={i}>{s}</li>
-                    ))}
-                  </ul>
                 </div>
-              )}
+                {feedbackText && (
+                  <p className="cbt-grade-note">
+                    <Sparkles size={13} aria-hidden />
+                    {feedbackText}
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
-              {areasForImprovement.length > 0 && (
-                <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1">
-                  <span className="font-bold text-amber-800 flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
-                    <span>Areas for Improvement</span>
-                  </span>
-                  <ul className="list-disc list-inside text-[11px] text-amber-700 space-y-0.5">
-                    {areasForImprovement.map((a, i) => (
-                      <li key={i}>{a}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+      <section>
+        <label className="cbt-grade-label" htmlFor={`comment-${questionId}`}>
+          <span>
+            <MessageSquare size={14} aria-hidden />
+            Comment for the candidate
+          </span>
+          <span className="cbt-grade-num">Shown on their result slip</span>
+        </label>
+        <Textarea
+          id={`comment-${questionId}`}
+          rows={3}
+          value={overallComment}
+          onChange={(e) => setOverallComment(e.target.value)}
+          placeholder="What they did well, and one thing to work on."
+          className="cbt-grade-comment"
+        />
+      </section>
+
+      {(strengths.length > 0 || areasForImprovement.length > 0) && (
+        <div className="cbt-grade-notes">
+          {strengths.length > 0 && (
+            <div className="emerald">
+              <strong>
+                <ThumbsUp size={14} aria-hidden />
+                Strengths
+              </strong>
+              <ul>
+                {strengths.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {areasForImprovement.length > 0 && (
+            <div className="amber">
+              <strong>
+                <AlertCircle size={14} aria-hidden />
+                To improve
+              </strong>
+              <ul>
+                {areasForImprovement.map((a, i) => (
+                  <li key={i}>{a}</li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
+      )}
+    </div>
+  );
 
-        {/* Footer Actions */}
-        <div className="px-4 py-3.5 sm:px-6 sm:py-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between shrink-0 gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-9 px-3 sm:px-4 text-xs font-semibold text-slate-600"
-          >
-            Cancel
-          </Button>
+  const footer = (
+    <div className="cbt-grade-foot">
+      <button type="button" className="cbt-button" onClick={onClose}>
+        {inline ? "Close" : "Cancel"}
+      </button>
+      {queueNote && <span className="cbt-grade-queue">{queueNote}</span>}
+      <div className="cbt-grade-total">
+        <span>Total</span>
+        <strong>
+          {currentTotalAwarded} <small>/ {questionMarks}</small>
+        </strong>
+      </div>
+      <button
+        type="button"
+        className="cbt-button cbt-grade-approve"
+        onClick={handleApproveAndSave}
+        disabled={isSaving}
+      >
+        {isSaving ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <Check size={16} />
+        )}
+        {isSaving ? "Saving…" : "Approve marks"}
+        {!isSaving && (
+          <kbd className="cbt-grade-kbd" aria-hidden>
+            Ctrl ↵
+          </kbd>
+        )}
+      </button>
+    </div>
+  );
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="text-right hidden sm:block">
-              <span className="text-[10px] text-slate-500 uppercase font-semibold block">
-                Total Awarded
-              </span>
-              <span className="text-sm font-mono font-bold text-slate-900">
-                {currentTotalAwarded} / {questionMarks} Marks
-              </span>
-            </div>
+  if (inline) {
+    return (
+      <section
+        className="cbt-grade cbt-grade-inline"
+        aria-label={`Marking ${candidateSession.candidateName}`}
+        onKeyDown={onKeyDown}
+      >
+        {header}
+        {body}
+        {footer}
+      </section>
+    );
+  }
 
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleApproveAndSave}
-              disabled={isSaving}
-              className="h-9 px-5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-xs flex items-center gap-1.5"
-            >
-              {isSaving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Check className="w-4 h-4 stroke-[3]" />
-              )}
-              <span>
-                {isSaving ? "Saving Grade..." : "Approve & Finalize Grade"}
-              </span>
-            </Button>
-          </div>
-        </div>
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className="cbt-dialog cbt-grade cbt-grade-dialog max-w-3xl max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col"
+        onKeyDown={onKeyDown}
+      >
+        {header}
+        {body}
+        {footer}
       </DialogContent>
     </Dialog>
   );

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>ParaLearn CBT</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"cobalt-vivid":"#2a64f6","surface-container-high":"#dde9ff","crimson-tint":"#fddada","cobalt-ink":"#1e40af","primary-fixed-dim":"#d5bbff","crimson-vivid":"#e60023","secondary-fixed":"#dae2fd","text-strong":"#334155","on-secondary-fixed-variant":"#3f465c","amber-vivid":"#f28c1f","violet-wash":"#f7f3ff","surface-bright":"#f8f9ff","on-tertiary-container":"#44d69b","on-tertiary-fixed":"#002113","on-surface":"#0d1c2f","chalk-white":"#fdfdff","on-secondary-container":"#5c647a","error-container":"#ffdad6","border-medium":"#cbd5e1","crimson-line":"#fecaca","cobalt-tint":"#dbe9ff","text-secondary":"#64748b","surface-container-low":"#eff4ff","text-placeholder":"#94a3b8","amber-ink-white":"#b45309","on-error-container":"#93000a","violet-line":"#dfceef","border-fine":"#e2e8f0","violet-ink":"#641bc4","on-tertiary":"#ffffff","lavender-muted":"#ad8ed6","secondary-fixed-dim":"#bec6e0","tertiary":"#003f29","surface":"#f8f9ff","violet-pressed":"#5214a3","surface-tint":"#7635d6","on-primary-fixed-variant":"#5d0abd","emerald-ink-white":"#047857","cobalt-line":"#bfdbfe","surface-container":"#e6eeff","tertiary-fixed":"#6ffbbe","violet-tint":"#f0e5ff","surface-container-lowest":"#ffffff","on-tertiary-fixed-variant":"#005236","crimson-ink-white":"#b91c1c","background":"#f8f9ff","emerald-ink-tint":"#065f46","emerald-tint":"#dff9d8","tertiary-fixed-dim":"#4edea3","surface-dim":"#ccdbf4","on-primary-fixed":"#270058","on-surface-variant":"#4b4454","primary-fixed":"#ecdcff","emerald-vivid":"#10b981","amber-line":"#fde68a","tertiary-container":"#00593c","on-secondary":"#ffffff","error":"#ba1a1a","outline-variant":"#cdc3d7","surface-container-highest":"#d5e3fd","inverse-on-surface":"#ebf1ff","inverse-primary":"#d5bbff","amber-tint":"#ffe9cc","secondary-container":"#dae2fd","on-error":"#ffffff","surface-subtle":"#f8fafc","violet-hover":"#7b22e8","secondary":"#565e74","on-background":"#0d1c2f","emerald-line":"#a7f3d0","outline":"#7c7486","card":"#ffffff","on-primary":"#ffffff","primary":"#49009a","surface-variant":"#d5e3fd","on-secondary-fixed":"#131b2e","inverse-surface":"#233144","amber-ink-tint":"#92400e","crimson-ink-tint":"#991b1b","primary-container":"#641bc4","surface-muted":"#f1f5f9","foreground":"#0f172a","on-primary-container":"#ceb1ff"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"margin":"1rem","space-sm":"0.5rem","space-lg":"1.5rem","gutter":"1rem","space-xs":"0.25rem","space-md":"1rem","gutter-lg":"1.5rem","margin-md":"1.5rem","margin-lg":"2rem","space-xl":"2rem","space-2xl":"3rem"},fontFamily:{"timer-display":["JetBrains Mono"],"body-strong":["Manrope"],"display-mobile":["Manrope"],"answer-option":["Manrope"],"label-eyebrow":["Manrope"],"headline-md":["Manrope"],"mono-data":["JetBrains Mono"],"title":["Manrope"],"question-text":["Manrope"],"label-sm":["Manrope"],"question-text-mobile":["Manrope"],"headline-lg":["Manrope"],"display":["Manrope"],"body-default":["Manrope"],"pin-box":["JetBrains Mono"]},fontSize:{"timer-display":["20px",{lineHeight:"24px",fontWeight:"600"}],"body-strong":["14px",{lineHeight:"22px",fontWeight:"600"}],"display-mobile":["28px",{lineHeight:"32px",letterSpacing:"-0.02em",fontWeight:"800"}],"answer-option":["16px",{lineHeight:"24px",fontWeight:"400"}],"label-eyebrow":["12px",{lineHeight:"16px",letterSpacing:"0.04em",fontWeight:"700"}],"headline-md":["18px",{lineHeight:"24px",fontWeight:"700"}],"mono-data":["13px",{lineHeight:"18px",fontWeight:"400"}],"title":["15px",{lineHeight:"20px",fontWeight:"600"}],"question-text":["18px",{lineHeight:"28px",fontWeight:"500"}],"label-sm":["12px",{lineHeight:"16px",fontWeight:"500"}],"question-text-mobile":["16px",{lineHeight:"24px",fontWeight:"500"}],"headline-lg":["20px",{lineHeight:"26px",fontWeight:"700"}],"display":["36px",{lineHeight:"40px",letterSpacing:"-0.03em",fontWeight:"800"}],"body-default":["14px",{lineHeight:"22px",fontWeight:"400"}],"pin-box":["22px",{lineHeight:"28px",fontWeight:"700"}]}}}};</script></head><body class="bg-surface font-body-default text-body-default text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 z-50 bg-card shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 w-full px-margin-lg flex items-center justify-between"><div class="flex items-center gap-space-lg"><a class="flex items-center gap-space-sm" data-path="candidate-verification" href="#"><div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[20px]">verified</span></div><div class="flex flex-col"><span class="font-headline-md text-headline-md tracking-tight text-primary leading-tight">ParaLearn</span><span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary leading-none">CBT Engine</span></div></a><nav class="hidden md:flex items-center gap-space-md" data-active-classes="text-violet-ink font-body-strong"><a aria-current="page" class="transition-colors text-violet-ink font-body-strong" data-path="candidate-verification" href="#">Verification</a><a class="font-title text-title text-on-surface-variant hover:text-on-surface transition-colors" data-path="exam-instructions" href="#">Instructions</a><a class="font-title text-title text-on-surface-variant hover:text-on-surface transition-colors" data-path="live-exam" href="#">Examination</a><a class="font-title text-title text-on-surface-variant hover:text-on-surface transition-colors" data-path="completion-summary" href="#">Results</a></nav></div><div class="flex items-center gap-space-sm px-space-md py-space-xs rounded-full bg-emerald-tint text-emerald-ink-tint"><span class="material-symbols-outlined text-emerald-ink-tint text-[18px]">cloud_done</span><span class="font-label-sm text-label-sm">Saved &amp; Synced (0s)</span></div><div class="flex items-center gap-space-md"><div class="hidden sm:flex items-center gap-space-xs px-space-md py-space-xs rounded bg-surface-container-low text-on-surface"><span class="font-label-sm text-label-sm text-text-secondary">Room</span><span class="font-mono-data text-mono-data font-semibold text-text-strong">HALL-04B</span></div><button class="flex items-center gap-space-xs px-space-md py-space-xs rounded bg-surface-subtle text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">help_outline</span><span class="font-title text-title">Invigilator</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-[calc(100vh-64px)]"><div class="flex flex-col w-full">
+<div class="w-full max-w-5xl mx-auto px-margin sm:px-margin-md lg:px-margin-lg py-space-lg flex flex-col gap-space-lg">
+<!-- Step Progress Tracker -->
+<nav aria-label="Examination Setup Progress" class="w-full bg-card rounded-lg p-space-md shadow-sm">
+<div class="flex items-center justify-between gap-space-xs sm:gap-space-md">
+<!-- Step 1: Completed -->
+<div class="flex items-center gap-space-sm flex-1">
+<div class="w-8 h-8 rounded-full bg-emerald-tint flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-emerald-ink-tint text-[18px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-eyebrow text-label-eyebrow uppercase text-emerald-ink-white truncate">Step 1</p>
+<p class="font-title text-title text-on-surface truncate hidden sm:block">Exam Code: MATH-8842</p>
+</div>
+</div>
+<div class="h-1 flex-1 max-w-[60px] bg-emerald-vivid rounded-full mx-space-xs"></div>
+<!-- Step 2: Active -->
+<div class="flex items-center gap-space-sm flex-1">
+<div class="w-8 h-8 rounded-full bg-violet-ink flex items-center justify-center shrink-0 shadow-sm">
+<span class="font-mono-data text-mono-data font-bold text-on-primary">02</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-eyebrow text-label-eyebrow uppercase text-violet-ink truncate">Step 2 · Active</p>
+<p class="font-body-strong text-body-strong text-on-surface truncate">Candidate Identity &amp; PIN</p>
+</div>
+</div>
+<div class="h-1 flex-1 max-w-[60px] bg-surface-container-high rounded-full mx-space-xs"></div>
+<!-- Step 3: Upcoming -->
+<div class="flex items-center gap-space-sm flex-1 opacity-60">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="font-mono-data text-mono-data text-text-secondary">03</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary truncate">Step 3</p>
+<p class="font-body-default text-body-default text-text-secondary truncate hidden sm:block">Live Examination</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- Exam Context Banner -->
+<header class="bg-card rounded-lg p-space-lg shadow-sm">
+<div class="flex flex-col lg:flex-row lg:items-start justify-between gap-space-md">
+<div class="space-y-space-xs">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="inline-flex items-center gap-space-xs px-space-sm py-space-xs rounded bg-surface-container text-on-surface font-mono-data text-mono-data">
+<span class="material-symbols-outlined text-[16px] text-text-secondary">tag</span>
+              MATH-8842
+            </span>
+<span class="inline-flex items-center gap-space-xs px-space-sm py-space-xs rounded bg-surface-container-low text-text-strong font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-text-secondary">timer</span>
+              Duration: 90 Minutes
+            </span>
+<span class="inline-flex items-center gap-space-xs px-space-sm py-space-xs rounded bg-surface-container-low text-text-strong font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-text-secondary">apartment</span>
+              King's College Lagos (Hall 3 + Lab B)
+            </span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface pt-space-xs">
+            2026/2027 SS2 Mathematics Mock Exam
+          </h1>
+<p class="font-body-default text-body-default text-text-secondary">
+            General Certificate &amp; Senior Secondary Internal Evaluation Protocol · Session Morning Batch A
+          </p>
+</div>
+<div class="inline-flex items-center gap-space-xs px-space-md py-space-sm rounded bg-emerald-tint text-emerald-ink-tint shrink-0 self-start">
+<span class="material-symbols-outlined text-emerald-ink-white text-[18px]">lock_open</span>
+<span class="font-body-strong text-body-strong text-emerald-ink-white">Open Now • Window closes at 01:30 PM</span>
+</div>
+</div>
+</header>
+<!-- Two-Column Main Operations Deck -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Left Column: Verification & Candidate Authorization -->
+<section class="lg:col-span-7 bg-card rounded-lg p-space-lg shadow-sm space-y-space-lg">
+<div class="space-y-space-xs">
+<div class="flex items-center gap-space-xs text-violet-ink">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Candidate Verification</h2>
+</div>
+<p class="font-body-default text-body-default text-text-secondary">
+            Enter your 6-digit access PIN found on your printed hall slip or WhatsApp exam pass.
+          </p>
+</div>
+<!-- 6-PIN Monospace Display Array -->
+<fieldset class="space-y-space-sm">
+<legend class="font-label-eyebrow text-label-eyebrow uppercase text-text-strong">
+            6-Digit Access PIN
+          </legend>
+<div aria-label="PIN verification input" class="flex items-center gap-space-xs sm:gap-space-sm" role="group">
+<div class="w-11 sm:w-13 h-14 bg-surface-subtle rounded-lg flex items-center justify-center shadow-inner">
+<span class="font-pin-box text-pin-box text-on-surface">4</span>
+</div>
+<div class="w-11 sm:w-13 h-14 bg-surface-subtle rounded-lg flex items-center justify-center shadow-inner">
+<span class="font-pin-box text-pin-box text-on-surface">8</span>
+</div>
+<div class="w-11 sm:w-13 h-14 bg-surface-subtle rounded-lg flex items-center justify-center shadow-inner">
+<span class="font-pin-box text-pin-box text-on-surface">2</span>
+</div>
+<span class="text-text-placeholder font-pin-box text-pin-box px-space-xs">−</span>
+<div class="w-11 sm:w-13 h-14 bg-surface-subtle rounded-lg flex items-center justify-center shadow-inner">
+<span class="font-pin-box text-pin-box text-on-surface">9</span>
+</div>
+<div class="w-11 sm:w-13 h-14 bg-surface-subtle rounded-lg flex items-center justify-center shadow-inner">
+<span class="font-pin-box text-pin-box text-on-surface">1</span>
+</div>
+<div class="w-11 sm:w-13 h-14 bg-surface-subtle rounded-lg flex items-center justify-center shadow-inner">
+<span class="font-pin-box text-pin-box text-on-surface">3</span>
+</div>
+</div>
+</fieldset>
+<!-- Candidate Recognized Confirmation Card -->
+<div class="bg-violet-tint rounded-lg p-space-md space-y-space-sm shadow-sm">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-start gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<div class="space-y-0.5">
+<div class="flex items-center gap-space-xs flex-wrap">
+<h3 class="font-body-strong text-body-strong text-on-surface">Daniel Olawale</h3>
+<span class="font-mono-data text-mono-data px-1.5 py-0.5 rounded bg-card text-text-strong">
+                    KCL/2024/091
+                  </span>
+</div>
+<p class="font-body-default text-body-default text-text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-text-secondary">computer</span>
+                  Assigned Seat: <span class="font-body-strong text-body-strong text-on-surface">Lab B − PC 14</span>
+</p>
+</div>
+</div>
+<button class="text-violet-ink hover:text-violet-pressed font-title text-title underline inline-flex items-center gap-0.5 transition-colors" type="button">
+<span>Change PIN</span>
+</button>
+</div>
+<div class="pt-space-xs border-t border-violet-line/40 flex items-center gap-space-xs text-text-secondary">
+<span class="material-symbols-outlined text-emerald-ink-white text-[16px]">verified_user</span>
+<span class="font-label-sm text-label-sm">Biometrics match &amp; hall attendance pre-cleared by Lab Proctor</span>
+</div>
+</div>
+<!-- Offline Session Token Fallback -->
+<div class="bg-surface-subtle rounded-lg p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="space-y-0.5">
+<p class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">
+              Session Continuity Token
+            </p>
+<p class="font-mono-data text-mono-data text-on-surface font-semibold">
+              PLN-MTH-90214
+            </p>
+</div>
+<div class="flex items-center gap-space-xs px-space-sm py-space-xs rounded bg-surface-container text-text-strong font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-emerald-ink-white">save</span>
+<span>Saved locally on this device</span>
+</div>
+</div>
+</section>
+<!-- Right Column: Exam Structure & Integrity Telemetry -->
+<section class="lg:col-span-5 flex flex-col gap-space-lg">
+<!-- Question Breakdown Specification -->
+<div class="bg-card rounded-lg p-space-lg shadow-sm space-y-space-md">
+<div class="flex items-center gap-space-xs text-text-strong">
+<span class="material-symbols-outlined text-[20px] text-text-secondary">quiz</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Exam Scope</h2>
+</div>
+<p class="font-body-default text-body-default text-text-secondary">
+            Answer all 50 questions across 3 computational sections. Responses are mirrored instantly to offline storage.
+          </p>
+<div class="space-y-space-xs">
+<div class="flex items-center justify-between p-space-sm bg-surface-subtle rounded">
+<span class="font-body-strong text-body-strong text-on-surface">Section A: Objective MCQ</span>
+<span class="font-mono-data text-mono-data text-text-secondary">35 Questions</span>
+</div>
+<div class="flex items-center justify-between p-space-sm bg-surface-subtle rounded">
+<span class="font-body-strong text-body-strong text-on-surface">Section B: Short Numerical</span>
+<span class="font-mono-data text-mono-data text-text-secondary">10 Questions</span>
+</div>
+<div class="flex items-center justify-between p-space-sm bg-surface-subtle rounded">
+<span class="font-body-strong text-body-strong text-on-surface">Section C: Theory &amp; Derivations</span>
+<span class="font-mono-data text-mono-data text-text-secondary">5 Questions</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm p-space-sm rounded bg-surface-container-low text-text-strong">
+<span class="material-symbols-outlined text-cobalt-ink text-[18px] shrink-0">sync</span>
+<span class="font-label-sm text-label-sm">
+              Continuous auto-save pulse armed: Local state locks every <strong>0.3s</strong>.
+            </span>
+</div>
+</div>
+<!-- Strict Malpractice & Tab Switch Alert -->
+<div class="bg-amber-tint rounded-lg p-space-md shadow-sm space-y-space-xs">
+<div class="flex items-center gap-space-xs text-amber-ink-white">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+<h3 class="font-body-strong text-body-strong">Anti-Cheat Protocol Active</h3>
+</div>
+<p class="font-body-default text-body-default text-amber-ink-tint">
+<strong>Tab-Switch Policy: Maximum 3 violations.</strong> Navigating away from this window, switching applications, or minimizing will trigger an immediate invigilator flag. Terminal automatically freezes at 3 warnings.
+          </p>
+</div>
+</section>
+</div>
+<!-- Diagnostic Readiness Health Checks -->
+<section aria-label="System Diagnostics" class="w-full">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- Readiness Card 1 -->
+<div class="bg-card rounded-lg p-space-md shadow-sm flex items-start gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-emerald-tint flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-emerald-ink-tint text-[18px]">storage</span>
+</div>
+<div class="space-y-0.5">
+<p class="font-body-strong text-body-strong text-on-surface">Local Cache &amp; Storage</p>
+<p class="font-label-sm text-label-sm text-emerald-ink-tint flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+              Ready • IndexedDB primed
+            </p>
+<p class="font-mono-data text-mono-data text-text-secondary text-[11px]">All 50 stems encrypted locally</p>
+</div>
+</div>
+<!-- Readiness Card 2 -->
+<div class="bg-card rounded-lg p-space-md shadow-sm flex items-start gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-emerald-tint flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-emerald-ink-tint text-[18px]">security</span>
+</div>
+<div class="space-y-0.5">
+<p class="font-body-strong text-body-strong text-on-surface">Integrity Telemetry</p>
+<p class="font-label-sm text-label-sm text-emerald-ink-tint flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+              Active • Focus trap enabled
+            </p>
+<p class="font-mono-data text-mono-data text-text-secondary text-[11px]">Proctor broadcast channel live</p>
+</div>
+</div>
+<!-- Readiness Card 3 -->
+<div class="bg-card rounded-lg p-space-md shadow-sm flex items-start gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-emerald-tint flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-emerald-ink-tint text-[18px]">wifi</span>
+</div>
+<div class="space-y-0.5">
+<p class="font-body-strong text-body-strong text-on-surface">Server Heartbeat</p>
+<p class="font-label-sm text-label-sm text-emerald-ink-tint flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+              Synced • 18ms relay ping
+            </p>
+<p class="font-mono-data text-mono-data text-text-secondary text-[11px]">Local school server: 192.168.1.2</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Action Anchor / Commencement Deck -->
+<footer class="bg-card rounded-lg p-space-lg shadow-sm flex flex-col items-center justify-center text-center gap-space-md">
+<div class="max-w-xl space-y-space-xs">
+<h2 class="font-headline-md text-headline-md text-on-surface">Ready to begin your mock assessment?</h2>
+<p class="font-body-default text-body-default text-text-secondary">
+          Ensure your scratch pad, pencil, and non-programmable calculator are ready on your desk. Once initiated, fullscreen lock will engage.
+        </p>
+</div>
+<div class="w-full max-w-md space-y-space-xs">
+<button class="w-full h-13 min-h-[52px] bg-violet-ink hover:bg-violet-hover active:bg-violet-pressed text-on-primary font-headline-md text-headline-md rounded-lg shadow-md transition-all flex items-center justify-center gap-space-sm cursor-pointer active:scale-[0.99]" id="start-exam-trigger" type="button">
+<span>Start Examination Now</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+<p class="font-label-sm text-label-sm text-text-secondary">
+          Clicking Start will initialize full-screen mode and begin your 90-minute countdown.
+        </p>
+</div>
+<div class="pt-space-sm flex items-center gap-space-md text-text-secondary text-label-sm font-label-sm flex-wrap justify-center">
+<span class="inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">power</span>
+          Generator Inverter: Online
+        </span>
+<span class="text-text-placeholder">•</span>
+<span class="inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">support_agent</span>
+          Lab Proctor: Mr. Adeleke (In Room)
+        </span>
+</div>
+</footer>
+</div>
+</div>
+<script>
+  (function initLobbyActions() {
+    const startBtn = document.getElementById('start-exam-trigger');
+    if (!startBtn) return;
+
+    startBtn.addEventListener('click', function() {
+      // Reassuring feedback state before transition
+      this.classList.add('opacity-90', 'pointer-events-none');
+      this.innerHTML = `
+        <span class="material-symbols-outlined text-[20px] animate-spin">refresh</span>
+        <span>Initializing Safe Exam Mode...</span>
+      `;
+
+      // Simulates secure launch transition into live exam environment
+      setTimeout(() => {
+        const liveExamLink = document.querySelector('nav a[data-path="live-exam"]');
+        if (liveExamLink) {
+          liveExamLink.click();
+        } else {
+          window.location.hash = '#live-exam';
+        }
+      }, 700);
+    });
+  })();
+</script></main><footer class="w-full bg-card shadow-[0_1px_8px_rgba(0,0,0,0.04)] py-space-lg"><div class="w-full px-margin-lg flex flex-col md:flex-row items-center justify-between gap-space-md text-text-secondary"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[16px] text-emerald-ink-white">security</span><span class="font-label-sm text-label-sm">ParaLearn CBT Certified Safe Browser Environment • Session Secured</span></div><div class="flex items-center gap-space-lg"><span class="font-mono-data text-mono-data">Candidate Ref: #PL-8942-X</span><span class="font-label-sm text-label-sm">© 2025 ParaLearn Testing Systems. All rights reserved.</span></div></div></footer></body></html>

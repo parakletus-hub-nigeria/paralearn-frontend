@@ -179,7 +179,7 @@ export default function CbtRubricUploadModal({
 
       if (parsed.length > 0) {
         setCriteria(parsed);
-        toast.success(`Successfully parsed ${parsed.length} criteria from text!`);
+        toast.success(`Found ${parsed.length} criteria in the text.`);
       } else {
         toast.info('No criteria found. Put one criterion per line, e.g. "Content accuracy - 10 marks".');
       }
@@ -232,7 +232,7 @@ export default function CbtRubricUploadModal({
     };
 
     onApplyRubric(newRubric, applyToAll);
-    toast.success(`Rubric "${newRubric.name}" applied successfully!`);
+    toast.success(`Rubric "${newRubric.name}" applied.`);
     onClose();
   };
 
@@ -305,7 +305,7 @@ export default function CbtRubricUploadModal({
           {/* Rubric Title & Target Settings */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-stone-50/80 p-3 rounded-xl border border-stone-200">
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-500">
                 Rubric Title / Reference
               </label>
               <Input
@@ -350,7 +350,7 @@ export default function CbtRubricUploadModal({
                   <p className="text-xs font-bold text-stone-800">
                     Upload institutional marking guide or rubric file
                   </p>
-                  <p className="text-[11px] text-stone-500">
+                  <p className="text-xs text-stone-500">
                     Supports PDF, Word (.docx), Excel (.xlsx, .csv), and Plaintext. Criteria will be automatically parsed below.
                   </p>
                 </div>
@@ -360,7 +360,7 @@ export default function CbtRubricUploadModal({
                     <FileSpreadsheet className="w-6 h-6 text-violet-600 shrink-0" />
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-stone-900 truncate">{selectedFile.name}</p>
-                      <p className="text-[10px] text-stone-500 font-mono">{(selectedFile.size / 1024).toFixed(1)} KB • Document parsed</p>
+                      <p className="text-xs text-stone-500 font-mono">{(selectedFile.size / 1024).toFixed(1)} KB • Document parsed</p>
                     </div>
                   </div>
                   <Button
@@ -388,19 +388,19 @@ export default function CbtRubricUploadModal({
                 >
                   <div>
                     <div className="flex items-center justify-between gap-1 mb-1">
-                      <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 bg-stone-50">
+                      <Badge variant="outline" className="text-xs font-mono px-1.5 py-0 bg-stone-50">
                         {tmpl.category}
                       </Badge>
-                      <span className="text-[10px] font-mono font-bold text-violet-700">
+                      <span className="text-xs font-mono font-bold text-violet-700">
                         {tmpl.totalMarks} Marks
                       </span>
                     </div>
                     <h4 className="text-xs font-bold text-stone-900">{tmpl.name}</h4>
-                    <p className="text-[11px] text-stone-500 mt-1 leading-snug">
+                    <p className="text-xs text-stone-500 mt-1 leading-snug">
                       {tmpl.criteria.map((c) => `${c.title} (${c.maxMarks}m)`).join(", ")}
                     </p>
                   </div>
-                  <div className="text-[10px] font-bold text-violet-600 flex items-center gap-1 pt-1">
+                  <div className="text-xs font-bold text-violet-600 flex items-center gap-1 pt-1">
                     <span>Use Template</span>
                     <span>&rarr;</span>
                   </div>
@@ -441,7 +441,7 @@ export default function CbtRubricUploadModal({
                   Rubric Criteria Breakdown ({criteria.length})
                 </span>
                 <Badge
-                  className={`text-[10px] font-mono font-bold border ${
+                  className={`text-xs font-mono font-bold border ${
                     totalCriteriaMarks === questionTotalMarks
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                       : "bg-amber-50 text-amber-700 border-amber-200"
@@ -469,7 +469,7 @@ export default function CbtRubricUploadModal({
                   key={crit.id}
                   className="p-3 bg-stone-50 rounded-xl border border-stone-200 flex items-start gap-2.5"
                 >
-                  <span className="w-5 h-5 rounded bg-white border border-stone-200 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-1">
+                  <span className="w-5 h-5 rounded bg-white border border-stone-200 text-xs font-mono font-bold flex items-center justify-center shrink-0 mt-1">
                     {cIdx + 1}
                   </span>
 
@@ -490,7 +490,7 @@ export default function CbtRubricUploadModal({
                           onChange={(e) => handleUpdateCriterion(cIdx, "maxMarks", parseFloat(e.target.value) || 1)}
                           className="w-16 h-8 text-center font-mono text-xs font-bold bg-white"
                         />
-                        <span className="text-[10px] text-stone-500 font-mono">pts</span>
+                        <span className="text-xs text-stone-500 font-mono">pts</span>
                       </div>
                     </div>
 
@@ -498,7 +498,7 @@ export default function CbtRubricUploadModal({
                       value={crit.description}
                       onChange={(e) => handleUpdateCriterion(cIdx, "description", e.target.value)}
                       placeholder="Evaluator instructions (e.g. Student must state the two primary causes...)"
-                      className="h-7 text-[11px] text-stone-600 bg-white"
+                      className="h-7 text-xs text-stone-600 bg-white"
                     />
                   </div>
 

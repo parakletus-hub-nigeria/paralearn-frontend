@@ -28,7 +28,7 @@ function toLocalInput(iso?: string | null) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-const labelClass = "text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]";
+const labelClass = "text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]";
 
 /**
  * Exam details and delivery rules, saved to the server: title, access code,
@@ -137,7 +137,7 @@ export default function CbtExamSettingsSheet({
       />
       <span>
         <span className="font-medium">{text}</span>
-        {hint && <span className="block text-[11px] text-[var(--text-secondary)]">{hint}</span>}
+        {hint && <span className="block text-xs text-[var(--text-secondary)]">{hint}</span>}
       </span>
     </label>
   );

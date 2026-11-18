@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>ParaLearn CBT Gateway</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"surface-bright":"#f8f9ff","emerald-ink-tint":"#065f46","on-secondary":"#ffffff","on-primary-container":"#ceb1ff","tertiary":"#003f29","error":"#ba1a1a","cobalt-vivid":"#2a64f6","tertiary-container":"#00593c","amber-tint":"#ffe9cc","cobalt-ink":"#1e40af","on-secondary-fixed":"#131b2e","error-container":"#ffdad6","on-surface-variant":"#4b4454","secondary-container":"#dae2fd","surface-container-lowest":"#ffffff","on-tertiary-container":"#44d69b","crimson-ink-white":"#b91c1c","crimson-ink-tint":"#991b1b","on-primary-fixed-variant":"#5d0abd","surface":"#f8f9ff","violet-pressed":"#5214a3","tertiary-fixed-dim":"#4edea3","inverse-primary":"#d5bbff","violet-tint":"#f0e5ff","secondary-fixed-dim":"#bec6e0","violet-hover":"#7b22e8","cobalt-tint":"#dbe9ff","on-tertiary-fixed":"#002113","on-primary":"#ffffff","outline-variant":"#cdc3d7","on-tertiary":"#ffffff","surface-container-low":"#eff4ff","surface-variant":"#d5e3fd","emerald-line":"#a7f3d0","lavender-muted":"#ad8ed6","background":"#f8f9ff","crimson-tint":"#fddada","primary-fixed":"#ecdcff","crimson-line":"#fecaca","on-background":"#0d1c2f","surface-muted":"#f1f5f9","surface-subtle":"#f8fafc","text-placeholder":"#94a3b8","surface-dim":"#ccdbf4","text-secondary":"#64748b","inverse-surface":"#233144","chalk-white":"#fdfdff","amber-vivid":"#f28c1f","secondary":"#565e74","emerald-tint":"#dff9d8","crimson-vivid":"#e60023","amber-ink-white":"#b45309","cobalt-line":"#bfdbfe","on-error":"#ffffff","emerald-ink-white":"#047857","on-tertiary-fixed-variant":"#005236","primary":"#49009a","on-secondary-fixed-variant":"#3f465c","border-medium":"#cbd5e1","outline":"#7c7486","primary-container":"#641bc4","text-strong":"#334155","secondary-fixed":"#dae2fd","amber-ink-tint":"#92400e","primary-fixed-dim":"#d5bbff","emerald-vivid":"#10b981","on-surface":"#0d1c2f","border-fine":"#e2e8f0","surface-container":"#e6eeff","surface-container-highest":"#d5e3fd","violet-wash":"#f7f3ff","surface-tint":"#7635d6","foreground":"#0f172a","violet-line":"#dfceef","violet-ink":"#641bc4","card":"#ffffff","amber-line":"#fde68a","on-primary-fixed":"#270058","tertiary-fixed":"#6ffbbe","inverse-on-surface":"#ebf1ff","on-error-container":"#93000a","on-secondary-container":"#5c647a","surface-container-high":"#dde9ff"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"margin-lg":"2rem","margin":"1rem","space-lg":"1.5rem","space-xs":"0.25rem","gutter":"1rem","gutter-lg":"1.5rem","space-2xl":"3rem","space-md":"1rem","margin-md":"1.5rem","space-xl":"2rem","space-sm":"0.5rem"},"fontFamily":{"body-default":["Manrope"],"headline-md":["Manrope"],"display":["Manrope"],"label-eyebrow":["Manrope"],"question-text":["Manrope"],"label-sm":["Manrope"],"timer-display":["JetBrains Mono"],"question-text-mobile":["Manrope"],"answer-option":["Manrope"],"headline-lg":["Manrope"],"pin-box":["JetBrains Mono"],"body-strong":["Manrope"],"mono-data":["JetBrains Mono"],"display-mobile":["Manrope"],"title":["Manrope"]},"fontSize":{"body-default":["14px",{"lineHeight":"22px","fontWeight":"400"}],"headline-md":["18px",{"lineHeight":"24px","fontWeight":"700"}],"display":["36px",{"lineHeight":"40px","letterSpacing":"-0.03em","fontWeight":"800"}],"label-eyebrow":["12px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"700"}],"question-text":["18px",{"lineHeight":"28px","fontWeight":"500"}],"label-sm":["12px",{"lineHeight":"16px","fontWeight":"500"}],"timer-display":["20px",{"lineHeight":"24px","fontWeight":"600"}],"question-text-mobile":["16px",{"lineHeight":"24px","fontWeight":"500"}],"answer-option":["16px",{"lineHeight":"24px","fontWeight":"400"}],"headline-lg":["20px",{"lineHeight":"26px","fontWeight":"700"}],"pin-box":["22px",{"lineHeight":"28px","fontWeight":"700"}],"body-strong":["14px",{"lineHeight":"22px","fontWeight":"600"}],"mono-data":["13px",{"lineHeight":"18px","fontWeight":"400"}],"display-mobile":["28px",{"lineHeight":"32px","letterSpacing":"-0.02em","fontWeight":"800"}],"title":["15px",{"lineHeight":"20px","fontWeight":"600"}]}}}};</script></head><body class="bg-chalk-white font-body-default text-body-default text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 left-0 right-0 z-50 bg-chalk-white/95 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 w-full px-gutter-lg flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[22px]">shield</span></div><div class="flex flex-col"><span class="font-headline-md text-headline-md tracking-tight text-on-surface leading-none">ParaLearn <span class="text-primary">CBT</span></span><span class="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-text-secondary">Invigilator &amp; Examiner Access</span></div></div><div class="flex items-center gap-space-md"><div class="hidden sm:flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-emerald-tint text-emerald-ink-tint"><span class="material-symbols-outlined text-[16px]">lock</span><span class="font-mono-data text-mono-data font-semibold">256-bit TLS Encrypted</span></div><nav class="flex items-center gap-space-sm" data-active-classes="bg-secondary-container text-on-secondary-container font-semibold rounded-lg"><a class="px-space-md py-space-sm rounded-lg font-title text-title text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-space-xs" data-path="candidate-entrance" href="#">Candidate Entrance (/take)</a><a class="px-space-md py-space-sm rounded-lg font-title text-title text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-space-xs" data-path="examiner-pin-auth" href="#">PIN Auth</a><a class="px-space-md py-space-sm rounded-lg font-title text-title text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-space-xs" data-path="system-diagnostics" href="#">Diagnostics</a></nav><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 flex-1 flex flex-col justify-center items-center relative bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:20px_20px]"><div class="flex flex-col w-full items-center justify-center py-space-xl px-gutter">
+<!-- Ambient Atmospheric Aura -->
+<div class="relative w-full max-w-[560px] flex flex-col items-center">
+<!-- Decorative blurred glowing backdrop -->
+<div class="absolute -top-16 -left-12 w-64 h-64 bg-violet-wash/80 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<div class="absolute -bottom-16 -right-12 w-72 h-72 bg-secondary-container/50 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<!-- Institutional Clearance Badge -->
+<div class="flex items-center gap-space-xs px-space-md py-1 bg-surface-container rounded-full text-text-strong font-label-eyebrow text-label-eyebrow tracking-widest uppercase mb-space-md shadow-sm">
+<span class="w-2 h-2 rounded-full bg-emerald-vivid animate-pulse"></span>
+<span>CBT Gate Node: 08-LAGOS-SEC</span>
+</div>
+<!-- Main Authentication Registry Card (Level 1 Elevation) -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden">
+<!-- Segmented Mode Controller (The Three Authentic Architectural Modalities) -->
+<div class="bg-surface-subtle p-space-xs flex items-center gap-space-xs">
+<button class="flex-1 py-space-sm px-space-xs text-center rounded-lg font-title text-title transition-all duration-150 bg-surface-container-lowest text-primary shadow-sm flex items-center justify-center gap-1.5" id="tab-btn-signin" onclick="switchView('signin')">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+<span>Sign In</span>
+</button>
+<button class="flex-1 py-space-sm px-space-xs text-center rounded-lg font-title text-title text-text-secondary hover:text-on-surface transition-all duration-150 flex items-center justify-center gap-1.5" id="tab-btn-create" onclick="switchView('create')">
+<span class="material-symbols-outlined text-[18px]">domain_add</span>
+<span>Create Hall</span>
+</button>
+<button class="flex-1 py-space-sm px-space-xs text-center rounded-lg font-title text-title text-text-secondary hover:text-on-surface transition-all duration-150 flex items-center justify-center gap-1.5" id="tab-btn-workspace" onclick="switchView('workspace')">
+<span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+<span class="truncate">Workspace Selector</span>
+</button>
+</div>
+<!-- VIEW A: SIGN IN MODALITY (Default Active) -->
+<div class="p-space-xl flex flex-col" id="view-signin">
+<!-- Title & Subtitle Hierarchy -->
+<div class="flex flex-col mb-space-lg">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary tracking-wider mb-1">Examiner &amp; Invigilator Portal</span>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight mb-space-xs">Sign in to ParaLearn CBT</h1>
+<p class="font-body-default text-body-default text-on-surface-variant">
+            Use your ParaLearn school account or your independent exam hall credentials to command live sessions.
+          </p>
+</div>
+<!-- Cobalt Informational Synced Banner -->
+<div class="bg-cobalt-tint rounded-lg p-space-md mb-space-lg flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-cobalt-ink text-[20px] mt-0.5 shrink-0" style="font-variation-settings: 'FILL' 1;">info</span>
+<div class="flex flex-col">
+<span class="font-body-strong text-body-strong text-cobalt-ink">School Staff &amp; Authorized Teachers</span>
+<span class="font-body-default text-body-default text-cobalt-ink/90">
+              Sign in with your registered institutional email. Class rosters, subject banks, and current academic terms sync automatically to this station.
+            </span>
+</div>
+</div>
+<!-- Form Elements -->
+<form class="flex flex-col gap-space-md" onsubmit="event.preventDefault(); switchView('workspace');">
+<!-- Input 1: Work / Institutional Email -->
+<div class="flex flex-col gap-1.5">
+<label class="font-body-strong text-body-strong text-on-surface flex items-center justify-between" for="examiner-email">
+<span>Work / Institutional Email</span>
+<span class="font-mono-data text-mono-data text-text-secondary text-xs">DNS: kingscollege.sch.ng</span>
+</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3.5 text-text-secondary text-[20px] pointer-events-none">mail</span>
+<input class="w-full h-11 pl-11 pr-space-md bg-surface-muted rounded-lg font-body-default text-body-default text-on-surface placeholder:text-text-placeholder focus:bg-surface-container-lowest focus:outline-none transition-colors" id="examiner-email" placeholder="e.g. adeleke@kingscollege.sch.ng" required="" type="email" value="d.adeleke@kingscollege.sch.ng"/>
+</div>
+</div>
+<!-- Input 2: Password with Mask Toggle -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<label class="font-body-strong text-body-strong text-on-surface" for="examiner-password">Password</label>
+<a class="font-title text-title text-primary hover:text-violet-hover transition-colors" href="#forgot-credentials" onclick="showNotification('Password reset link sent to your registered school administrator.')">
+                Forgot password?
+              </a>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3.5 text-text-secondary text-[20px] pointer-events-none">lock</span>
+<input class="w-full h-11 pl-11 pr-11 bg-surface-muted rounded-lg font-body-default text-body-default text-on-surface placeholder:text-text-placeholder focus:bg-surface-container-lowest focus:outline-none transition-colors" id="examiner-password" placeholder="••••••••••••" required="" type="password" value="SecureAdminPass2025!"/>
+<button aria-label="Toggle password visibility" class="absolute right-2 p-1.5 text-text-secondary hover:text-on-surface rounded-md focus:outline-none transition-colors" id="pw-toggle-btn" onclick="togglePasswordVisibility()" type="button">
+<span class="material-symbols-outlined text-[20px]" id="pw-icon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Keep Signed In Switch & Station Protection Notice -->
+<div class="flex items-start gap-space-sm pt-1">
+<input checked="" class="w-4 h-4 mt-0.5 rounded bg-surface-muted accent-primary cursor-pointer shrink-0" id="remember-device" type="checkbox"/>
+<label class="font-body-default text-body-default text-on-surface cursor-pointer select-none" for="remember-device">
+              Keep me signed in on this station
+              <span class="block font-label-sm text-label-sm text-text-secondary">Do not select on shared cyber-café or open examination terminals.</span>
+</label>
+</div>
+<!-- Primary Submit Action -->
+<button class="w-full h-12 mt-space-sm bg-primary hover:bg-violet-hover active:bg-violet-pressed active:scale-[0.99] text-on-primary rounded-lg font-title text-title flex items-center justify-center gap-space-sm shadow-md transition-all" type="submit">
+<span>Sign in to Workspace</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</form>
+<!-- Secondary Footnote Helper -->
+<div class="mt-space-lg pt-space-md bg-surface-subtle -mx-space-xl -mb-space-xl px-space-xl py-space-md flex flex-col items-center justify-center text-center">
+<p class="font-body-default text-body-default text-text-secondary">
+            Running private mock trials or certification without a school?
+          </p>
+<button class="font-title text-title text-primary hover:text-violet-hover font-bold inline-flex items-center gap-1 mt-0.5 transition-colors" onclick="switchView('create')">
+<span>Create a free standalone Exam Hall</span>
+<span class="material-symbols-outlined text-[16px]">arrow_outward</span>
+</button>
+</div>
+</div>
+<!-- VIEW B: DUAL-WORKSPACE RESOLUTION (Direct UX from §1.2 & §2.4) -->
+<div class="p-space-xl flex flex-col hidden" id="view-workspace">
+<div class="flex flex-col mb-space-md">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-primary tracking-wider">Multi-Entity Account Detected</span>
+<span class="px-space-xs py-0.5 bg-emerald-tint text-emerald-ink-tint font-mono-data text-mono-data rounded">2 Active Entities</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Select your Active Workspace</h2>
+<p class="font-body-default text-body-default text-on-surface-variant">
+            Target account: <span class="font-mono-data text-mono-data text-text-strong font-semibold">d.adeleke@kingscollege.sch.ng</span>
+</p>
+</div>
+<p class="font-label-sm text-label-sm text-text-secondary mb-space-sm">
+          Select which administrative context to load into this terminal session:
+        </p>
+<!-- Workspace Selection Tiles -->
+<div class="flex flex-col gap-space-md mb-space-lg">
+<!-- Choice Card 1: School Workspace -->
+<div class="group cursor-pointer p-space-md rounded-xl bg-surface-subtle hover:bg-violet-wash transition-all relative shadow-sm" onclick="selectWorkspace('kc-lagos')">
+<div class="flex items-start justify-between gap-space-sm mb-space-xs">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">school</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">
+                    King's College Lagos — Senior School
+                  </h3>
+<span class="font-body-default text-body-default text-text-secondary">
+                    Role: Head Examiner &amp; Further Math / Physics Instructor
+                  </span>
+</div>
+</div>
+<span class="px-space-xs py-1 rounded bg-secondary-container text-on-secondary-container font-label-eyebrow text-label-eyebrow uppercase">
+                School Workspace
+              </span>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between text-text-secondary font-mono-data text-mono-data">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-emerald-vivid text-[16px]">sync</span>
+                Synced to Term 2 Master Gradebook
+              </span>
+<span class="text-primary font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-0.5">
+                Launch Space <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</span>
+</div>
+</div>
+<!-- Choice Card 2: Independent Exam Hall -->
+<div class="group cursor-pointer p-space-md rounded-xl bg-surface-subtle hover:bg-violet-wash transition-all relative shadow-sm" onclick="selectWorkspace('adeleke-hall')">
+<div class="flex items-start justify-between gap-space-sm mb-space-xs">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-tertiary-container text-on-tertiary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">domain</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">
+                    Adeleke WAEC/JAMB Mock Testing Centre
+                  </h3>
+<span class="font-body-default text-body-default text-text-secondary">
+                    Role: Chief Proprietor &amp; Test Administrator
+                  </span>
+</div>
+</div>
+<span class="px-space-xs py-1 rounded bg-amber-tint text-amber-ink-tint font-label-eyebrow text-label-eyebrow uppercase">
+                Standalone Hall
+              </span>
+</div>
+<div class="mt-space-sm pt-space-xs flex items-center justify-between text-text-secondary font-mono-data text-mono-data">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-amber-vivid text-[16px]">inventory_2</span>
+                4 Active Test Suites • 150 Test Credits
+              </span>
+<span class="text-primary font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-0.5">
+                Launch Space <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</span>
+</div>
+</div>
+</div>
+<!-- Disconnect / Switch Credential Action -->
+<div class="flex items-center justify-between pt-space-sm text-text-secondary font-body-default text-body-default">
+<button class="hover:text-on-surface inline-flex items-center gap-1 transition-colors" onclick="switchView('signin')">
+<span class="material-symbols-outlined text-[18px]">west</span>
+<span>Use a different account</span>
+</button>
+<span class="font-mono-data text-mono-data text-xs">Auth Token: TK-8829-ACTIVE</span>
+</div>
+</div>
+<!-- VIEW C: CREATE FREE EXAM HALL -->
+<div class="p-space-xl flex flex-col hidden" id="view-create">
+<div class="flex flex-col mb-space-md">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-emerald-ink-tint tracking-wider mb-1">Instant Deployment</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight mb-space-xs">Create a Free Exam Hall</h2>
+<p class="font-body-default text-body-default text-on-surface-variant">
+            Launch independent CBT assessments, mock examinations, and candidate leagues without subscribing to the complete school management system.
+          </p>
+</div>
+<form class="flex flex-col gap-space-md" onsubmit="event.preventDefault(); showNotification('Exam Hall provisioned! Redirecting to Workspace...');">
+<div class="flex flex-col gap-1.5">
+<label class="font-body-strong text-body-strong text-on-surface">Exam Hall or Centre Name</label>
+<input class="w-full h-11 px-space-md bg-surface-muted rounded-lg font-body-default text-body-default text-on-surface focus:bg-surface-container-lowest focus:outline-none transition-colors" placeholder="e.g. Apex Scholars Mock Testing Academy" required="" type="text"/>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1.5">
+<label class="font-body-strong text-body-strong text-on-surface">Lead Examiner Name</label>
+<input class="w-full h-11 px-space-md bg-surface-muted rounded-lg font-body-default text-body-default text-on-surface focus:bg-surface-container-lowest focus:outline-none transition-colors" placeholder="e.g. Dr. Folake Solanke" required="" type="text"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-body-strong text-body-strong text-on-surface">Primary Phone (SMS Alerts)</label>
+<input class="w-full h-11 px-space-md bg-surface-muted rounded-lg font-body-default text-body-default text-on-surface focus:bg-surface-container-lowest focus:outline-none transition-colors" placeholder="+234 803 000 0000" required="" type="tel"/>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-body-strong text-body-strong text-on-surface">Login Email Address</label>
+<input class="w-full h-11 px-space-md bg-surface-muted rounded-lg font-body-default text-body-default text-on-surface focus:bg-surface-container-lowest focus:outline-none transition-colors" placeholder="examiner@examcentre.com" required="" type="email"/>
+</div>
+<div class="p-space-sm bg-surface-muted rounded-lg flex items-center justify-between text-text-secondary font-label-sm text-label-sm">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-emerald-vivid text-[18px]">verified</span>
+              Includes 50 complimentary test candidate passes
+            </span>
+<span class="font-mono-data text-mono-data">Tier: Free Solo</span>
+</div>
+<button class="w-full h-12 bg-emerald-ink-white hover:bg-emerald-ink-tint text-on-primary rounded-lg font-title text-title flex items-center justify-center gap-space-sm shadow-md transition-all" type="submit">
+<span>Provision My Exam Hall • Start Testing</span>
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+</button>
+</form>
+<div class="mt-space-md text-center">
+<button class="font-body-default text-body-default text-primary hover:underline" onclick="switchView('signin')">
+            Already have an active account or school login? Sign In instead
+          </button>
+</div>
+</div>
+</div>
+<!-- CANDIDATE DIVERGENCE COMPONENT (CRITICAL UX FLOW §1.2) -->
+<div class="w-full mt-space-lg bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-violet-tint text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">badge</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-strong text-body-strong text-on-surface">Are you a Student or Candidate?</span>
+<span class="font-body-default text-body-default text-on-surface-variant">
+            No password or account required. You only need your 6-digit Candidate Exam Code.
+          </span>
+</div>
+</div>
+<a class="shrink-0 h-10 px-space-md bg-secondary-container hover:bg-surface-variant text-on-secondary-fixed font-title text-title rounded-lg flex items-center gap-space-xs transition-colors" href="#candidate-take-room" onclick="showNotification('Navigating to Candidate Terminal (/take)...')">
+<span>Enter Exam Code</span>
+<span class="material-symbols-outlined text-[18px]">pin</span>
+</a>
+</div>
+<!-- Security & Institutional Compliance Trust Strip -->
+<div class="w-full mt-space-lg flex flex-wrap items-center justify-center gap-x-space-lg gap-y-space-xs text-text-secondary font-label-sm text-label-sm">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-emerald-vivid">lock_clock</span>
+<span>256-Bit TLS In-Flight Encryption</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-cobalt-vivid">wifi_protected_setup</span>
+<span>Offline-Resilient Synced Queue</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">policy</span>
+<span>TRCN &amp; WAEC Identity Compliant</span>
+</div>
+</div>
+<!-- In-hall System Node Spec Footnote -->
+<div class="mt-space-md text-center font-mono-data text-mono-data text-xs text-text-placeholder">
+      SESSION PROTOCOL: TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 • IP CACHE BOUND: 102.89.44.12
+    </div>
+</div>
+<!-- Notification Toast Layer for Interactions -->
+<div class="fixed bottom-6 right-6 z-50 bg-inverse-surface text-inverse-on-surface px-space-md py-space-sm rounded-lg shadow-xl font-body-default text-body-default flex items-center gap-space-sm transform translate-y-24 opacity-0 transition-all duration-300" id="toast-bar">
+<span class="material-symbols-outlined text-emerald-tint text-[20px]">check_circle</span>
+<span id="toast-msg">Action processed successfully</span>
+</div>
+</div>
+<script>
+  function switchView(viewName) {
+    const views = ['signin', 'workspace', 'create'];
+    views.forEach(v => {
+      const el = document.getElementById(`view-${v}`);
+      const btn = document.getElementById(`tab-btn-${v}`);
+      if (v === viewName) {
+        el.classList.remove('hidden');
+        btn.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        btn.classList.remove('text-text-secondary');
+      } else {
+        el.classList.add('hidden');
+        btn.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        btn.classList.add('text-text-secondary');
+      }
+    });
+  }
+
+  function togglePasswordVisibility() {
+    const pwInput = document.getElementById('examiner-password');
+    const icon = document.getElementById('pw-icon');
+    if (pwInput.type === 'password') {
+      pwInput.type = 'text';
+      icon.textContent = 'visibility_off';
+    } else {
+      pwInput.type = 'password';
+      icon.textContent = 'visibility';
+    }
+  }
+
+  function selectWorkspace(workspaceId) {
+    const target = workspaceId === 'kc-lagos' 
+      ? "King's College Lagos — Senior School" 
+      : "Adeleke Mock Centre";
+    showNotification(`Workspace Activated: Loading ${target}...`);
+  }
+
+  function showNotification(msg) {
+    const toast = document.getElementById('toast-bar');
+    const msgEl = document.getElementById('toast-msg');
+    msgEl.textContent = msg;
+    toast.classList.remove('translate-y-24', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+    setTimeout(() => {
+      toast.classList.add('translate-y-24', 'opacity-0');
+      toast.classList.remove('translate-y-0', 'opacity-100');
+    }, 3500);
+  }
+</script></main><footer class="w-full bg-chalk-white py-space-md"><div class="w-full px-gutter-lg flex flex-col sm:flex-row items-center justify-between text-on-surface-variant font-label-sm text-label-sm gap-space-xs"><span>ParaLearn CBT Engine • Strictly for Authorized Personnel and Chief Examiners</span><span class="font-mono-data text-mono-data text-text-secondary">Session Node: SEC-GATE-08</span></div></footer></body></html>

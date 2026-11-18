@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ParaLearn CBT — Computer-Based Exams That Never Fail</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-muted": "#f1f5f9",
+            "primary": "#49009a",
+            "cobalt-ink": "#1e40af",
+            "emerald-ink-white": "#047857",
+            "cobalt-vivid": "#2a64f6",
+            "emerald-line": "#a7f3d0",
+            "text-strong": "#334155",
+            "text-placeholder": "#94a3b8",
+            "crimson-tint": "#fddada",
+            "surface-container-highest": "#d5e3fd",
+            "surface-container-high": "#dde9ff",
+            "emerald-ink-tint": "#065f46",
+            "outline-variant": "#cdc3d7",
+            "crimson-ink-tint": "#991b1b",
+            "on-primary": "#ffffff",
+            "surface-variant": "#d5e3fd",
+            "inverse-on-surface": "#ebf1ff",
+            "violet-wash": "#f7f3ff",
+            "on-secondary-fixed-variant": "#3f465c",
+            "inverse-primary": "#d5bbff",
+            "tertiary-fixed": "#6ffbbe",
+            "primary-container": "#641bc4",
+            "surface": "#f8f9ff",
+            "tertiary-container": "#00593c",
+            "violet-ink": "#641bc4",
+            "surface-subtle": "#f8fafc",
+            "on-primary-fixed": "#270058",
+            "violet-pressed": "#5214a3",
+            "tertiary-fixed-dim": "#4edea3",
+            "inverse-surface": "#233144",
+            "error-container": "#ffdad6",
+            "error": "#ba1a1a",
+            "on-background": "#0d1c2f",
+            "violet-line": "#dfceef",
+            "primary-fixed-dim": "#d5bbff",
+            "border-medium": "#cbd5e1",
+            "on-secondary-fixed": "#131b2e",
+            "amber-ink-tint": "#92400e",
+            "crimson-vivid": "#e60023",
+            "secondary": "#565e74",
+            "on-tertiary-container": "#44d69b",
+            "emerald-vivid": "#10b981",
+            "on-tertiary-fixed-variant": "#005236",
+            "surface-bright": "#f8f9ff",
+            "violet-hover": "#7b22e8",
+            "foreground": "#0f172a",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed-dim": "#bec6e0",
+            "on-error-container": "#93000a",
+            "tertiary": "#003f29",
+            "border-fine": "#e2e8f0",
+            "crimson-ink-white": "#b91c1c",
+            "on-surface-variant": "#4b4454",
+            "amber-vivid": "#f28c1f",
+            "on-primary-container": "#ceb1ff",
+            "card": "#ffffff",
+            "amber-tint": "#ffe9cc",
+            "background": "#fdfdff",
+            "primary-fixed": "#ecdcff",
+            "amber-line": "#fde68a",
+            "cobalt-line": "#bfdbfe",
+            "surface-dim": "#ccdbf4",
+            "secondary-fixed": "#dae2fd",
+            "secondary-container": "#dae2fd",
+            "on-error": "#ffffff",
+            "emerald-tint": "#dff9d8",
+            "surface-container-low": "#eff4ff",
+            "surface-container": "#e6eeff",
+            "violet-tint": "#f0e5ff",
+            "on-tertiary-fixed": "#002113",
+            "surface-container-lowest": "#ffffff",
+            "text-secondary": "#64748b",
+            "on-primary-fixed-variant": "#5d0abd",
+            "outline": "#7c7486",
+            "chalk-white": "#ffffff",
+            "crimson-line": "#fecaca",
+            "surface-tint": "#7635d6",
+            "amber-ink-white": "#b45309",
+            "cobalt-tint": "#dbe9ff",
+            "lavender-muted": "#ad8ed6",
+            "on-surface": "#0f172a",
+            "on-secondary": "#ffffff",
+            "on-secondary-container": "#5c647a"
+          },
+          fontFamily: {
+            "display": ["Manrope", "sans-serif"],
+            "body-default": ["Manrope", "sans-serif"],
+            "body-strong": ["Manrope", "sans-serif"],
+            "headline-lg": ["Manrope", "sans-serif"],
+            "headline-md": ["Manrope", "sans-serif"],
+            "title": ["Manrope", "sans-serif"],
+            "mono-data": ["JetBrains Mono", "monospace"],
+            "timer-display": ["JetBrains Mono", "monospace"],
+            "pin-box": ["JetBrains Mono", "monospace"],
+            "label-eyebrow": ["Manrope", "sans-serif"],
+            "answer-option": ["Manrope", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    body { overscroll-behavior: none; }
+    ::selection { background-color: #f0e5ff; color: #49009a; }
+  </style>
+</head>
+<body class="bg-background font-body-default text-text-strong antialiased selection:bg-violet-tint selection:text-violet-ink">
+<!-- TOP STICKY NAV -->
+<header class="fixed top-0 w-full z-50 bg-chalk-white/80 backdrop-blur-md border-b border-border-fine/80">
+<div class="max-w-7xl mx-auto h-16 px-6 lg:px-8 flex items-center justify-between gap-6">
+<!-- Logo & Micro Status -->
+<div class="flex items-center gap-8">
+<a class="flex items-center gap-2.5 group focus:outline-none" href="#">
+<div class="w-8 h-8 rounded-lg bg-violet-ink flex items-center justify-center text-on-primary shadow-sm group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[19px]">fact_check</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-display font-extrabold text-[17px] tracking-tight text-on-surface">ParaLearn</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-data font-bold tracking-wider uppercase bg-violet-tint text-violet-ink">CBT</span>
+</div>
+</a>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-sm font-medium text-text-secondary hover:text-on-surface transition-colors" href="#features">Features</a>
+<a class="text-sm font-medium text-text-secondary hover:text-on-surface transition-colors" href="#demo">Exam Room</a>
+<a class="text-sm font-medium text-text-secondary hover:text-on-surface transition-colors" href="#realities">Resilience</a>
+<a class="text-sm font-medium text-text-secondary hover:text-on-surface transition-colors" href="#bento">Institutions</a>
+<a class="text-sm font-medium text-text-secondary hover:text-on-surface transition-colors" href="#developers">Developers</a>
+</nav>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center gap-3">
+<a class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-text-strong hover:text-violet-ink px-3 py-2 rounded-lg hover:bg-surface-subtle transition-all" href="#examiner-portal">
+<span class="material-symbols-outlined text-[17px] text-text-secondary">shield_person</span>
+          Examiner Portal
+        </a>
+<a class="inline-flex items-center justify-center gap-1.5 text-xs font-bold bg-violet-ink hover:bg-violet-hover text-on-primary px-3.5 py-2 rounded-lg shadow-sm active:scale-95 transition-all" href="#quick-launch">
+<span>Candidate Entry</span>
+<span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</header>
+<main class="w-full pt-16 flex flex-col">
+<!-- HERO SECTION -->
+<section class="relative w-full pt-16 pb-20 px-6 lg:px-8 overflow-hidden">
+<!-- Glow & Ambient Orbs -->
+<div class="absolute top-12 left-1/2 -translate-x-1/2 w-[720px] h-[360px] bg-gradient-to-b from-violet-tint/60 via-violet-tint/20 to-transparent blur-3xl -z-10 pointer-events-none rounded-full"></div>
+<div class="max-w-5xl mx-auto flex flex-col items-center text-center">
+<!-- Top Pill -->
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-line bg-chalk-white shadow-xs mb-8">
+<span class="flex h-2 w-2 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-vivid opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-vivid"></span>
+</span>
+<span class="text-xs font-mono-data font-semibold text-text-strong">Offline Sync Engine v4.2</span>
+<span class="text-border-medium">·</span>
+<span class="text-xs font-medium text-violet-ink">West Africa Certified</span>
+</div>
+<!-- H1 Heading -->
+<h1 class="font-display font-extrabold text-4xl sm:text-5xl lg:text-6xl text-on-surface tracking-tight leading-[1.08] max-w-4xl">
+          Computer-based exams that <span class="text-violet-ink">never fail</span>.
+        </h1>
+<!-- Subhead -->
+<p class="mt-5 text-base sm:text-lg text-text-secondary max-w-2xl font-normal leading-relaxed">
+          Built for Nigeria’s reality. Zero lost answers through generator cuts, offline auto-sync, and instant WAEC/JAMB report card grading.
+        </p>
+<!-- CENTERPIECE CANDIDATE QUICK-LAUNCH BOX -->
+<div class="w-full max-w-xl mt-10 p-2 sm:p-2.5 bg-chalk-white border border-border-fine rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all hover:border-violet-line" id="quick-launch">
+<form class="flex flex-col sm:flex-row items-center gap-2" onsubmit="event.preventDefault(); const code = (document.getElementById('quick-exam-code').value || 'BUSI-7642').toUpperCase(); alert('Connecting to exam session ' + code + '...');">
+<div class="relative w-full flex-1">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-text-placeholder text-[19px]">vpn_key</span>
+<input class="w-full h-12 pl-10 pr-4 bg-surface-subtle font-pin-box text-base font-bold text-on-surface rounded-xl border border-transparent focus:border-violet-ink focus:bg-chalk-white focus:outline-none transition-all uppercase placeholder:font-body-default placeholder:text-text-placeholder placeholder:font-normal placeholder:text-sm tracking-wider" id="quick-exam-code" maxlength="12" oninput="this.value = this.value.toUpperCase();" placeholder="BUSI-7642" required="" type="text" value="MATH-8842"/>
+</div>
+<button class="w-full sm:w-auto h-12 px-6 rounded-xl bg-violet-ink hover:bg-violet-hover text-on-primary font-body-strong text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer" type="submit">
+<span>Enter Examination Room</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</form>
+<!-- Honest Micro Telemetry -->
+<div class="mt-2.5 px-3 py-1.5 flex items-center justify-between text-[11px] font-mono-data text-text-secondary border-t border-border-fine/60">
+<span class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-vivid"></span>
+              Local IndexedDB Cache Active
+            </span>
+<span class="text-text-strong font-semibold">0s Sync Latency</span>
+</div>
+</div>
+<!-- Institutional Trust Bar -->
+<div class="mt-14 w-full flex flex-col items-center gap-4">
+<p class="text-xs font-semibold text-text-secondary uppercase tracking-widest">
+            Trusted by 420+ Nigerian schools and examination centres · Over 185,000 completed sessions
+          </p>
+<div class="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-text-secondary/80 font-display font-bold text-sm">
+<span class="flex items-center gap-1.5 hover:text-on-surface transition-colors">
+<span class="w-2 h-2 rounded-full bg-violet-ink/40"></span> King's College Lagos
+            </span>
+<span class="flex items-center gap-1.5 hover:text-on-surface transition-colors">
+<span class="w-2 h-2 rounded-full bg-cobalt-ink/40"></span> Corona Schools
+            </span>
+<span class="flex items-center gap-1.5 hover:text-on-surface transition-colors">
+<span class="w-2 h-2 rounded-full bg-emerald-ink-tint/40"></span> Chrisland Schools
+            </span>
+<span class="flex items-center gap-1.5 hover:text-on-surface transition-colors">
+<span class="w-2 h-2 rounded-full bg-amber-ink-tint/40"></span> Greensprings School
+            </span>
+</div>
+</div>
+</div>
+</section>
+<!-- CORE EXPERIENCE SHOWCASE (SACRED LIVE EXAM ROOM MOCKUP) -->
+<section class="w-full pb-20 px-6 lg:px-8" id="demo">
+<div class="max-w-6xl mx-auto">
+<!-- Visual App Shell Window -->
+<div class="bg-chalk-white rounded-2xl border border-border-fine shadow-[0_20px_60px_-15px_rgba(0,0,0,0.07)] overflow-hidden">
+<!-- Window Chrome Header -->
+<div class="h-12 bg-surface-subtle px-4 sm:px-6 flex items-center justify-between border-b border-border-fine">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-border-medium inline-block"></span>
+<span class="w-3 h-3 rounded-full bg-border-medium inline-block"></span>
+<span class="w-3 h-3 rounded-full bg-border-medium inline-block"></span>
+<span class="ml-3 text-xs font-mono-data text-text-secondary hidden sm:inline">cbt.pln.ng/exam/MATH-8842</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-tint text-emerald-ink-tint text-[11px] font-mono-data font-bold">
+<span class="material-symbols-outlined text-[13px]">cloud_done</span> IndexedDB Synced
+              </span>
+<div class="h-4 w-px bg-border-fine"></div>
+<div class="font-timer-display text-sm font-bold text-crimson-vivid bg-crimson-tint/40 px-2.5 py-0.5 rounded border border-crimson-line/60">
+                01:42:19
+              </div>
+</div>
+</div>
+<!-- Exam Room Sub-bar -->
+<div class="px-6 py-3 bg-surface-muted/40 border-b border-border-fine flex flex-wrap items-center justify-between gap-3 text-xs">
+<div class="flex items-center gap-2">
+<span class="font-display font-bold text-on-surface">WAEC SSCE Prep: Further Mathematics</span>
+<span class="text-border-medium">•</span>
+<span class="text-text-secondary font-mono-data">Daniel Olawale · Lab B - PC 14</span>
+</div>
+<div class="flex items-center gap-3 font-mono-data text-text-secondary">
+<span>Section 1 of 2</span>
+<span>42/50 Answered</span>
+</div>
+</div>
+<!-- Main Interactive Exam UI Layout -->
+<div class="p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left: Question Stem & Answer Options (8 cols) -->
+<div class="lg:col-span-8 flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold text-violet-ink uppercase tracking-wider font-mono-data">Question 14</span>
+<button class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-mono-data font-semibold bg-amber-tint text-amber-ink-tint border border-amber-line">
+<span class="material-symbols-outlined text-[14px]">flag</span> Flagged for Review
+                  </button>
+</div>
+<!-- Equation Card -->
+<div class="p-5 rounded-xl bg-surface-subtle border border-border-fine flex flex-col gap-2">
+<p class="text-xs text-text-secondary font-medium">Solve the quadratic expression for real roots:</p>
+<div class="text-xl sm:text-2xl font-mono-data font-bold text-on-surface tracking-tight py-1">
+                    2x² - 7x + 3 = 0
+                  </div>
+<p class="text-xs text-text-secondary">Determine the exact values of $x$.</p>
+</div>
+<!-- Answer Options -->
+<div class="flex flex-col gap-2.5 pt-1">
+<!-- Option A (Selected) -->
+<div class="p-3.5 rounded-xl border-2 border-violet-ink bg-violet-tint/40 flex items-center justify-between cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<div class="w-7 h-7 rounded-lg bg-violet-ink text-on-primary flex items-center justify-center font-bold text-xs font-mono-data">A</div>
+<span class="text-sm font-semibold text-on-surface font-mono-data">x = 3  or  x = 1/2</span>
+</div>
+<span class="material-symbols-outlined text-violet-ink text-[20px]">check_circle</span>
+</div>
+<!-- Option B -->
+<div class="p-3.5 rounded-xl border border-border-fine bg-chalk-white hover:bg-surface-subtle flex items-center justify-between cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<div class="w-7 h-7 rounded-lg bg-surface-muted text-text-strong flex items-center justify-center font-bold text-xs font-mono-data">B</div>
+<span class="text-sm text-text-strong font-mono-data">x = -3  or  x = -1/2</span>
+</div>
+</div>
+<!-- Option C -->
+<div class="p-3.5 rounded-xl border border-border-fine bg-chalk-white hover:bg-surface-subtle flex items-center justify-between cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<div class="w-7 h-7 rounded-lg bg-surface-muted text-text-strong flex items-center justify-center font-bold text-xs font-mono-data">C</div>
+<span class="text-sm text-text-strong font-mono-data">x = 2  or  x = 3/2</span>
+</div>
+</div>
+<!-- Option D -->
+<div class="p-3.5 rounded-xl border border-border-fine bg-chalk-white hover:bg-surface-subtle flex items-center justify-between cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<div class="w-7 h-7 rounded-lg bg-surface-muted text-text-strong flex items-center justify-center font-bold text-xs font-mono-data">D</div>
+<span class="text-sm text-text-strong font-mono-data">x = 7  or  x = 1/3</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Question Controls -->
+<div class="flex items-center justify-between pt-4 border-t border-border-fine">
+<button class="px-4 py-2 rounded-lg border border-border-fine hover:bg-surface-subtle text-xs font-semibold text-text-strong flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                  Previous
+                </button>
+<div class="text-xs text-text-secondary font-mono-data hidden sm:block">Shortcut: Keys [A-D], [N]ext, [P]rev</div>
+<button class="px-5 py-2 rounded-lg bg-violet-ink hover:bg-violet-hover text-on-primary text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all">
+                  Next Question
+                  <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Right: 5-Column Question Navigator Palette (4 cols) -->
+<div class="lg:col-span-4 bg-surface-subtle rounded-xl p-4 sm:p-5 border border-border-fine flex flex-col justify-between gap-5">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="text-xs font-bold text-on-surface uppercase tracking-wide">Question Navigator</span>
+<span class="text-[11px] font-mono-data text-text-secondary">50 Questions</span>
+</div>
+<!-- 5-Column Grid -->
+<div class="grid grid-cols-5 gap-1.5">
+<!-- 1 to 5: Answered -->
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">1</div>
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">2</div>
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">3</div>
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">4</div>
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">5</div>
+<!-- 6 to 10: Answered / Flagged -->
+<div class="h-8 rounded bg-amber-tint text-amber-ink-tint font-mono-data text-xs flex items-center justify-center font-bold border border-amber-line">6</div>
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">7</div>
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">8</div>
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">9</div>
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">10</div>
+<!-- 11 to 15: Current is 14 -->
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">11</div>
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">12</div>
+<div class="h-8 rounded bg-emerald-vivid text-on-primary font-mono-data text-xs flex items-center justify-center font-semibold">13</div>
+<div class="h-8 rounded ring-2 ring-violet-ink bg-violet-tint text-violet-ink font-mono-data text-xs flex items-center justify-center font-bold">14</div>
+<div class="h-8 rounded bg-chalk-white border border-border-fine text-text-secondary font-mono-data text-xs flex items-center justify-center">15</div>
+<!-- 16 to 20: Unanswered -->
+<div class="h-8 rounded bg-chalk-white border border-border-fine text-text-secondary font-mono-data text-xs flex items-center justify-center">16</div>
+<div class="h-8 rounded bg-chalk-white border border-border-fine text-text-secondary font-mono-data text-xs flex items-center justify-center">17</div>
+<div class="h-8 rounded bg-chalk-white border border-border-fine text-text-secondary font-mono-data text-xs flex items-center justify-center">18</div>
+<div class="h-8 rounded bg-chalk-white border border-border-fine text-text-secondary font-mono-data text-xs flex items-center justify-center">19</div>
+<div class="h-8 rounded bg-chalk-white border border-border-fine text-text-secondary font-mono-data text-xs flex items-center justify-center">20</div>
+</div>
+<!-- Palette Legend -->
+<div class="mt-4 pt-3 border-t border-border-fine grid grid-cols-3 gap-2 text-[11px] font-mono-data text-text-secondary">
+<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-emerald-vivid"></span> Answered</div>
+<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-violet-ink"></span> Active</div>
+<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-amber-tint border border-amber-line"></span> Flagged</div>
+</div>
+</div>
+<!-- Submit Button Preview -->
+<button class="w-full py-2.5 px-4 rounded-lg bg-surface-muted hover:bg-emerald-tint hover:text-emerald-ink-tint text-text-strong font-body-strong text-xs flex items-center justify-center gap-1.5 transition-all">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+                Submit Exam Section
+              </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- BUILT FOR WEST AFRICAN REALITIES (3 CRISP CARDS) -->
+<section class="w-full py-16 bg-surface-subtle border-y border-border-fine px-6 lg:px-8" id="realities">
+<div class="max-w-6xl mx-auto flex flex-col gap-10">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<p class="text-xs font-mono-data font-bold text-violet-ink uppercase tracking-wider">High-Friction Infrastructure</p>
+<h2 class="font-display font-bold text-2xl sm:text-3xl text-on-surface mt-1">Built for West African realities.</h2>
+</div>
+<p class="text-sm text-text-secondary max-w-md font-normal">
+            Where generators trip and bandwidth drops without warning, software must be mathematically failure-proof.
+          </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="p-6 bg-chalk-white border border-border-fine rounded-2xl shadow-xs flex flex-col justify-between gap-5 hover:border-violet-line transition-all">
+<div class="flex flex-col gap-3">
+<div class="w-10 h-10 rounded-xl bg-amber-tint text-amber-ink-tint flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">bolt</span>
+</div>
+<h3 class="font-display font-bold text-base text-on-surface">Generator Trips &amp; Blackouts</h3>
+<p class="text-sm text-text-secondary leading-relaxed">
+                Answers write to local device storage in 12ms. Reboot and continue without losing a single character.
+              </p>
+</div>
+<div class="px-3 py-1.5 rounded-lg bg-surface-subtle font-mono-data text-[11px] text-text-strong border border-border-fine flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-vivid text-[14px]">check</span>
+              Anti-tamper timer sync
+            </div>
+</div>
+<!-- Card 2 -->
+<div class="p-6 bg-chalk-white border border-border-fine rounded-2xl shadow-xs flex flex-col justify-between gap-5 hover:border-violet-line transition-all">
+<div class="flex flex-col gap-3">
+<div class="w-10 h-10 rounded-xl bg-cobalt-tint text-cobalt-ink flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">wifi_off</span>
+</div>
+<h3 class="font-display font-bold text-base text-on-surface">Flaky 3G &amp; Cyber Cafés</h3>
+<p class="text-sm text-text-secondary leading-relaxed">
+                Entire 100-question paper loads once in under 60KB. Finishes smoothly even if the network drops completely.
+              </p>
+</div>
+<div class="px-3 py-1.5 rounded-lg bg-surface-subtle font-mono-data text-[11px] text-text-strong border border-border-fine flex items-center gap-2">
+<span class="material-symbols-outlined text-cobalt-vivid text-[14px]">check</span>
+              Sub-60KB compressed bundle
+            </div>
+</div>
+<!-- Card 3 -->
+<div class="p-6 bg-chalk-white border border-border-fine rounded-2xl shadow-xs flex flex-col justify-between gap-5 hover:border-violet-line transition-all">
+<div class="flex flex-col gap-3">
+<div class="w-10 h-10 rounded-xl bg-emerald-tint text-emerald-ink-tint flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">table_chart_view</span>
+</div>
+<h3 class="font-display font-bold text-base text-on-surface">Zero Re-typing Nightmare</h3>
+<p class="text-sm text-text-secondary leading-relaxed">
+                One-click sync directly into term report cards. Eliminates 40+ hours of manual score transcription.
+              </p>
+</div>
+<div class="px-3 py-1.5 rounded-lg bg-surface-subtle font-mono-data text-[11px] text-text-strong border border-border-fine flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-vivid text-[14px]">check</span>
+              1-click SIS grade mapping
+            </div>
+</div>
+</div>
+</div>
+</section>
+<!-- BENTO GRID: INTERACTIVE FEATURE HIGHLIGHTS -->
+<section class="w-full py-20 px-6 lg:px-8" id="features">
+<div class="max-w-6xl mx-auto flex flex-col gap-12">
+<div class="max-w-xl">
+<p class="text-xs font-mono-data font-bold text-violet-ink uppercase tracking-wider">Product Highlights</p>
+<h2 class="font-display font-bold text-3xl text-on-surface mt-1">Everything needed to run an airtight examination hall.</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Bento Tile 1: Examiner Live Invigilator (7 cols) -->
+<div class="md:col-span-7 bg-chalk-white border border-border-fine rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono-data font-bold text-cobalt-ink uppercase">Live Hall Telemetry</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-tint text-emerald-ink-tint text-[10px] font-mono-data font-bold">
+                  ● 48 / 50 ACTIVE
+                </span>
+</div>
+<h3 class="font-display font-bold text-lg text-on-surface">Examiner Proctor Cockpit</h3>
+<p class="text-sm text-text-secondary">Track connected seats in real-time. Detect tab switches and inject emergency compensation minutes.</p>
+</div>
+<!-- Mini Proctor Monitor Table -->
+<div class="border border-border-fine rounded-xl overflow-hidden text-xs font-mono-data">
+<div class="bg-surface-subtle px-3 py-2 text-text-secondary flex justify-between font-semibold border-b border-border-fine">
+<span>SEAT &amp; CANDIDATE</span>
+<span>PROGRESS</span>
+<span>ACTION</span>
+</div>
+<div class="divide-y divide-border-fine">
+<div class="p-3 flex items-center justify-between bg-chalk-white">
+<div>
+<span class="font-bold text-on-surface">LAB-01</span>
+<span class="text-text-secondary ml-1 font-sans">Adebayo, Samuel</span>
+</div>
+<span class="text-emerald-ink-tint font-bold">44/50 (88%)</span>
+<button class="px-2 py-0.5 rounded bg-surface-muted hover:bg-violet-tint text-[11px] font-bold text-text-strong">+5m</button>
+</div>
+<div class="p-3 flex items-center justify-between bg-amber-tint/20">
+<div>
+<span class="font-bold text-on-surface">LAB-02</span>
+<span class="text-amber-ink-tint ml-1 font-sans font-bold">Okafor (2 Tab switches)</span>
+</div>
+<span class="text-text-strong">31/50</span>
+<button class="px-2 py-0.5 rounded bg-amber-vivid text-on-primary text-[11px] font-bold">Warn</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento Tile 2: AI Rubric & Marking (5 cols) -->
+<div class="md:col-span-5 bg-chalk-white border border-border-fine rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-2">
+<span class="text-xs font-mono-data font-bold text-violet-ink uppercase">Section B Marking</span>
+<h3 class="font-display font-bold text-lg text-on-surface">AI-Assisted Rubric Studio</h3>
+<p class="text-sm text-text-secondary">Grade essays at 10x speed with calibrated WAEC standard rubric matrices.</p>
+</div>
+<!-- Rubric Criteria Box -->
+<div class="p-4 rounded-xl bg-surface-subtle border border-border-fine flex flex-col gap-3 font-mono-data text-xs">
+<div>
+<div class="flex justify-between mb-1">
+<span class="text-text-secondary">Expression &amp; Vocab</span>
+<span class="font-bold text-violet-ink">14 / 20</span>
+</div>
+<div class="h-1.5 w-full bg-border-fine rounded-full overflow-hidden">
+<div class="h-full bg-violet-ink w-[70%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between mb-1">
+<span class="text-text-secondary">Mechanical Accuracy</span>
+<span class="font-bold text-emerald-vivid">7 / 10</span>
+</div>
+<div class="h-1.5 w-full bg-border-fine rounded-full overflow-hidden">
+<div class="h-full bg-emerald-vivid w-[70%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento Tile 3: Tamper-Proof Results (5 cols) -->
+<div class="md:col-span-5 bg-chalk-white border border-border-fine rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-2">
+<span class="text-xs font-mono-data font-bold text-emerald-ink-tint uppercase">Instant Verification</span>
+<h3 class="font-display font-bold text-lg text-on-surface">Cryptographic Result Slips</h3>
+<p class="text-sm text-text-secondary">Every completed attempt embeds a SHA-256 hash verifyable by universities.</p>
+</div>
+<!-- Result Slip Micro Snippet -->
+<div class="p-4 rounded-xl bg-surface-subtle border border-border-fine flex items-center justify-between gap-3">
+<div class="flex flex-col gap-1 font-mono-data text-xs">
+<span class="text-[10px] text-text-secondary uppercase">ATTEMPT HASH:</span>
+<span class="font-bold text-on-surface">SHA256: 4e9f7a...8b21c4</span>
+<span class="inline-block mt-1 px-2 py-0.5 rounded bg-emerald-tint text-emerald-ink-tint text-[10px] font-bold w-fit">VERIFIED SCORE: 84%</span>
+</div>
+<div class="w-12 h-12 bg-on-surface text-chalk-white rounded-lg flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[28px]">qr_code_2</span>
+</div>
+</div>
+</div>
+<!-- Bento Tile 4: Multi-Curriculum Calibration (7 cols) -->
+<div class="md:col-span-7 bg-chalk-white border border-border-fine rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-2">
+<span class="text-xs font-mono-data font-bold text-violet-ink uppercase">Full Curriculum Suite</span>
+<h3 class="font-display font-bold text-lg text-on-surface">Curriculum-Calibrated Question Banks</h3>
+<p class="text-sm text-text-secondary">Switch exam engines with a single click. Pre-calibrated for all major Nigerian formats.</p>
+</div>
+<!-- Visual Selector Tags -->
+<div class="grid grid-cols-3 gap-3">
+<div class="p-3 rounded-xl border border-violet-line bg-violet-tint/40 flex flex-col gap-1">
+<span class="font-bold text-xs text-violet-ink">WAEC SSCE</span>
+<span class="text-[11px] text-text-secondary font-mono-data">50Q OBJ + Theory</span>
+</div>
+<div class="p-3 rounded-xl border border-border-fine bg-surface-subtle flex flex-col gap-1">
+<span class="font-bold text-xs text-on-surface">JAMB UTME</span>
+<span class="text-[11px] text-text-secondary font-mono-data">4 Subs · 180 Qs</span>
+</div>
+<div class="p-3 rounded-xl border border-border-fine bg-surface-subtle flex flex-col gap-1">
+<span class="font-bold text-xs text-on-surface">School Term CA</span>
+<span class="text-[11px] text-text-secondary font-mono-data">20mk CA + 60mk Exam</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- DEVELOPER SUBTLE CALLOUT -->
+<section class="w-full pb-16 px-6 lg:px-8" id="developers">
+<div class="max-w-6xl mx-auto">
+<div class="p-6 sm:p-8 rounded-2xl bg-surface-subtle border border-border-fine flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-violet-ink text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-display font-bold text-sm text-on-surface">Headless CBT &amp; REST Webhooks</h3>
+<span class="px-2 py-0.5 rounded text-[10px] font-mono-data font-bold bg-violet-tint text-violet-ink">API v2.4</span>
+</div>
+<p class="text-xs text-text-secondary mt-0.5">Embed the tamper-proof exam engine into your custom student portal or state edtech system.</p>
+</div>
+</div>
+<a class="inline-flex items-center gap-1.5 text-xs font-bold text-violet-ink hover:text-violet-hover border border-violet-line px-4 py-2 rounded-lg bg-chalk-white hover:bg-violet-wash transition-all shrink-0" href="#">
+<span>Read API Documentation</span>
+<span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</section>
+<!-- INSTITUTIONAL ACTION SPLIT -->
+<section class="w-full py-16 bg-on-surface text-chalk-white px-6 lg:px-8" id="examiner-portal">
+<div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+<div class="flex flex-col gap-4">
+<span class="text-xs font-mono-data font-bold text-violet-line uppercase tracking-wider">Ready to Modernize Your CBT Hall?</span>
+<h2 class="font-display font-bold text-3xl sm:text-4xl text-chalk-white tracking-tight">Run your mock or term exams with complete peace of mind.</h2>
+<p class="text-sm text-text-placeholder leading-relaxed max-w-lg">
+            Create an examination hall in under 2 minutes. Free tier includes 50 candidate credits with full offline cache resilience.
+          </p>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-3 md:justify-end">
+<a class="w-full sm:w-auto h-12 px-6 rounded-xl bg-violet-ink hover:bg-violet-hover text-on-primary text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm" href="#">
+<span>Create Free Exam Hall</span>
+<span class="material-symbols-outlined text-[17px]">add_circle</span>
+</a>
+<a class="w-full sm:w-auto h-12 px-6 rounded-xl bg-chalk-white/10 hover:bg-chalk-white/15 text-chalk-white text-sm font-bold flex items-center justify-center gap-2 border border-chalk-white/10 transition-all" href="#">
+<span>Book School Consultation</span>
+</a>
+</div>
+</div>
+</section>
+</main>
+<!-- MINIMAL MODERN FOOTER -->
+<footer class="w-full bg-chalk-white border-t border-border-fine py-12 px-6 lg:px-8">
+<div class="max-w-6xl mx-auto flex flex-col gap-8">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs font-mono-data text-text-secondary border-b border-border-fine pb-6">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-vivid animate-pulse"></span>
+<span>IndexedDB Sandbox Active</span>
+<span class="text-border-medium">·</span>
+<span>Target: 2G / High Latency Certified</span>
+</div>
+<div>
+<span>cbt.pln.ng · West Africa Protocol</span>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-text-secondary">
+<div class="flex items-center gap-2">
+<span class="font-display font-bold text-on-surface">ParaLearn CBT</span>
+<span>© 2025 ParaLearn Technologies Ltd. Built for Nigeria.</span>
+</div>
+<div class="flex items-center gap-6">
+<a class="hover:text-on-surface transition-colors" href="#">Privacy</a>
+<a class="hover:text-on-surface transition-colors" href="#">Security Policy</a>
+<a class="hover:text-on-surface transition-colors" href="#">TRCN Compliance</a>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

@@ -199,7 +199,7 @@ export default function CbtBulkImportDialog({
           <div className="text-xs font-bold text-[var(--foreground)]">
             {fileName || "Choose a spreadsheet"}
           </div>
-          <p className="text-[11px] text-[var(--text-secondary)]">
+          <p className="text-xs text-[var(--text-secondary)]">
             Columns: question, type, option_a–option_f, correct (e.g. B or A,C), marks, section,
             min_words, max_words, explanation, model_answer, key_terms
           </p>

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "crimson-tint": "#fddada", "inverse-surface": "#233144", "emerald-ink-white": "#047857", "violet-line": "#dfceef", "amber-ink-tint": "#92400e", "cobalt-tint": "#dbe9ff", "surface-container-highest": "#d5e3fd", "tertiary-fixed": "#6ffbbe", "surface": "#f8f9ff", "error-container": "#ffdad6", "foreground": "#0f172a", "text-strong": "#334155", "violet-wash": "#f7f3ff", "on-secondary-fixed": "#131b2e", "crimson-ink-white": "#b91c1c", "primary-fixed-dim": "#d5bbff", "on-surface": "#0d1c2f", "on-secondary-container": "#5c647a", "crimson-ink-tint": "#991b1b", "primary-fixed": "#ecdcff", "error": "#ba1a1a", "emerald-line": "#a7f3d0", "inverse-on-surface": "#ebf1ff", "border-fine": "#e2e8f0", "surface-container-lowest": "#ffffff", "amber-vivid": "#f28c1f", "background": "#f8f9ff", "primary-container": "#641bc4", "tertiary": "#003f29", "emerald-tint": "#dff9d8", "primary": "#49009a", "crimson-vivid": "#e60023", "emerald-ink-tint": "#065f46", "outline": "#7c7486", "on-primary-fixed": "#270058", "on-error": "#ffffff", "on-surface-variant": "#4b4454", "cobalt-vivid": "#2a64f6", "secondary-fixed-dim": "#bec6e0", "on-background": "#0d1c2f", "on-primary-fixed-variant": "#5d0abd", "card": "#ffffff", "on-secondary-fixed-variant": "#3f465c", "amber-line": "#fde68a", "surface-container-high": "#dde9ff", "chalk-white": "#fdfdff", "on-error-container": "#93000a", "violet-ink": "#641bc4", "cobalt-ink": "#1e40af", "surface-bright": "#f8f9ff", "tertiary-fixed-dim": "#4edea3", "secondary": "#565e74", "text-secondary": "#64748b", "surface-container": "#e6eeff", "surface-dim": "#ccdbf4", "crimson-line": "#fecaca", "on-tertiary-container": "#44d69b", "surface-muted": "#f1f5f9", "surface-container-low": "#eff4ff", "emerald-vivid": "#10b981", "on-secondary": "#ffffff", "on-tertiary": "#ffffff", "on-tertiary-fixed-variant": "#005236", "tertiary-container": "#00593c", "outline-variant": "#cdc3d7", "cobalt-line": "#bfdbfe", "violet-pressed": "#5214a3", "secondary-fixed": "#dae2fd", "on-primary": "#ffffff", "violet-hover": "#7b22e8", "inverse-primary": "#d5bbff", "secondary-container": "#dae2fd", "border-medium": "#cbd5e1", "text-placeholder": "#94a3b8", "surface-subtle": "#f8fafc", "amber-tint": "#ffe9cc", "amber-ink-white": "#b45309", "on-primary-container": "#ceb1ff", "violet-tint": "#f0e5ff", "surface-variant": "#d5e3fd", "on-tertiary-fixed": "#002113", "lavender-muted": "#ad8ed6", "surface-tint": "#7635d6" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "gutter": "1rem", "space-xs": "0.25rem", "margin-md": "1.5rem", "space-sm": "0.5rem", "space-2xl": "3rem", "space-lg": "1.5rem", "margin-lg": "2rem", "gutter-lg": "1.5rem", "space-xl": "2rem", "margin": "1rem", "space-md": "1rem" }, "fontFamily": { "display": ["Manrope"], "question-text-mobile": ["Manrope"], "answer-option": ["Manrope"], "label-eyebrow": ["Manrope"], "headline-md": ["Manrope"], "title": ["Manrope"], "timer-display": ["JetBrains Mono"], "body-default": ["Manrope"], "body-strong": ["Manrope"], "display-mobile": ["Manrope"], "label-sm": ["Manrope"], "question-text": ["Manrope"], "pin-box": ["JetBrains Mono"], "headline-lg": ["Manrope"], "mono-data": ["JetBrains Mono"] }, "fontSize": { "display": ["36px", { "lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "800" }], "question-text-mobile": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "answer-option": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "label-eyebrow": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "700" }], "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "700" }], "title": ["15px", { "lineHeight": "20px", "fontWeight": "600" }], "timer-display": ["20px", { "lineHeight": "24px", "fontWeight": "600" }], "body-default": ["14px", { "lineHeight": "22px", "fontWeight": "400" }], "body-strong": ["14px", { "lineHeight": "22px", "fontWeight": "600" }], "display-mobile": ["28px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "800" }], "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "question-text": ["18px", { "lineHeight": "28px", "fontWeight": "500" }], "pin-box": ["22px", { "lineHeight": "28px", "fontWeight": "700" }], "headline-lg": ["20px", { "lineHeight": "26px", "fontWeight": "700" }], "mono-data": ["13px", { "lineHeight": "18px", "fontWeight": "400" }] } } } };</script></head><body class="bg-chalk-white font-body-default text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-[232px] bg-chalk-white z-50 flex flex-col justify-between border-r border-border-fine"><div class="flex flex-col flex-1 overflow-y-auto"><div class="h-16 px-space-md flex items-center gap-space-sm border-b border-border-fine shrink-0"><img alt="ParaLearn CBT Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrB_9Z0ISU32JF8A2JyLRXK3ryHZjW0kBh-GQ3ZL1QTofGiXJOJOhSYrRNyxa8umwhAd5-wnmWqSjMeM3OmxIUn5nkk8Bt2NdFWuO5UonQyX9weW3Oqz7A0IHH6EQVVxW6ssv9DBUKzEPN9JcdAB7IUQOHlPrUr6H6wrHaSM1tu1dI4V2wIg_5S0EpckQzJHMfliDfxX7YzT-XhuACo3Ovu5Cfk9_-Ok0SbP8FkYisWo"/><div class="flex flex-col min-w-0"><span class="font-title text-title text-on-surface truncate leading-none">ParaLearn CBT</span><span class="font-label-eyebrow text-label-eyebrow text-violet-ink uppercase tracking-wider mt-1">Examiner Workspace</span></div></div><div class="px-space-md pt-space-md pb-space-xs"><span class="font-label-eyebrow text-label-eyebrow text-text-placeholder uppercase tracking-wider">Exam Suite</span></div><nav class="px-space-sm flex flex-col gap-1" data-active-classes="bg-violet-tint text-violet-ink font-body-strong"><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="examinations" href="#"><span class="material-symbols-outlined text-[20px]">assignment</span><span class="font-body-default text-body-default">Examinations</span></a><a aria-current="page" class="flex items-center justify-between px-space-sm py-2 rounded-lg transition-colors bg-violet-tint text-violet-ink font-body-strong" data-path="candidate-monitor" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">monitoring</span><span class="font-body-default text-body-default">Candidate Monitor</span></div><span class="flex h-2 w-2 rounded-full bg-emerald-vivid ring-2 ring-emerald-tint"></span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="question-studio" href="#"><span class="material-symbols-outlined text-[20px]">edit_note</span><span class="font-body-default text-body-default">Question Studio</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="candidates-and-pins" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span class="font-body-default text-body-default">Candidates &amp; PINs</span></a></nav><div class="px-space-md pt-space-lg pb-space-xs"><span class="font-label-eyebrow text-label-eyebrow text-text-placeholder uppercase tracking-wider">Resources</span></div><nav class="px-space-sm flex flex-col gap-1" data-active-classes="bg-violet-tint text-violet-ink font-body-strong"><a class="flex items-center justify-between px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="candidate-entrance" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">open_in_new</span><span class="font-body-default text-body-default">Candidate Entrance</span></div><span class="font-mono-data text-[11px] text-text-placeholder">↗</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="developer-api" href="#"><span class="material-symbols-outlined text-[20px]">api</span><span class="font-body-default text-body-default">Developer API</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="settings-and-keys" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span class="font-body-default text-body-default">Settings &amp; Keys</span></a></nav></div><div class="p-space-sm border-t border-border-fine bg-surface-subtle"><div class="p-space-sm bg-surface-container-lowest rounded-lg border border-border-fine flex flex-col gap-2 mb-2"><div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-text-secondary truncate">King's College Lagos</span><span class="material-symbols-outlined text-[16px] text-text-placeholder">domain</span></div><div class="flex items-center justify-between bg-violet-wash px-2 py-1 rounded border border-violet-line"><span class="font-mono-data text-[11px] text-violet-ink font-semibold">350 Credits Available</span><span class="material-symbols-outlined text-[14px] text-violet-ink">bolt</span></div></div><div class="flex items-center justify-between p-1 rounded-lg hover:bg-surface-container-high transition-colors"><div class="flex items-center gap-2 min-w-0"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col min-w-0"><span class="font-title text-[13px] text-on-surface truncate leading-tight">Dr. Folake Adeleke</span><span class="font-label-sm text-[11px] text-text-secondary truncate leading-tight">f.adeleke@paralearn.edu</span></div></div><button class="text-on-surface-variant hover:text-crimson-ink-white p-1 rounded transition-colors" title="Sign out" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></aside><div class="pl-[232px]"><header class="fixed top-0 left-[232px] right-0 h-16 bg-chalk-white border-b border-border-fine z-40 flex items-center justify-between px-space-lg"><div class="flex items-center gap-space-sm"><img alt="ParaLearn CBT Logo" class="h-6 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrB_9Z0ISU32JF8A2JyLRXK3ryHZjW0kBh-GQ3ZL1QTofGiXJOJOhSYrRNyxa8umwhAd5-wnmWqSjMeM3OmxIUn5nkk8Bt2NdFWuO5UonQyX9weW3Oqz7A0IHH6EQVVxW6ssv9DBUKzEPN9JcdAB7IUQOHlPrUr6H6wrHaSM1tu1dI4V2wIg_5S0EpckQzJHMfliDfxX7YzT-XhuACo3Ovu5Cfk9_-Ok0SbP8FkYisWo"/><span class="font-label-eyebrow text-label-eyebrow text-text-secondary uppercase tracking-wider">CBT / Control Room</span></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 px-space-sm py-1 bg-emerald-tint border border-emerald-line rounded-full"><span class="material-symbols-outlined text-emerald-ink-tint text-[16px]">cloud_done</span><span class="font-mono-data text-[12px] text-emerald-ink-tint font-medium">Cloud Synced · Offline Cache Active</span></div><a class="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border-medium bg-card text-on-surface hover:bg-surface-subtle font-body-strong text-body-default transition-all" data-path="candidate-entrance" href="#"><span class="material-symbols-outlined text-[18px] text-text-secondary">desktop_windows</span><span>Take Exam</span><span class="font-mono-data text-[11px] text-text-placeholder">↗</span></a><button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-violet-ink hover:bg-violet-hover active:bg-violet-pressed text-card font-body-strong text-body-default transition-all shadow-sm" type="button"><span class="material-symbols-outlined text-[18px]">add</span><span>New Exam</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="w-full pt-16 bg-chalk-white min-h-screen"><div class="flex flex-col w-full">
+<!-- Top Command Context Bar -->
+<div class="w-full bg-surface-container-low px-gutter-lg py-space-md shadow-sm">
+<div class="max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center gap-space-sm sm:gap-space-md min-w-0">
+<a class="inline-flex items-center gap-1.5 font-label-eyebrow text-label-eyebrow text-violet-ink hover:text-violet-hover uppercase tracking-wider transition-colors shrink-0" href="#">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+<span>Back to Examinations</span>
+</a>
+<div class="hidden sm:block w-1.5 h-1.5 rounded-full bg-border-medium shrink-0"></div>
+<div class="flex items-center gap-2 min-w-0">
+<h1 class="font-headline-lg text-headline-lg text-on-surface truncate">2026/2027 SS2 Mathematics Mock Exam</h1>
+<span class="font-mono-data text-mono-data px-2 py-0.5 rounded bg-surface-subtle text-text-secondary shrink-0">Room: MATH-8842</span>
+</div>
+<div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-tint text-emerald-ink-tint shrink-0">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-vivid opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-vivid"></span>
+</span>
+<span class="font-mono-data text-[12px] font-semibold tracking-tight">Live · Updates every 5s</span>
+</div>
+</div>
+<!-- Action Group -->
+<div class="flex items-center flex-wrap gap-2 shrink-0">
+<button class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest text-text-strong hover:bg-surface-subtle font-body-strong text-body-default shadow-sm transition-all" type="button">
+<span class="material-symbols-outlined text-[18px] text-text-secondary">file_download</span>
+<span>Download (CSV)</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest text-text-strong hover:bg-surface-subtle font-body-strong text-body-default shadow-sm transition-all" onclick="triggerToast('+5 Minutes added to all active candidate sessions')" type="button">
+<span class="material-symbols-outlined text-[18px] text-amber-ink-tint">more_time</span>
+<span>Bulk Extend +5m</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-crimson-tint text-crimson-ink-tint hover:bg-crimson-line font-body-strong text-body-default transition-all" onclick="confirmForceSubmitAll()" type="button">
+<span class="material-symbols-outlined text-[18px]">lock_clock</span>
+<span>Force Submit All</span>
+</button>
+<button class="p-2 rounded-lg bg-surface-container-lowest text-text-secondary hover:text-violet-ink hover:bg-surface-subtle shadow-sm transition-all" id="refreshBtn" onclick="animateRefresh()" title="Refresh Live Data" type="button">
+<span class="material-symbols-outlined text-[20px] transition-transform" id="refreshIcon">refresh</span>
+</button>
+</div>
+</div>
+</div>
+<div class="w-full px-gutter-lg py-space-lg max-w-[1440px] mx-auto flex flex-col gap-space-xl">
+<!-- Top Metrics Overview -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Active in Hall -->
+<div class="bg-violet-wash rounded-xl p-space-md flex flex-col justify-between shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-violet-ink">Active in Hall</span>
+<span class="material-symbols-outlined text-violet-ink text-[22px]">laptop_mac</span>
+</div>
+<div class="mt-space-md flex items-baseline justify-between">
+<span class="font-display text-display text-violet-ink font-extrabold tracking-tight">34</span>
+<span class="font-mono-data text-mono-data text-text-secondary">3 not started</span>
+</div>
+<div class="w-full bg-violet-tint h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-violet-ink h-full rounded-full" style="width: 44.7%"></div>
+</div>
+</div>
+<!-- Flagged Violations -->
+<div class="bg-amber-tint rounded-xl p-space-md flex flex-col justify-between shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-amber-ink-tint">Flagged Violations</span>
+<span class="material-symbols-outlined text-amber-ink-tint text-[22px]">flip_camera_ios</span>
+</div>
+<div class="mt-space-md flex items-baseline justify-between">
+<span class="font-display text-display text-amber-ink-tint font-extrabold tracking-tight">2</span>
+<span class="font-mono-data text-mono-data text-amber-ink-tint font-semibold">Tab switch active</span>
+</div>
+<div class="w-full bg-amber-line h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-amber-vivid h-full rounded-full" style="width: 5.8%"></div>
+</div>
+</div>
+<!-- Essays to Review -->
+<div class="bg-cobalt-tint rounded-xl p-space-md flex flex-col justify-between shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-cobalt-ink">Essays to Review</span>
+<span class="material-symbols-outlined text-cobalt-ink text-[22px]">auto_read_pause</span>
+</div>
+<div class="mt-space-md flex items-baseline justify-between">
+<span class="font-display text-display text-cobalt-ink font-extrabold tracking-tight">8</span>
+<span class="font-mono-data text-mono-data text-cobalt-ink font-medium">AI bench ready</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-cobalt-vivid h-full rounded-full" style="width: 19%"></div>
+</div>
+</div>
+<!-- Completed Submissions -->
+<div class="bg-emerald-tint rounded-xl p-space-md flex flex-col justify-between shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-emerald-ink-tint">Submissions</span>
+<span class="material-symbols-outlined text-emerald-ink-tint text-[22px]">fact_check</span>
+</div>
+<div class="mt-space-md flex items-baseline justify-between">
+<span class="font-display text-display text-emerald-ink-tint font-extrabold tracking-tight">42</span>
+<span class="font-mono-data text-mono-data text-emerald-ink-tint font-semibold">76 total enrolled</span>
+</div>
+<div class="w-full bg-emerald-line h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-emerald-vivid h-full rounded-full" style="width: 55.2%"></div>
+</div>
+</div>
+</div>
+<!-- School Mode: Report Card Sync Integration Banner -->
+<div class="bg-card rounded-xl p-space-lg shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md relative overflow-hidden">
+<div class="flex items-start gap-space-md min-w-0">
+<div class="w-11 h-11 rounded-lg bg-violet-wash flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-violet-ink text-[24px]">grade</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-title text-title text-on-surface font-bold">Report Card Sync Architecture</span>
+<span class="px-2 py-0.5 rounded text-[11px] font-mono-data font-semibold bg-violet-wash text-violet-ink">School Mode Active</span>
+</div>
+<p class="font-body-default text-body-default text-text-secondary mt-0.5">
+            Configured weight: <span class="font-body-strong text-text-strong">Exam 60%</span> for Mathematics in <span class="font-body-strong text-text-strong">SS2 Gold &amp; Silver</span> (2026/2027 First Term Academic Ledger).
+          </p>
+<div class="flex items-center gap-3 mt-2 text-label-sm font-label-sm">
+<span class="text-emerald-ink-white font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span> 42 scores locked &amp; ready
+            </span>
+<span class="text-text-placeholder">·</span>
+<span class="text-amber-ink-white font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">pending</span> 8 pending essay verification
+            </span>
+</div>
+</div>
+</div>
+<div class="shrink-0 w-full md:w-auto relative group">
+<button class="w-full md:w-auto px-space-lg py-2.5 rounded-lg bg-surface-muted text-text-placeholder font-body-strong text-body-default flex items-center justify-center gap-2 cursor-not-allowed" disabled="" type="button">
+<span>Send scores to report cards</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<!-- Educational Tooltip -->
+<div class="absolute right-0 bottom-full mb-2 hidden group-hover:flex flex-col w-64 p-space-sm bg-inverse-surface text-inverse-on-surface rounded-lg text-[12px] font-body-default shadow-xl z-30">
+<div class="flex items-center gap-1 font-semibold text-tertiary-fixed mb-1">
+<span class="material-symbols-outlined text-[14px]">info</span>
+<span>Prerequisite Required</span>
+</div>
+          Grade the remaining 8 open-ended essays before pushing composite mock scores to term report cards.
+        </div>
+</div>
+</div>
+<!-- Search & Filter Controls -->
+<div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md">
+<!-- Search Box -->
+<div class="relative w-full lg:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-text-placeholder">search</span>
+<input class="w-full h-11 pl-10 pr-4 rounded-lg bg-surface-container-lowest text-on-surface font-body-default text-body-default placeholder:text-text-placeholder focus:bg-surface-container-lowest focus:outline-none shadow-sm transition-all" id="candidateSearch" oninput="filterTable()" placeholder="Search candidate name, reg no or PIN..." type="text"/>
+</div>
+<!-- Quick Filter Pills -->
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 shrink-0" id="filterPillsContainer">
+<button class="filter-pill px-3 py-1.5 rounded-lg text-body-default font-body-strong bg-violet-tint text-violet-ink transition-all" onclick="setFilter('all', this)" type="button">
+          All <span class="font-mono-data text-xs ml-1">76</span>
+</button>
+<button class="filter-pill px-3 py-1.5 rounded-lg text-body-default font-body-default text-text-secondary hover:bg-surface-subtle transition-all" onclick="setFilter('active', this)" type="button">
+          Active <span class="font-mono-data text-xs ml-1">34</span>
+</button>
+<button class="filter-pill px-3 py-1.5 rounded-lg text-body-default font-body-default text-amber-ink-tint hover:bg-amber-tint transition-all" onclick="setFilter('flagged', this)" type="button">
+          Flagged <span class="font-mono-data text-xs ml-1 bg-amber-tint px-1.5 py-0.2 rounded-full">2</span>
+</button>
+<button class="filter-pill px-3 py-1.5 rounded-lg text-body-default font-body-default text-cobalt-ink hover:bg-cobalt-tint transition-all" onclick="setFilter('pending', this)" type="button">
+          Pending Review <span class="font-mono-data text-xs ml-1">8</span>
+</button>
+<button class="filter-pill px-3 py-1.5 rounded-lg text-body-default font-body-default text-text-secondary hover:bg-surface-subtle transition-all" onclick="setFilter('submitted', this)" type="button">
+          Submitted <span class="font-mono-data text-xs ml-1">42</span>
+</button>
+<button class="filter-pill px-3 py-1.5 rounded-lg text-body-default font-body-default text-crimson-ink-tint hover:bg-crimson-tint transition-all" onclick="setFilter('locked', this)" type="button">
+          Locked <span class="font-mono-data text-xs ml-1">1</span>
+</button>
+</div>
+</div>
+<!-- Candidate Live Roster Table -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse" id="candidateTable">
+<thead>
+<tr class="bg-surface-subtle text-text-secondary font-label-eyebrow text-label-eyebrow uppercase tracking-wider h-11">
+<th class="px-space-md font-semibold">Candidate &amp; Identifiers</th>
+<th class="px-space-md font-semibold">Exam Progress</th>
+<th class="px-space-md font-semibold text-right">Time Remaining</th>
+<th class="px-space-md font-semibold">Security &amp; Integrity</th>
+<th class="px-space-md font-semibold">Current State</th>
+<th class="px-space-md font-semibold text-right">Invigilator Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y-0" id="tableBody">
+<!-- Row 1: Active with Essays pending, targeted in Drawer -->
+<tr class="hover:bg-violet-wash transition-colors h-16 candidate-row" data-search="daniel olawale 482913 kcl/2024/091" data-status="pending">
+<td class="px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-violet-tint text-violet-ink flex items-center justify-center font-bold text-xs shrink-0">
+                    DO
+                  </div>
+<div class="flex flex-col min-w-0">
+<span class="font-title text-title text-on-surface truncate font-semibold">Daniel Olawale</span>
+<span class="font-mono-data text-[12px] text-text-secondary">PIN: 482913 · KCL/2024/091</span>
+</div>
+</div>
+</td>
+<td class="px-space-md">
+<div class="w-48 flex flex-col gap-1">
+<div class="flex items-center justify-between text-xs font-mono-data">
+<span class="text-on-surface font-semibold">50/50 answered</span>
+<span class="text-emerald-ink-tint font-bold">100%</span>
+</div>
+<div class="w-full bg-surface-muted h-2 rounded-full overflow-hidden">
+<div class="bg-emerald-vivid h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="px-space-md text-right">
+<div class="flex flex-col items-end">
+<span class="font-mono-data text-mono-data font-semibold text-text-strong">Submitted</span>
+<span class="font-mono-data text-[11px] text-text-placeholder">10:14 AM</span>
+</div>
+</td>
+<td class="px-space-md">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-tint text-emerald-ink-tint">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="font-mono-data text-[12px] font-semibold">Clean (0)</span>
+</div>
+</td>
+<td class="px-space-md">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cobalt-tint text-cobalt-ink font-title text-[12px]">
+<span class="material-symbols-outlined text-[16px]">auto_stories</span>
+<span>Essays Pending Review</span>
+</span>
+</td>
+<td class="px-space-md text-right">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-ink hover:bg-violet-hover text-card font-body-strong text-body-default transition-all shadow-sm" onclick="openDrawer()" type="button">
+<span class="material-symbols-outlined text-[16px]">magic_button</span>
+<span>Grade Essays (AI)</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: Active Flagged Candidate -->
+<tr class="hover:bg-violet-wash transition-colors h-16 candidate-row" data-search="chinedu eze 918234 kcl/2024/114" data-status="flagged active">
+<td class="px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-amber-tint text-amber-ink-tint flex items-center justify-center font-bold text-xs shrink-0">
+                    CE
+                  </div>
+<div class="flex flex-col min-w-0">
+<span class="font-title text-title text-on-surface truncate font-semibold">Chinedu Eze</span>
+<span class="font-mono-data text-[12px] text-text-secondary">PIN: 918234 · KCL/2024/114</span>
+</div>
+</div>
+</td>
+<td class="px-space-md">
+<div class="w-48 flex flex-col gap-1">
+<div class="flex items-center justify-between text-xs font-mono-data">
+<span class="text-on-surface font-semibold">38/50</span>
+<span class="text-violet-ink font-bold">76%</span>
+</div>
+<div class="w-full bg-surface-muted h-2 rounded-full overflow-hidden">
+<div class="bg-violet-ink h-full rounded-full" style="width: 76%"></div>
+</div>
+</div>
+</td>
+<td class="px-space-md text-right">
+<span class="font-timer-display text-timer-display text-text-strong font-mono">18m 42s</span>
+</td>
+<td class="px-space-md">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-tint text-amber-ink-tint animate-pulse">
+<span class="material-symbols-outlined text-[16px]">visibility_off</span>
+<span class="font-mono-data text-[12px] font-bold">2 Tab Switches</span>
+</div>
+</td>
+<td class="px-space-md">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-text-strong font-title text-[12px]">
+<span class="w-2 h-2 rounded-full bg-violet-ink animate-ping"></span>
+<span>Testing now</span>
+</div>
+</td>
+<td class="px-space-md text-right">
+<div class="inline-flex items-center gap-1">
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-subtle hover:bg-surface-container-high text-text-strong font-mono-data text-xs font-semibold transition-all" onclick="extendTime(this, 'Chinedu Eze')" type="button">
+                    +5 Mins
+                  </button>
+<button class="px-2.5 py-1.5 rounded-lg bg-crimson-tint hover:bg-crimson-line text-crimson-ink-tint font-body-strong text-xs transition-all" onclick="forceSubmit('Chinedu Eze')" type="button">
+                    Force Submit
+                  </button>
+</div>
+</td>
+</tr>
+<!-- Row 3: Active Clean Candidate -->
+<tr class="hover:bg-violet-wash transition-colors h-16 candidate-row" data-search="amina bello 551029 kcl/2024/045" data-status="active">
+<td class="px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container text-on-surface flex items-center justify-center font-bold text-xs shrink-0">
+                    AB
+                  </div>
+<div class="flex flex-col min-w-0">
+<span class="font-title text-title text-on-surface truncate font-semibold">Amina Bello</span>
+<span class="font-mono-data text-[12px] text-text-secondary">PIN: 551029 · KCL/2024/045</span>
+</div>
+</div>
+</td>
+<td class="px-space-md">
+<div class="w-48 flex flex-col gap-1">
+<div class="flex items-center justify-between text-xs font-mono-data">
+<span class="text-on-surface font-semibold">44/50</span>
+<span class="text-violet-ink font-bold">88%</span>
+</div>
+<div class="w-full bg-surface-muted h-2 rounded-full overflow-hidden">
+<div class="bg-violet-ink h-full rounded-full" style="width: 88%"></div>
+</div>
+</div>
+</td>
+<td class="px-space-md text-right">
+<span class="font-timer-display text-timer-display text-text-strong font-mono">24m 10s</span>
+</td>
+<td class="px-space-md">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-tint text-emerald-ink-tint">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="font-mono-data text-[12px] font-semibold">Clean (0)</span>
+</div>
+</td>
+<td class="px-space-md">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-text-strong font-title text-[12px]">
+<span class="w-2 h-2 rounded-full bg-violet-ink"></span>
+<span>Testing now</span>
+</div>
+</td>
+<td class="px-space-md text-right">
+<div class="inline-flex items-center gap-1">
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-subtle hover:bg-surface-container-high text-text-strong font-mono-data text-xs font-semibold transition-all" onclick="extendTime(this, 'Amina Bello')" type="button">
+                    +5 Mins
+                  </button>
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-subtle hover:bg-crimson-tint hover:text-crimson-ink-tint text-text-secondary font-body-strong text-xs transition-all" onclick="forceSubmit('Amina Bello')" type="button">
+                    Force Submit
+                  </button>
+</div>
+</td>
+</tr>
+<!-- Row 4: Locked Candidate -->
+<tr class="hover:bg-violet-wash transition-colors h-16 candidate-row bg-crimson-tint/20" data-search="kenechukwu okoro 302198 kcl/2024/182" data-status="locked flagged">
+<td class="px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-crimson-tint text-crimson-ink-tint flex items-center justify-center font-bold text-xs shrink-0">
+                    KO
+                  </div>
+<div class="flex flex-col min-w-0">
+<span class="font-title text-title text-crimson-ink-white truncate font-semibold">Kenechukwu Okoro</span>
+<span class="font-mono-data text-[12px] text-crimson-ink-tint">PIN: 302198 · KCL/2024/182</span>
+</div>
+</div>
+</td>
+<td class="px-space-md">
+<div class="w-48 flex flex-col gap-1">
+<div class="flex items-center justify-between text-xs font-mono-data">
+<span class="text-on-surface font-semibold">21/50</span>
+<span class="text-crimson-vivid font-bold">42% (Halted)</span>
+</div>
+<div class="w-full bg-surface-muted h-2 rounded-full overflow-hidden">
+<div class="bg-crimson-vivid h-full rounded-full" style="width: 42%"></div>
+</div>
+</div>
+</td>
+<td class="px-space-md text-right">
+<span class="font-timer-display text-timer-display text-crimson-ink-tint font-mono">Paused (12m)</span>
+</td>
+<td class="px-space-md">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-crimson-tint text-crimson-ink-tint">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span class="font-mono-data text-[12px] font-bold">5 Switches (Auto-Lock)</span>
+</div>
+</td>
+<td class="px-space-md">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-crimson-tint text-crimson-ink-tint font-title text-[12px] font-bold">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+<span>Terminal Locked</span>
+</span>
+</td>
+<td class="px-space-md text-right">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card hover:bg-surface-subtle text-crimson-ink-white font-body-strong text-body-default shadow-sm transition-all" onclick="unlockCandidate('Kenechukwu Okoro', this)" type="button">
+<span class="material-symbols-outlined text-[16px]">lock_open</span>
+<span>Forgive &amp; Unlock</span>
+</button>
+</td>
+</tr>
+<!-- Row 5: Submitted & Final Graded -->
+<tr class="hover:bg-violet-wash transition-colors h-16 candidate-row" data-search="zainab abdullahi 678901 kcl/2024/002" data-status="submitted">
+<td class="px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-emerald-tint text-emerald-ink-tint flex items-center justify-center font-bold text-xs shrink-0">
+                    ZA
+                  </div>
+<div class="flex flex-col min-w-0">
+<span class="font-title text-title text-on-surface truncate font-semibold">Zainab Abdullahi</span>
+<span class="font-mono-data text-[12px] text-text-secondary">PIN: 678901 · KCL/2024/002</span>
+</div>
+</div>
+</td>
+<td class="px-space-md">
+<div class="w-48 flex flex-col gap-1">
+<div class="flex items-center justify-between text-xs font-mono-data">
+<span class="text-on-surface font-semibold">50/50</span>
+<span class="text-emerald-ink-tint font-bold">100%</span>
+</div>
+<div class="w-full bg-surface-muted h-2 rounded-full overflow-hidden">
+<div class="bg-emerald-vivid h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="px-space-md text-right">
+<div class="flex flex-col items-end">
+<span class="font-mono-data text-mono-data font-semibold text-text-strong">Submitted</span>
+<span class="font-mono-data text-[11px] text-text-placeholder">09:58 AM</span>
+</div>
+</td>
+<td class="px-space-md">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-tint text-emerald-ink-tint">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="font-mono-data text-[12px] font-semibold">Clean (0)</span>
+</div>
+</td>
+<td class="px-space-md">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-tint text-emerald-ink-white font-title text-[12px] font-bold">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>Graded: 88/100</span>
+</span>
+</td>
+<td class="px-space-md text-right">
+<button class="p-2 rounded-lg text-text-secondary hover:text-violet-ink hover:bg-surface-subtle transition-all" onclick="triggerToast('Viewing graded sheet for Zainab Abdullahi')" title="View Grade Breakdown" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer Meta -->
+<div class="p-space-md bg-surface-subtle flex flex-col sm:flex-row items-center justify-between gap-space-sm text-label-sm font-label-sm text-text-secondary">
+<span class="font-mono-data">Showing 5 of 76 Candidates enrolled across Hall 3 &amp; Virtual Lab</span>
+<div class="flex items-center gap-1 font-mono-data">
+<span>Telemetry heartbeat: 100% stable</span>
+<span class="w-2 h-2 rounded-full bg-emerald-vivid inline-block ml-1"></span>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Slide-over Drawer / Modal: Essay Grading Studio (AI Assisted) -->
+<div class="fixed inset-0 z-50 overflow-hidden flex justify-end" id="essayDrawer">
+<!-- Backdrop -->
+<div class="absolute inset-0 bg-inverse-surface/40 transition-opacity" onclick="closeDrawer()"></div>
+<!-- Drawer Panel (Level Overlay) -->
+<div class="relative w-full max-w-2xl bg-surface-container-lowest h-full shadow-2xl flex flex-col z-10 overflow-hidden">
+<!-- Drawer Header -->
+<div class="px-space-lg py-space-md bg-surface-container-low flex items-center justify-between shrink-0">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-lg bg-violet-tint text-violet-ink flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">psychology</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-md text-headline-md text-on-surface truncate">Essay Grading Studio</h2>
+<span class="px-2 py-0.5 rounded text-[11px] font-mono-data font-bold bg-violet-tint text-violet-ink uppercase">AI Assisted</span>
+</div>
+<span class="font-body-default text-xs text-text-secondary">Candidate: <strong class="text-on-surface">Daniel Olawale</strong> (KCL/2024/091) · Question 48 of 50</span>
+</div>
+</div>
+<button class="p-2 rounded-lg text-text-secondary hover:text-on-surface hover:bg-surface-subtle transition-all" onclick="closeDrawer()" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Drawer Body Content -->
+<div class="flex-1 overflow-y-auto p-space-lg flex flex-col gap-space-lg">
+<!-- Question Prompt Section -->
+<div class="bg-surface-subtle rounded-xl p-space-md flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-violet-ink">Question Stem (Section C - 20 Marks)</span>
+<button class="text-xs font-body-strong text-violet-ink hover:underline flex items-center gap-1" onclick="toggleModelAnswer()" type="button">
+<span class="material-symbols-outlined text-[16px]">help_center</span>
+<span id="modelToggleText">View Model Solution</span>
+</button>
+</div>
+<p class="font-question-text text-[15px] text-on-surface leading-relaxed font-medium">
+            Explain the mathematical derivation of the quadratic formula from the standard form \(ax^2 + bx + c = 0\) using the method of completing the square. Clearly state all intermediary algebraic constraints where \(a \neq 0\).
+          </p>
+<!-- Collapsible Model Answer -->
+<div class="hidden mt-2 p-3 rounded-lg bg-surface-container text-xs text-text-strong font-mono-data leading-relaxed" id="modelAnswerBox">
+<div class="font-bold text-violet-ink mb-1">Standard Grading Key:</div>
+            1. Divide through by a: x² + (b/a)x + c/a = 0<br/>
+            2. Transpose constant: x² + (b/a)x = -c/a<br/>
+            3. Add (b/2a)² to both sides: (x + b/2a)² = (b² - 4ac) / 4a²<br/>
+            4. Take square roots and isolate x = (-b ± √(b² - 4ac)) / 2a.
+          </div>
+</div>
+<!-- Candidate Written Response Area -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-text-secondary">Candidate Written Answer</span>
+<span class="font-mono-data text-xs text-emerald-ink-tint font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">edit_note</span> 184 words typed
+            </span>
+</div>
+<div class="p-space-md rounded-xl bg-chalk-white text-on-surface text-body-default leading-relaxed shadow-sm">
+<p>
+              To derive the quadratic formula from the general form \(ax^2 + bx + c = 0\) when \(a \neq 0\):<br/><br/>
+              First, divide the entire expression through by the leading coefficient \(a\), yielding:<br/>
+<code class="font-mono text-xs bg-surface-subtle px-1.5 py-0.5 rounded">x^2 + (b/a)x + c/a = 0</code>.<br/><br/>
+              Next, move the constant term to the right side of the equation: \(x^2 + (b/a)x = -c/a\).<br/>
+              Now we complete the square on the left side by taking half of the coefficient of \(x\), which is \(\frac{b}{2a}\), squaring it to get \(\frac{b^2}{4a^2}\), and adding this to both sides.<br/><br/>
+              This simplifies the left side into a perfect square binomial: \((x + \frac{b}{2a})^2 = \frac{b^2 - 4ac}{4a^2}\).<br/>
+              Taking the square root of both sides gives \(x + \frac{b}{2a} = \pm \frac{\sqrt{b^2 - 4ac}}{2a}\). Subtracting \(\frac{b}{2a}\) yields the final formula: \(x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}\).
+            </p>
+</div>
+</div>
+<!-- AI Assistant Recommendation Box -->
+<div class="rounded-xl bg-violet-wash p-space-md flex flex-col gap-3 shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-violet-ink text-[20px]">smart_toy</span>
+<span class="font-title text-title text-violet-ink font-bold">ParaLearn AI Evaluation</span>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-violet-tint text-violet-ink font-mono-data text-xs font-bold">
+              Suggested: 16 / 20 pts
+            </span>
+</div>
+<p class="text-xs text-text-strong font-body-default leading-relaxed">
+<strong class="text-on-surface">AI Rationale:</strong> The candidate flawlessly articulated the division by \(a\), completed the square with correct common denominators, and handled the dual sign (\(\pm\)) roots. Minus 4 points due to omission of the discriminant non-negativity constraint explanation for real roots (\(b^2 - 4ac \ge 0\)).
+          </p>
+</div>
+<!-- Rubric Controls (Interactive Sliders) -->
+<div class="flex flex-col gap- space-sm">
+<span class="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-text-secondary">Examiner Rubric Calibration</span>
+<div class="grid grid-cols-1 gap-space-sm">
+<!-- Criterion 1 -->
+<div class="p-3 rounded-lg bg-surface-subtle flex flex-col gap-1.5">
+<div class="flex items-center justify-between text-xs">
+<span class="font-body-strong text-on-surface">Mathematical Content &amp; Steps (Max 10)</span>
+<span class="font-mono-data font-bold text-violet-ink" id="contentScoreLabel">8 / 10</span>
+</div>
+<input class="w-full accent-violet-ink cursor-pointer" id="contentSlider" max="10" min="0" oninput="updateScore()" type="range" value="8"/>
+</div>
+<!-- Criterion 2 -->
+<div class="p-3 rounded-lg bg-surface-subtle flex flex-col gap-1.5">
+<div class="flex items-center justify-between text-xs">
+<span class="font-body-strong text-on-surface">Algebraic Expression &amp; Notation (Max 5)</span>
+<span class="font-mono-data font-bold text-violet-ink" id="exprScoreLabel">4 / 5</span>
+</div>
+<input class="w-full accent-violet-ink cursor-pointer" id="exprSlider" max="5" min="0" oninput="updateScore()" type="range" value="4"/>
+</div>
+<!-- Criterion 3 -->
+<div class="p-3 rounded-lg bg-surface-subtle flex flex-col gap-1.5">
+<div class="flex items-center justify-between text-xs">
+<span class="font-body-strong text-on-surface">Constraints &amp; Formal Rigor (Max 5)</span>
+<span class="font-mono-data font-bold text-violet-ink" id="accScoreLabel">4 / 5</span>
+</div>
+<input class="w-full accent-violet-ink cursor-pointer" id="accSlider" max="5" min="0" oninput="updateScore()" type="range" value="4"/>
+</div>
+</div>
+</div>
+<!-- Examiner Custom Feedback Note -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-text-secondary" for="examinerFeedback">Examiner Feedback / Audit Note</label>
+<textarea class="w-full p-3 rounded-lg bg-surface-container-lowest text-body-default text-on-surface focus:outline-none focus:ring-0 shadow-sm" id="examinerFeedback" placeholder="Provide optional commentary for the candidate or secondary moderator..." rows="2">Excellent conceptual derivation. Remember to explain the nature of real roots under the square root radical.</textarea>
+</div>
+</div>
+<!-- Drawer Footer Actions -->
+<div class="p-space-lg bg-surface-container-low flex items-center justify-between gap-space-md shrink-0">
+<div class="flex items-baseline gap-1">
+<span class="font-label-sm text-label-sm text-text-secondary">Assigned:</span>
+<span class="font-display text-[24px] text-violet-ink font-bold" id="totalScore">16</span>
+<span class="font-mono-data text-xs text-text-secondary">/ 20</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-4 py-2 rounded-lg bg-surface-container-lowest text-text-strong hover:bg-surface-subtle font-body-strong text-body-default shadow-sm transition-all" onclick="nextCandidate()" type="button">
+            Next Candidate
+          </button>
+<button class="px-5 py-2 rounded-lg bg-emerald-ink-white hover:bg-emerald-ink-tint text-card font-body-strong text-body-default shadow-sm flex items-center gap-1.5 transition-all" onclick="approveGrade()" type="button">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span>Approve &amp; Finalize Grade</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Toast Notification Node -->
+<div class="fixed bottom-6 right-6 z-50 hidden transition-all duration-300" id="toastNotification">
+<div class="bg-inverse-surface text-inverse-on-surface px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+<span class="material-symbols-outlined text-emerald-vivid text-[20px]" id="toastIcon">check_circle</span>
+<span class="font-body-default text-body-default text-card" id="toastMessage">Grade finalized successfully</span>
+</div>
+</div>
+</div>
+<script>
+  function openDrawer() {
+    const drawer = document.getElementById('essayDrawer');
+    if (drawer) {
+      drawer.classList.remove('hidden');
+      drawer.classList.add('flex');
+    }
+  }
+
+  function closeDrawer() {
+    const drawer = document.getElementById('essayDrawer');
+    if (drawer) {
+      drawer.classList.add('hidden');
+      drawer.classList.remove('flex');
+    }
+  }
+
+  function toggleModelAnswer() {
+    const box = document.getElementById('modelAnswerBox');
+    const label = document.getElementById('modelToggleText');
+    if (box.classList.contains('hidden')) {
+      box.classList.remove('hidden');
+      label.textContent = 'Hide Model Solution';
+    } else {
+      box.classList.add('hidden');
+      label.textContent = 'View Model Solution';
+    }
+  }
+
+  function updateScore() {
+    const c = parseInt(document.getElementById('contentSlider').value) || 0;
+    const e = parseInt(document.getElementById('exprSlider').value) || 0;
+    const a = parseInt(document.getElementById('accSlider').value) || 0;
+
+    document.getElementById('contentScoreLabel').textContent = c + ' / 10';
+    document.getElementById('exprScoreLabel').textContent = e + ' / 5';
+    document.getElementById('accScoreLabel').textContent = a + ' / 5';
+
+    document.getElementById('totalScore').textContent = (c + e + a);
+  }
+
+  function approveGrade() {
+    closeDrawer();
+    triggerToast('Essay Question #48 finalized for Daniel Olawale (Score: 16/20)');
+  }
+
+  function nextCandidate() {
+    triggerToast('Advancing to next candidate awaiting essay grading...');
+  }
+
+  function extendTime(btn, name) {
+    btn.disabled = true;
+    btn.textContent = '+5m Added';
+    btn.classList.add('text-emerald-ink-tint');
+    triggerToast('+5 Minutes added to ' + name);
+  }
+
+  function forceSubmit(name) {
+    if (confirm('Are you sure you want to force submit ' + name + '\'s examination now?')) {
+      triggerToast(name + ' was successfully submitted remotely.');
+    }
+  }
+
+  function unlockCandidate(name, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Unlocked';
+    btn.classList.add('text-emerald-ink-tint');
+    triggerToast('Violation counters cleared. Terminal unlocked for ' + name);
+  }
+
+  function confirmForceSubmitAll() {
+    if (confirm('CRITICAL ACTION: Are you sure you want to force-submit all active candidates currently writing?')) {
+      triggerToast('All 34 active candidates submitted successfully.');
+    }
+  }
+
+  function animateRefresh() {
+    const icon = document.getElementById('refreshIcon');
+    icon.classList.add('rotate-180');
+    setTimeout(() => {
+      icon.classList.remove('rotate-180');
+      triggerToast('Live exam telemetry refreshed');
+    }, 600);
+  }
+
+  function triggerToast(msg) {
+    const toast = document.getElementById('toastNotification');
+    const toastMsg = document.getElementById('toastMessage');
+    toastMsg.textContent = msg;
+    toast.classList.remove('hidden');
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 3800);
+  }
+
+  function setFilter(statusKey, element) {
+    // Update active tab styles
+    const buttons = document.querySelectorAll('#filterPillsContainer button');
+    buttons.forEach(b => {
+      b.classList.remove('bg-violet-tint', 'text-violet-ink', 'font-body-strong');
+      b.classList.add('font-body-default', 'text-text-secondary');
+    });
+    element.classList.add('bg-violet-tint', 'text-violet-ink', 'font-body-strong');
+    element.classList.remove('text-text-secondary');
+
+    // Filter rows
+    const rows = document.querySelectorAll('.candidate-row');
+    rows.forEach(row => {
+      const rowStatus = row.getAttribute('data-status') || '';
+      if (statusKey === 'all' || rowStatus.includes(statusKey)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  function filterTable() {
+    const q = document.getElementById('candidateSearch').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.candidate-row');
+    rows.forEach(row => {
+      const searchData = row.getAttribute('data-search') || '';
+      if (searchData.includes(q)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+</script></main></div></body></html>

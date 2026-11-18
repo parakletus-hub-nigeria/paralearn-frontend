@@ -5,26 +5,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowLeft,
-  ShieldAlert,
-  ShieldCheck,
-  Clock,
-  Users,
-  RotateCcw,
-  AlertTriangle,
+  ArrowUpRight,
   CheckCircle2,
-  MoreVertical,
-  Search,
-  PlusCircle,
-  XCircle,
+  ClipboardCheck,
+  Clock,
+  Copy,
+  Download,
   Eye,
-  Award,
-  Sparkles,
-  BookOpen,
+  FileText,
+  Lock,
+  MonitorPlay,
+  PencilRuler,
+  PenLine,
+  Plus,
+  RotateCcw,
+  Search,
+  Send,
+  ShieldAlert,
+  Ticket,
+  Unlock,
+  Users,
+  WifiOff,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 
 import {
   getExaminerSession,
@@ -46,11 +49,14 @@ import {
 
 import CbtReportCardPanel from "./CbtReportCardPanel";
 import CbtAnswerSheetDialog from "./CbtAnswerSheetDialog";
+import "./cbt-monitor.css";
 
 export interface CandidateLiveStatus {
   id: string;
   name: string;
   pin: string;
+  /** Registration or student number, when the roster has one */
+  studentId?: string;
   answeredCount: number;
   totalQuestions: number;
   timeRemainingMins: number;
@@ -73,7 +79,7 @@ interface CbtLiveMonitorProps {
 
 export default function CbtLiveMonitor({
   examId,
-  examTitle = "Examination Room Monitor",
+  examTitle = "Candidate monitor",
   roomCode = "",
 }: CbtLiveMonitorProps) {
   const [candidates, setCandidates] = useState<CandidateLiveStatus[]>([]);
@@ -95,14 +101,31 @@ export default function CbtLiveMonitor({
     null,
   );
   const [gradingQuestion, setGradingQuestion] = useState<any | null>(null);
+  // Live hall or essay marking; marking shows the grading form in the page, not over the hall
+  const [view, setView] = useState<"hall" | "marking">("hall");
+  const [markingId, setMarkingId] = useState<string | null>(null);
   // The next essay to open once the grading window closes (exams with several essays)
   const nextGradingRef = useRef<{ session: any; question: any } | null>(null);
+  // Set when marks are approved, so closing the form opens the next candidate in the queue
+  const advanceRef = useRef(false);
+  // The queue as it was when the form was last drawn (state updates from a save land a render later)
+  const pendingRef = useRef<CandidateLiveStatus[]>([]);
+  const [sort, setSort] = useState<"attention" | "name" | "progress">(
+    "attention",
+  );
+  // While the examiner's pointer or focus is on the list, rows keep their place between updates
+  const [holdOrder, setHoldOrder] = useState(false);
+  // Phones: while a script is open the queue folds away so the essay comes first
+  const [queueOpen, setQueueOpen] = useState(false);
+  const orderRef = useRef<string[]>([]);
 
   // Load questions to detect essay questions
   const [questions, setQuestions] = useState<any[]>([]);
   const {
     data: monitorData,
+    fulfilledTimeStamp: monitorUpdatedAt,
     isFetching: isLoadingMonitor,
+    isLoading: isFirstLoad,
     error: monitorError,
     refetch: refetchMonitor,
   } = useGetLiveMonitorQuery(examId, {
@@ -116,7 +139,9 @@ export default function CbtLiveMonitor({
   const [submitAttempt] = useSubmitAttemptMutation();
   const [extendAttempt] = useExtendAttemptMutation();
   const [reinstateAttempt] = useReinstateAttemptMutation();
-  const [answerSheet, setAnswerSheet] = useState<AttemptReviewPayload | null>(null);
+  const [answerSheet, setAnswerSheet] = useState<AttemptReviewPayload | null>(
+    null,
+  );
   const examNotFound = (monitorError as any)?.status === 404;
 
   const mapParticipantStatus = (
@@ -150,6 +175,7 @@ export default function CbtLiveMonitor({
       attemptId: participant.attemptId || participant.id || null,
       name: participant.candidateName || participant.name || "Candidate",
       pin: participant.candidatePin || participant.pin || "",
+      studentId: participant.studentId || participant.regNo || undefined,
       answeredCount: participant.answeredCount ?? 0,
       totalQuestions: participant.totalQuestions ?? totalQuestions,
       timeRemainingMins:
@@ -164,9 +190,9 @@ export default function CbtLiveMonitor({
           ? participant.gradingStatus === "PENDING_REVIEW"
             ? "PENDING_REVIEW"
             : participant.gradingStatus ||
-                (participant.grade || participant.score !== null
-                  ? "GRADED"
-                  : "PENDING_REVIEW")
+              (participant.grade || participant.score !== null
+                ? "GRADED"
+                : "PENDING_REVIEW")
           : undefined,
       score: participant.score ?? undefined,
       totalMarks: participant.totalMarks ?? monitorData?.exam?.totalMarks,
@@ -335,8 +361,9 @@ export default function CbtLiveMonitor({
         const essays = review.questions.filter((q) => q.type === "ESSAY");
         // Open the next essay that still needs marks, so multi-essay exams can be fully graded
         const essayQ =
-          essays.find((q) => q.marksAwarded === undefined || q.marksAwarded === null) ||
-          essays[0];
+          essays.find(
+            (q) => q.marksAwarded === undefined || q.marksAwarded === null,
+          ) || essays[0];
         if (!essayQ) {
           // Nothing to mark by hand: show the marked answer sheet
           setAnswerSheet(review);
@@ -383,6 +410,8 @@ export default function CbtLiveMonitor({
   };
 
   const handleManualGradeSaved = async (updatedSession: CandidateSession) => {
+    // Once these marks save, the grading panel moves on to the next script by itself
+    advanceRef.current = true;
     const gradedQuestionId = gradingQuestion?.id;
     const attemptId = updatedSession.attemptId;
     const awarded = gradedQuestionId
@@ -392,21 +421,33 @@ export default function CbtLiveMonitor({
       : (updatedSession.essayScore ?? 0);
 
     if (attemptId && gradedQuestionId) {
-      const review = await manualGradeAttempt({
-        attemptId,
-        answers: [
-          {
-            questionId: gradedQuestionId,
-            marksAwarded: awarded,
-            feedback: updatedSession.essayFeedback?.[gradedQuestionId]?.comment || "",
-          },
-        ],
-      }).unwrap();
+      let review: Awaited<ReturnType<ReturnType<typeof manualGradeAttempt>["unwrap"]>>;
+      try {
+        review = await manualGradeAttempt({
+          attemptId,
+          answers: [
+            {
+              questionId: gradedQuestionId,
+              marksAwarded: awarded,
+              feedback:
+                updatedSession.essayFeedback?.[gradedQuestionId]?.comment || "",
+            },
+          ],
+        }).unwrap();
+      } catch (err) {
+        // Not saved: closing the panel now should just close it, not move on to the next script
+        advanceRef.current = false;
+        throw err;
+      }
 
       // The attempt is only graded once every essay has marks
       const essays = review.questions.filter((q) => q.type === "ESSAY");
-      const remaining = essays.filter((q) => q.marksAwarded === undefined || q.marksAwarded === null);
-      const status = review.gradingStatus || (remaining.length ? "PENDING_REVIEW" : "GRADED");
+      const remaining = essays.filter(
+        (q) => q.marksAwarded === undefined || q.marksAwarded === null,
+      );
+      const status =
+        review.gradingStatus ||
+        (remaining.length ? "PENDING_REVIEW" : "GRADED");
       setCandidates((prev) =>
         prev.map((c) =>
           c.pin === review.candidatePin
@@ -453,7 +494,12 @@ export default function CbtLiveMonitor({
       toast.error("This candidate has not started the exam yet.");
       return;
     }
-    if (!confirm(`Submit ${candidate.name}'s exam now with the answers saved so far?`)) return;
+    if (
+      !confirm(
+        `Submit ${candidate.name}'s exam now with the answers saved so far?`,
+      )
+    )
+      return;
     try {
       await submitAttempt({
         attemptId: candidate.attemptId,
@@ -463,7 +509,8 @@ export default function CbtLiveMonitor({
       refetchMonitor();
     } catch (err: any) {
       toast.error(
-        err?.data?.message || "Could not submit this attempt. Please try again.",
+        err?.data?.message ||
+          "Could not submit this attempt. Please try again.",
       );
     }
   };
@@ -473,11 +520,16 @@ export default function CbtLiveMonitor({
     const candidate = candidates.find((c) => c.id === candidateId);
     if (!candidate?.attemptId) return;
     try {
-      await extendAttempt({ attemptId: candidate.attemptId, minutes: 5 }).unwrap();
+      await extendAttempt({
+        attemptId: candidate.attemptId,
+        minutes: 5,
+      }).unwrap();
       toast.success(`Gave ${candidate.name} 5 more minutes.`);
       refetchMonitor();
     } catch (err: any) {
-      toast.error(err?.data?.message || "Couldn't add time for this candidate.");
+      toast.error(
+        err?.data?.message || "Couldn't add time for this candidate.",
+      );
     }
   };
 
@@ -485,7 +537,12 @@ export default function CbtLiveMonitor({
   const handleUnlockCandidate = async (candidateId: string) => {
     const candidate = candidates.find((c) => c.id === candidateId);
     if (!candidate?.attemptId) return;
-    if (!confirm(`Let ${candidate.name} continue? Their tab-switch count resets and their answers are kept.`)) return;
+    if (
+      !confirm(
+        `Let ${candidate.name} continue? Their tab-switch count resets and their answers are kept.`,
+      )
+    )
+      return;
     try {
       await reinstateAttempt(candidate.attemptId).unwrap();
       toast.success(
@@ -501,7 +558,8 @@ export default function CbtLiveMonitor({
   const filteredCandidates = candidates.filter((c) => {
     const matchesSearch =
       c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.pin.includes(search);
+      c.pin.includes(search) ||
+      (c.studentId || "").toLowerCase().includes(search.toLowerCase());
 
     if (filter === "flagged") return matchesSearch && c.violations > 0;
     if (filter === "locked") return matchesSearch && c.status === "locked";
@@ -513,6 +571,58 @@ export default function CbtLiveMonitor({
       );
     return matchesSearch;
   });
+
+  /** Lower is more urgent: the order an invigilator should look at the hall in */
+  const urgency = (c: CandidateLiveStatus) => {
+    if (c.status === "locked") return 0;
+    if (c.status === "active" && c.timeRemainingMins <= 1) return 1;
+    if (c.status === "active" && c.violations > 0) return 2;
+    if (c.status === "active" && c.timeRemainingMins <= 5) return 3;
+    if (c.status === "active") return 4;
+    if (c.gradingStatus === "PENDING_REVIEW") return 5;
+    if (c.status === "registered") return 6;
+    return 7;
+  };
+
+  const pctOf = (c: CandidateLiveStatus) =>
+    c.totalQuestions > 0
+      ? Math.round((c.answeredCount / c.totalQuestions) * 100)
+      : 0;
+
+  const bySort = [...filteredCandidates].sort((a, b) => {
+    if (sort === "name") return a.name.localeCompare(b.name);
+    if (sort === "progress")
+      return pctOf(a) - pctOf(b) || a.name.localeCompare(b.name);
+    return (
+      urgency(a) - urgency(b) ||
+      (a.status === "active" ? a.timeRemainingMins - b.timeRemainingMins : 0) ||
+      a.name.localeCompare(b.name)
+    );
+  });
+  // Rows don't jump under the pointer: while held, keep the last order and add newcomers at the end
+  let visibleCandidates = bySort;
+  if (holdOrder && orderRef.current.length) {
+    const place = new Map(orderRef.current.map((id, i) => [id, i]));
+    visibleCandidates = [...filteredCandidates].sort(
+      (a, b) =>
+        (place.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (place.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+    );
+  } else {
+    orderRef.current = bySort.map((c) => c.id);
+  }
+  const orderDiffers =
+    holdOrder && visibleCandidates.some((c, i) => bySort[i]?.id !== c.id);
+
+  const holdHandlers = {
+    onPointerEnter: () => setHoldOrder(true),
+    onPointerLeave: () => setHoldOrder(false),
+    onFocus: () => setHoldOrder(true),
+    onBlur: (e: React.FocusEvent<HTMLDivElement>) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+        setHoldOrder(false);
+    },
+  };
 
   const activeCount = candidates.filter((c) => c.status === "active").length;
   const registeredCount = candidates.filter(
@@ -526,553 +636,807 @@ export default function CbtLiveMonitor({
 
   const pathname = usePathname();
   const isSchoolContext = pathname?.startsWith("/RMS");
+  const listHref = isSchoolContext ? "/RMS/cbt" : "/cbt";
   const backHref = isSchoolContext
     ? `/RMS/cbt/exams/${examId}`
     : `/cbt/exams/${examId}`;
+  const candidatesHref = `/cbt/candidates?examId=${encodeURIComponent(examId)}`;
+
+  const submittedCount = candidates.filter(
+    (c) => c.status === "submitted",
+  ).length;
+  const essaysPending = candidates.filter(
+    (c) => c.gradingStatus === "PENDING_REVIEW",
+  );
+  pendingRef.current = essaysPending;
+  const markedCandidates = candidates.filter(
+    (c) => c.gradingStatus === "GRADED" || c.gradingStatus === "AUTO_SCORED",
+  );
+  const total = candidates.length;
+  const share = (n: number, of: number) =>
+    of > 0 ? Math.round((n / of) * 100) : 0;
+  const roomCodeShown = monitorMeta.code || roomCode;
+  const hasData = Boolean(monitorData) || candidates.length > 0;
+
+  const updatedAt = monitorUpdatedAt
+    ? new Date(monitorUpdatedAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : null;
+
+  // From the hall: open the marking tab on this candidate
+  const startMarking = (candidate: CandidateLiveStatus) => {
+    setView("marking");
+    setMarkingId(candidate.id);
+    handleOpenEssayGrading(candidate);
+  };
+
+  const openMarkingTab = () => {
+    setView("marking");
+    // Nothing open yet: start on the first script waiting for marks
+    if (!gradingSession && !isFetchingReview && essaysPending[0]) {
+      setMarkingId(essaysPending[0].id);
+      handleOpenEssayGrading(essaysPending[0]);
+    }
+  };
+
+  const closeGrading = () => {
+    const next = nextGradingRef.current;
+    const advance = advanceRef.current;
+    nextGradingRef.current = null;
+    advanceRef.current = false;
+    if (next) {
+      setGradingSession(next.session);
+      setGradingQuestion(next.question);
+      return;
+    }
+    // Marks were just approved: go straight to the next candidate waiting
+    const following = advance
+      ? pendingRef.current.find((c) => c.id !== markingId)
+      : undefined;
+    setGradingSession(null);
+    if (following) {
+      setMarkingId(following.id);
+      handleOpenEssayGrading(following);
+    } else {
+      setMarkingId(null);
+    }
+  };
+
+  const copyRoomCode = async () => {
+    try {
+      await navigator.clipboard.writeText(roomCodeShown);
+      toast.success(`Room code ${roomCodeShown} copied.`);
+    } catch {
+      toast.error("Couldn't copy. Select the code and copy it instead.");
+    }
+  };
+
+  const initials = (name: string) =>
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join("") || "C";
+
+  const tone = (c: CandidateLiveStatus) =>
+    c.status === "locked"
+      ? "crimson"
+      : c.status === "active" && c.timeRemainingMins <= 1
+        ? "crimson"
+        : c.violations > 0 && c.status === "active"
+          ? "amber"
+          : c.status === "submitted"
+            ? "emerald"
+            : c.status === "registered"
+              ? "muted"
+              : "violet";
+
+  const rowClass = (c: CandidateLiveStatus) =>
+    c.status === "locked"
+      ? "is-locked"
+      : urgency(c) === 1
+        ? "is-urgent"
+        : undefined;
+
+  const timeCell = (c: CandidateLiveStatus) => {
+    if (c.status === "registered")
+      return <span className="cbt-mon-quiet">Not started</span>;
+    if (c.status === "locked")
+      return (
+        <span className="cbt-mon-time is-crimson">
+          <Lock size={13} aria-hidden />
+          Locked
+        </span>
+      );
+    if (c.status === "submitted") {
+      if (c.gradingStatus === "PENDING_REVIEW")
+        return <span className="cbt-mon-chip amber">Essays to mark</span>;
+      if (c.score !== undefined)
+        return (
+          <span className="cbt-mon-time">
+            <CheckCircle2 size={13} aria-hidden className="cbt-mon-ok" />
+            {c.score}/{c.totalMarks || 100}
+          </span>
+        );
+      return <span className="cbt-mon-quiet">Submitted</span>;
+    }
+    const mins = c.timeRemainingMins;
+    const level = mins <= 1 ? "is-crimson" : mins <= 5 ? "is-amber" : "";
+    return (
+      <span className={`cbt-mon-time ${level}`}>
+        <Clock size={13} aria-hidden />
+        {mins <= 0 ? "Time up" : `${mins}m left`}
+      </span>
+    );
+  };
+
+  // Only exceptions get colour; a clean record stays quiet so the problems stand out
+  const integrityCell = (c: CandidateLiveStatus) => (
+    <div className="cbt-mon-integrity">
+      {c.violations === 0 ? (
+        <span className="cbt-mon-quiet">None</span>
+      ) : (
+        <span
+          className={`cbt-mon-chip ${c.status === "locked" ? "crimson" : "amber"}`}
+        >
+          <ShieldAlert size={13} aria-hidden />
+          {c.violations} tab {c.violations === 1 ? "switch" : "switches"}
+        </span>
+      )}
+      {c.syncedLate && (
+        <span
+          className="cbt-mon-chip cobalt"
+          title="Submitted while offline and received after the deadline. Check the submission time before accepting."
+        >
+          Synced late
+        </span>
+      )}
+    </div>
+  );
+
+  const actionsCell = (c: CandidateLiveStatus) => {
+    if (c.status === "registered")
+      return <span className="cbt-mon-quiet">Waiting to start</span>;
+    if (c.status === "submitted" || c.gradingStatus === "PENDING_REVIEW") {
+      const pending = c.gradingStatus === "PENDING_REVIEW";
+      const graded = c.gradingStatus === "GRADED";
+      return (
+        <button
+          className={`cbt-button ${pending ? "primary" : ""}`}
+          onClick={() => startMarking(c)}
+          disabled={isFetchingReview || isSavingGrade}
+        >
+          {pending || graded ? <PenLine size={15} /> : <Eye size={15} />}
+          {pending ? "Mark essays" : graded ? "Edit marks" : "View answers"}
+        </button>
+      );
+    }
+    if (c.status === "locked")
+      return (
+        <button
+          className="cbt-button cbt-mon-warn"
+          onClick={() => handleUnlockCandidate(c.id)}
+        >
+          <Unlock size={15} />
+          Unlock
+        </button>
+      );
+    return (
+      <>
+        <button
+          className="cbt-button"
+          onClick={() => handleAddFiveMins(c.id)}
+          aria-label={`Give ${c.name} 5 more minutes`}
+        >
+          <Plus size={15} />5 mins
+        </button>
+        <button
+          className="cbt-button cbt-mon-danger"
+          onClick={() => handleForceSubmit(c.id)}
+          aria-label={`Submit ${c.name}'s exam now`}
+        >
+          <Send size={15} />
+          Submit now
+        </button>
+      </>
+    );
+  };
+
+  const clearFilters = () => {
+    setSearch("");
+    setFilter("all");
+  };
+
+  const emptyHall = (() => {
+    if (!hasData && isFirstLoad)
+      return (
+        <div
+          className="cbt-mon-skeleton"
+          aria-busy="true"
+          aria-label="Loading the hall"
+        >
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i}>
+              <span />
+              <span />
+              <span />
+            </div>
+          ))}
+        </div>
+      );
+    if (candidates.length === 0 && monitorError)
+      return (
+        <div className="cbt-mon-empty">
+          <WifiOff size={24} aria-hidden />
+          <h2>Can&apos;t load the hall</h2>
+          <p>
+            The monitor couldn&apos;t reach the server. Check this
+            computer&apos;s connection; it tries again every 5 seconds.
+            Candidates keep writing either way.
+          </p>
+          <button className="cbt-button" onClick={() => refetchMonitor()}>
+            <RotateCcw size={15} />
+            Try again now
+          </button>
+        </div>
+      );
+    if (candidates.length === 0)
+      return (
+        <div className="cbt-mon-empty">
+          <Users size={24} aria-hidden />
+          <h2>No one has joined yet</h2>
+          <p>
+            Candidates appear here the moment they enter the room code
+            {roomCodeShown ? (
+              <>
+                {" "}
+                <strong className="cbt-mon-code">{roomCodeShown}</strong>
+              </>
+            ) : null}{" "}
+            at the candidate entrance, with their progress, time left and tab
+            switches.
+          </p>
+          <div className="cbt-mon-empty-actions">
+            {roomCodeShown && (
+              <button className="cbt-button" onClick={copyRoomCode}>
+                <Copy size={15} />
+                Copy room code
+              </button>
+            )}
+            {!isSchoolContext && (
+              <Link className="cbt-button" href={candidatesHref}>
+                <Ticket size={15} />
+                Issue PINs
+              </Link>
+            )}
+            <Link className="cbt-button" href="/take" target="_blank">
+              Candidate entrance
+              <ArrowUpRight size={14} />
+            </Link>
+          </div>
+        </div>
+      );
+    return (
+      <div className="cbt-mon-empty">
+        <Search size={24} aria-hidden />
+        <h2>No candidates match</h2>
+        <p>Nobody in this hall fits that search and filter.</p>
+        <button className="cbt-button" onClick={clearFilters}>
+          Clear search and filter
+        </button>
+      </div>
+    );
+  })();
+
+  const filters = [
+    { id: "all", label: "All", count: total },
+    { id: "active", label: "Writing", count: activeCount },
+    { id: "flagged", label: "Flagged", count: flaggedCount },
+    { id: "review", label: "Submitted", count: reviewCount },
+    { id: "locked", label: "Locked", count: lockedCount },
+  ] as const;
+
+  const liveText = monitorError
+    ? updatedAt
+      ? `Can't reach the server. Showing the hall as of ${updatedAt}; retrying every 5 seconds.`
+      : "Can't reach the server. Retrying every 5 seconds."
+    : !monitorData && isFirstLoad
+      ? "Loading the hall…"
+      : updatedAt
+        ? `Live. Updates every 5 seconds, last at ${updatedAt}`
+        : "Live. Updates every 5 seconds";
+
+  const marked = markedCandidates.length;
+  const toMarkTotal = essaysPending.length + marked;
 
   return (
-    <div className="cbt-monitor min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)]">
-      {/* ── HEADER (56px) ────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 h-14 bg-white border-b border-[var(--border-fine)] px-2.5 sm:px-6 flex items-center justify-between shadow-xs gap-2">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <Link href={backHref}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-[var(--text-secondary)] shrink-0"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
+    <div className="cbt-mon">
+      <div className="cbt-mon-head">
+        <div className="cbt-mon-heading">
+          <Link href={listHref} className="cbt-mon-back">
+            <ArrowLeft size={15} aria-hidden />
+            Examinations
           </Link>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sm sm:text-base text-[var(--foreground)]">
-              {monitorMeta.title}
-            </span>
-            <Badge
-              variant="outline"
-              className="hidden sm:inline-flex font-mono text-xs bg-[var(--violet-tint)] text-[var(--violet-ink)] uppercase"
-            >
-              Room: {monitorMeta.code || roomCode}
-            </Badge>
+          <div className="cbt-mon-titleline">
+            <h1>{monitorMeta.title}</h1>
+            {roomCodeShown && (
+              <button
+                type="button"
+                className="cbt-mon-code"
+                onClick={copyRoomCode}
+                title="Copy room code"
+                aria-label={`Room code ${roomCodeShown}. Copy`}
+              >
+                Room {roomCodeShown}
+                <Copy size={12} aria-hidden />
+              </button>
+            )}
           </div>
+          <p
+            className={`cbt-mon-live ${monitorError ? "is-down" : ""}`}
+            role="status"
+            aria-live="polite"
+          >
+            <span className="cbt-mon-dot" aria-hidden />
+            {liveText}
+          </p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Badge className="bg-[var(--emerald-tint)] text-[#065f46] font-mono text-xs flex items-center gap-1.5 px-2.5 py-1 rounded-full border-0">
-            <span
-              className={`w-2 h-2 rounded-full ${monitorError ? "bg-amber-600" : "bg-[var(--emerald-signal)]"}`}
-            />
-            <span>
-              {isLoadingMonitor
-                ? "Updating"
-                : monitorError
-                  ? "Connection interrupted"
-                  : "Updated every 5s"}
-            </span>
-          </Badge>
-        </div>
-      </header>
-
-      {/* ── MAIN MONITOR BOARD ───────────────────────────────────────────── */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <span className="cbt-eyebrow">Examination / Invigilation</span>
-            <h1 className="text-2xl font-bold">Candidate monitor</h1>
-          </div>
+        <div className="cbt-mon-actions">
+          <Link href={backHref} className="cbt-button">
+            <PencilRuler size={15} />
+            Edit questions
+          </Link>
           <a
             className="cbt-button"
             href={`/api/cbt/sync/export-csv/${encodeURIComponent(examId)}`}
             download
           >
-            Download results (CSV)
+            <Download size={15} />
+            Download CSV
           </a>
           <button
             className="cbt-button"
             disabled={isLoadingMonitor}
             onClick={() => refetchMonitor()}
+            aria-label="Refresh now"
+            title="Refresh now"
           >
-            <RotateCcw className="h-4 w-4" />
-            Refresh
+            <RotateCcw
+              size={15}
+              className={isLoadingMonitor ? "animate-spin" : undefined}
+            />
           </button>
         </div>
+      </div>
 
-        {/* Metric Summary Ribbon */}
-        <div className="cbt-monitor-metrics grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-4 shadow-xs">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-              Active Candidates
-            </span>
-            <div className="text-2xl sm:text-3xl font-bold font-mono text-[var(--foreground)] mt-1">
-              {activeCount}
-            </div>
-            <div className="text-[11px] text-[var(--text-secondary)] mt-1">
-              {registeredCount} not started
-            </div>
-          </div>
+      <div className="cbt-mon-tabs" role="tablist" aria-label="Monitor views">
+        <button
+          role="tab"
+          id="cbt-mon-tab-hall"
+          aria-selected={view === "hall"}
+          aria-controls="cbt-mon-panel"
+          onClick={() => setView("hall")}
+        >
+          <MonitorPlay size={16} aria-hidden />
+          Live hall
+          <span className="cbt-mon-count">
+            {activeCount}
+            <span className="cbt-mon-count-word"> writing</span>
+          </span>
+        </button>
+        <button
+          role="tab"
+          id="cbt-mon-tab-marking"
+          aria-selected={view === "marking"}
+          aria-controls="cbt-mon-panel"
+          onClick={openMarkingTab}
+        >
+          <ClipboardCheck size={16} aria-hidden />
+          Essay marking
+          <span
+            className={`cbt-mon-count ${essaysPending.length ? "is-amber" : ""}`}
+          >
+            {essaysPending.length}
+            <span className="cbt-mon-count-word"> to mark</span>
+          </span>
+        </button>
+      </div>
 
-          <div className="bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-4 shadow-xs">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">
-              Flagged (Tab Switches)
-            </span>
-            <div className="text-2xl sm:text-3xl font-bold font-mono text-amber-700 mt-1">
-              {flaggedCount}
-            </div>
-          </div>
-
-          <div className="bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-4 shadow-xs">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-700">
-              Submissions to review
-            </span>
-            <div className="text-2xl sm:text-3xl font-bold font-mono text-blue-700 mt-1">
-              {reviewCount}
-            </div>
-          </div>
-
-          <div className="bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-4 shadow-xs">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
-              Completed Submissions
-            </span>
-            <div className="text-2xl sm:text-3xl font-bold font-mono text-emerald-700 mt-1">
-              {candidates.filter((c) => c.status === "submitted").length}
-            </div>
-          </div>
+      {examNotFound && (
+        <div className="cbt-notice" role="alert">
+          This exam wasn't found in your workspace. It may have been deleted, or
+          you're signed in to a different workspace.
         </div>
-
-        {examNotFound && (
-          <div className="cbt-notice" role="alert">
-            This exam wasn't found in your workspace. It may have been deleted, or you're signed in to a different workspace.
-          </div>
-        )}
-
-        {/* Report cards: school workspaces only */}
-        {isSchoolWorkspace && <CbtReportCardPanel examId={examId} />}
-
-        {/* Action & Filter Bar */}
-        <div className="flex flex-col xl:flex-row gap-3 items-center justify-between">
-          {/* Search */}
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-[var(--text-secondary)] absolute left-3 top-3" />
-            <Input
-              type="text"
-              placeholder="Search candidate name or PIN..."
-              aria-label="Search candidates by name or PIN"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-10 text-xs border-[var(--border-fine)] rounded-[var(--radius-md)]"
-            />
-          </div>
-
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1">
-            {(["all", "active", "review", "flagged", "locked"] as const).map(
-              (tab) => (
-                <button
-                  key={tab}
-                  aria-pressed={filter === tab}
-                  onClick={() => setFilter(tab)}
-                  className={`h-8 px-3 rounded-[var(--radius-md)] text-xs font-semibold capitalize transition-all shrink-0 ${
-                    filter === tab
-                      ? "bg-[var(--violet-ink)] text-white shadow-xs"
-                      : "bg-[var(--surface-muted)] text-[var(--text-secondary)] hover:text-[var(--foreground)]"
-                  }`}
-                >
-                  {tab === "review" ? `Submissions (${reviewCount})` : tab}
-                </button>
-              ),
-            )}
-          </div>
-        </div>
-
-        {/* Live Candidate Table (Desktop) & Cards (Mobile) */}
-        <div className="bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[var(--surface-muted)] border-b border-[var(--border-fine)] text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                  <th className="py-3 px-4">Candidate &amp; PIN</th>
-                  <th className="py-3 px-4">Progress</th>
-                  <th className="py-3 px-4">Time Left</th>
-                  <th className="py-3 px-4">Violations</th>
-                  <th className="py-3 px-4">Grading Status</th>
-                  <th className="py-3 px-4 text-right">Invigilator Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-fine)] text-xs font-medium">
-                {filteredCandidates.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-16 text-center">
-                      <div className="space-y-3 max-w-sm mx-auto">
-                        <div className="w-12 h-12 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
-                          <Users className="w-6 h-6" />
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="font-bold text-sm text-[var(--foreground)]">
-                            No active candidates in hall
-                          </h4>
-                          <p className="text-xs text-[var(--text-secondary)]">
-                            Students sitting for this examination room will
-                            appear here in real-time with their progress, timer,
-                            and anti-cheat event stream.
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredCandidates.map((c) => {
-                    const pct =
-                      c.totalQuestions > 0
-                        ? Math.round((c.answeredCount / c.totalQuestions) * 100)
-                        : 0;
-
-                    return (
-                      <tr
-                        key={c.id}
-                        className="hover:bg-[var(--surface-subtle)] transition-colors"
-                      >
-                        {/* Name & PIN */}
-                        <td className="py-3.5 px-4">
-                          <div className="font-bold text-[var(--foreground)]">
-                            {c.name}
-                          </div>
-                          <div className="font-mono text-[11px] text-[var(--text-secondary)]">
-                            PIN: {c.pin}
-                          </div>
-                        </td>
-
-                        {/* Progress */}
-                        <td className="py-3.5 px-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[11px] font-mono">
-                              <span>
-                                {c.answeredCount}/{c.totalQuestions}
-                              </span>
-                              <span className="text-[var(--text-secondary)]">
-                                {pct}%
-                              </span>
-                            </div>
-                            <div className="w-28 bg-[var(--surface-muted)] h-1.5 rounded-full overflow-hidden">
-                              <div
-                                className="bg-[var(--violet-ink)] h-full transition-all"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Time */}
-                        <td className="py-3.5 px-4 font-mono">
-                          {c.status === "registered" ? (
-                            <span className="text-[var(--text-secondary)]">
-                              Not started
-                            </span>
-                          ) : c.status === "submitted" ? (
-                            <span className="text-[var(--text-secondary)]">
-                              Submitted
-                            </span>
-                          ) : (
-                            <span className="text-[var(--foreground)] font-semibold">
-                              {c.timeRemainingMins}m remaining
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Violations */}
-                        <td className="py-3.5 px-4">
-                          {c.violations === 0 ? (
-                            <span className="text-emerald-700 flex items-center gap-1 font-semibold">
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                              <span>0 Clean</span>
-                            </span>
-                          ) : (
-                            <Badge className="bg-[var(--amber-tint)] text-[#92400e] border border-[var(--amber-signal)]/30 font-mono text-[10px]">
-                              ⚠️ {c.violations} Tab Switches
-                            </Badge>
-                          )}
-                          {c.syncedLate && (
-                            <div className="mt-1">
-                              <Badge
-                                title="Submitted while offline and received after the deadline. Check the submission time before accepting."
-                                className="bg-[var(--cobalt-tint)] text-[#1e40af] border border-[var(--cobalt-signal)]/30 text-[10px]"
-                              >
-                                Synced late
-                              </Badge>
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Status / Grading Status */}
-                        <td className="py-3.5 px-4">
-                          {c.gradingStatus === "PENDING_REVIEW" ? (
-                            <Badge className="bg-amber-50 text-amber-800 border border-amber-300 font-semibold text-[10px]">
-                              Essays Pending Review
-                            </Badge>
-                          ) : c.gradingStatus === "GRADED" ? (
-                            <Badge className="bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold text-[10px]">
-                              Graded: {c.score}/{c.totalMarks || 100}m
-                            </Badge>
-                          ) : c.status === "registered" ? (
-                            <Badge className="bg-slate-100 text-slate-600 font-semibold text-[10px] border-0">
-                              Registered
-                            </Badge>
-                          ) : c.status === "active" ? (
-                            <Badge className="bg-[var(--emerald-tint)] text-[#065f46] font-semibold text-[10px] border-0">
-                              Active
-                            </Badge>
-                          ) : c.status === "locked" ? (
-                            <Badge className="bg-[var(--crimson-tint)] text-[#991b1b] font-semibold text-[10px] border-0">
-                              Locked
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-[var(--surface-muted)] text-[var(--text-secondary)] font-semibold text-[10px] border-0">
-                              Submitted
-                            </Badge>
-                          )}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-3.5 px-4 text-right space-x-1.5">
-                          {c.status === "registered" ? (
-                            <span className="text-[11px] text-[var(--text-secondary)]">
-                              Waiting for candidate
-                            </span>
-                          ) : c.status === "submitted" ||
-                            c.gradingStatus === "PENDING_REVIEW" ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleOpenEssayGrading(c)}
-                              disabled={isFetchingReview || isSavingGrade}
-                              className="h-7 text-[11px] border-violet-200 text-violet-700 bg-violet-50/60 hover:bg-violet-100 font-bold rounded-[var(--radius-md)] inline-flex items-center gap-1"
-                            >
-                              <Sparkles className="w-3 h-3 text-violet-600" />
-                              <span>
-                                {c.gradingStatus === "GRADED"
-                                  ? "Edit Grade"
-                                  : c.gradingStatus === "PENDING_REVIEW"
-                                    ? "Grade Essays"
-                                    : "View answers"}
-                              </span>
-                            </Button>
-                          ) : c.status === "locked" ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleUnlockCandidate(c.id)}
-                              className="h-7 text-[11px] border-[var(--amber-signal)] text-amber-700 hover:bg-[var(--amber-tint)] font-semibold rounded-[var(--radius-md)]"
-                            >
-                              Forgive &amp; Unlock
-                            </Button>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleAddFiveMins(c.id)}
-                                className="h-7 text-[11px] border-[var(--border-fine)] text-[var(--text-secondary)] hover:text-[var(--foreground)] rounded-[var(--radius-md)]"
-                              >
-                                +5 Mins
-                              </Button>
-
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleForceSubmit(c.id)}
-                                className="h-7 text-[11px] border-[var(--crimson-signal)]/30 text-[var(--crimson-signal)] hover:bg-[var(--crimson-tint)] rounded-[var(--radius-md)]"
-                              >
-                                Force Submit
-                              </Button>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Candidate Card Feed (< md) */}
-          <div className="md:hidden divide-y divide-[var(--border-fine)]">
-            {filteredCandidates.length === 0 ? (
-              <div className="py-12 px-4 text-center space-y-2">
-                <div className="w-12 h-12 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
-                  <Users className="w-6 h-6" />
-                </div>
-                <h4 className="font-bold text-sm text-[var(--foreground)]">
-                  No active candidates in hall
-                </h4>
-                <p className="text-xs text-[var(--text-secondary)]">
-                  Students taking this exam will appear here in real-time.
-                </p>
-              </div>
-            ) : (
-              filteredCandidates.map((c) => {
-                const pct =
-                  c.totalQuestions > 0
-                    ? Math.round((c.answeredCount / c.totalQuestions) * 100)
-                    : 0;
-
-                return (
-                  <div key={c.id} className="p-4 space-y-3 bg-white">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="font-bold text-sm text-[var(--foreground)]">
-                          {c.name}
-                        </div>
-                        <div className="font-mono text-[11px] text-[var(--text-secondary)]">
-                          PIN: {c.pin}
-                        </div>
-                      </div>
-                      <div>
-                        {c.gradingStatus === "PENDING_REVIEW" ? (
-                          <Badge className="bg-amber-50 text-amber-800 border border-amber-300 font-semibold text-[10px]">
-                            Essays Pending
-                          </Badge>
-                        ) : c.gradingStatus === "GRADED" ? (
-                          <Badge className="bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold text-[10px]">
-                            Graded
-                          </Badge>
-                        ) : c.status === "registered" ? (
-                          <Badge className="bg-slate-100 text-slate-600 font-semibold text-[10px] border-0">
-                            Registered
-                          </Badge>
-                        ) : c.status === "active" ? (
-                          <Badge className="bg-[var(--emerald-tint)] text-[#065f46] font-semibold text-[10px] border-0">
-                            Active
-                          </Badge>
-                        ) : c.status === "locked" ? (
-                          <Badge className="bg-[var(--crimson-tint)] text-[#991b1b] font-semibold text-[10px] border-0">
-                            Locked
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-[var(--surface-muted)] text-[var(--text-secondary)] font-semibold text-[10px] border-0">
-                            Finished
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Progress Bar & Time */}
-                    <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                      <div className="flex items-center justify-between text-[11px] font-mono">
-                        <span className="text-[var(--text-secondary)]">
-                          Answered: {c.answeredCount}/{c.totalQuestions} ({pct}
-                          %)
-                        </span>
-                        <span className="font-semibold text-slate-800">
-                          {c.status === "registered"
-                            ? "Not started"
-                            : c.status === "submitted"
-                              ? "Submitted"
-                              : `${c.timeRemainingMins}m left`}
-                        </span>
-                      </div>
-                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                        <div
-                          className="bg-[var(--violet-ink)] h-full transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Invigilator Action Buttons */}
-                    <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-                      {c.status === "registered" ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled
-                          className="w-full h-8 text-xs border-slate-200 text-slate-500 rounded-lg"
-                        >
-                          Waiting for candidate
-                        </Button>
-                      ) : c.status === "submitted" ||
-                        c.gradingStatus === "PENDING_REVIEW" ? (
-                        <Button
-                          size="sm"
-                          onClick={() => handleOpenEssayGrading(c)}
-                          disabled={isFetchingReview || isSavingGrade}
-                          className="w-full h-8 text-xs font-bold bg-violet-700 hover:bg-violet-800 text-white rounded-lg flex items-center justify-center gap-1.5"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>
-                            {c.gradingStatus === "PENDING_REVIEW"
-                              ? "Grade Essays (AI Assist)"
-                              : c.gradingStatus === "GRADED"
-                                ? "Edit Grade"
-                                : "View answers"}
-                          </span>
-                        </Button>
-                      ) : c.status === "locked" ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleUnlockCandidate(c.id)}
-                          className="w-full h-8 text-xs border-[var(--amber-signal)] text-amber-700 hover:bg-[var(--amber-tint)] font-semibold rounded-lg"
-                        >
-                          Forgive &amp; Unlock
-                        </Button>
-                      ) : (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAddFiveMins(c.id)}
-                            className="flex-1 h-8 text-xs border-[var(--border-fine)] text-[var(--foreground)] rounded-lg"
-                          >
-                            +5 Mins
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleForceSubmit(c.id)}
-                            className="flex-1 h-8 text-xs border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg"
-                          >
-                            Force Submit
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* ── EXAMINER ESSAY GRADING MODAL ─────────────────────────────────── */}
-      {gradingSession && gradingQuestion && (
-        <CbtEssayGradingModal
-          // A fresh form for each essay
-          key={`${gradingSession.attemptId}:${gradingQuestion.id}`}
-          isOpen={!!gradingSession}
-          onClose={() => {
-            const next = nextGradingRef.current;
-            nextGradingRef.current = null;
-            if (next) {
-              setGradingSession(next.session);
-              setGradingQuestion(next.question);
-            } else {
-              setGradingSession(null);
-            }
-          }}
-          candidateSession={gradingSession}
-          questionId={gradingQuestion.id}
-          questionPrompt={gradingQuestion.prompt}
-          questionType={gradingQuestion.type || "SHORT_ESSAY"}
-          questionMarks={gradingQuestion.marks || 5}
-          modelAnswer={gradingQuestion.modelAnswer}
-          keyTerms={gradingQuestion.keyTerms}
-          rubric={gradingQuestion.rubric}
-          onGraded={handleManualGradeSaved}
-        />
       )}
 
-      <CbtAnswerSheetDialog review={answerSheet} onClose={() => setAnswerSheet(null)} />
+      <div
+        id="cbt-mon-panel"
+        role="tabpanel"
+        aria-labelledby={
+          view === "hall" ? "cbt-mon-tab-hall" : "cbt-mon-tab-marking"
+        }
+      >
+        {view === "hall" ? (
+          <>
+            {total > 0 && (
+              <dl className="cbt-mon-summary" aria-label="Hall summary">
+                <div>
+                  <dt>Writing now</dt>
+                  <dd>{activeCount}</dd>
+                  <small>
+                    {registeredCount
+                      ? `${registeredCount} not started`
+                      : "Everyone has started"}
+                  </small>
+                </div>
+                <div className={flaggedCount ? "is-amber" : undefined}>
+                  <dt>Flagged</dt>
+                  <dd>{flaggedCount}</dd>
+                  <small className={lockedCount ? "is-crimson" : undefined}>
+                    {lockedCount ? `${lockedCount} locked` : "None locked"}
+                  </small>
+                </div>
+                <div className={essaysPending.length ? "is-violet" : undefined}>
+                  <dt>Essays to mark</dt>
+                  <dd>{essaysPending.length}</dd>
+                  <small>{marked} marked</small>
+                </div>
+                <div>
+                  <dt>Submitted</dt>
+                  <dd>
+                    {submittedCount}
+                    <span> / {total}</span>
+                  </dd>
+                  <span
+                    className="cbt-mon-meter emerald"
+                    role="img"
+                    aria-label={`${share(submittedCount, total)}% of candidates submitted`}
+                  >
+                    <i style={{ width: `${share(submittedCount, total)}%` }} />
+                  </span>
+                </div>
+              </dl>
+            )}
+
+            <div className="cbt-mon-board">
+              {total > 0 && (
+                <div className="cbt-mon-toolbar">
+                  <label className="cbt-mon-search">
+                    <Search size={16} aria-hidden />
+                    <input
+                      type="search"
+                      placeholder="Search name, PIN or reg no"
+                      aria-label="Search candidates by name, PIN or registration number"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
+                  </label>
+                  <div
+                    className="cbt-mon-filters"
+                    role="group"
+                    aria-label="Filter candidates"
+                  >
+                    {filters.map((f) => (
+                      <button
+                        key={f.id}
+                        aria-pressed={filter === f.id}
+                        onClick={() => setFilter(f.id)}
+                      >
+                        {f.label}
+                        <span>{f.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <label className="cbt-mon-sort">
+                    <span>Order</span>
+                    <select
+                      value={sort}
+                      onChange={(e) => setSort(e.target.value as typeof sort)}
+                    >
+                      <option value="attention">Needs attention first</option>
+                      <option value="name">Name</option>
+                      <option value="progress">Least progress first</option>
+                    </select>
+                  </label>
+                </div>
+              )}
+
+              {visibleCandidates.length === 0 ? (
+                emptyHall
+              ) : (
+                <div className="cbt-mon-list" {...holdHandlers}>
+                  <table className="cbt-mon-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Candidate</th>
+                        <th scope="col">Progress</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Tab switches</th>
+                        <th scope="col" className="is-right">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleCandidates.map((c) => {
+                        const pct = pctOf(c);
+                        return (
+                          <tr key={c.id} className={rowClass(c)}>
+                            <td>
+                              <div className="cbt-mon-person">
+                                <span
+                                  className={`cbt-mon-avatar ${tone(c)}`}
+                                  aria-hidden
+                                >
+                                  {initials(c.name)}
+                                </span>
+                                <div>
+                                  <strong>{c.name}</strong>
+                                  <small>
+                                    <span>PIN {c.pin || "none"}</span>
+                                    {c.studentId && <span>{c.studentId}</span>}
+                                  </small>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="cbt-mon-progress">
+                                <span>
+                                  {c.answeredCount}/{c.totalQuestions}
+                                  <em>{pct}%</em>
+                                </span>
+                                <span
+                                  className={`cbt-mon-meter ${tone(c)}`}
+                                  aria-hidden
+                                >
+                                  <i style={{ width: `${pct}%` }} />
+                                </span>
+                              </div>
+                            </td>
+                            <td>{timeCell(c)}</td>
+                            <td>{integrityCell(c)}</td>
+                            <td>
+                              <div className="cbt-mon-row-actions">
+                                {actionsCell(c)}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+
+                  <ul className="cbt-mon-cards">
+                    {visibleCandidates.map((c) => {
+                      const pct = pctOf(c);
+                      return (
+                        <li key={c.id} className={rowClass(c)}>
+                          <div className="cbt-mon-person">
+                            <span
+                              className={`cbt-mon-avatar ${tone(c)}`}
+                              aria-hidden
+                            >
+                              {initials(c.name)}
+                            </span>
+                            <div>
+                              <strong>{c.name}</strong>
+                              <small>
+                                <span>PIN {c.pin || "none"}</span>
+                                {c.studentId && <span>{c.studentId}</span>}
+                              </small>
+                            </div>
+                            <div className="cbt-mon-card-time">
+                              {timeCell(c)}
+                            </div>
+                          </div>
+                          {c.status !== "registered" && (
+                            <div className="cbt-mon-progress">
+                              <span>
+                                {c.answeredCount}/{c.totalQuestions} answered
+                                <em>{pct}%</em>
+                              </span>
+                              <span
+                                className={`cbt-mon-meter ${tone(c)}`}
+                                aria-hidden
+                              >
+                                <i style={{ width: `${pct}%` }} />
+                              </span>
+                            </div>
+                          )}
+                          {(c.violations > 0 || c.syncedLate) &&
+                            integrityCell(c)}
+                          <div className="cbt-mon-row-actions">
+                            {actionsCell(c)}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              {total > 0 && (
+                <p className="cbt-mon-foot">
+                  <span>
+                    Showing {visibleCandidates.length} of {total} candidates
+                  </span>
+                  {orderDiffers && (
+                    <span className="cbt-mon-held">
+                      Order paused while you work on the list
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+
+            {/* Report cards: school workspaces only */}
+            {isSchoolWorkspace && <CbtReportCardPanel examId={examId} />}
+          </>
+        ) : (
+          <div className="cbt-mon-marking">
+            <aside
+              className={`cbt-mon-queue ${gradingSession && !queueOpen ? "is-folded" : ""}`}
+              aria-label="Candidates to mark"
+            >
+              {toMarkTotal > 0 && (
+                <div className="cbt-mon-queue-progress">
+                  <span>
+                    <strong>{marked}</strong> of {toMarkTotal} marked
+                    {gradingSession && (
+                      <button
+                        type="button"
+                        className="cbt-mon-queue-toggle"
+                        aria-expanded={queueOpen}
+                        onClick={() => setQueueOpen((v) => !v)}
+                      >
+                        {queueOpen ? "Hide list" : "Show list"}
+                      </button>
+                    )}
+                  </span>
+                  <span
+                    className="cbt-mon-meter emerald"
+                    role="img"
+                    aria-label={`${share(marked, toMarkTotal)}% marked`}
+                  >
+                    <i style={{ width: `${share(marked, toMarkTotal)}%` }} />
+                  </span>
+                </div>
+              )}
+              <h2>
+                To mark <span>{essaysPending.length}</span>
+              </h2>
+              {essaysPending.length === 0 ? (
+                <p className="cbt-mon-quiet">
+                  {marked > 0
+                    ? "Every script is marked."
+                    : "No essays waiting. Submitted scripts with essay answers show up here."}
+                </p>
+              ) : (
+                <ul>
+                  {essaysPending.map((c) => (
+                    <li key={c.id}>
+                      <button
+                        aria-current={markingId === c.id ? "true" : undefined}
+                        disabled={isFetchingReview}
+                        onClick={() => {
+                          setMarkingId(c.id);
+                          handleOpenEssayGrading(c);
+                        }}
+                      >
+                        <span className="cbt-mon-avatar amber" aria-hidden>
+                          {initials(c.name)}
+                        </span>
+                        <span>
+                          <strong>{c.name}</strong>
+                          <small>PIN {c.pin}</small>
+                        </span>
+                        <PenLine size={15} aria-hidden />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {markedCandidates.length > 0 && (
+                <>
+                  <h2>
+                    Marked <span>{markedCandidates.length}</span>
+                  </h2>
+                  <ul>
+                    {markedCandidates.map((c) => (
+                      <li key={c.id}>
+                        <button
+                          aria-current={markingId === c.id ? "true" : undefined}
+                          disabled={isFetchingReview}
+                          onClick={() => {
+                            setMarkingId(c.id);
+                            handleOpenEssayGrading(c);
+                          }}
+                        >
+                          <span className="cbt-mon-avatar emerald" aria-hidden>
+                            {initials(c.name)}
+                          </span>
+                          <span>
+                            <strong>{c.name}</strong>
+                            <small>
+                              {c.score !== undefined
+                                ? `${c.score}/${c.totalMarks || 100}`
+                                : `PIN ${c.pin}`}
+                            </small>
+                          </span>
+                          <Eye size={15} aria-hidden />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </aside>
+
+            <div className="cbt-mon-grader">
+              {gradingSession && gradingQuestion ? (
+                <CbtEssayGradingModal
+                  // A fresh form for each essay
+                  key={`${gradingSession.attemptId}:${gradingQuestion.id}`}
+                  inline
+                  isOpen
+                  onClose={closeGrading}
+                  candidateSession={gradingSession}
+                  questionId={gradingQuestion.id}
+                  questionPrompt={gradingQuestion.prompt}
+                  questionType={gradingQuestion.type || "SHORT_ESSAY"}
+                  questionMarks={gradingQuestion.marks || 5}
+                  modelAnswer={gradingQuestion.modelAnswer}
+                  keyTerms={gradingQuestion.keyTerms}
+                  rubric={gradingQuestion.rubric}
+                  onGraded={handleManualGradeSaved}
+                  queueNote={
+                    essaysPending.length > 1
+                      ? `${essaysPending.length - 1} more after this one`
+                      : undefined
+                  }
+                />
+              ) : isFetchingReview ? (
+                <div className="cbt-mon-empty" aria-busy="true">
+                  <RotateCcw size={24} className="animate-spin" aria-hidden />
+                  <h2>Opening the script…</h2>
+                </div>
+              ) : essaysPending.length === 0 && marked > 0 ? (
+                <div className="cbt-mon-empty">
+                  <CheckCircle2 size={24} aria-hidden className="cbt-mon-ok" />
+                  <h2>All essays are marked</h2>
+                  <p>
+                    Scores are final on each candidate&apos;s result slip. Open
+                    a name under Marked to change marks.
+                  </p>
+                </div>
+              ) : (
+                <div className="cbt-mon-empty">
+                  <FileText size={24} aria-hidden />
+                  <h2>
+                    {essaysPending.length
+                      ? "Choose a candidate to mark"
+                      : "Nothing to mark yet"}
+                  </h2>
+                  <p>
+                    {essaysPending.length
+                      ? "Their essay answer opens here with the marking rubric. ParaLearn AI can suggest marks; you approve the final score."
+                      : "Essay answers arrive here as candidates submit. Objective questions are marked automatically."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <CbtAnswerSheetDialog
+        review={answerSheet}
+        onClose={() => setAnswerSheet(null)}
+      />
     </div>
   );
 }

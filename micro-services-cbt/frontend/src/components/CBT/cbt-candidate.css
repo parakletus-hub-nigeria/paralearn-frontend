@@ -1,0 +1,2072 @@
+/* Candidate side: lobby (/take/[code]), live exam room (/take/[code]/live) and result slip.
+   Built from the Stitch lobby and live-room layouts (design-guide/stitch/SELECTION.md).
+   Candidates are under exam stress: calm surfaces, high contrast, large targets. */
+
+.cand-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-subtle);
+  color: var(--foreground);
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────────── */
+.cand-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 24px;
+  background: #fdfdff;
+  border-bottom: 1px solid var(--border-fine);
+}
+.cand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--surface-muted);
+  color: var(--text-strong);
+}
+.cand-chip.is-ok {
+  background: var(--emerald-tint);
+  color: var(--emerald-ink);
+}
+.cand-chip.is-warn {
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+}
+.cand-chip.is-bad {
+  background: var(--crimson-tint);
+  color: var(--crimson-ink);
+}
+.cand-chip.is-violet {
+  background: var(--violet-tint);
+  color: var(--violet-ink);
+}
+.cand-chip .cand-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.cand-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Shared building blocks ──────────────────────────────────────────────── */
+.cand-card {
+  background: #fdfdff;
+  border: 1px solid var(--border-fine);
+  border-radius: var(--radius-lg);
+}
+.cand-eyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.cand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-fine);
+  background: #fdfdff;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cand-btn:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+.cand-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.cand-btn.primary {
+  background: var(--violet-ink);
+  border-color: var(--violet-ink);
+  color: #fdfdff;
+}
+.cand-btn.primary:hover:not(:disabled) {
+  background: var(--violet-hover);
+  border-color: var(--violet-hover);
+}
+.cand-btn.primary:active:not(:disabled) {
+  background: var(--violet-pressed);
+  border-color: var(--violet-pressed);
+}
+.cand-btn.ink {
+  background: var(--foreground);
+  border-color: var(--foreground);
+  color: #fdfdff;
+}
+.cand-btn.ink:hover:not(:disabled) {
+  background: var(--text-strong);
+}
+.cand-btn.success {
+  background: #047857;
+  border-color: #047857;
+  color: #fdfdff;
+}
+.cand-btn.success:hover:not(:disabled) {
+  background: #065f46;
+}
+.cand-btn.quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-secondary);
+}
+.cand-btn.quiet:hover:not(:disabled) {
+  background: var(--surface-muted);
+  color: var(--foreground);
+}
+.cand-kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 1px solid var(--border-fine);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+  background: #fdfdff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.cand-btn.primary .cand-kbd {
+  background: rgb(255 255 255 / 0.16);
+  border-color: rgb(255 255 255 / 0.3);
+  color: #fdfdff;
+}
+
+/* ── Lobby ───────────────────────────────────────────────────────────────── */
+.cand-lobby {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 28px 24px 56px;
+  display: grid;
+  gap: 24px;
+}
+/* Progress through the candidate journey: a quiet row, not another box */
+.cand-steps {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cand-steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.cand-steps li small {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.cand-steps li strong {
+  display: block;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cand-step-mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border-fine);
+  background: #fdfdff;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+.cand-steps li.is-done,
+.cand-steps li.is-current {
+  color: var(--foreground);
+}
+.cand-steps li.is-done .cand-step-mark {
+  border-color: transparent;
+  background: var(--emerald-tint);
+  color: #047857;
+}
+.cand-steps li.is-current small {
+  color: var(--violet-ink);
+}
+.cand-steps li.is-current .cand-step-mark {
+  border-color: transparent;
+  background: var(--violet-ink);
+  color: #fdfdff;
+}
+.cand-step-line {
+  flex: 1;
+  min-width: 16px;
+  max-width: 120px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--border-fine);
+}
+.cand-step-line.is-done {
+  background: #047857;
+}
+
+/* The exam, said once: school, title, the facts that matter, and whether it's open */
+.cand-exam-head {
+  display: grid;
+  gap: 10px;
+}
+.cand-exam-school {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.cand-exam-head h1 {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.cand-exam-facts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 15px;
+  color: var(--text-strong);
+}
+.cand-exam-facts > span:not(.cand-chip) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cand-exam-facts svg {
+  color: var(--text-secondary);
+}
+.cand-exam-facts .cand-chip {
+  font-size: 13px;
+}
+
+.cand-alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+}
+.cand-alert.warn {
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+}
+.cand-alert.bad {
+  background: var(--crimson-tint);
+  color: var(--crimson-ink);
+}
+
+/* Details and Start on the left, instructions and rules on the right.
+   On phones the rules come before Start, so they are read first. */
+.cand-lobby-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  grid-template-areas:
+    "state state"
+    "details notes"
+    "start notes";
+  gap: 20px 24px;
+  align-items: start;
+}
+.cand-lobby-grid.is-blocked {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "state"
+    "notes";
+  max-width: 680px;
+}
+.cand-area-state {
+  grid-area: state;
+}
+.cand-area-details {
+  grid-area: details;
+}
+.cand-area-notes {
+  grid-area: notes;
+}
+.cand-area-start {
+  grid-area: start;
+}
+
+.cand-state-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+}
+.cand-state-card > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.cand-state-card h2 {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.cand-state-card p {
+  margin-top: 4px;
+  max-width: 62ch;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.cand-state-card .cand-btn {
+  margin-top: 14px;
+}
+.cand-state-card.is-warn {
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+}
+.cand-state-card.is-bad {
+  background: var(--crimson-tint);
+  color: var(--crimson-ink);
+}
+.cand-state-card.is-info {
+  background: var(--violet-wash);
+  border-color: var(--violet-line);
+  color: var(--violet-pressed);
+}
+.cand-state-card.is-info p {
+  color: var(--text-strong);
+}
+
+.cand-panel {
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+}
+.cand-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 19px;
+  font-weight: 700;
+}
+.cand-panel-head {
+  display: grid;
+  gap: 4px;
+}
+.cand-panel-lead {
+  max-width: 60ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.cand-field {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.cand-field small {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.cand-field-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.cand-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  background: #fdfdff;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--foreground);
+}
+.cand-input::placeholder {
+  color: #64748b;
+  font-weight: 400;
+}
+.cand-input:focus {
+  outline: none;
+  border-color: var(--violet-ink);
+  box-shadow: 0 0 0 3px rgb(100 27 196 / 0.18);
+}
+.cand-input.is-code {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+.cand-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.cand-pin {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 380px;
+}
+.cand-pin input {
+  width: 0;
+  height: 58px;
+  min-width: 0;
+  max-width: 52px;
+  flex: 1 1 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  border: 1px solid #94a3b8;
+  border-radius: var(--radius-md);
+  background: #fdfdff;
+  color: var(--foreground);
+}
+.cand-pin input:focus {
+  outline: none;
+  border-color: var(--violet-ink);
+  box-shadow: 0 0 0 3px rgb(100 27 196 / 0.18);
+}
+.cand-pin.is-invalid input {
+  border-color: var(--crimson-ink);
+  background: #fff8f8;
+}
+/* Six-character PINs read in two groups of three, as printed on hall slips */
+.cand-pin.is-six input:nth-child(3) {
+  margin-right: 14px;
+}
+.cand-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.cand-hint svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.cand-hint.bad {
+  color: var(--crimson-ink);
+  font-weight: 600;
+}
+.cand-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--violet-wash);
+  border: 1px solid var(--violet-line);
+}
+.cand-welcome-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.cand-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--violet-ink);
+  color: #fdfdff;
+}
+.cand-welcome p {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.cand-welcome strong {
+  display: block;
+  font-size: 17px;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.cand-link {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--violet-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.cand-rejoin summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--violet-ink);
+}
+.cand-rejoin[open] summary {
+  margin-bottom: 8px;
+}
+.cand-rejoin summary {
+  list-style: none;
+  gap: 10px;
+}
+.cand-rejoin summary::-webkit-details-marker {
+  display: none;
+}
+/* A chevron that turns when the section opens */
+.cand-rejoin summary::before {
+  content: "";
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-left: 2px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cand-rejoin[open] summary::before {
+  transform: rotate(45deg);
+}
+.cand-contact summary {
+  color: var(--text-strong);
+}
+
+/* Instructions and the tab-switch rule, together */
+.cand-notes {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-fine);
+  background: #fdfdff;
+}
+.cand-notes h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.cand-notes-block {
+  display: grid;
+  gap: 8px;
+}
+.cand-notes-block h2 svg {
+  color: var(--violet-ink);
+}
+.cand-instructions {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-strong);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cand-rules {
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+  display: grid;
+  gap: 6px;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.cand-start {
+  display: grid;
+  gap: 12px;
+}
+.cand-start .cand-btn.primary {
+  width: 100%;
+  min-height: 56px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.cand-start-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.cand-start-status svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.cand-start-status.bad {
+  color: var(--amber-ink);
+  font-weight: 600;
+}
+
+/* Loading and "exam not found": centred message under the top bar */
+.cand-center,
+.cand-center-main {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px 64px;
+}
+.cand-center {
+  min-height: 100dvh;
+  background: var(--surface-subtle);
+}
+.cand-center > div,
+.cand-message {
+  width: 100%;
+  max-width: 460px;
+  padding: 32px 28px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.cand-center h1,
+.cand-message h1 {
+  font-size: 21px;
+  font-weight: 700;
+}
+.cand-center p,
+.cand-message p {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-strong);
+}
+.cand-message .cand-message-help {
+  color: var(--text-secondary);
+}
+.cand-message-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+}
+.cand-message-icon.is-bad {
+  background: var(--crimson-tint);
+  color: var(--crimson-ink);
+}
+.cand-code-form {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+.cand-code-form .cand-btn {
+  min-height: 48px;
+}
+.cand-spin {
+  animation: cand-spin 900ms linear infinite;
+}
+@keyframes cand-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Live exam room ──────────────────────────────────────────────────────── */
+.cand-live {
+  user-select: none;
+}
+.cand-live-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 24px;
+  background: #fdfdff;
+  border-bottom: 1px solid var(--border-fine);
+}
+.cand-live-left,
+.cand-live-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+/* The name gives way first; time and Submit never leave the screen */
+.cand-live-left {
+  flex: 1 1 auto;
+}
+.cand-live-right {
+  flex-shrink: 0;
+}
+.cand-person,
+.cand-person strong {
+  min-width: 0;
+}
+.cand-live-left .cand-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border-fine);
+}
+.cand-person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 12px 5px 6px;
+  border: 1px solid var(--border-fine);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+}
+.cand-person > svg {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+.cand-person strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+.cand-person span {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--violet-ink);
+  font-weight: 600;
+}
+.cand-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-fine);
+  background: var(--surface-subtle);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cand-timer svg {
+  color: var(--text-secondary);
+}
+.cand-timer.is-low {
+  background: var(--amber-tint);
+  border-color: #f5c27a;
+  color: var(--amber-ink);
+}
+.cand-timer.is-low svg {
+  color: var(--amber-ink);
+}
+.cand-timer.is-critical {
+  background: var(--crimson-tint);
+  border-color: #f4a3a3;
+  color: var(--crimson-ink);
+}
+.cand-timer.is-critical svg {
+  color: var(--crimson-ink);
+}
+.cand-timer.is-critical {
+  animation: cand-timer-pulse 2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes cand-timer-pulse {
+  50% {
+    opacity: 0.72;
+  }
+}
+/* Header Submit: important but not the loudest thing on screen; Next is the primary action */
+.cand-submit {
+  min-height: 42px;
+  border-color: #94a3b8;
+}
+/* Time warnings sit just under the sticky header */
+.cand-time-live {
+  position: sticky;
+  top: 64px;
+  z-index: 29;
+}
+.cand-time-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+.cand-time-notice svg {
+  flex-shrink: 0;
+}
+.cand-time-notice.is-low {
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+}
+.cand-time-notice.is-critical {
+  background: var(--crimson-tint);
+  color: var(--crimson-ink);
+}
+
+.cand-live-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  /* Lines up with the question column below */
+  padding: 12px max(24px, calc((100% - 1320px) / 2 + 24px));
+  background: #fdfdff;
+  border-bottom: 1px solid var(--border-fine);
+}
+.cand-live-title h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+.cand-live-title h1 span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cand-live-title p {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.cand-live-grid {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+.cand-question {
+  padding: 28px 32px;
+  display: grid;
+  gap: 22px;
+  scroll-margin-top: 140px;
+}
+.cand-q-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.cand-q-head {
+  align-items: flex-start;
+}
+.cand-q-title {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  min-width: 0;
+}
+.cand-q-section {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--violet-ink);
+}
+.cand-q-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.cand-q-meta .cand-mono {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.cand-inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--violet-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.cand-q-head h2 {
+  font-size: 24px;
+  font-weight: 800;
+}
+.cand-q-head h2 small {
+  margin-left: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.cand-flag {
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+.cand-flag.is-on {
+  background: var(--amber-tint);
+  border-color: #f5c27a;
+  color: var(--amber-ink);
+}
+.cand-flag.is-on:hover:not(:disabled) {
+  background: #ffdfb3;
+}
+/* Keyboard help: quiet, after the navigation buttons, and only where there is a keyboard */
+.cand-hotkeys {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: -6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.cand-hotkeys span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cand-prompt {
+  max-width: 70ch;
+  font-size: 19px;
+  line-height: 1.6;
+  font-weight: 500;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.cand-options {
+  display: grid;
+  gap: 12px;
+}
+.cand-options-note {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.cand-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  background: #fdfdff;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cand-option:hover {
+  background: var(--surface-subtle);
+  border-color: #94a3b8;
+}
+.cand-option:focus-visible {
+  outline: 3px solid var(--violet-ink);
+  outline-offset: 2px;
+}
+.cand-option-key {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.cand-option-text {
+  flex: 1;
+  font-size: 17px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.cand-option-tick {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  display: grid;
+  place-items: center;
+  color: #fdfdff;
+}
+.cand-option.is-multi .cand-option-tick {
+  border-radius: 6px;
+}
+.cand-option[aria-checked="true"] {
+  background: var(--violet-tint);
+  border-color: var(--violet-ink);
+  box-shadow: inset 0 0 0 1px var(--violet-ink);
+}
+.cand-option[aria-checked="true"] .cand-option-key {
+  background: var(--violet-ink);
+  color: #fdfdff;
+}
+.cand-option[aria-checked="true"] .cand-option-tick {
+  background: var(--violet-ink);
+  border-color: var(--violet-ink);
+}
+.cand-option-chosen {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--violet-ink);
+}
+
+.cand-essay {
+  display: grid;
+  gap: 10px;
+}
+.cand-essay-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.cand-essay-meta label {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.cand-essay-meta label small {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.cand-count-note {
+  font-family: var(--font-sans, inherit);
+  font-weight: 600;
+}
+.cand-count {
+  font-size: 14px;
+  font-weight: 700;
+}
+.cand-count.ok {
+  color: #047857;
+}
+.cand-count.low {
+  color: var(--amber-ink);
+}
+.cand-count.over {
+  color: var(--crimson-ink);
+}
+.cand-essay textarea {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  background: #fdfdff;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--foreground);
+  resize: vertical;
+  user-select: text;
+}
+.cand-essay textarea:focus {
+  outline: none;
+  border-color: var(--violet-ink);
+  box-shadow: 0 0 0 3px rgb(100 27 196 / 0.15);
+}
+.cand-essay-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.cand-q-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-fine);
+}
+.cand-q-nav .cand-btn {
+  min-height: 50px;
+  padding: 12px 20px;
+  font-size: 15px;
+}
+.cand-q-nav-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.cand-navigator {
+  position: sticky;
+  top: 148px;
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+.cand-nav-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.cand-nav-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.cand-nav-head h2 svg {
+  color: var(--violet-ink);
+}
+.cand-progress {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-muted);
+  overflow: hidden;
+  display: flex;
+}
+.cand-progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #047857;
+  transform-origin: left center;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cand-nav-pct {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.cand-counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 0;
+}
+.cand-counts > div {
+  padding: 8px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
+  text-align: center;
+}
+.cand-counts dt {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.cand-counts dd {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+}
+.cand-counts .is-answered dd {
+  color: #047857;
+}
+.cand-counts .is-flagged dd {
+  color: var(--amber-ink);
+}
+.cand-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 3px;
+}
+.cand-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 46px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-fine);
+  background: #fdfdff;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.cand-cell:hover {
+  border-color: #94a3b8;
+}
+.cand-cell.is-answered {
+  background: var(--emerald-tint);
+  border-color: #a7f3d0;
+  color: var(--emerald-ink);
+}
+.cand-cell.is-flagged {
+  background: var(--amber-tint);
+  border-color: #f5c27a;
+  color: var(--amber-ink);
+}
+.cand-cell.is-current {
+  box-shadow: 0 0 0 2px #fdfdff, 0 0 0 4px var(--violet-ink);
+  color: var(--violet-ink);
+}
+.cand-cell-flag {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  color: #b45309;
+}
+.cand-cell-type {
+  position: absolute;
+  bottom: 2px;
+  font-size: 8px;
+  font-weight: 700;
+  opacity: 0.7;
+}
+.cand-jump {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cand-jump .cand-btn {
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.cand-jump .cand-btn svg {
+  color: var(--amber-ink);
+}
+.cand-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-fine);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.cand-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cand-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--border-fine);
+  background: #fdfdff;
+}
+.cand-legend i.is-answered {
+  background: var(--emerald-tint);
+  border-color: #a7f3d0;
+}
+.cand-legend i.is-flagged {
+  background: var(--amber-tint);
+  border-color: #f5c27a;
+}
+.cand-legend i.is-current {
+  border: 2px solid var(--violet-ink);
+}
+.cand-nav-toggle {
+  display: none;
+}
+
+/* Submission overlay */
+.cand-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(15 23 42 / 0.55);
+}
+.cand-overlay > div {
+  width: 100%;
+  max-width: 400px;
+  padding: 28px 24px;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  background: #fdfdff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-dialog);
+}
+.cand-overlay h2 {
+  font-size: 19px;
+  font-weight: 700;
+}
+.cand-overlay p {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.cand-overlay .cand-btn {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 6px;
+}
+.cand-overlay p {
+  line-height: 1.55;
+}
+.cand-overlay .cand-overlay-small {
+  font-size: 13px;
+}
+
+/* Dialogs in the exam room (rubric, submit, tab-switch warning) */
+.cand-dialog {
+  padding: 24px;
+  border: 1px solid var(--border-fine);
+  border-radius: var(--radius-lg);
+  background: #fdfdff;
+  gap: 18px;
+}
+.cand-dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--foreground);
+}
+.cand-dialog.is-warning .cand-dialog-title {
+  color: var(--crimson-ink);
+}
+.cand-dialog-lead {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-strong);
+}
+.cand-dialog-lead strong {
+  color: var(--foreground);
+}
+.cand-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.cand-dialog-actions .cand-btn {
+  min-height: 48px;
+  margin: 0;
+  font-size: 15px;
+}
+.cand-submit-summary {
+  display: grid;
+  gap: 10px;
+}
+.cand-submit-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.cand-submit-row > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.cand-submit-row strong {
+  display: block;
+  font-size: 15px;
+}
+.cand-submit-row p {
+  margin-top: 2px;
+}
+.cand-submit-row.is-open {
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+}
+.cand-submit-row.is-open .cand-inline-link {
+  color: var(--amber-ink);
+}
+.cand-submit-row.is-done {
+  background: var(--emerald-tint);
+  color: var(--emerald-ink);
+}
+.cand-submit-row.is-flagged {
+  background: var(--surface-subtle);
+  color: var(--text-strong);
+}
+.cand-submit-row.is-flagged > svg {
+  color: var(--amber-ink);
+}
+.cand-submit-note {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.cand-rubric {
+  display: grid;
+  gap: 10px;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cand-rubric li {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-fine);
+  border-radius: var(--radius-md);
+}
+.cand-rubric-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 15px;
+}
+.cand-rubric-head .cand-mono {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber-ink);
+}
+.cand-rubric li > p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-strong);
+}
+.cand-rubric-levels {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 0;
+}
+.cand-rubric-levels div {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.cand-rubric-levels dt {
+  display: inline;
+  font-weight: 600;
+}
+.cand-rubric-levels dt::after {
+  content: ": ";
+}
+.cand-rubric-levels dd {
+  display: inline;
+  color: var(--text-secondary);
+}
+
+/* ── Result slip ─────────────────────────────────────────────────────────── */
+.cand-slip {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px 24px 48px;
+  display: grid;
+  gap: 16px;
+}
+.cand-slip-card {
+  overflow: hidden;
+}
+/* Logo and document name inside the slip, so they print */
+.cand-slip-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--border-fine);
+}
+.cand-slip-brand > span {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.cand-slip-head .cand-slip-school {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.cand-leave {
+  display: grid;
+  gap: 10px;
+  padding: 20px 22px;
+  border: 1px solid #f5c27a;
+  border-radius: var(--radius-lg);
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+}
+.cand-leave h2 {
+  font-size: 17px;
+  font-weight: 700;
+}
+.cand-leave p {
+  font-size: 15px;
+  line-height: 1.55;
+}
+.cand-leave .cand-slip-actions {
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.cand-slip-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--border-fine);
+}
+.cand-slip-head h1 {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.cand-slip-head p {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.cand-slip-details {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--border-fine);
+}
+.cand-slip-details dt {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.cand-slip-details dd {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.cand-slip-details dd.ok {
+  color: #047857;
+}
+.cand-slip-details dd.warn {
+  color: #b45309;
+}
+.cand-score {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 26px 28px;
+}
+.cand-score-main {
+  display: grid;
+  gap: 4px;
+}
+.cand-score-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cand-score-figure strong {
+  font-family: var(--font-mono);
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.cand-score-figure span {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+.cand-grade {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 110px;
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+}
+.cand-grade small {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.cand-grade strong {
+  font-family: var(--font-mono);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.cand-grade.is-good {
+  background: var(--emerald-tint);
+  color: var(--emerald-ink);
+}
+.cand-grade.is-mid {
+  background: var(--cobalt-tint);
+  color: #1e40af;
+}
+.cand-grade.is-low {
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+}
+.cand-grade.is-fail {
+  background: var(--crimson-tint);
+  color: var(--crimson-ink);
+}
+.cand-state {
+  margin: 24px 28px;
+  padding: 20px 22px;
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: 8px;
+}
+.cand-state h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.cand-state p {
+  font-size: 14px;
+  line-height: 1.55;
+}
+.cand-state.is-neutral {
+  background: var(--surface-subtle);
+}
+.cand-state.is-neutral h2 svg {
+  color: #047857;
+}
+.cand-state.is-pending {
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+}
+.cand-state.is-bad {
+  background: var(--crimson-tint);
+  color: var(--crimson-ink);
+}
+.cand-breakdown {
+  padding: 0 28px 24px;
+}
+.cand-breakdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.cand-breakdown th {
+  padding: 10px 12px;
+  background: var(--surface-subtle);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-align: left;
+}
+.cand-breakdown th:last-child,
+.cand-breakdown td:last-child {
+  text-align: right;
+}
+.cand-breakdown td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-fine);
+}
+.cand-breakdown td.cand-mono {
+  font-weight: 600;
+}
+.cand-breakdown td.is-pending {
+  color: #b45309;
+  font-weight: 600;
+}
+.cand-feedback {
+  padding: 0 28px 24px;
+  display: grid;
+  gap: 10px;
+}
+.cand-feedback h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.cand-feedback h2 svg {
+  color: var(--violet-ink);
+}
+.cand-feedback blockquote {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--violet-wash);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-strong);
+}
+.cand-feedback blockquote strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--violet-ink);
+}
+.cand-slip-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 28px;
+  background: var(--surface-subtle);
+  border-top: 1px solid var(--border-fine);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.cand-slip-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ── Small screens ───────────────────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  .cand-live-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+    gap: 16px;
+  }
+  .cand-navigator {
+    position: static;
+  }
+  /* The navigator sits below the question; its grid opens on demand */
+  .cand-navigator:not(.is-open) .cand-grid,
+  .cand-navigator:not(.is-open) .cand-legend {
+    display: none;
+  }
+  .cand-nav-toggle {
+    display: inline-flex;
+  }
+}
+@media (max-width: 760px) {
+  .cand-topbar,
+  .cand-live-bar,
+  .cand-live-title {
+    padding-inline: 16px;
+  }
+  .cand-lobby,
+  .cand-slip {
+    padding: 16px 16px 40px;
+    gap: 16px;
+  }
+  .cand-steps {
+    gap: 8px;
+  }
+  .cand-steps li:not(.is-current) .cand-step-text {
+    display: none;
+  }
+  .cand-exam-head h1 {
+    font-size: 24px;
+  }
+  .cand-exam-facts {
+    gap: 6px 14px;
+    font-size: 14px;
+  }
+  .cand-lobby-grid,
+  .cand-lobby-grid.is-blocked {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "state"
+      "details"
+      "notes"
+      "start";
+    gap: 16px;
+  }
+  .cand-panel,
+  .cand-notes {
+    padding: 18px;
+  }
+  .cand-two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cand-pin {
+    gap: 6px;
+  }
+  .cand-pin input {
+    height: 52px;
+    font-size: 20px;
+  }
+  .cand-pin.is-six input:nth-child(3) {
+    margin-right: 8px;
+  }
+  .cand-live-bar {
+    gap: 8px;
+  }
+  .cand-live-left .cand-divider,
+  .cand-live-left .cand-brand-slot,
+  .cand-save-chip.is-quiet {
+    display: none;
+  }
+  .cand-person {
+    padding-right: 10px;
+  }
+  .cand-person strong {
+    max-width: 110px;
+  }
+  .cand-timer {
+    height: 38px;
+    padding: 0 10px;
+    font-size: 18px;
+  }
+  .cand-live-title h1 {
+    font-size: 15px;
+  }
+  .cand-question {
+    padding: 20px 16px;
+    gap: 18px;
+  }
+  .cand-q-head h2 {
+    font-size: 20px;
+  }
+  .cand-prompt {
+    font-size: 17px;
+  }
+  .cand-option {
+    gap: 12px;
+    padding: 10px 12px;
+    min-height: 60px;
+  }
+  .cand-option-text {
+    font-size: 16px;
+  }
+  .cand-hotkeys,
+  .cand-q-nav-hint,
+  .cand-kbd {
+    display: none;
+  }
+  .cand-q-nav .cand-btn {
+    flex: 1;
+    padding: 12px;
+  }
+  .cand-slip-head,
+  .cand-score {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 20px;
+  }
+  .cand-slip-details {
+    grid-template-columns: 1fr 1fr;
+    padding: 18px 20px;
+  }
+  .cand-score-figure strong {
+    font-size: 46px;
+  }
+  .cand-state {
+    margin: 20px;
+  }
+  .cand-breakdown,
+  .cand-feedback {
+    padding: 0 20px 20px;
+  }
+  .cand-slip-foot {
+    padding: 12px 20px;
+  }
+  .cand-slip-brand {
+    padding: 12px 20px;
+  }
+  .cand-leave .cand-slip-actions {
+    flex-direction: column-reverse;
+  }
+  .cand-slip-actions {
+    flex-direction: column-reverse;
+  }
+  .cand-slip-actions .cand-btn {
+    width: 100%;
+  }
+}
+
+/* The slip prints as a plain A4 document: black text, borders instead of tints, no buttons */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  .cand-page {
+    background: none;
+  }
+  .cand-topbar,
+  .cand-slip-actions,
+  .cand-leave,
+  [data-sonner-toaster],
+  nextjs-portal {
+    display: none !important;
+  }
+  .cand-slip {
+    max-width: none;
+    padding: 0;
+  }
+  .cand-slip-card {
+    border: 1px solid #94a3b8;
+    color: #0f172a;
+  }
+  .cand-slip-card * {
+    box-shadow: none !important;
+  }
+  .cand-grade,
+  .cand-state,
+  .cand-chip,
+  .cand-feedback blockquote {
+    background: none !important;
+    border: 1px solid #94a3b8;
+    color: #0f172a !important;
+  }
+  .cand-breakdown th,
+  .cand-slip-foot {
+    background: none !important;
+  }
+  .cand-slip-details dd.ok,
+  .cand-slip-details dd.warn,
+  .cand-feedback blockquote strong,
+  .cand-score-figure span {
+    color: #0f172a !important;
+  }
+  .cand-slip-card,
+  .cand-score,
+  .cand-breakdown,
+  .cand-feedback blockquote {
+    break-inside: avoid;
+  }
+}
+
+@media (max-width: 900px) {
+  .cand-live-left .cand-divider,
+  .cand-live-left .cand-brand-slot {
+    display: none;
+  }
+}
+@media (max-width: 420px) {
+  .cand-live-bar {
+    gap: 6px;
+    padding-inline: 12px;
+  }
+  .cand-live-right {
+    gap: 6px;
+  }
+  .cand-live-bar .cand-submit {
+    padding: 8px 12px;
+  }
+  .cand-timer {
+    gap: 5px;
+    padding: 0 8px;
+  }
+  .cand-person {
+    padding: 4px 8px 4px 4px;
+  }
+}
+
+/* Keyboard hints only where there is a keyboard */
+@media (hover: none), (pointer: coarse) {
+  .cand-hotkeys,
+  .cand-kbd {
+    display: none;
+  }
+}
+
+/* Phones held sideways: keep the question in view */
+@media (max-height: 500px) and (orientation: landscape) {
+  .cand-live-bar {
+    min-height: 52px;
+    padding-block: 5px;
+  }
+  .cand-live-bar .cand-timer {
+    height: 36px;
+  }
+  .cand-time-live {
+    top: 52px;
+  }
+  .cand-time-notice {
+    padding-block: 6px;
+    font-size: 14px;
+  }
+  .cand-live-title {
+    display: none;
+  }
+  .cand-live-grid {
+    padding-top: 12px;
+  }
+  .cand-navigator {
+    position: static;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cand-timer.is-critical,
+  .cand-spin {
+    animation: none;
+  }
+  .cand-progress span,
+  .cand-btn,
+  .cand-option {
+    transition: none;
+  }
+}

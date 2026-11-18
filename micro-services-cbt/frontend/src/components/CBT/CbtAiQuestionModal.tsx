@@ -312,7 +312,7 @@ export default function CbtAiQuestionModal({
       // Select all by default
       setSelectedQuestionIds(new Set(questionsList.map((q) => q.id)));
       setStep("review");
-      toast.success(`Generated ${questionsList.length} questions successfully with ParaLearn AI!`);
+      toast.success(`ParaLearn AI drafted ${questionsList.length} questions. Check them before adding.`);
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "An error occurred during AI generation.");
@@ -351,7 +351,7 @@ export default function CbtAiQuestionModal({
     }
 
     onImportQuestions(chosen);
-    toast.success(`Imported ${chosen.length} questions into your exam palette!`);
+    toast.success(`${chosen.length} questions added. Save to keep them.`);
     handleReset();
     onClose();
   };
@@ -372,13 +372,13 @@ export default function CbtAiQuestionModal({
         <DialogHeader className="p-4 sm:p-6 border-b border-stone-100 bg-stone-50/50 flex flex-row items-center justify-between shrink-0 gap-2">
           <div className="space-y-1 min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-              <span className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+              <span className="w-7 h-7 rounded-lg bg-[var(--violet-ink)] text-white flex items-center justify-center shadow-xs shrink-0">
                 <Sparkles className="w-4 h-4" />
               </span>
               <DialogTitle className="text-sm sm:text-base font-bold text-stone-900 tracking-tight">
                 Author Assessment with ParaLearn AI
               </DialogTitle>
-              <Badge variant="outline" className="text-[10px] font-mono border-violet-200 text-violet-700 bg-violet-50">
+              <Badge variant="outline" className="text-xs font-mono border-violet-200 text-violet-700 bg-violet-50">
                 Multimodal &bull; Hybrid Assessment
               </Badge>
             </div>
@@ -474,7 +474,7 @@ export default function CbtAiQuestionModal({
                       <p className="text-xs font-bold text-stone-800">
                         Click to upload or drag &amp; drop lecture file
                       </p>
-                      <p className="text-[11px] text-stone-500 mt-1 max-w-sm mx-auto">
+                      <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
                         Supports PDF and text documents, audio (MP3, WAV) and video (MP4) up to 4 MB. Save Word or PowerPoint files as PDF first.
                       </p>
                     </div>
@@ -486,7 +486,7 @@ export default function CbtAiQuestionModal({
                           <p className="text-xs font-bold text-stone-900 truncate">
                             {selectedFile.name}
                           </p>
-                          <p className="text-[11px] text-stone-500 font-mono">
+                          <p className="text-xs text-stone-500 font-mono">
                             {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB &bull; {selectedFile.type || "Document"}
                           </p>
                         </div>
@@ -557,7 +557,7 @@ export default function CbtAiQuestionModal({
                           </span>
                           {isSelected && <Check className="w-3.5 h-3.5 text-violet-600" />}
                         </div>
-                        <p className="text-[10px] text-stone-500 leading-tight">
+                        <p className="text-xs text-stone-500 leading-tight">
                           {opt.description}
                         </p>
                       </button>
@@ -592,7 +592,7 @@ export default function CbtAiQuestionModal({
                           </span>
                           {isSelected && <Check className="w-3.5 h-3.5 text-violet-600" />}
                         </div>
-                        <p className="text-[10px] text-stone-500 leading-tight">
+                        <p className="text-xs text-stone-500 leading-tight">
                           {p.description}
                         </p>
                       </button>
@@ -638,10 +638,10 @@ export default function CbtAiQuestionModal({
                   <span className="text-xs font-bold text-stone-800">
                     {selectedQuestionIds.size} of {generatedQuestions.length} Selected
                   </span>
-                  <Badge variant="outline" className="text-[10px] font-mono capitalize">
+                  <Badge variant="outline" className="text-xs font-mono capitalize">
                     {difficulty} Mode
                   </Badge>
-                  <Badge variant="outline" className="text-[10px] font-mono uppercase bg-violet-50 text-violet-700 border-violet-200">
+                  <Badge variant="outline" className="text-xs font-mono uppercase bg-violet-50 text-violet-700 border-violet-200">
                     {formatMode.replace("_", " ")}
                   </Badge>
                 </div>
@@ -651,7 +651,7 @@ export default function CbtAiQuestionModal({
                     variant="ghost"
                     size="sm"
                     onClick={handleSelectAll}
-                    className="h-7 px-2 text-[11px] font-semibold text-stone-600 hover:text-stone-900"
+                    className="h-7 px-2 text-xs font-semibold text-stone-600 hover:text-stone-900"
                   >
                     Select All
                   </Button>
@@ -660,7 +660,7 @@ export default function CbtAiQuestionModal({
                     variant="ghost"
                     size="sm"
                     onClick={handleDeselectAll}
-                    className="h-7 px-2 text-[11px] font-semibold text-stone-600 hover:text-stone-900"
+                    className="h-7 px-2 text-xs font-semibold text-stone-600 hover:text-stone-900"
                   >
                     Deselect All
                   </Button>
@@ -669,7 +669,7 @@ export default function CbtAiQuestionModal({
                     variant="outline"
                     size="sm"
                     onClick={() => setStep("setup")}
-                    className="h-7 px-2 text-[11px] font-semibold border-stone-200"
+                    className="h-7 px-2 text-xs font-semibold border-stone-200"
                   >
                     <RotateCcw className="w-3 h-3 mr-1" />
                     Re-tune
@@ -713,14 +713,14 @@ export default function CbtAiQuestionModal({
 
                         <div className="flex-1 space-y-2.5">
                           <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <span className="text-[11px] font-mono font-bold text-stone-400">
+                            <span className="text-xs font-mono font-bold text-stone-400">
                               #{idx + 1}
                             </span>
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {/* Format Badge */}
                               <Badge 
                                 variant="outline" 
-                                className={`text-[10px] font-mono uppercase border ${
+                                className={`text-xs font-mono uppercase border ${
                                   q.type === "LONG_ESSAY"
                                     ? "bg-blue-50 text-blue-700 border-blue-200 font-bold"
                                     : q.type === "SHORT_ESSAY"
@@ -732,22 +732,22 @@ export default function CbtAiQuestionModal({
                               </Badge>
 
                               {q.section && (
-                                <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-600 border-slate-200">
+                                <Badge variant="outline" className="text-xs bg-slate-50 text-slate-600 border-slate-200">
                                   {q.section}
                                 </Badge>
                               )}
 
-                              <Badge variant="outline" className="text-[10px] font-mono text-stone-700">
+                              <Badge variant="outline" className="text-xs font-mono text-stone-700">
                                 {q.marks} Marks
                               </Badge>
 
                               {q.citation && (
-                                <Badge variant="outline" className="text-[10px] font-mono bg-stone-100 text-stone-600 border-stone-200">
+                                <Badge variant="outline" className="text-xs font-mono bg-stone-100 text-stone-600 border-stone-200">
                                   Ref: {q.citation}
                                 </Badge>
                               )}
 
-                              <Badge variant="outline" className={`text-[10px] font-mono capitalize border ${diffColor}`}>
+                              <Badge variant="outline" className={`text-xs font-mono capitalize border ${diffColor}`}>
                                 {q.difficulty}
                               </Badge>
                             </div>
@@ -764,7 +764,7 @@ export default function CbtAiQuestionModal({
                               {q.options.map((opt, oIdx) => (
                                 <div
                                   key={opt.id}
-                                  className={`px-2.5 py-1.5 rounded-lg text-[11px] border flex items-center justify-between ${
+                                  className={`px-2.5 py-1.5 rounded-lg text-xs border flex items-center justify-between ${
                                     opt.isCorrect
                                       ? "bg-emerald-50/70 border-emerald-300 text-emerald-800 font-semibold"
                                       : "bg-stone-50 border-stone-200 text-stone-600"
@@ -787,14 +787,14 @@ export default function CbtAiQuestionModal({
                           {/* Short Essay Details */}
                           {q.type === "SHORT_ESSAY" && (
                             <div className="p-2.5 rounded-lg bg-amber-50/50 border border-amber-200 text-xs space-y-1.5">
-                              <div className="flex items-center justify-between text-[11px] text-amber-900 font-semibold">
+                              <div className="flex items-center justify-between text-xs text-amber-900 font-semibold">
                                 <span>Word Guideline: {q.minWords || 20}–{q.maxWords || 100} words</span>
                                 {q.keyTerms && q.keyTerms.length > 0 && (
                                   <span>Key Concepts: {q.keyTerms.join(", ")}</span>
                                 )}
                               </div>
                               {q.modelAnswer && (
-                                <p className="text-[11px] text-slate-700 italic">
+                                <p className="text-xs text-slate-700 italic">
                                   <strong>Benchmark Answer: </strong>{q.modelAnswer}
                                 </p>
                               )}
@@ -804,7 +804,7 @@ export default function CbtAiQuestionModal({
                           {/* Long Essay Rubric Details */}
                           {q.type === "LONG_ESSAY" && (
                             <div className="p-3 rounded-lg bg-blue-50/50 border border-blue-200 text-xs space-y-2">
-                              <div className="flex items-center justify-between text-[11px] text-blue-900 font-bold">
+                              <div className="flex items-center justify-between text-xs text-blue-900 font-bold">
                                 <span className="flex items-center gap-1">
                                   <Award className="w-3.5 h-3.5 text-blue-600" />
                                   <span>{q.rubric?.name || "Marking Rubric"}</span>
@@ -815,7 +815,7 @@ export default function CbtAiQuestionModal({
                               {q.rubric?.criteria && q.rubric.criteria.length > 0 && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
                                   {q.rubric.criteria.map((crit, cIdx) => (
-                                    <div key={crit.id || cIdx} className="bg-white p-2 rounded border border-blue-200 text-[10px]">
+                                    <div key={crit.id || cIdx} className="bg-white p-2 rounded border border-blue-200 text-xs">
                                       <div className="flex justify-between font-bold text-slate-800">
                                         <span>{crit.title}</span>
                                         <span className="font-mono text-blue-700">{crit.maxMarks}m</span>
@@ -827,7 +827,7 @@ export default function CbtAiQuestionModal({
                               )}
 
                               {q.modelAnswer && (
-                                <p className="text-[11px] text-slate-700 italic">
+                                <p className="text-xs text-slate-700 italic">
                                   <strong>Expected Arguments: </strong>{q.modelAnswer}
                                 </p>
                               )}
@@ -836,7 +836,7 @@ export default function CbtAiQuestionModal({
 
                           {/* Explanation */}
                           {q.explanation && (
-                            <div className="mt-2 text-[11px] text-stone-500 bg-stone-50 p-2 rounded-lg border border-stone-100 leading-relaxed">
+                            <div className="mt-2 text-xs text-stone-500 bg-stone-50 p-2 rounded-lg border border-stone-100 leading-relaxed">
                               <span className="font-bold text-stone-700">Rationale: </span>
                               {q.explanation}
                             </div>
@@ -869,7 +869,7 @@ export default function CbtAiQuestionModal({
               type="button"
               size="sm"
               onClick={handleGenerate}
-              className="h-8 px-4 text-xs font-bold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-xs rounded-xl inline-flex items-center gap-1.5"
+              className="h-8 px-4 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white shadow-xs rounded-[var(--radius-md)] inline-flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Generate Questions</span>

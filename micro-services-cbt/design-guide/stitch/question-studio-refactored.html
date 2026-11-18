@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "crimson-tint": "#fddada", "inverse-surface": "#233144", "emerald-ink-white": "#047857", "violet-line": "#dfceef", "amber-ink-tint": "#92400e", "cobalt-tint": "#dbe9ff", "surface-container-highest": "#d5e3fd", "tertiary-fixed": "#6ffbbe", "surface": "#f8f9ff", "error-container": "#ffdad6", "foreground": "#0f172a", "text-strong": "#334155", "violet-wash": "#f7f3ff", "on-secondary-fixed": "#131b2e", "crimson-ink-white": "#b91c1c", "primary-fixed-dim": "#d5bbff", "on-surface": "#0d1c2f", "on-secondary-container": "#5c647a", "crimson-ink-tint": "#991b1b", "primary-fixed": "#ecdcff", "error": "#ba1a1a", "emerald-line": "#a7f3d0", "inverse-on-surface": "#ebf1ff", "border-fine": "#e2e8f0", "surface-container-lowest": "#ffffff", "amber-vivid": "#f28c1f", "background": "#f8f9ff", "primary-container": "#641bc4", "tertiary": "#003f29", "emerald-tint": "#dff9d8", "primary": "#49009a", "crimson-vivid": "#e60023", "emerald-ink-tint": "#065f46", "outline": "#7c7486", "on-primary-fixed": "#270058", "on-error": "#ffffff", "on-surface-variant": "#4b4454", "cobalt-vivid": "#2a64f6", "secondary-fixed-dim": "#bec6e0", "on-background": "#0d1c2f", "on-primary-fixed-variant": "#5d0abd", "card": "#ffffff", "on-secondary-fixed-variant": "#3f465c", "amber-line": "#fde68a", "surface-container-high": "#dde9ff", "chalk-white": "#fdfdff", "on-error-container": "#93000a", "violet-ink": "#641bc4", "cobalt-ink": "#1e40af", "surface-bright": "#f8f9ff", "tertiary-fixed-dim": "#4edea3", "secondary": "#565e74", "text-secondary": "#64748b", "surface-container": "#e6eeff", "surface-dim": "#ccdbf4", "crimson-line": "#fecaca", "on-tertiary-container": "#44d69b", "surface-muted": "#f1f5f9", "surface-container-low": "#eff4ff", "emerald-vivid": "#10b981", "on-secondary": "#ffffff", "on-tertiary": "#ffffff", "on-tertiary-fixed-variant": "#005236", "tertiary-container": "#00593c", "outline-variant": "#cdc3d7", "cobalt-line": "#bfdbfe", "violet-pressed": "#5214a3", "secondary-fixed": "#dae2fd", "on-primary": "#ffffff", "violet-hover": "#7b22e8", "inverse-primary": "#d5bbff", "secondary-container": "#dae2fd", "border-medium": "#cbd5e1", "text-placeholder": "#94a3b8", "surface-subtle": "#f8fafc", "amber-tint": "#ffe9cc", "amber-ink-white": "#b45309", "on-primary-container": "#ceb1ff", "violet-tint": "#f0e5ff", "surface-variant": "#d5e3fd", "on-tertiary-fixed": "#002113", "lavender-muted": "#ad8ed6", "surface-tint": "#7635d6" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "gutter": "1rem", "space-xs": "0.25rem", "margin-md": "1.5rem", "space-sm": "0.5rem", "space-2xl": "3rem", "space-lg": "1.5rem", "margin-lg": "2rem", "gutter-lg": "1.5rem", "space-xl": "2rem", "margin": "1rem", "space-md": "1rem" }, "fontFamily": { "display": ["Manrope"], "question-text-mobile": ["Manrope"], "answer-option": ["Manrope"], "label-eyebrow": ["Manrope"], "headline-md": ["Manrope"], "title": ["Manrope"], "timer-display": ["JetBrains Mono"], "body-default": ["Manrope"], "body-strong": ["Manrope"], "display-mobile": ["Manrope"], "label-sm": ["Manrope"], "question-text": ["Manrope"], "pin-box": ["JetBrains Mono"], "headline-lg": ["Manrope"], "mono-data": ["JetBrains Mono"] }, "fontSize": { "display": ["36px", { "lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "800" }], "question-text-mobile": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "answer-option": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "label-eyebrow": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "700" }], "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "700" }], "title": ["15px", { "lineHeight": "20px", "fontWeight": "600" }], "timer-display": ["20px", { "lineHeight": "24px", "fontWeight": "600" }], "body-default": ["14px", { "lineHeight": "22px", "fontWeight": "400" }], "body-strong": ["14px", { "lineHeight": "22px", "fontWeight": "600" }], "display-mobile": ["28px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "800" }], "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "question-text": ["18px", { "lineHeight": "28px", "fontWeight": "500" }], "pin-box": ["22px", { "lineHeight": "28px", "fontWeight": "700" }], "headline-lg": ["20px", { "lineHeight": "26px", "fontWeight": "700" }], "mono-data": ["13px", { "lineHeight": "18px", "fontWeight": "400" }] } } } };</script></head><body class="bg-chalk-white font-body-default text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-[232px] bg-chalk-white z-50 flex flex-col justify-between border-r border-border-fine"><div class="flex flex-col flex-1 overflow-y-auto"><div class="h-16 px-space-md flex items-center gap-space-sm border-b border-border-fine shrink-0"><img alt="ParaLearn CBT Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrB_9Z0ISU32JF8A2JyLRXK3ryHZjW0kBh-GQ3ZL1QTofGiXJOJOhSYrRNyxa8umwhAd5-wnmWqSjMeM3OmxIUn5nkk8Bt2NdFWuO5UonQyX9weW3Oqz7A0IHH6EQVVxW6ssv9DBUKzEPN9JcdAB7IUQOHlPrUr6H6wrHaSM1tu1dI4V2wIg_5S0EpckQzJHMfliDfxX7YzT-XhuACo3Ovu5Cfk9_-Ok0SbP8FkYisWo"/><div class="flex flex-col min-w-0"><span class="font-title text-title text-on-surface truncate leading-none">ParaLearn CBT</span><span class="font-label-eyebrow text-label-eyebrow text-violet-ink uppercase tracking-wider mt-1">Examiner Workspace</span></div></div><div class="px-space-md pt-space-md pb-space-xs"><span class="font-label-eyebrow text-label-eyebrow text-text-placeholder uppercase tracking-wider">Exam Suite</span></div><nav class="px-space-sm flex flex-col gap-1" data-active-classes="bg-violet-tint text-violet-ink font-body-strong"><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="examinations" href="#"><span class="material-symbols-outlined text-[20px]">assignment</span><span class="font-body-default text-body-default">Examinations</span></a><a class="flex items-center justify-between px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="candidate-monitor" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">monitoring</span><span class="font-body-default text-body-default">Candidate Monitor</span></div><span class="flex h-2 w-2 rounded-full bg-emerald-vivid ring-2 ring-emerald-tint"></span></a><a aria-current="page" class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg transition-colors bg-violet-tint text-violet-ink font-body-strong" data-path="question-studio" href="#"><span class="material-symbols-outlined text-[20px]">edit_note</span><span class="font-body-default text-body-default">Question Studio</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="candidates-and-pins" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span class="font-body-default text-body-default">Candidates &amp; PINs</span></a></nav><div class="px-space-md pt-space-lg pb-space-xs"><span class="font-label-eyebrow text-label-eyebrow text-text-placeholder uppercase tracking-wider">Resources</span></div><nav class="px-space-sm flex flex-col gap-1" data-active-classes="bg-violet-tint text-violet-ink font-body-strong"><a class="flex items-center justify-between px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="candidate-entrance" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">open_in_new</span><span class="font-body-default text-body-default">Candidate Entrance</span></div><span class="font-mono-data text-[11px] text-text-placeholder">↗</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="developer-api" href="#"><span class="material-symbols-outlined text-[20px]">api</span><span class="font-body-default text-body-default">Developer API</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="settings-and-keys" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span class="font-body-default text-body-default">Settings &amp; Keys</span></a></nav></div><div class="p-space-sm border-t border-border-fine bg-surface-subtle"><div class="p-space-sm bg-surface-container-lowest rounded-lg border border-border-fine flex flex-col gap-2 mb-2"><div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-text-secondary truncate">King's College Lagos</span><span class="material-symbols-outlined text-[16px] text-text-placeholder">domain</span></div><div class="flex items-center justify-between bg-violet-wash px-2 py-1 rounded border border-violet-line"><span class="font-mono-data text-[11px] text-violet-ink font-semibold">350 Credits Available</span><span class="material-symbols-outlined text-[14px] text-violet-ink">bolt</span></div></div><div class="flex items-center justify-between p-1 rounded-lg hover:bg-surface-container-high transition-colors"><div class="flex items-center gap-2 min-w-0"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col min-w-0"><span class="font-title text-[13px] text-on-surface truncate leading-tight">Dr. Folake Adeleke</span><span class="font-label-sm text-[11px] text-text-secondary truncate leading-tight">f.adeleke@paralearn.edu</span></div></div><button class="text-on-surface-variant hover:text-crimson-ink-white p-1 rounded transition-colors" title="Sign out" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></aside><div class="pl-[232px]"><header class="fixed top-0 left-[232px] right-0 h-16 bg-chalk-white border-b border-border-fine z-40 flex items-center justify-between px-space-lg"><div class="flex items-center gap-space-sm"><img alt="ParaLearn CBT Logo" class="h-6 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrB_9Z0ISU32JF8A2JyLRXK3ryHZjW0kBh-GQ3ZL1QTofGiXJOJOhSYrRNyxa8umwhAd5-wnmWqSjMeM3OmxIUn5nkk8Bt2NdFWuO5UonQyX9weW3Oqz7A0IHH6EQVVxW6ssv9DBUKzEPN9JcdAB7IUQOHlPrUr6H6wrHaSM1tu1dI4V2wIg_5S0EpckQzJHMfliDfxX7YzT-XhuACo3Ovu5Cfk9_-Ok0SbP8FkYisWo"/><span class="font-label-eyebrow text-label-eyebrow text-text-secondary uppercase tracking-wider">CBT / Control Room</span></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 px-space-sm py-1 bg-emerald-tint border border-emerald-line rounded-full"><span class="material-symbols-outlined text-emerald-ink-tint text-[16px]">cloud_done</span><span class="font-mono-data text-[12px] text-emerald-ink-tint font-medium">Cloud Synced · Offline Cache Active</span></div><a class="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border-medium bg-card text-on-surface hover:bg-surface-subtle font-body-strong text-body-default transition-all" data-path="candidate-entrance" href="#"><span class="material-symbols-outlined text-[18px] text-text-secondary">desktop_windows</span><span>Take Exam</span><span class="font-mono-data text-[11px] text-text-placeholder">↗</span></a><button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-violet-ink hover:bg-violet-hover active:bg-violet-pressed text-card font-body-strong text-body-default transition-all shadow-sm" type="button"><span class="material-symbols-outlined text-[18px]">add</span><span>New Exam</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="w-full pt-16 bg-chalk-white min-h-screen"><div class="flex flex-col w-full">
+<!-- Exam Studio Context Header (Simplified & Decongested) -->
+<div class="sticky top-16 z-30 bg-chalk-white border-b border-border-fine px-space-lg py-3 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+<div class="flex items-center gap-space-md min-w-0">
+<a class="inline-flex items-center gap-1.5 text-on-surface-variant hover:text-violet-ink transition-colors font-body-strong text-label-sm py-1 px-2 rounded-lg hover:bg-violet-wash" href="#">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+<span>Examinations</span>
+</a>
+<div class="h-4 w-px bg-border-medium hidden sm:block"></div>
+<div class="flex items-center gap-2.5 min-w-0">
+<h1 class="font-headline-lg text-headline-lg text-on-surface truncate">2026/2027 SS2 Mathematics Mock Exam</h1>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-violet-wash border border-violet-line text-violet-ink font-mono-data text-[12px] font-semibold shrink-0">
+<span class="material-symbols-outlined text-[14px]">pin</span>
+          MATH-8842
+        </span>
+</div>
+</div>
+<!-- Center Unified Sync & Status Pill -->
+<div class="flex items-center gap-space-sm order-last xl:order-none">
+<!-- Single unambiguous live status pill -->
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-tint border border-emerald-line text-emerald-ink-tint font-mono-data text-[12px] font-semibold shadow-xs">
+<span class="w-2 h-2 rounded-full bg-emerald-vivid animate-pulse"></span>
+<span>Saved locally &amp; synced</span>
+<span class="text-emerald-line">·</span>
+<span class="font-normal text-[11px] text-emerald-ink-tint/80">Cloud active</span>
+</div>
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-surface-subtle border border-border-fine font-mono-data text-[12px] text-text-secondary">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px] text-violet-ink">format_list_numbered</span>50 Qs</span>
+<span class="text-border-medium">|</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px] text-amber-ink-tint">military_tech</span>100 Marks</span>
+<span class="text-border-medium">|</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px] text-cobalt-ink">schedule</span>90 Mins</span>
+</div>
+</div>
+<!-- Right Operations Suite: Simplified Primary Actions & Compact Secondary Tools Dropdown -->
+<div class="flex items-center gap-2">
+<!-- Compact Secondary Tools Dropdown -->
+<div class="relative">
+<button class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-medium bg-card text-on-surface hover:bg-surface-subtle text-label-sm font-body-strong transition-all shadow-xs" id="tools-menu-btn" type="button">
+<span class="material-symbols-outlined text-[18px] text-text-secondary">construction</span>
+<span>Tools</span>
+<span class="material-symbols-outlined text-[16px] text-text-placeholder">expand_more</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-56 bg-card border border-border-fine rounded-xl shadow-xl py-2 z-40 divide-y divide-border-fine" id="tools-dropdown">
+<div class="py-1">
+<button class="w-full text-left px-3.5 py-2 text-label-sm hover:bg-violet-wash flex items-center gap-2.5 text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px] text-violet-ink">file_upload</span>
+<div>
+<div class="font-body-strong leading-tight">Bulk Import</div>
+<div class="text-[11px] text-text-secondary">Import from .csv or .xlsx</div>
+</div>
+</button>
+<button class="w-full text-left px-3.5 py-2 text-label-sm hover:bg-violet-wash flex items-center gap-2.5 text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px] text-amber-vivid">fact_check</span>
+<div>
+<div class="font-body-strong leading-tight">Marking Rubrics</div>
+<div class="text-[11px] text-text-secondary">Manage institutional rubrics</div>
+</div>
+</button>
+<button class="w-full text-left px-3.5 py-2 text-label-sm hover:bg-violet-wash flex items-center gap-2.5 text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px] text-violet-ink">auto_awesome</span>
+<div>
+<div class="font-body-strong leading-tight">ParaLearn AI Generator</div>
+<div class="text-[11px] text-text-secondary">Generate questions from syllabus</div>
+</div>
+</button>
+</div>
+<div class="py-1">
+<button class="w-full text-left px-3.5 py-2 text-label-sm hover:bg-surface-subtle flex items-center gap-2.5 text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px] text-text-secondary">settings</span>
+<span class="font-body-default">Exam Configuration &amp; PINs</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Primary Action: Save Changes (#641bc4 Violet Ink) -->
+<button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-violet-ink hover:bg-violet-hover active:bg-violet-pressed text-chalk-white font-body-strong text-body-default transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">save</span>
+<span>Save Changes</span>
+</button>
+<!-- Primary Action: Publish Exam (#047857 Forest Emerald with white text) -->
+<button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-ink-white hover:bg-emerald-ink-tint active:bg-tertiary-container text-chalk-white font-body-strong text-body-default transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+<span>Publish Exam</span>
+</button>
+</div>
+</div>
+<!-- 2-Column Split Workspace Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-[330px_minmax(0,1fr)] w-full min-h-[calc(100vh-128px)] bg-chalk-white">
+<!-- LEFT COLUMN: Sticky Question Navigator Panel -->
+<aside class="border-r border-border-fine bg-surface-subtle flex flex-col h-full lg:sticky lg:top-[128px] lg:h-[calc(100vh-128px)]">
+<!-- Navigator Header -->
+<div class="p-space-md border-b border-border-fine bg-card space-y-3">
+<div class="flex items-center justify-between">
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md text-on-surface">Questions</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container font-mono-data text-[12px] font-semibold text-text-strong">50</span>
+</div>
+<span class="font-mono-data text-[12px] text-text-secondary">Allocated: 100 / 100 Marks</span>
+</div>
+<div class="relative">
+<button class="inline-flex items-center gap-1 px-3 py-1.5 bg-violet-ink hover:bg-violet-hover text-chalk-white rounded-lg font-body-strong text-label-sm shadow-xs transition-colors" id="add-question-btn" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+              Add
+              <span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+<!-- Dropdown Menu -->
+<div class="hidden absolute right-0 mt-1 w-48 bg-card border border-border-fine rounded-lg shadow-lg py-1.5 z-20" id="add-menu">
+<button class="w-full text-left px-3 py-2 text-label-sm hover:bg-violet-wash flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-violet-ink">radio_button_checked</span> Single Choice (MCQ)
+              </button>
+<button class="w-full text-left px-3 py-2 text-label-sm hover:bg-violet-wash flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-cobalt-ink">short_text</span> Short Answer
+              </button>
+<button class="w-full text-left px-3 py-2 text-label-sm hover:bg-violet-wash flex items-center gap-2 text-on-surface font-body-strong">
+<span class="material-symbols-outlined text-[16px] text-amber-vivid">article</span> Comprehensive Essay
+              </button>
+</div>
+</div>
+</div>
+<!-- Filter Pills Bar -->
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1">
+<button class="px-2.5 py-1 rounded-md text-[12px] font-body-strong bg-violet-ink text-chalk-white" type="button">All (50)</button>
+<button class="px-2.5 py-1 rounded-md text-[12px] font-body-default bg-card border border-border-fine text-text-secondary hover:text-on-surface hover:bg-surface-subtle transition-colors" type="button">MCQ (35)</button>
+<button class="px-2.5 py-1 rounded-md text-[12px] font-body-default bg-card border border-border-fine text-text-secondary hover:text-on-surface hover:bg-surface-subtle transition-colors" type="button">Short (10)</button>
+<button class="px-2.5 py-1 rounded-md text-[12px] font-body-default bg-card border border-border-fine text-text-secondary hover:text-on-surface hover:bg-surface-subtle transition-colors" type="button">Essay (5)</button>
+</div>
+</div>
+<!-- Question Items List with Accessible Reordering Controls -->
+<div class="flex-1 overflow-y-auto p-space-sm space-y-2">
+<!-- Q1 -->
+<div class="group relative bg-card border border-border-fine rounded-lg p-3 hover:border-border-medium hover:shadow-xs transition-all cursor-pointer">
+<div class="flex items-start gap-2">
+<!-- Reordering Handle & Accessible Controls -->
+<div class="flex flex-col items-center shrink-0 pt-0.5">
+<span class="material-symbols-outlined text-[18px] text-text-placeholder cursor-grab active:cursor-grabbing opacity-60 group-hover:opacity-100" title="Drag to reorder">drag_indicator</span>
+<div class="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
+<button aria-label="Move question 1 down" class="text-text-placeholder hover:text-violet-ink p-0.5 rounded transition-colors" title="Move down" type="button"><span class="material-symbols-outlined text-[14px]">arrow_downward</span></button>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-mono-data text-[12px] font-bold text-violet-ink">Q01</span>
+<span class="font-mono-data text-[11px] text-text-secondary">2.0 Marks</span>
+</div>
+<p class="font-body-default text-[13px] text-on-surface line-clamp-2 leading-snug">Solve for x in the quadratic equation 2x² - 8x + 6 = 0...</p>
+<div class="mt-2 flex items-center justify-between">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-container font-label-sm text-[10px] text-text-secondary uppercase">MCQ · Sec A</span>
+<span class="text-[10px] text-text-placeholder font-mono-data">Pos #1</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Q2 -->
+<div class="group relative bg-card border border-border-fine rounded-lg p-3 hover:border-border-medium hover:shadow-xs transition-all cursor-pointer">
+<div class="flex items-start gap-2">
+<!-- Reordering Handle & Accessible Controls -->
+<div class="flex flex-col items-center shrink-0 pt-0.5">
+<span class="material-symbols-outlined text-[18px] text-text-placeholder cursor-grab active:cursor-grabbing opacity-60 group-hover:opacity-100" title="Drag to reorder">drag_indicator</span>
+<div class="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
+<button aria-label="Move question 2 up" class="text-text-placeholder hover:text-violet-ink p-0.5 rounded transition-colors" title="Move up" type="button"><span class="material-symbols-outlined text-[14px]">arrow_upward</span></button>
+<button aria-label="Move question 2 down" class="text-text-placeholder hover:text-violet-ink p-0.5 rounded transition-colors" title="Move down" type="button"><span class="material-symbols-outlined text-[14px]">arrow_downward</span></button>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-mono-data text-[12px] font-bold text-violet-ink">Q02</span>
+<span class="font-mono-data text-[11px] text-text-secondary">2.0 Marks</span>
+</div>
+<p class="font-body-default text-[13px] text-on-surface line-clamp-2 leading-snug">Calculate the total surface area of a closed cylinder with radius 7cm and height 12cm...</p>
+<div class="mt-2 flex items-center justify-between">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-container font-label-sm text-[10px] text-text-secondary uppercase">MCQ · Sec A</span>
+<span class="text-[10px] text-text-placeholder font-mono-data">Pos #2</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Q3: ACTIVE ITEM with Reorder Jump & Accessible Controls -->
+<div class="group relative bg-violet-wash border-2 border-violet-ink rounded-lg p-3 shadow-xs">
+<div class="absolute -left-[2px] top-3 bottom-3 w-1.5 bg-violet-ink rounded-r"></div>
+<div class="flex items-start gap-2 pl-1">
+<!-- Reordering Handle & Accessible Controls -->
+<div class="flex flex-col items-center shrink-0 pt-0.5">
+<span class="material-symbols-outlined text-[18px] text-violet-ink cursor-grab active:cursor-grabbing" title="Drag to reorder">drag_indicator</span>
+<div class="flex flex-col mt-0.5">
+<button aria-label="Move question 3 up" class="text-violet-ink/70 hover:text-violet-ink p-0.5 rounded transition-colors" title="Move up" type="button"><span class="material-symbols-outlined text-[14px]">arrow_upward</span></button>
+<button aria-label="Move question 3 down" class="text-violet-ink/70 hover:text-violet-ink p-0.5 rounded transition-colors" title="Move down" type="button"><span class="material-symbols-outlined text-[14px]">arrow_downward</span></button>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1 mb-1">
+<div class="flex items-center gap-1.5">
+<span class="font-mono-data text-[12px] font-bold text-violet-ink">Q03</span>
+<span class="w-1.5 h-1.5 rounded-full bg-violet-ink"></span>
+<span class="font-label-sm text-[11px] text-violet-ink font-semibold">Active Editor</span>
+</div>
+<span class="font-mono-data text-[11px] font-bold text-violet-ink bg-violet-tint px-1.5 py-0.5 rounded">10.0 Marks</span>
+</div>
+<p class="font-body-strong text-[13px] text-on-surface line-clamp-2 leading-snug">Derive the quadratic formula ax² + bx + c = 0 and demonstrate its application on non-real roots...</p>
+<div class="mt-2 flex flex-wrap items-center justify-between gap-1.5">
+<div class="flex items-center gap-1.5">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-violet-tint text-violet-ink font-label-sm text-[10px] uppercase font-bold">Long Essay · Sec B</span>
+<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-tint text-amber-ink-tint font-label-sm text-[10px] font-semibold border border-amber-line">
+<span class="material-symbols-outlined text-[11px]">fact_check</span> Rubric Active
+                </span>
+</div>
+<!-- Jump Position Input -->
+<div class="flex items-center gap-1 text-[11px] font-mono-data text-violet-ink" title="Directly jump to position in exam sequence">
+<span>Pos #</span>
+<input class="w-8 h-5 text-center text-[11px] font-bold border border-violet-line rounded bg-card text-violet-ink p-0 focus:outline-none focus:border-violet-ink" type="text" value="3"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Q4 -->
+<div class="group relative bg-card border border-border-fine rounded-lg p-3 hover:border-border-medium hover:shadow-xs transition-all cursor-pointer">
+<div class="flex items-start gap-2">
+<!-- Reordering Handle & Accessible Controls -->
+<div class="flex flex-col items-center shrink-0 pt-0.5">
+<span class="material-symbols-outlined text-[18px] text-text-placeholder cursor-grab active:cursor-grabbing opacity-60 group-hover:opacity-100" title="Drag to reorder">drag_indicator</span>
+<div class="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
+<button aria-label="Move question 4 up" class="text-text-placeholder hover:text-violet-ink p-0.5 rounded transition-colors" title="Move up" type="button"><span class="material-symbols-outlined text-[14px]">arrow_upward</span></button>
+<button aria-label="Move question 4 down" class="text-text-placeholder hover:text-violet-ink p-0.5 rounded transition-colors" title="Move down" type="button"><span class="material-symbols-outlined text-[14px]">arrow_downward</span></button>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-mono-data text-[12px] font-bold text-violet-ink">Q04</span>
+<span class="font-mono-data text-[11px] text-text-secondary">5.0 Marks</span>
+</div>
+<p class="font-body-default text-[13px] text-on-surface line-clamp-2 leading-snug">State the three laws of motion formulated by Sir Isaac Newton and express their mathematical form...</p>
+<div class="mt-2 flex items-center justify-between">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-container font-label-sm text-[10px] text-text-secondary uppercase">Short Essay · Sec B</span>
+<span class="text-[10px] text-text-placeholder font-mono-data">Pos #4</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Q5 -->
+<div class="group relative bg-card border border-border-fine rounded-lg p-3 hover:border-border-medium hover:shadow-xs transition-all cursor-pointer">
+<div class="flex items-start gap-2">
+<!-- Reordering Handle & Accessible Controls -->
+<div class="flex flex-col items-center shrink-0 pt-0.5">
+<span class="material-symbols-outlined text-[18px] text-text-placeholder cursor-grab active:cursor-grabbing opacity-60 group-hover:opacity-100" title="Drag to reorder">drag_indicator</span>
+<div class="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
+<button aria-label="Move question 5 up" class="text-text-placeholder hover:text-violet-ink p-0.5 rounded transition-colors" title="Move up" type="button"><span class="material-symbols-outlined text-[14px]">arrow_upward</span></button>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-mono-data text-[12px] font-bold text-violet-ink">Q05</span>
+<span class="font-mono-data text-[11px] text-text-secondary">2.0 Marks</span>
+</div>
+<p class="font-body-default text-[13px] text-on-surface line-clamp-2 leading-snug">Find the probability of picking a prime number between 1 and 30 inclusive...</p>
+<div class="mt-2 flex items-center justify-between">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-container font-label-sm text-[10px] text-text-secondary uppercase">MCQ · Sec A</span>
+<span class="text-[10px] text-text-placeholder font-mono-data">Pos #5</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Summary Footer in Drawer -->
+<div class="p-3 bg-surface-muted border-t border-border-fine flex items-center justify-between text-text-secondary font-mono-data text-[11px]">
+<span>45 more questions cached</span>
+<button class="text-violet-ink hover:underline font-semibold flex items-center gap-0.5">
+          View Matrix <span class="material-symbols-outlined text-[14px]">grid_view</span>
+</button>
+</div>
+</aside>
+<!-- RIGHT COLUMN: Active Question Studio Editor -->
+<main class="flex flex-col flex-1 min-w-0 bg-chalk-white pb-24">
+<!-- Top Question Configuration Metadata Bar -->
+<div class="p-space-lg border-b border-border-fine bg-card">
+<div class="flex flex-wrap items-center justify-between gap-4 pb-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-violet-tint text-violet-ink flex items-center justify-center font-mono-data font-bold text-[16px]">
+              03
+            </div>
+<div>
+<div class="flex items-center gap-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">Editing Question #3</h2>
+<span class="px-2 py-0.5 rounded bg-violet-wash border border-violet-line text-violet-ink font-mono-data text-[11px]">ID: Q-MTH-9021</span>
+</div>
+<p class="font-body-default text-label-sm text-text-secondary">Comprehensive proof &amp; mathematical theory stem</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<!-- Question Type Selector -->
+<div class="flex flex-col">
+<label class="font-label-eyebrow text-[11px] text-text-placeholder uppercase mb-1">Question Type</label>
+<div class="relative">
+<select class="h-10 pl-3 pr-8 rounded-lg border border-border-medium bg-card text-on-surface font-body-strong text-body-default focus:border-violet-ink focus:outline-none appearance-none cursor-pointer shadow-xs">
+<option selected="">Comprehensive Essay Canvas</option>
+<option>Multiple Choice (MCQ)</option>
+<option>Short Concise Answer</option>
+<option>Matrix &amp; Numeric Grid</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 text-[20px] text-text-secondary pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Section Selector -->
+<div class="flex flex-col">
+<label class="font-label-eyebrow text-[11px] text-text-placeholder uppercase mb-1">Section Group</label>
+<div class="relative">
+<select class="h-10 pl-3 pr-8 rounded-lg border border-border-medium bg-card text-on-surface font-body-strong text-body-default focus:border-violet-ink focus:outline-none appearance-none cursor-pointer shadow-xs">
+<option selected="">Section B - Theory &amp; Derivations</option>
+<option>Section A - General Arithmetic</option>
+<option>Section C - Practical Calculus</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 text-[20px] text-text-secondary pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Marks Input -->
+<div class="flex flex-col w-28">
+<label class="font-label-eyebrow text-[11px] text-text-placeholder uppercase mb-1">Marks Weight</label>
+<div class="relative">
+<input class="h-10 w-full pl-3 pr-8 rounded-lg border border-border-medium bg-card text-on-surface font-mono-data font-bold text-body-default focus:border-violet-ink focus:outline-none shadow-xs text-right" id="question-marks-input" type="text" value="10.0"/>
+<span class="absolute right-2.5 top-2.5 font-label-sm text-[12px] text-text-secondary pointer-events-none">m</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Question Prompt Rich Box with LaTeX Dual-Mode Toolbar -->
+<div class="mt-2 space-y-2">
+<div class="flex flex-wrap items-center justify-between gap-2">
+<div class="flex items-center gap-2">
+<span class="font-title text-title text-on-surface">Question Stem &amp; Prompt</span>
+<!-- Dual Mode LaTeX / Formula Preview Mode Toggle -->
+<div class="flex items-center bg-surface-subtle p-0.5 rounded-lg border border-border-fine text-label-sm font-body-strong">
+<button class="px-2.5 py-1 rounded-md bg-card text-violet-ink shadow-xs transition-all flex items-center gap-1.5" id="tab-latex-write" type="button">
+<span class="material-symbols-outlined text-[15px]">code</span>
+<span>Write LaTeX</span>
+</button>
+<button class="px-2.5 py-1 rounded-md text-text-secondary hover:text-on-surface transition-all flex items-center gap-1.5" id="tab-formula-preview" type="button">
+<span class="material-symbols-outlined text-[15px]">visibility</span>
+<span>Live Formula Preview</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-surface-subtle border border-border-fine rounded-md p-1">
+<button class="p-1 hover:bg-card rounded text-text-strong transition-colors" title="Bold (Ctrl+B)" type="button"><span class="material-symbols-outlined text-[16px]">format_bold</span></button>
+<button class="p-1 hover:bg-card rounded text-text-strong transition-colors" title="Italic (Ctrl+I)" type="button"><span class="material-symbols-outlined text-[16px]">format_italic</span></button>
+<button class="p-1 hover:bg-card rounded text-text-strong transition-colors" title="Underline" type="button"><span class="material-symbols-outlined text-[16px]">format_underlined</span></button>
+<div class="w-px h-3.5 bg-border-medium mx-1"></div>
+<button class="px-2 py-0.5 bg-violet-tint hover:bg-violet-wash rounded text-violet-ink font-mono-data text-[12px] font-bold flex items-center gap-1 transition-colors" title="Insert Math Formula / LaTeX" type="button">
+<span class="material-symbols-outlined text-[15px]">functions</span> fx
+              </button>
+<button class="p-1 hover:bg-card rounded text-text-strong transition-colors" title="Add Diagram / Diagrammatic Reference" type="button"><span class="material-symbols-outlined text-[16px]">image</span></button>
+<button class="p-1 hover:bg-card rounded text-text-strong transition-colors" title="Add Table Structure" type="button"><span class="material-symbols-outlined text-[16px]">table</span></button>
+<button class="p-1 hover:bg-card rounded text-text-strong transition-colors" title="Code Block" type="button"><span class="material-symbols-outlined text-[16px]">code</span></button>
+</div>
+</div>
+<!-- Dual-Mode Editor Panels -->
+<div class="border border-border-medium rounded-lg focus-within:border-violet-ink focus-within:ring-2 focus-within:ring-violet-line transition-all overflow-hidden bg-card shadow-xs">
+<!-- Mode 1: Raw LaTeX Textarea -->
+<div id="latex-editor-container">
+<textarea class="w-full p-4 font-question-text text-[16px] text-on-surface leading-relaxed border-none focus:outline-none resize-y" placeholder="Type prompt here with LaTeX syntax..." rows="5">From first principles using the method of completing the square, derive the general quadratic formula for the equation:
+
+ax² + bx + c = 0, where a ≠ 0.
+
+Clearly illustrate every algebraic transition step. Furthermore, state the conditions under which the roots of this equation will be:
+(i) Real and distinct,
+(ii) Real and coincident,
+(iii) Complex conjugate pairs.</textarea>
+</div>
+<!-- Mode 2: Live KaTeX Crisp Math Rendering Card (Toggled or parallel view) -->
+<div class="hidden p-4 bg-surface-subtle/50 border-t border-border-fine space-y-3" id="formula-preview-panel">
+<div class="flex items-center justify-between text-label-sm font-label-eyebrow uppercase text-violet-ink">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">visibility</span> KaTeX Rendered Formula Preview</span>
+<span class="font-mono-data text-[11px] text-text-secondary lowercase">math engine: katex v0.16</span>
+</div>
+<div class="bg-card p-4 rounded-lg border border-border-fine shadow-2xs space-y-2">
+<p class="font-question-text text-[15px] text-on-surface">From first principles using the method of completing the square, derive the general quadratic formula for the equation:</p>
+<div class="py-2 px-3 bg-surface-subtle rounded border border-violet-line/60 font-mono-data text-[17px] text-on-surface flex items-center justify-center gap-2">
+<span class="font-serif italic font-bold">ax² + bx + c = 0</span>, where <span class="font-serif italic font-bold">a ≠ 0</span>.
+              </div>
+<p class="font-question-text text-[14px] text-on-surface">Target formula output:</p>
+<div class="py-2.5 px-3 bg-violet-wash rounded border border-violet-line font-mono-data text-[16px] text-violet-ink flex items-center justify-center font-bold">
+<span class="font-serif italic">x</span> = <span class="mx-1">(-b ± √(b² - 4ac)) / (2a)</span>
+</div>
+</div>
+</div>
+<div class="px-4 py-2 bg-surface-subtle border-t border-border-fine flex items-center justify-between text-text-secondary font-mono-data text-[12px]">
+<span class="flex items-center gap-1.5 text-emerald-ink-tint">
+<span class="material-symbols-outlined text-[15px]">check_circle</span>
+                LaTeX formulas rendered in standard KaTeX
+              </span>
+<span>64 words · 422 characters</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Essay Engine Settings & Evaluation Protocols -->
+<div class="p-space-lg space-y-space-lg">
+<!-- Word Constraints & AI Evaluation Parameters -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<!-- Left: Word Limit Controls -->
+<div class="bg-card border border-border-fine rounded-xl p-space-md shadow-xs space-y-4">
+<div class="flex items-center justify-between">
+<span class="font-title text-title text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-violet-ink">text_snippet</span>
+                Word Length Bounds
+              </span>
+<span class="font-label-sm text-text-secondary">Candidate Canvas Rule</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="font-label-eyebrow text-[11px] text-text-placeholder uppercase block mb-1">Minimum Words</label>
+<div class="relative">
+<input class="h-11 w-full pl-3 pr-8 rounded-lg border border-border-medium bg-card text-on-surface font-mono-data font-semibold focus:border-violet-ink focus:outline-none" type="number" value="150"/>
+<span class="absolute right-3 top-3 font-mono-data text-[11px] text-text-placeholder">wds</span>
+</div>
+</div>
+<div>
+<label class="font-label-eyebrow text-[11px] text-text-placeholder uppercase block mb-1">Maximum Words</label>
+<div class="relative">
+<input class="h-11 w-full pl-3 pr-8 rounded-lg border border-border-medium bg-card text-on-surface font-mono-data font-semibold focus:border-violet-ink focus:outline-none" type="number" value="500"/>
+<span class="absolute right-3 top-3 font-mono-data text-[11px] text-text-placeholder">wds</span>
+</div>
+</div>
+</div>
+<p class="font-body-default text-label-sm text-text-secondary leading-snug">
+              Submissions below 150 words will prompt a confirmation dialog during candidate submission. The editor enforces a strict stop-buffer at 550 words.
+            </p>
+</div>
+<!-- Right: Key Argument Concepts / Semantic Anchors -->
+<div class="bg-card border border-border-fine rounded-xl p-space-md shadow-xs space-y-3">
+<div class="flex items-center justify-between">
+<span class="font-title text-title text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-violet-ink">psychology</span>
+                Expected Concept Anchors
+              </span>
+<span class="font-label-sm text-emerald-ink-tint font-semibold bg-emerald-tint px-2 py-0.5 rounded">AI Assisted Match</span>
+</div>
+<div class="flex flex-wrap gap-2 pt-1">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-violet-wash border border-violet-line text-violet-ink font-body-strong text-label-sm">
+                Completing the square
+                <button class="hover:text-crimson-ink-white" type="button"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-violet-wash border border-violet-line text-violet-ink font-body-strong text-label-sm">
+                Algebraic simplification
+                <button class="hover:text-crimson-ink-white" type="button"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-violet-wash border border-violet-line text-violet-ink font-body-strong text-label-sm">
+                Discriminant analysis (b² - 4ac)
+                <button class="hover:text-crimson-ink-white" type="button"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-violet-wash border border-violet-line text-violet-ink font-body-strong text-label-sm">
+                Division by coefficient a
+                <button class="hover:text-crimson-ink-white" type="button"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+</div>
+<div class="flex items-center gap-2 pt-1">
+<input class="h-9 flex-1 px-3 rounded-lg border border-border-medium bg-card text-on-surface text-label-sm focus:border-violet-ink focus:outline-none" placeholder="Add expected keyword or formula token..." type="text"/>
+<button class="h-9 px-3 rounded-lg bg-surface-subtle border border-border-medium hover:bg-surface-container text-on-surface font-body-strong text-label-sm transition-colors" type="button">
+                + Add Token
+              </button>
+</div>
+</div>
+</div>
+<!-- Attached Marking Rubric Card with Live Dynamic Balance Anchor -->
+<div class="bg-card border border-border-fine rounded-xl p-space-md shadow-xs space-y-4">
+<!-- Dynamic Rubric Balance Validation Anchor -->
+<div class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 bg-emerald-tint/60 border border-emerald-line rounded-lg">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-ink-tint text-[18px]">verified</span>
+<span class="font-body-strong text-[13px] text-emerald-ink-tint">
+              Criteria Total: <strong class="font-mono-data font-bold">10.0 / 10.0m</strong>
+</span>
+<span class="text-emerald-ink-tint/50">·</span>
+<span class="font-body-default text-[12px] text-emerald-ink-tint">✓ Perfectly Balanced with Question Weight (10.0m)</span>
+</div>
+<span class="font-mono-data text-[11px] text-emerald-ink-tint font-semibold bg-chalk-white/80 px-2 py-0.5 rounded border border-emerald-line/60">
+            No silent point drift
+          </span>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-3 border-b border-border-fine pb-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-amber-tint border border-amber-line flex items-center justify-center text-amber-ink-tint">
+<span class="material-symbols-outlined text-[22px]">grading</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">WAEC STEM Derivation Standard (10 Marks)</h3>
+<span class="px-2 py-0.5 rounded bg-emerald-tint border border-emerald-line text-emerald-ink-tint font-label-sm text-[11px] font-bold">Standard Locked</span>
+</div>
+<p class="font-body-default text-label-sm text-text-secondary">Official institutional scoring breakdown matrix for non-objective marking</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border-medium hover:bg-surface-subtle text-on-surface font-body-strong text-label-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+                Edit Rubric
+              </button>
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border-medium hover:bg-surface-subtle text-on-surface font-body-strong text-label-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+                Replace
+              </button>
+</div>
+</div>
+<!-- Criteria Matrix Breakdown -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+<!-- Criterion 1 -->
+<div class="p-3.5 rounded-lg bg-surface-subtle border border-border-fine flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-title text-[13px] text-on-surface">1. Conceptual Formulation</span>
+<span class="font-mono-data text-[12px] font-bold text-violet-ink bg-card px-2 py-0.5 rounded border border-border-fine">3.0m</span>
+</div>
+<p class="font-body-default text-[12px] text-text-secondary leading-relaxed">
+                  Clear arrangement of standard quadratic ax²+bx+c=0, division by leading coefficient 'a', and isolating constant c/a to RHS.
+                </p>
+</div>
+<div class="mt-3 pt-2 border-t border-border-fine flex items-center justify-between text-label-sm text-text-placeholder font-mono-data text-[11px]">
+<span>Weight: 30%</span>
+<span class="text-emerald-ink-white font-medium">Automatic Check</span>
+</div>
+</div>
+<!-- Criterion 2 -->
+<div class="p-3.5 rounded-lg bg-surface-subtle border border-border-fine flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-title text-[13px] text-on-surface">2. Step-by-Step Algebraic Steps</span>
+<span class="font-mono-data text-[12px] font-bold text-violet-ink bg-card px-2 py-0.5 rounded border border-border-fine">4.0m</span>
+</div>
+<p class="font-body-default text-[12px] text-text-secondary leading-relaxed">
+                  Addition of (b/2a)² to both sides, recognition of perfect square binomial (x + b/2a)², and common denominator expansion.
+                </p>
+</div>
+<div class="mt-3 pt-2 border-t border-border-fine flex items-center justify-between text-label-sm text-text-placeholder font-mono-data text-[11px]">
+<span>Weight: 40%</span>
+<span class="text-emerald-ink-white font-medium">Automatic Check</span>
+</div>
+</div>
+<!-- Criterion 3 -->
+<div class="p-3.5 rounded-lg bg-surface-subtle border border-border-fine flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-title text-[13px] text-on-surface">3. Final Formula &amp; Conclusion</span>
+<span class="font-mono-data text-[12px] font-bold text-violet-ink bg-card px-2 py-0.5 rounded border border-border-fine">3.0m</span>
+</div>
+<p class="font-body-default text-[12px] text-text-secondary leading-relaxed">
+                  Taking square root with ± sign, accurate isolation of x = (-b ± √(b² - 4ac))/2a, and explicit 3-part discriminant classification.
+                </p>
+</div>
+<div class="mt-3 pt-2 border-t border-border-fine flex items-center justify-between text-label-sm text-text-placeholder font-mono-data text-[11px]">
+<span>Weight: 30%</span>
+<span class="text-emerald-ink-white font-medium">Automatic Check</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Model Benchmark Answer for AI Evaluation Engine -->
+<div class="bg-card border border-border-fine rounded-xl p-space-md shadow-xs space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-violet-ink">model_training</span>
+<span class="font-title text-title text-on-surface">Model Benchmark Answer</span>
+<span class="text-text-placeholder text-[12px]">(Used for semantic ground-truth scoring)</span>
+</div>
+<button class="text-violet-ink hover:underline font-body-strong text-label-sm flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">auto_fix_high</span>
+              Generate from Curriculum
+            </button>
+</div>
+<textarea class="w-full p-3 font-mono-data text-[13px] text-on-surface leading-relaxed border border-border-medium rounded-lg focus:border-violet-ink focus:outline-none bg-surface-subtle" placeholder="Paste the exact gold-standard benchmark essay here..." rows="4">Given: ax² + bx + c = 0 (a ≠ 0)
+Step 1: Divide by a -&gt; x² + (b/a)x + c/a = 0
+Step 2: Isolate constant -&gt; x² + (b/a)x = -c/a
+Step 3: Complete square -&gt; Add (b/2a)² to both sides:
+x² + (b/a)x + b²/(4a²) = -c/a + b²/(4a²)
+Step 4: Factor left hand side: (x + b/(2a))² = (b² - 4ac) / (4a²)
+Step 5: Square root: x + b/(2a) = ± √(b² - 4ac) / 2a
+Final: x = (-b ± √(b² - 4ac)) / (2a)
+Discriminant conditions:
+(i) b² - 4ac &gt; 0 -&gt; Real and distinct
+(ii) b² - 4ac = 0 -&gt; Real and coincident (equal)
+(iii) b² - 4ac &lt; 0 -&gt; Complex conjugate roots.</textarea>
+</div>
+<!-- Candidate Solution & Review Notes -->
+<div class="bg-card border border-border-fine rounded-xl p-space-md shadow-xs space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-cobalt-ink">visibility</span>
+<span class="font-title text-title text-on-surface">Post-Exam Solution &amp; Feedback Notes</span>
+</div>
+<span class="font-label-sm text-text-secondary">Visible to candidate after release</span>
+</div>
+<textarea class="w-full p-3 font-body-default text-body-default text-on-surface leading-relaxed border border-border-medium rounded-lg focus:border-violet-ink focus:outline-none bg-card" placeholder="Add study guidance or common misconception warnings for students after scores are computed..." rows="2">Pay special attention to carrying the denominator 4a² inside the square root to 2a in the final step. Negative roots must be paired with the ± symbol throughout step 5.</textarea>
+</div>
+</div>
+</main>
+</div>
+<!-- STICKY ACTION BAR AT BOTTOM OF SCREEN -->
+<footer class="fixed bottom-0 left-[232px] right-0 h-16 bg-chalk-white border-t border-border-fine z-40 px-space-lg flex items-center justify-between shadow-lg">
+<!-- Status & Context Info -->
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 text-text-secondary font-mono-data text-[12px]">
+<span class="material-symbols-outlined text-[16px] text-emerald-ink-tint">sync</span>
+<span>Auto-saving in background</span>
+</div>
+<span class="text-border-medium hidden sm:inline">|</span>
+<span class="font-mono-data text-[12px] text-text-secondary hidden sm:inline">Question 3 of 50 in current bank</span>
+</div>
+<!-- Center/Right Action Cluster -->
+<div class="flex items-center gap-3">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-medium bg-card text-on-surface hover:bg-surface-subtle font-body-strong text-body-default transition-all shadow-xs" type="button">
+<span class="material-symbols-outlined text-[18px] text-text-secondary">open_in_new</span>
+<span>Preview Candidate View</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-medium bg-card text-on-surface hover:bg-surface-subtle font-body-strong text-body-default transition-all shadow-xs" type="button">
+<span class="material-symbols-outlined text-[18px] text-text-secondary">content_copy</span>
+<span>Duplicate</span>
+</button>
+<!-- Delete with Modal State Trigger -->
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-crimson-ink-white hover:bg-crimson-tint transition-colors font-body-strong text-body-default" id="delete-trigger" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+<span>Delete</span>
+</button>
+<!-- Streamlined Bottom Button: "Next Question →" (auto-saving in background) -->
+<button class="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-violet-ink hover:bg-violet-hover active:bg-violet-pressed text-chalk-white font-body-strong text-body-default shadow-sm transition-all" type="button">
+<span>Next Question</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</footer>
+<!-- DELETION CONFIRMATION DIALOG (Hidden by default, triggered by JS) -->
+<div class="hidden fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-xs p-4" id="delete-modal">
+<div class="bg-card border border-border-fine rounded-xl max-w-md w-full p-space-lg shadow-2xl space-y-4">
+<div class="w-12 h-12 rounded-full bg-crimson-tint text-crimson-ink-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[28px]">warning</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Delete Question #3?</h3>
+<p class="font-body-default text-body-default text-text-secondary mt-1">
+          This question has an active 10.0m weight and rubric attached. Removing it will reduce the exam's total score from 100 to 90 marks until reallocated.
+        </p>
+</div>
+<div class="flex items-center justify-end gap-3 pt-2">
+<button class="px-4 py-2 rounded-lg border border-border-medium hover:bg-surface-subtle text-on-surface font-body-strong text-body-default" id="cancel-delete" type="button">
+          Keep Question
+        </button>
+<button class="px-4 py-2 rounded-lg bg-crimson-ink-white hover:bg-crimson-ink-tint text-chalk-white font-body-strong text-body-default" id="confirm-delete" type="button">
+          Confirm Deletion
+        </button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Add question dropdown toggle
+  const addBtn = document.getElementById('add-question-btn');
+  const addMenu = document.getElementById('add-menu');
+  if (addBtn && addMenu) {
+    addBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      addMenu.classList.toggle('hidden');
+    });
+  }
+
+  // Tools menu dropdown toggle
+  const toolsBtn = document.getElementById('tools-menu-btn');
+  const toolsDropdown = document.getElementById('tools-dropdown');
+  if (toolsBtn && toolsDropdown) {
+    toolsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toolsDropdown.classList.toggle('hidden');
+    });
+  }
+
+  // Close menus on outside click
+  document.addEventListener('click', () => {
+    if (addMenu) addMenu.classList.add('hidden');
+    if (toolsDropdown) toolsDropdown.classList.add('hidden');
+  });
+
+  // LaTeX vs Formula Preview Toggle
+  const tabLatexWrite = document.getElementById('tab-latex-write');
+  const tabFormulaPreview = document.getElementById('tab-formula-preview');
+  const formulaPreviewPanel = document.getElementById('formula-preview-panel');
+
+  if (tabLatexWrite && tabFormulaPreview && formulaPreviewPanel) {
+    tabFormulaPreview.addEventListener('click', () => {
+      formulaPreviewPanel.classList.remove('hidden');
+      tabFormulaPreview.classList.add('bg-card', 'text-violet-ink', 'shadow-xs');
+      tabFormulaPreview.classList.remove('text-text-secondary');
+      tabLatexWrite.classList.remove('bg-card', 'text-violet-ink', 'shadow-xs');
+      tabLatexWrite.classList.add('text-text-secondary');
+    });
+
+    tabLatexWrite.addEventListener('click', () => {
+      formulaPreviewPanel.classList.add('hidden');
+      tabLatexWrite.classList.add('bg-card', 'text-violet-ink', 'shadow-xs');
+      tabLatexWrite.classList.remove('text-text-secondary');
+      tabFormulaPreview.classList.remove('bg-card', 'text-violet-ink', 'shadow-xs');
+      tabFormulaPreview.classList.add('text-text-secondary');
+    });
+  }
+
+  // Deletion modal interactivity
+  const deleteBtn = document.getElementById('delete-trigger');
+  const deleteModal = document.getElementById('delete-modal');
+  const cancelDelete = document.getElementById('cancel-delete');
+  const confirmDelete = document.getElementById('confirm-delete');
+
+  if (deleteBtn && deleteModal) {
+    deleteBtn.addEventListener('click', () => {
+      deleteModal.classList.remove('hidden');
+    });
+    if (cancelDelete) {
+      cancelDelete.addEventListener('click', () => {
+        deleteModal.classList.add('hidden');
+      });
+    }
+    if (confirmDelete) {
+      confirmDelete.addEventListener('click', () => {
+        deleteModal.classList.add('hidden');
+      });
+    }
+  }
+</script></main></div></body></html>

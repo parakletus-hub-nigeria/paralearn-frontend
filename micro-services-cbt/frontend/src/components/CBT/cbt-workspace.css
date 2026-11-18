@@ -1,6 +1,8 @@
 /* Geist Mono for codes, PINs, scores and timers (Tailwind's font-mono reads --font-mono).
    Set here, not in the main app, so only the CBT and Results apps change. */
-:root {
+.cbt-surface,
+.cbt-dialog {
+  /* Not :root: next/font defines --font-geist-mono on <body>, so it only resolves below it */
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 .cbt-surface, .cbt-dialog {
@@ -18,6 +20,14 @@
   --emerald-ink: #065f46;
   --amber-ink: #92400e;
   --crimson-ink: #991b1b;
+  /* Signal washes and lines for tinted rows, cards and meters (first used by the monitor) */
+  --emerald-strong: #047857;
+  --emerald-wash: #f1fcef;
+  --amber-wash: #fff8ee;
+  --amber-line: #fbd9ad;
+  --crimson-wash: #fff6f6;
+  --crimson-line: #f5c2c7;
+  --cobalt-ink: #1e40af;
   color: var(--cbt-ink);
   background: var(--cbt-paper);
   font-size: 14px;
@@ -245,6 +255,11 @@
   color: var(--violet-ink);
   font-weight: 600;
 }
+/* Tailwind's own .outline utility would draw a second ring; keep only the keyboard focus ring */
+.cbt-surface .cbt-button.outline:not(:focus-visible),
+.cbt-dialog .cbt-button.outline:not(:focus-visible) {
+  outline: none;
+}
 .cbt-button.outline:hover {
   background: var(--violet-wash);
   border-color: var(--violet-ink);
@@ -254,182 +269,6 @@
 .cbt-icon:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-.cbt-summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border-block: 1px solid var(--cbt-line);
-  margin-bottom: 32px;
-}
-.cbt-summary > div {
-  padding: 20px 20px 20px 0;
-}
-.cbt-summary dt {
-  color: var(--cbt-muted);
-  font-size: 12px;
-  margin-bottom: 6px;
-}
-.cbt-summary dd {
-  font-size: 26px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.cbt-summary small {
-  font-size: 11px;
-  color: var(--cbt-muted);
-}
-.cbt-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-.cbt-tabs {
-  display: flex;
-  gap: 20px;
-  overflow-x: auto;
-  max-width: 100%;
-}
-.cbt-tabs button {
-  min-height: 44px;
-  border-bottom: 2px solid transparent;
-  color: var(--cbt-muted);
-  font-size: 13px;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.cbt-tabs button[aria-pressed="true"] {
-  border-color: var(--cbt-accent);
-  color: var(--cbt-accent);
-  font-weight: 700;
-}
-.cbt-tabs small {
-  font-size: 10px;
-  padding: 2px 5px;
-  background: var(--cbt-wash);
-  margin-left: 5px;
-  border-radius: 4px;
-}
-.cbt-search {
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--cbt-line);
-  border-radius: 6px;
-  padding: 0 10px;
-  gap: 8px;
-  min-height: 40px;
-  width: 240px;
-  color: var(--cbt-muted);
-}
-.cbt-search input {
-  min-width: 0;
-  width: 100%;
-  background: transparent;
-  border: 0;
-  font-size: 12px;
-  height: 38px;
-}
-.cbt-search:focus-within {
-  outline: 2px solid var(--cbt-accent);
-  outline-offset: 2px;
-}
-.cbt-search input:focus-visible {
-  outline: none;
-}
-.cbt-list-tools {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.cbt-list-tools select {
-  background: var(--cbt-paper);
-  border: 1px solid var(--cbt-line);
-  border-radius: 6px;
-  height: 40px;
-  padding: 0 8px;
-  font-size: 12px;
-  max-width: 150px;
-}
-.cbt-exam-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.cbt-exam-table th {
-  font-size: 11px;
-  text-align: left;
-  color: var(--cbt-muted);
-  font-weight: 600;
-  padding: 12px;
-  background: var(--cbt-wash);
-  border-block: 1px solid var(--cbt-line);
-}
-.cbt-exam-table td {
-  padding: 18px 12px;
-  border-bottom: 1px solid var(--cbt-line);
-  vertical-align: middle;
-}
-.cbt-exam-table tr:hover td {
-  background: var(--violet-wash);
-}
-.cbt-exam-name {
-  font-weight: 700;
-  display: block;
-  overflow-wrap: anywhere;
-  max-width: 360px;
-}
-.cbt-exam-name:hover {
-  color: var(--cbt-accent);
-}
-.cbt-exam-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 9px;
-  color: var(--cbt-muted);
-  font-size: 11px;
-  margin-top: 6px;
-}
-.cbt-exam-meta code {
-  font-family: inherit;
-  font-variant-numeric: tabular-nums;
-}
-.cbt-status {
-  display: inline-flex;
-  gap: 5px;
-  align-items: center;
-  border-radius: 4px;
-  padding: 4px 7px;
-  font-size: 11px;
-  white-space: nowrap;
-  font-weight: 600;
-  background: var(--cbt-wash);
-  color: var(--cbt-muted);
-}
-.cbt-status.open {
-  color: var(--emerald-ink);
-  background: var(--emerald-tint);
-}
-.cbt-status.scheduled {
-  color: var(--amber-ink);
-  background: var(--amber-tint);
-}
-.cbt-status.ready {
-  color: var(--violet-ink);
-  background: var(--violet-tint);
-}
-.cbt-row-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 4px;
-}
-.cbt-row-actions .cbt-button {
-  min-height: 36px;
-  padding: 6px 10px;
-  font-size: 12px;
 }
 .cbt-notice {
   display: flex;
@@ -441,31 +280,6 @@
   border-radius: 6px;
   margin-bottom: 20px;
   font-size: 12px;
-}
-.cbt-empty {
-  padding: 64px 20px;
-  text-align: center;
-  border-block: 1px solid var(--cbt-line);
-}
-.cbt-empty > svg {
-  margin: 0 auto 16px;
-  color: var(--cbt-muted);
-}
-.cbt-empty h2 {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-.cbt-empty p {
-  color: var(--cbt-muted);
-  margin-bottom: 20px;
-}
-.cbt-list-footer {
-  margin-top: 16px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: var(--cbt-muted);
 }
 .cbt-form {
   display: grid;
@@ -577,12 +391,6 @@
   .cbt-dashboard {
     padding: 28px 24px;
   }
-  .cbt-exam-table .cbt-schedule-col {
-    display: none;
-  }
-  .cbt-toolbar {
-    align-items: flex-start;
-  }
 }
 @media (max-width: 1023px) {
   .cbt-sidebar {
@@ -631,53 +439,6 @@
   .cbt-page-actions .cbt-button {
     padding: 9px 10px;
     font-size: 12px;
-  }
-  .cbt-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-bottom: 20px;
-  }
-  .cbt-summary > div {
-    padding-block: 14px;
-  }
-  .cbt-summary dd {
-    font-size: 23px;
-  }
-  .cbt-list-tools {
-    width: 100%;
-  }
-  .cbt-search {
-    flex: 1;
-    min-width: 0;
-  }
-  .cbt-exam-table thead {
-    display: none;
-  }
-  .cbt-exam-table,
-  .cbt-exam-table tbody {
-    display: block;
-  }
-  .cbt-exam-table tr {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px;
-    padding: 18px 0;
-    border-bottom: 1px solid var(--cbt-line);
-  }
-  .cbt-exam-table td {
-    border: 0;
-    padding: 0;
-  }
-  .cbt-exam-table .cbt-detail-col {
-    display: none;
-  }
-  .cbt-exam-table td:last-child {
-    grid-column: 1 / -1;
-  }
-  .cbt-row-actions {
-    justify-content: flex-start;
-  }
-  .cbt-exam-table tr:hover td {
-    background: transparent;
   }
   .cbt-form-grid {
     grid-template-columns: 1fr;

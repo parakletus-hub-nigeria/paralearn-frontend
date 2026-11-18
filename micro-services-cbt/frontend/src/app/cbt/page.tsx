@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   Search,
@@ -10,7 +10,6 @@ import {
   Copy,
   Check,
   ArrowUpRight,
-  BookOpen,
   Clock,
   Send,
   Radio,
@@ -22,7 +21,21 @@ import {
   Users,
   X,
   School,
+  KeyRound,
+  MoreVertical,
+  PencilRuler,
+  Lock,
+  Infinity as Endless,
+  BarChart3,
+  CircleDashed,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +61,7 @@ import CbtEntrance from "@cbt/components/CBT/CbtEntrance";
 import CbtSchoolExamSection, {
   type SchoolExamChoice,
 } from "@cbt/components/CBT/CbtSchoolExamSection";
+import "@cbt/components/CBT/cbt-dashboard.css";
 
 type ExamStatus = "Draft" | "Ready" | "Open" | "Scheduled" | "Closed";
 function statusOf(exam: CbtExamItem, now: number): ExamStatus {
@@ -60,14 +74,82 @@ function statusOf(exam: CbtExamItem, now: number): ExamStatus {
     return "Scheduled";
   return "Open";
 }
+const STATUS_LABEL: Record<ExamStatus, string> = {
+  Open: "Open",
+  Scheduled: "Scheduled",
+  Ready: "Ready to publish",
+  Draft: "Draft",
+  Closed: "Closed",
+};
+const STATUS_ICON = {
+  Open: Radio,
+  Scheduled: CalendarClock,
+  Ready: Check,
+  Draft: CircleDashed,
+  Closed: Lock,
+} as const;
+
+/** "You have no … right now", per filter tab */
+const FILTER_NOUN: Record<string, string> = {
+  Open: "open examinations",
+  Scheduled: "scheduled examinations",
+  Drafts: "drafts",
+  Closed: "closed examinations",
+};
+
+function when(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** The line under the status pill: what the status means for candidates right now.
+    Scheduled and Closed repeat the availability column, so CSS shows them only when that column is hidden. */
+function statusNote(exam: CbtExamItem, status: ExamStatus) {
+  if (status === "Open") return "Candidates can enter";
+  if (status === "Scheduled") return `Opens ${when(exam.startsAt)}`;
+  if (status === "Ready") return "Candidates can't see it yet";
+  if (status === "Draft") return "Add questions to publish";
+  return exam.endsAt ? `Ended ${when(exam.endsAt)}` : "Entry closed";
+}
+
+/** Availability column: the window candidates can enter in */
+function availability(exam: CbtExamItem, status: ExamStatus) {
+  if (!exam.isPublished)
+    return {
+      icon: CircleDashed,
+      main: "Not published",
+      sub: exam.accessType === "ROSTER_ONLY" ? "Registered candidates only" : "Anyone with the code",
+    };
+  if (status === "Closed")
+    return { icon: Lock, main: "Entry closed", sub: exam.endsAt ? `Closed ${when(exam.endsAt)}` : "" };
+  if (status === "Scheduled")
+    return {
+      icon: CalendarClock,
+      main: `Opens ${when(exam.startsAt)}`,
+      sub: exam.endsAt ? `Closes ${when(exam.endsAt)}` : "No closing time",
+    };
+  if (exam.endsAt)
+    return { icon: Clock, main: `Closes ${when(exam.endsAt)}`, sub: "Open now" };
+  return { icon: Endless, main: "No time window", sub: "Open until you close it" };
+}
+
 function errorMessage(error: unknown, fallback: string) {
   const message = (error as { data?: { message?: string | string[] } })?.data
     ?.message;
   return Array.isArray(message) ? message.join(". ") : message || fallback;
 }
 
-export default function CbtPortalPage() {
+function CbtPortalContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const wantsNew = searchParams.get("new") === "1";
   const [examiner, setExaminer] = useState<ExaminerWorkspace | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [importPromptDismissed, setImportPromptDismissed] = useState(false);
@@ -132,6 +214,13 @@ export default function CbtPortalPage() {
     const timer = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(timer);
   }, []);
+
+  // The top bar's "New exam" links here with ?new=1: open the create dialog, then tidy the address
+  useEffect(() => {
+    if (!wantsNew || !hydrated || !examiner) return;
+    setCreateOpen(true);
+    router.replace(window.location.pathname, { scroll: false });
+  }, [wantsNew, hydrated, examiner, router]);
 
   useEffect(() => {
     if (exams && exams.length > 0 && examiner?.id) {
@@ -309,53 +398,63 @@ export default function CbtPortalPage() {
   const showImportPrompt =
     examiner.type === "INSTITUTION" && !importPromptDismissed && activeExams.length > 0;
 
+  const hasExams = activeExams.length > 0;
+  // A failed first load is not the same as "no exams": never show zero counts for it
+  const loadFailed = !!error && !hasExams;
+  const TABS: Array<[keyof typeof counts, string]> = [
+    ["All exams", "All exams"],
+    ["Open", "Open"],
+    ["Scheduled", "Scheduled"],
+    ["Drafts", "Drafts"],
+    ["Closed", "Closed"],
+  ];
+  const isSchool = examiner.type === "INSTITUTION";
+
   return (
     <main className="cbt-dashboard">
-      <div className="cbt-page-heading">
+      <div className="cbt-page-heading is-compact">
         <div>
-          <span className="cbt-eyebrow">{examiner.name} / Workspace</span>
           <h1>Examinations</h1>
+          {hasExams && (
+            <p className="cbt-heading-sub">
+              <span>{counts.Open} open now</span>
+              <span>{counts.Scheduled} scheduled</span>
+              <span>
+                {attempts.toLocaleString()} attempt{attempts === 1 ? "" : "s"} so far
+              </span>
+            </p>
+          )}
         </div>
-        <div className="cbt-page-actions">
-          <button
-            className="cbt-icon"
-            aria-label="Refresh exams"
-            title="Refresh exams"
-            disabled={isFetching}
-            onClick={() => refetch()}
-          >
-            <RefreshCw size={17} className={isFetching ? "animate-spin" : ""} />
-          </button>
-          <button
-            className="cbt-button primary"
-            onClick={() => setCreateOpen(true)}
-          >
-            <Plus size={17} />
-            Create exam
-          </button>
-        </div>
+        {(hasExams || error) && (
+          <div className="cbt-page-actions">
+            <button
+              className="cbt-button"
+              disabled={isFetching}
+              onClick={() => refetch()}
+            >
+              <RefreshCw size={15} className={isFetching ? "animate-spin" : ""} aria-hidden />
+              {isFetching ? "Refreshing" : "Refresh"}
+            </button>
+          </div>
+        )}
       </div>
-      {examiner.type === "INSTITUTION" && activeExams.length === 0 && !isLoading && (
-        <div className="cbt-notice">
-          <School size={18} className="shrink-0" />
-          <span>
-            Create your first exam, then bring in your students from ParaLearn. Their
-            classes are ready to import.
-          </span>
-        </div>
-      )}
       {showImportPrompt && (
-        <div className="cbt-notice">
-          <School size={18} className="shrink-0" />
-          <span>
-            Bring in your students from ParaLearn: import whole classes into an exam&apos;s
-            candidate list.
+        <div className="cbt-notice cbt-import-banner">
+          <span className="cbt-import-icon" aria-hidden>
+            <School size={18} />
           </span>
-          <Link className="ml-auto underline font-semibold" href="/cbt/candidates?import=1">
+          <span>
+            <strong>Bring in your students from ParaLearn.</strong>{" "}
+            Import whole classes
+            into an exam&apos;s candidate list, with PINs issued for you.
+          </span>
+          <Link className="cbt-button small" href="/cbt/candidates?import=1">
             Import students
           </Link>
           <button
-            aria-label="Dismiss"
+            className="cbt-icon small"
+            aria-label="Dismiss this suggestion"
+            title="Dismiss"
             onClick={() => {
               setImportPromptDismissed(true);
               try {
@@ -367,284 +466,312 @@ export default function CbtPortalPage() {
           </button>
         </div>
       )}
-      {error && (
-        <div className="cbt-notice" role="alert">
-          <AlertCircle size={18} className="shrink-0" />
+      {error && hasExams && (
+        <div className="cbt-notice is-warning" role="alert">
+          <AlertCircle size={18} className="shrink-0" aria-hidden />
           <span>
-            {activeExams.length
-              ? "Connection interrupted. These results may be out of date."
-              : "We could not load your examinations."}
+            Couldn&apos;t reach the server, so this list may be out of date.
           </span>
-          <button className="ml-auto underline" onClick={() => refetch()}>
-            Retry
+          <button className="cbt-notice-action" onClick={() => refetch()}>
+            Try again
           </button>
         </div>
       )}
-      <dl className="cbt-summary">
-        <div>
-          <dt>Total exams</dt>
-          <dd>{isLoading && !activeExams.length ? "--" : activeExams.length}</dd>
-          <small>{counts.Drafts} drafts</small>
-        </div>
-        <div>
-          <dt>Open for candidates</dt>
-          <dd>{isLoading && !activeExams.length ? "--" : counts.Open}</dd>
-          <small>Published and accepting entry</small>
-        </div>
-        <div>
-          <dt>Scheduled exams</dt>
-          <dd>
-            {isLoading && !activeExams.length ? "--" : counts.Scheduled}
-          </dd>
-          <small>Upcoming opening windows</small>
-        </div>
-        <div>
-          <dt>Exam attempts</dt>
-          <dd>{isLoading && !activeExams.length ? "--" : attempts}</dd>
-          <small>Across all examinations</small>
-        </div>
-      </dl>
-      <div className="cbt-toolbar">
-        <div className="cbt-tabs" aria-label="Filter examinations">
-          {Object.entries(counts).map(([name, count]) => (
-            <button
-              key={name}
-              aria-pressed={filter === name}
-              onClick={() => setFilter(name)}
-            >
-              {name}
-              <small>{count}</small>
-            </button>
-          ))}
-        </div>
-        <div className="cbt-list-tools">
-          <label className="cbt-search">
-            <Search size={16} />
-            <span className="sr-only">Search exams by name or code</span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name or code"
-            />
-            {search && (
-              <button
-                title="Clear search"
-                aria-label="Clear search"
-                onClick={() => setSearch("")}
-              >
-                <X size={14} />
-              </button>
-            )}
-          </label>
-          <label>
-            <span className="sr-only">Sort exams</span>
-            <select value={sort} onChange={(e) => setSort(e.target.value)}>
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-              <option value="title">Name A to Z</option>
-            </select>
-          </label>
-        </div>
-      </div>
-      {isLoading ? (
-        <div aria-busy="true" aria-label="Loading exams">
+      {isLoading && !hasExams ? (
+        <div className="cbt-table-card" aria-busy="true" aria-label="Loading exams">
           {[0, 1, 2].map((n) => (
             <div key={n} className="cbt-skeleton" />
           ))}
         </div>
-      ) : visible.length ? (
-        <table className="cbt-exam-table">
-          <thead>
-            <tr>
-              <th>Examination</th>
-              <th>Status</th>
-              <th className="cbt-detail-col">Questions</th>
-              <th className="cbt-schedule-col">Availability</th>
-              <th>
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((exam) => {
-              const status = statusOf(exam, now);
-              const questions =
-                exam.totalQuestions ?? exam._count?.questions ?? 0;
-              const StatusIcon =
-                status === "Open"
-                  ? Radio
-                  : status === "Scheduled"
-                    ? CalendarClock
-                    : status === "Ready"
-                      ? Check
-                      : status === "Closed"
-                        ? Check
-                        : FileText;
-              return (
-                <tr key={exam.id}>
-                  <td>
-                    <Link
-                      className="cbt-exam-name"
-                      href={`/cbt/exams/${exam.id}`}
-                    >
-                      {exam.title}
-                    </Link>
-                    <div className="cbt-exam-meta">
-                      <code>{exam.accessCode}</code>
-                      <span className="flex items-center gap-1">
-                        <Clock size={12} />
-                        {exam.durationMins} min
-                      </span>
-                      <span>{exam._count?.attempts ?? 0} attempts</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`cbt-status ${status.toLowerCase()}`}>
-                      <StatusIcon size={12} />
-                      {status === "Ready" ? "Ready to publish" : status}
-                    </span>
-                  </td>
-                  <td className="cbt-detail-col tabular-nums">
-                    <Link
-                      href={`/cbt/exams/${exam.id}`}
-                      className="inline-flex items-center gap-1.5 font-semibold text-violet-700 hover:text-violet-900 hover:underline"
-                      title="Click to view and edit questions"
-                    >
-                      <BookOpen size={13} />
-                      <span>{questions}</span>
-                    </Link>
-                  </td>
-                  <td className="cbt-schedule-col text-xs text-slate-600">
-                    {!exam.isPublished
-                      ? "Not published"
-                      : status === "Closed"
-                        ? "Entry closed"
-                        : exam.startsAt
-                          ? new Date(exam.startsAt).toLocaleString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "No time restriction"}
-                  </td>
-                  <td>
-                    <div className="cbt-row-actions">
-                      <Link
-                        className="cbt-button outline"
-                        title="View and edit questions"
-                        aria-label={`View or edit questions for ${exam.title}`}
-                        href={`/cbt/exams/${exam.id}`}
-                      >
-                        <FileText size={14} />
-                        <span>View/Edit questions</span>
-                      </Link>
-                      {exam.isPublished ? (
-                        <>
-                          <button
-                            title="Copy candidate link"
-                            aria-label={`Copy candidate link for ${exam.title}`}
-                            className="cbt-icon"
-                            onClick={() => copyLink(exam)}
-                          >
-                            {copied === exam.id ? (
-                              <Check size={16} />
-                            ) : (
-                              <Copy size={16} />
-                            )}
-                          </button>
-                          <Link
-                            className="cbt-icon"
-                            title="Open candidate entrance"
-                            aria-label={`Open candidate entrance for ${exam.title}`}
-                            href={`/take/${encodeURIComponent(exam.accessCode)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <ArrowUpRight size={16} />
-                          </Link>
-                          <Link
-                            className="cbt-button"
-                            href={`/cbt/exams/${exam.id}/monitor`}
-                          >
-                            <Monitor size={14} />
-                            {status === "Closed" ? "Results" : "Monitor"}
-                          </Link>
-                        </>
-                      ) : questions ? (
-                        <button
-                          className="cbt-button"
-                          disabled={publishing === exam.id}
-                          onClick={() => setPublishTarget(exam)}
-                        >
-                          <Send size={14} />
-                          Publish exam
-                        </button>
-                      ) : null}
-                      <Link
-                        className="cbt-icon"
-                        title="Manage candidates"
-                        aria-label={`Manage candidates for ${exam.title}`}
-                        href={`/cbt/candidates?examId=${encodeURIComponent(exam.id)}`}
-                      >
-                        <Users size={16} />
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      ) : loadFailed ? (
+        <div className="cbt-empty is-error" role="alert">
+          <AlertCircle size={28} aria-hidden />
+          <h2>Couldn&apos;t load your examinations</h2>
+          <p>Check this computer&apos;s internet connection, then try again.</p>
+          <button
+            className="cbt-button primary"
+            disabled={isFetching}
+            onClick={() => refetch()}
+          >
+            <RefreshCw size={15} className={isFetching ? "animate-spin" : ""} aria-hidden />
+            {isFetching ? "Trying again" : "Try again"}
+          </button>
+        </div>
+      ) : !hasExams ? (
+        <div className="cbt-empty is-first-run">
+          <h2>Set up your first examination</h2>
+          <p>Three steps from a blank page to candidates in the exam room.</p>
+          <ol className="cbt-first-steps">
+            <li>
+              <span aria-hidden>1</span>
+              <strong>Create a draft</strong>
+              Give it a title and a duration. Nothing is visible to candidates yet.
+            </li>
+            <li>
+              <span aria-hidden>2</span>
+              <strong>Add questions</strong>
+              Type them in, import an Excel sheet, or let ParaLearn AI draft some for you
+              to check.
+            </li>
+            <li>
+              <span aria-hidden>3</span>
+              <strong>Publish and share the code</strong>
+              {isSchool
+                ? "Import your classes from ParaLearn for PINs, or write the exam code on the board."
+                : "Candidates enter the exam code at the candidate entrance. Issue PINs if you want a register."}
+            </li>
+          </ol>
+          <button className="cbt-button primary" onClick={() => setCreateOpen(true)}>
+            <Plus size={16} aria-hidden />
+            Create your first exam
+          </button>
+        </div>
       ) : (
-        <div className="cbt-empty">
-          <BookOpen size={32} />
-          <h2>
-            {error
-              ? "Exams are unavailable"
-              : exams.length
-                ? "No matching examinations"
-                : "Your first examination starts here"}
-          </h2>
-          <p>
-            {error
-              ? "Try refreshing when your connection is available."
-              : exams.length
-                ? "Try another name, code, or status."
-                : "Create a draft to begin adding your questions."}
-          </p>
-          {exams.length ? (
-            <button
-              className="cbt-button"
-              onClick={() => {
-                setSearch("");
-                setFilter("All exams");
-              }}
-            >
-              Clear filters
-            </button>
+        <div className="cbt-table-card">
+          <div className="cbt-table-toolbar">
+            <div className="cbt-tabs" role="group" aria-label="Filter examinations">
+              {TABS.map(([key, label]) => (
+                <button
+                  key={key}
+                  aria-pressed={filter === key}
+                  onClick={() => setFilter(key)}
+                >
+                  {label}
+                  <small>{counts[key]}</small>
+                </button>
+              ))}
+            </div>
+            <div className="cbt-list-tools">
+              <label className="cbt-search">
+                <Search size={16} aria-hidden />
+                <span className="sr-only">Search exams by name or code</span>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search title or code"
+                />
+                {search && (
+                  <button
+                    title="Clear search"
+                    aria-label="Clear search"
+                    onClick={() => setSearch("")}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </label>
+              <label>
+                <span className="sr-only">Sort exams</span>
+                <select value={sort} onChange={(e) => setSort(e.target.value)}>
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="title">Name A to Z</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          {visible.length ? (
+          <>
+          <table className="cbt-exam-table">
+            <thead>
+              <tr>
+                <th>Examination &amp; code</th>
+                <th>Status</th>
+                <th className="cbt-detail-col">Questions</th>
+                <th className="cbt-schedule-col">Availability</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((exam) => {
+                const status = statusOf(exam, now);
+                const questions =
+                  exam.totalQuestions ?? exam._count?.questions ?? 0;
+                const attemptsCount = exam._count?.attempts ?? 0;
+                const StatusIcon = STATUS_ICON[status];
+                const win = availability(exam, status);
+                const WindowIcon = win.icon;
+                const studio = `/cbt/exams/${exam.id}`;
+                const monitor = `/cbt/exams/${exam.id}/monitor`;
+                return (
+                  <tr key={exam.id}>
+                    <td>
+                      <Link className="cbt-exam-name" href={studio}>
+                        {exam.title}
+                      </Link>
+                      <div className="cbt-exam-meta">
+                        <code title="Exam code candidates type in">
+                          <KeyRound size={11} aria-hidden />
+                          {exam.accessCode}
+                        </code>
+                        <span>
+                          <Clock size={12} aria-hidden />
+                          {exam.durationMins} min
+                        </span>
+                        <span className={attemptsCount ? "has-attempts" : undefined}>
+                          {attemptsCount
+                            ? `${attemptsCount.toLocaleString()} attempt${attemptsCount === 1 ? "" : "s"}`
+                            : "No attempts yet"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="cbt-status-cell">
+                      <span className={`cbt-status ${status.toLowerCase()}`}>
+                        <StatusIcon size={12} aria-hidden />
+                        {STATUS_LABEL[status]}
+                      </span>
+                      <small
+                        className={`cbt-status-note ${status === "Scheduled" || status === "Closed" ? "is-window" : ""}`}
+                      >
+                        {statusNote(exam, status)}
+                      </small>
+                    </td>
+                    <td className="cbt-detail-col">
+                      <Link
+                        href={studio}
+                        className="cbt-questions-link"
+                        title="View and edit questions"
+                      >
+                        {questions} question{questions === 1 ? "" : "s"}
+                      </Link>
+                      {typeof exam.totalMarks === "number" && exam.totalMarks > 0 && (
+                        <small className="cbt-cell-note is-number">
+                          {exam.totalMarks} marks
+                        </small>
+                      )}
+                    </td>
+                    <td className="cbt-schedule-col">
+                      <span className="cbt-window">
+                        <WindowIcon size={14} aria-hidden />
+                        {win.main}
+                      </span>
+                      {win.sub && <small className="cbt-cell-note">{win.sub}</small>}
+                    </td>
+                    <td>
+                      <div className="cbt-row-actions">
+                        {status === "Open" ? (
+                          <Link className="cbt-button outline" href={monitor}>
+                            <Monitor size={14} aria-hidden />
+                            Monitor
+                          </Link>
+                        ) : status === "Closed" ? (
+                          <Link className="cbt-button" href={monitor}>
+                            <BarChart3 size={14} aria-hidden />
+                            Results
+                          </Link>
+                        ) : status === "Ready" ? (
+                          <button
+                            className="cbt-button"
+                            disabled={publishing === exam.id}
+                            onClick={() => setPublishTarget(exam)}
+                          >
+                            <Send size={14} className="text-emerald-700" aria-hidden />
+                            Publish
+                          </button>
+                        ) : status === "Scheduled" ? (
+                          <Link className="cbt-button" href={studio}>
+                            <PencilRuler size={14} aria-hidden />
+                            Edit exam
+                          </Link>
+                        ) : (
+                          <Link className="cbt-button" href={studio}>
+                            <Plus size={14} aria-hidden />
+                            Add questions
+                          </Link>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className="cbt-icon cbt-kebab"
+                              aria-label={`More actions for ${exam.title}`}
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="cbt-menu">
+                            <DropdownMenuItem asChild>
+                              <Link href={studio}>
+                                <FileText size={14} />
+                                View or edit questions
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/cbt/candidates?examId=${encodeURIComponent(exam.id)}`}
+                              >
+                                <Users size={14} />
+                                Candidates and PINs
+                              </Link>
+                            </DropdownMenuItem>
+                            {exam.isPublished && (
+                              <>
+                                <DropdownMenuSeparator />
+                                {status !== "Open" && status !== "Closed" && (
+                                  <DropdownMenuItem asChild>
+                                    <Link href={monitor}>
+                                      <Monitor size={14} />
+                                      Monitor
+                                    </Link>
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onSelect={() => copyLink(exam)}>
+                                  {copied === exam.id ? (
+                                    <Check size={14} />
+                                  ) : (
+                                    <Copy size={14} />
+                                  )}
+                                  Copy candidate link
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/take/${encodeURIComponent(exam.accessCode)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <ArrowUpRight size={14} />
+                                    Open candidate entrance
+                                  </Link>
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="cbt-list-footer">
+            <span>
+              Showing {visible.length} of {activeExams.length} examination
+              {activeExams.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          </>
           ) : (
-            !error && (
+            <div className="cbt-empty">
+              <Search size={24} aria-hidden />
+              <h2>No examinations match</h2>
+              <p>
+                {search.trim()
+                  ? `Nothing in ${filter === "All exams" ? "your exams" : `“${filter}”`} matches “${search.trim()}”.`
+                  : `You have no ${FILTER_NOUN[filter] ?? "examinations"} right now.`}
+              </p>
               <button
-                className="cbt-button primary"
-                onClick={() => setCreateOpen(true)}
+                className="cbt-button"
+                onClick={() => {
+                  setSearch("");
+                  setFilter("All exams");
+                }}
               >
-                <Plus size={16} />
-                Create exam
+                Show all examinations
               </button>
-            )
+            </div>
           )}
         </div>
       )}
-      <div className="cbt-list-footer">
-        <span>
-          {visible.length} of {exams.length} exams
-        </span>
-        <Link href="/take" className="flex items-center gap-1">
-          Candidate entrance
-          <ArrowUpRight size={12} />
-        </Link>
-      </div>
 
       <Dialog
         open={createOpen}
@@ -868,5 +995,21 @@ export default function CbtPortalPage() {
         </DialogContent>
       </Dialog>
     </main>
+  );
+}
+
+// useSearchParams (for ?new=1) needs a Suspense boundary or the static build fails
+export default function CbtPortalPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="cbt-dashboard" aria-busy="true" aria-label="Loading workspace">
+          <div className="cbt-skeleton" />
+          <div className="cbt-skeleton" />
+        </div>
+      }
+    >
+      <CbtPortalContent />
+    </Suspense>
   );
 }

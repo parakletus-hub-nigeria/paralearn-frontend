@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>ParaLearn CBT — Clear Register Examination Suite</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-secondary": "#ffffff", "surface": "#f8f9ff", "cobalt-ink": "#1e40af", "background": "#f8f9ff", "error-container": "#ffdad6", "tertiary-fixed-dim": "#4edea3", "error": "#ba1a1a", "violet-line": "#dfceef", "on-secondary-fixed": "#131b2e", "border-fine": "#e2e8f0", "on-tertiary-fixed-variant": "#005236", "amber-vivid": "#f28c1f", "chalk-white": "#fdfdff", "amber-line": "#fde68a", "emerald-tint": "#dff9d8", "primary-fixed": "#ecdcff", "surface-container": "#e6eeff", "surface-container-lowest": "#ffffff", "crimson-ink-white": "#b91c1c", "card": "#ffffff", "surface-container-low": "#eff4ff", "cobalt-line": "#bfdbfe", "on-tertiary": "#ffffff", "on-surface": "#0d1c2f", "on-secondary-fixed-variant": "#3f465c", "tertiary-fixed": "#6ffbbe", "emerald-ink-white": "#047857", "surface-subtle": "#f8fafc", "amber-tint": "#ffe9cc", "on-tertiary-fixed": "#002113", "outline-variant": "#cdc3d7", "emerald-ink-tint": "#065f46", "cobalt-tint": "#dbe9ff", "inverse-on-surface": "#ebf1ff", "amber-ink-tint": "#92400e", "lavender-muted": "#ad8ed6", "crimson-tint": "#fddada", "secondary-fixed": "#dae2fd", "on-primary-fixed-variant": "#5d0abd", "surface-tint": "#7635d6", "tertiary-container": "#00593c", "surface-variant": "#d5e3fd", "surface-bright": "#f8f9ff", "on-secondary-container": "#5c647a", "on-error-container": "#93000a", "on-primary-fixed": "#270058", "border-medium": "#cbd5e1", "foreground": "#0f172a", "primary-fixed-dim": "#d5bbff", "violet-wash": "#f7f3ff", "violet-tint": "#f0e5ff", "violet-hover": "#7b22e8", "emerald-line": "#a7f3d0", "secondary": "#565e74", "cobalt-vivid": "#2a64f6", "secondary-fixed-dim": "#bec6e0", "surface-container-high": "#dde9ff", "on-tertiary-container": "#44d69b", "crimson-ink-tint": "#991b1b", "secondary-container": "#dae2fd", "on-background": "#0d1c2f", "violet-pressed": "#5214a3", "text-strong": "#334155", "surface-container-highest": "#d5e3fd", "outline": "#7c7486", "on-primary-container": "#ceb1ff", "surface-dim": "#ccdbf4", "primary-container": "#641bc4", "violet-ink": "#641bc4", "emerald-vivid": "#10b981", "text-secondary": "#64748b", "inverse-surface": "#233144", "tertiary": "#003f29", "surface-muted": "#f1f5f9", "primary": "#49009a", "amber-ink-white": "#b45309", "on-surface-variant": "#4b4454", "on-error": "#ffffff", "crimson-line": "#fecaca", "crimson-vivid": "#e60023", "inverse-primary": "#d5bbff", "text-placeholder": "#94a3b8", "on-primary": "#ffffff" }, borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" }, spacing: { "margin-lg": "2rem", "margin": "1rem", "space-sm": "0.5rem", "space-xs": "0.25rem", "space-2xl": "3rem", "space-xl": "2rem", "gutter-lg": "1.5rem", "space-md": "1rem", "margin-md": "1.5rem", "space-lg": "1.5rem", "gutter": "1rem" }, fontFamily: { "label-eyebrow": ["Manrope"], "mono-data": ["JetBrains Mono"], "answer-option": ["Manrope"], "body-default": ["Manrope"], "headline-lg": ["Manrope"], "question-text": ["Manrope"], "headline-md": ["Manrope"], "pin-box": ["JetBrains Mono"], "title": ["Manrope"], "question-text-mobile": ["Manrope"], "body-strong": ["Manrope"], "display-mobile": ["Manrope"], "display": ["Manrope"], "label-sm": ["Manrope"], "timer-display": ["JetBrains Mono"] }, fontSize: { "label-eyebrow": ["12px", { lineHeight: "16px", letterSpacing: "0.04em", fontWeight: "700" }], "mono-data": ["13px", { lineHeight: "18px", fontWeight: "400" }], "answer-option": ["16px", { lineHeight: "24px", fontWeight: "400" }], "body-default": ["14px", { lineHeight: "22px", fontWeight: "400" }], "headline-lg": ["20px", { lineHeight: "26px", fontWeight: "700" }], "question-text": ["18px", { lineHeight: "28px", fontWeight: "500" }], "headline-md": ["18px", { lineHeight: "24px", fontWeight: "700" }], "pin-box": ["22px", { lineHeight: "28px", fontWeight: "700" }], "title": ["15px", { lineHeight: "20px", fontWeight: "600" }], "question-text-mobile": ["16px", { lineHeight: "24px", fontWeight: "500" }], "body-strong": ["14px", { lineHeight: "22px", fontWeight: "600" }], "display-mobile": ["28px", { lineHeight: "32px", letterSpacing: "-0.02em", fontWeight: "800" }], "display": ["36px", { lineHeight: "40px", letterSpacing: "-0.03em", fontWeight: "800" }], "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }], "timer-display": ["20px", { lineHeight: "24px", fontWeight: "600" }] } } } };</script></head><body class="bg-background font-body-default text-body-default text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-chalk-white/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-4"><div class="flex items-center gap-8"><a class="flex items-center gap-3 focus:outline-none" data-path="home" href="#"><div class="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[22px]">fact_check</span></div><div class="flex flex-col"><span class="font-headline-md text-headline-md tracking-tight text-on-surface leading-none">ParaLearn</span><span class="font-mono-data text-[10px] text-text-secondary leading-tight uppercase tracking-wider">cbt.pln.ng</span></div></a><nav class="hidden xl:flex items-center gap-6" data-active-classes="text-violet-ink font-body-strong"><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="features" href="#">Features</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="how-it-works" href="#">How it Works</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="offline-tech" href="#">Offline Tech</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="waec-jamb-prep" href="#">WAEC/JAMB Prep</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="pricing" href="#">Pricing</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="api-docs" href="#">API Docs</a></nav></div><div class="flex items-center gap-4"><a class="hidden sm:inline-flex items-center font-body-strong text-body-strong text-text-strong hover:text-violet-ink transition-colors px-3 py-2" data-path="candidate-quick-take" href="#">Candidate Quick Take</a><a class="inline-flex items-center justify-center font-body-strong text-body-strong bg-violet-ink text-on-primary px-4 py-2 rounded-lg hover:bg-violet-hover active:scale-98 transition-all" data-path="examiner-login" href="#"><span class="material-symbols-outlined text-[18px] mr-2">verified_user</span>Examiner Sign In / Create Hall</a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface"><div class="flex flex-col w-full">
+<!-- HERO SECTION WITH DUAL-FUNNEL ACCESS -->
+<section class="relative w-full overflow-hidden bg-surface py-12 lg:py-20 px-6 lg:px-12">
+<!-- Subtle architectural background glow -->
+<div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[840px] h-[480px] bg-violet-tint/40 rounded-full blur-3xl pointer-events-none"></div>
+<div class="relative max-w-7xl mx-auto flex flex-col gap-12">
+<!-- Eyebrow & Badges -->
+<div class="flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-2 bg-chalk-white px-3.5 py-1.5 rounded-full shadow-sm">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-vivid animate-pulse"></span>
+<span class="font-mono-data text-[11px] uppercase tracking-wider text-emerald-ink-tint font-bold">Offline-First Sync Engine v4.2</span>
+<span class="text-border-medium px-1">·</span>
+<span class="font-label-eyebrow text-label-eyebrow text-text-secondary uppercase">West Africa Protocol</span>
+</div>
+<div class="flex items-center gap-3 bg-surface-container-low px-3 py-1.5 rounded-lg text-text-secondary font-mono-data text-mono-data">
+<span class="material-symbols-outlined text-[16px] text-violet-ink">shield_lock</span>
+<span>IndexedDB Hardened Sandbox · TLS 1.3 Strict</span>
+</div>
+</div>
+<!-- Main Header Typography Block -->
+<div class="max-w-4xl flex flex-col gap-5">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-violet-ink tracking-widest font-extrabold">RELIABLE COMPUTER-BASED TESTING FOR WEST AFRICA</span>
+<h1 class="font-display text-display text-on-surface tracking-tight leading-[1.08] text-balance">
+          Computer-based exams that survive <span class="text-violet-ink underline decoration-violet-tint decoration-4 underline-offset-4">power cuts</span> and <span class="text-violet-ink underline decoration-violet-tint decoration-4 underline-offset-4">poor network</span>.
+        </h1>
+<p class="font-body-default text-body-default text-text-strong text-lg max-w-3xl leading-relaxed">
+          Run seamless examinations for 10 to 10,000 candidates. Write or AI-generate questions, invigilate with zero lag, mark essays with rubric assistance, and publish tamper-proof WAEC/JAMB-ready result slips.
+        </p>
+</div>
+<!-- Dual Funnel Architecture Bento Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch pt-2">
+<!-- Funnel A: Candidate Instant Entry (6 cols) -->
+<div class="lg:col-span-6 bg-chalk-white rounded-2xl p-8 lg:p-10 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-36 h-36 bg-violet-wash rounded-bl-full pointer-events-none transition-transform group-hover:scale-105"></div>
+<div class="flex flex-col gap-6 relative">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-violet-wash flex items-center justify-center text-violet-ink">
+<span class="material-symbols-outlined text-[24px]">pin</span>
+</div>
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Enter Exam Room</h2>
+<p class="font-body-default text-text-secondary text-sm">No candidate account required. Have your exam code ready.</p>
+</div>
+</div>
+<span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-tint text-emerald-ink-tint font-mono-data text-[11px] font-bold">
+<span class="material-symbols-outlined text-[14px]">cloud_done</span> LIVE LOBBY
+              </span>
+</div>
+<!-- Access Form Interactive Element -->
+<form class="flex flex-col gap-4 pt-2" onsubmit="event.preventDefault(); window.location.href='#take-' + (document.getElementById('exam-code-input').value || 'MATH-8842');">
+<div class="flex flex-col gap-2">
+<label class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary flex justify-between items-center" for="exam-code-input">
+<span>Examination Access Code</span>
+<span class="text-text-placeholder font-mono-data normal-case font-normal">Auto uppercase</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-placeholder text-[20px]">keyboard</span>
+<input class="w-full h-14 pl-12 pr-4 bg-surface-subtle font-pin-box text-pin-box text-on-surface rounded-xl focus:bg-chalk-white focus:outline-none transition-all placeholder:text-text-placeholder placeholder:font-body-default placeholder:text-base tracking-wider uppercase" id="exam-code-input" maxlength="12" oninput="this.value = this.value.toUpperCase();" placeholder="e.g. MATH-8842" type="text"/>
+</div>
+</div>
+<button class="w-full h-13 py-3.5 px-6 rounded-xl bg-violet-ink hover:bg-violet-hover active:bg-violet-pressed text-on-primary font-body-strong text-body-strong flex items-center justify-center gap-3 transition-all shadow-sm active:scale-[0.99] cursor-pointer" type="submit">
+<span>Continue to Examination Room</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</form>
+<div class="flex flex-col gap-2 pt-1">
+<div class="flex items-center gap-2 p-3 bg-emerald-tint rounded-lg">
+<span class="material-symbols-outlined text-emerald-ink-white text-[18px] shrink-0">check_circle</span>
+<span class="font-mono-data text-[12px] text-emerald-ink-tint leading-tight">
+                  Local IndexedDB auto-caching active · Instant question recovery upon reconnect
+                </span>
+</div>
+<p class="font-body-default text-xs text-text-secondary">
+                Entering as Daniel Olawale? Or testing for WAEC mock? Enter the access code assigned on your lab slip above.
+              </p>
+</div>
+</div>
+<!-- Bottom Micro Visual -->
+<div class="mt-8 pt-4 bg-surface-muted/60 p-3 rounded-lg flex items-center justify-between text-xs font-mono-data text-text-secondary">
+<span class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-emerald-vivid"></span> Terminal 04 • Ibadan Hub
+            </span>
+<span>Latency: 42ms</span>
+</div>
+</div>
+<!-- Funnel B: Examiner & School Hall CTA (6 cols) -->
+<div class="lg:col-span-6 bg-chalk-white rounded-2xl p-8 lg:p-10 shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex flex-col gap-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-cobalt-tint flex items-center justify-center text-cobalt-ink">
+<span class="material-symbols-outlined text-[24px]">domain</span>
+</div>
+<div>
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-cobalt-ink">Institutional Suite</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">For Schools &amp; Independent Exam Halls</h2>
+</div>
+</div>
+<p class="font-body-default text-body-default text-text-strong leading-relaxed">
+              Create an examination hall in 2 minutes. Auto-generate 6-digit candidate PINs, import ParaLearn classes, and sync marks directly onto term report cards without manual Excel re-entry.
+            </p>
+<div class="grid grid-cols-2 gap-4 py-2">
+<div class="p-4 bg-surface-container-low rounded-xl flex flex-col gap-1">
+<div class="flex items-center gap-2 text-violet-ink">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span class="font-headline-md text-headline-md font-bold">1-Click</span>
+</div>
+<span class="font-body-default text-xs text-text-secondary">Report Card Sync to PLN SIS</span>
+</div>
+<div class="p-4 bg-surface-container-low rounded-xl flex flex-col gap-1">
+<div class="flex items-center gap-2 text-cobalt-ink">
+<span class="material-symbols-outlined text-[18px]">print</span>
+<span class="font-headline-md text-headline-md font-bold">PDF Ready</span>
+</div>
+<span class="font-body-default text-xs text-text-secondary">Slips with Photo &amp; 6-Digit PIN</span>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row gap-3 pt-2">
+<a class="flex-1 h-13 py-3.5 px-6 rounded-xl bg-violet-ink hover:bg-violet-hover active:bg-violet-pressed text-on-primary font-body-strong text-body-strong text-center inline-flex items-center justify-center gap-2 shadow-sm transition-all" data-path="create-hall" href="#">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span>Create Free Exam Hall</span>
+</a>
+<a class="h-13 py-3.5 px-6 rounded-xl bg-surface-muted hover:bg-surface-subtle text-foreground font-body-strong text-body-strong text-center inline-flex items-center justify-center gap-2 transition-all" data-path="schedule-demo" href="#">
+<span>Schedule School Demo</span>
+</a>
+</div>
+</div>
+<div class="mt-8 pt-4 flex items-center gap-3">
+<div class="flex -space-x-2">
+<div class="w-7 h-7 rounded-full bg-violet-tint flex items-center justify-center text-[10px] font-bold text-violet-ink">KC</div>
+<div class="w-7 h-7 rounded-full bg-cobalt-tint flex items-center justify-center text-[10px] font-bold text-cobalt-ink">QC</div>
+<div class="w-7 h-7 rounded-full bg-emerald-tint flex items-center justify-center text-[10px] font-bold text-emerald-ink-tint">LC</div>
+</div>
+<p class="font-body-default text-xs text-text-secondary">
+              Used by <span class="font-semibold text-on-surface">420+ Nigerian schools</span> and tutorial centers · Over 185,000 completed sessions
+            </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- NIGERIAN CLASSROOM REALITY PROOF (HIGH CONSTRAINTS RESILIENCE) -->
+<section class="w-full bg-surface-container-low py-16 px-6 lg:px-12">
+<div class="max-w-7xl mx-auto flex flex-col gap-10">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-crimson-vivid tracking-wider">Engineered For West African Constraints</span>
+<h2 class="font-display text-headline-lg lg:text-display text-on-surface mt-1">Built specifically for the realities of Nigerian computer halls.</h2>
+</div>
+<p class="font-body-default text-text-secondary max-w-md text-sm">
+          Consumer testing software fails the moment voltage drops or bandwidth collapses. ParaLearn CBT was architected inside real ICT rooms in Lagos, Ibadan, and Abuja.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1: The Generator Cut -->
+<div class="bg-chalk-white p-7 rounded-2xl shadow-sm flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-4">
+<div class="w-12 h-12 rounded-xl bg-amber-tint flex items-center justify-center text-amber-ink-white">
+<span class="material-symbols-outlined text-[28px]">electric_bolt</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-mono-data text-xs text-amber-ink-tint uppercase font-bold tracking-wider">Scenario A</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">The Generator Cut</h3>
+</div>
+<p class="font-body-default text-body-default text-text-secondary leading-relaxed">
+              When NEPA switches to the compound diesel plant or the UPS trips, power drops. ParaLearn keeps running continuously in client RAM and local encrypted IndexedDB. The countdown timer uses an anti-tamper server-anchor that strictly ignores candidate device clock tampering.
+            </p>
+</div>
+<div class="p-3 bg-surface-subtle rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-emerald-ink-white text-[20px]">timer</span>
+<span class="font-mono-data text-xs text-text-strong font-medium">Auto-resume state within 0.12s of reboot</span>
+</div>
+</div>
+<!-- Card 2: Flaky 3G Cyber Cafe -->
+<div class="bg-chalk-white p-7 rounded-2xl shadow-sm flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-4">
+<div class="w-12 h-12 rounded-xl bg-cobalt-tint flex items-center justify-center text-cobalt-ink">
+<span class="material-symbols-outlined text-[28px]">signal_cellular_connected_no_internet_0_bar</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-mono-data text-xs text-cobalt-ink uppercase font-bold tracking-wider">Scenario B</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">The Cyber Café Flaky 3G</h3>
+</div>
+<p class="font-body-default text-body-default text-text-secondary leading-relaxed">
+              In congested centers with 100 laptops competing for a single mifi or modem, page loads stall. With ParaLearn, all 50–100 question stems, scientific formulas, and diagrams preload in a lightweight 2.4s compressed payload. Zero spinning wheels during test navigation.
+            </p>
+</div>
+<div class="p-3 bg-surface-subtle rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-cobalt-ink text-[20px]">download_done</span>
+<span class="font-mono-data text-xs text-text-strong font-medium">Sub-60KB compressed question bundle</span>
+</div>
+</div>
+<!-- Card 3: The Re-typing Nightmare -->
+<div class="bg-chalk-white p-7 rounded-2xl shadow-sm flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-4">
+<div class="w-12 h-12 rounded-xl bg-emerald-tint flex items-center justify-center text-emerald-ink-tint">
+<span class="material-symbols-outlined text-[28px]">sync_saved_locally</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-mono-data text-xs text-emerald-ink-tint uppercase font-bold tracking-wider">Scenario C</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">The Re-typing Nightmare</h3>
+</div>
+<p class="font-body-default text-body-default text-text-secondary leading-relaxed">
+              Teachers in traditional setups spend 48 hours manually copying raw CBT scores from Excel sheets into school grading spreadsheets. For ParaLearn schools, scores map with 1 click directly into the active term's assessment breakdown.
+            </p>
+</div>
+<div class="p-3 bg-surface-subtle rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-emerald-ink-white text-[20px]">done_all</span>
+<span class="font-mono-data text-xs text-text-strong font-medium">Direct write to Term 2 Report Cards</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- INTERACTIVE CORE CBT PRODUCT DEMO & FEATURE SHOWCASE -->
+<section class="w-full bg-chalk-white py-20 px-6 lg:px-12">
+<div class="max-w-7xl mx-auto flex flex-col gap-16">
+<div class="flex flex-col gap-4 max-w-3xl">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-violet-ink">The Clear Register Interface</span>
+<h2 class="font-display text-display text-on-surface tracking-tight">Four pillars of an unshakeable examination suite.</h2>
+<p class="font-body-default text-body-default text-text-secondary text-base">
+          No decorative fluff. High contrast, immediate cognitive clarity, and physical 44px tap targets engineered for intense timed testing.
+        </p>
+</div>
+<!-- Pillar 1: The Sacred Exam Room (Simulated Live Desktop Exam) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start bg-surface rounded-2xl p-6 lg:p-10 shadow-sm">
+<div class="lg:col-span-5 flex flex-col gap-5">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-violet-tint text-violet-ink rounded font-mono-data text-xs font-bold w-fit">
+            PILLAR 01 • CANDIDATE ENVIRONMENT
+          </div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Distraction-Free Sacred Exam Room</h3>
+<p class="font-body-default text-body-default text-text-secondary leading-relaxed">
+            Candidates face an uncluttered workspace designed for complete mental clarity. Features canonical LaTeX math formulas, instant answer-state commits, intuitive keyboard shortcuts (<span class="font-mono-data font-semibold text-foreground">A–D</span>, <span class="font-mono-data font-semibold text-foreground">N</span> for Next, <span class="font-mono-data font-semibold text-foreground">P</span> for Previous, <span class="font-mono-data font-semibold text-foreground">F</span> for Flag), and a persistent scratchpad.
+          </p>
+<ul class="flex flex-col gap-2.5 pt-2">
+<li class="flex items-center gap-2.5 font-body-default text-sm text-text-strong">
+<span class="material-symbols-outlined text-emerald-vivid text-[18px]">verified</span>
+              Canonical KaTeX formulas rendered locally with zero network calls
+            </li>
+<li class="flex items-center gap-2.5 font-body-default text-sm text-text-strong">
+<span class="material-symbols-outlined text-emerald-vivid text-[18px]">verified</span>
+              Monospace countdown timer with amber alert at 10 minutes remaining
+            </li>
+<li class="flex items-center gap-2.5 font-body-default text-sm text-text-strong">
+<span class="material-symbols-outlined text-emerald-vivid text-[18px]">verified</span>
+              Interactive rough work scratchpad that persists across reloads
+            </li>
+</ul>
+</div>
+<!-- Pillar 1 Live UI Mockup (2-column layout per guide) -->
+<div class="lg:col-span-7 bg-chalk-white rounded-xl shadow-md p-5 flex flex-col gap-4">
+<!-- Mockup Header -->
+<div class="flex items-center justify-between pb-3 bg-surface-subtle p-3 rounded-lg">
+<div class="flex items-center gap-3">
+<span class="font-headline-md text-sm text-on-surface font-bold">WAEC SSCE Prep: Further Mathematics</span>
+<span class="px-2 py-0.5 rounded bg-surface-container font-mono-data text-[11px] text-text-strong">OBJ-SEC-A</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-tint text-emerald-ink-tint font-mono-data text-xs">
+<span class="material-symbols-outlined text-[14px]">cloud_done</span> Saved
+              </div>
+<div class="font-timer-display text-timer-display text-crimson-vivid bg-chalk-white px-3 py-1 rounded shadow-sm">
+                00:44:18
+              </div>
+</div>
+</div>
+<!-- Question Body & Palette Split -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+<!-- Question Stem + Options (8 cols) -->
+<div class="md:col-span-8 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow text-text-secondary uppercase">Question 14 of 50</span>
+<span class="inline-flex items-center gap-1 text-xs text-amber-ink-tint font-mono-data bg-amber-tint px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px]">flag</span> Flagged
+                </span>
+</div>
+<div class="font-question-text text-question-text text-on-surface leading-snug">
+                Find the value of $x$ for which the matrix $\begin{pmatrix} 2x &amp; 4 \\ 3 &amp; x+1 \end{pmatrix}$ is singular.
+              </div>
+<!-- Options Matrix -->
+<div class="flex flex-col gap-2 pt-2">
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface hover:bg-violet-wash cursor-pointer transition-colors">
+<div class="w-8 h-8 rounded bg-chalk-white flex items-center justify-center font-bold text-sm text-text-strong shadow-xs">A</div>
+<span class="font-answer-option text-answer-option text-on-surface">x = 3 or x = -2</span>
+</div>
+<!-- Selected Option Example -->
+<div class="flex items-center gap-3 p-3 rounded-lg bg-violet-tint text-on-surface cursor-pointer shadow-xs">
+<div class="w-8 h-8 rounded bg-violet-ink text-on-primary flex items-center justify-center font-bold text-sm">B</div>
+<span class="font-answer-option text-answer-option font-medium text-on-surface">x = 3 or x = -2/3</span>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface hover:bg-violet-wash cursor-pointer transition-colors">
+<div class="w-8 h-8 rounded bg-chalk-white flex items-center justify-center font-bold text-sm text-text-strong shadow-xs">C</div>
+<span class="font-answer-option text-answer-option text-on-surface">x = -3 or x = 2</span>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface hover:bg-violet-wash cursor-pointer transition-colors">
+<div class="w-8 h-8 rounded bg-chalk-white flex items-center justify-center font-bold text-sm text-text-strong shadow-xs">D</div>
+<span class="font-answer-option text-answer-option text-on-surface">x = 1/2 or x = 4</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2">
+<button class="px-4 py-2 rounded bg-surface-muted text-text-strong text-xs font-body-strong flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">arrow_back</span> Prev (P)
+                </button>
+<button class="px-4 py-2 rounded bg-violet-ink text-on-primary text-xs font-body-strong flex items-center gap-1 shadow-sm">
+                  Next (N) <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Question Palette Matrix (4 cols) -->
+<div class="md:col-span-4 bg-surface-subtle p-3 rounded-xl flex flex-col gap-3">
+<span class="font-mono-data text-[11px] uppercase text-text-secondary font-bold">Palette Quick-Jump</span>
+<div class="grid grid-cols-4 gap-1.5">
+<div class="w-8 h-8 rounded bg-emerald-vivid text-chalk-white font-mono-data text-xs flex items-center justify-center font-bold">01</div>
+<div class="w-8 h-8 rounded bg-emerald-vivid text-chalk-white font-mono-data text-xs flex items-center justify-center font-bold">02</div>
+<div class="w-8 h-8 rounded bg-emerald-vivid text-chalk-white font-mono-data text-xs flex items-center justify-center font-bold">03</div>
+<div class="w-8 h-8 rounded bg-emerald-vivid text-chalk-white font-mono-data text-xs flex items-center justify-center font-bold">04</div>
+<div class="w-8 h-8 rounded bg-emerald-vivid text-chalk-white font-mono-data text-xs flex items-center justify-center font-bold">05</div>
+<div class="w-8 h-8 rounded bg-amber-tint text-amber-ink-tint font-mono-data text-xs flex items-center justify-center font-bold">06</div>
+<div class="w-8 h-8 rounded bg-emerald-vivid text-chalk-white font-mono-data text-xs flex items-center justify-center font-bold">07</div>
+<div class="w-8 h-8 rounded bg-emerald-vivid text-chalk-white font-mono-data text-xs flex items-center justify-center font-bold">08</div>
+<div class="w-8 h-8 rounded bg-chalk-white text-text-secondary font-mono-data text-xs flex items-center justify-center">09</div>
+<div class="w-8 h-8 rounded bg-chalk-white text-text-secondary font-mono-data text-xs flex items-center justify-center">10</div>
+<div class="w-8 h-8 rounded bg-chalk-white text-text-secondary font-mono-data text-xs flex items-center justify-center">11</div>
+<div class="w-8 h-8 rounded bg-chalk-white text-text-secondary font-mono-data text-xs flex items-center justify-center">12</div>
+<div class="w-8 h-8 rounded bg-chalk-white text-text-secondary font-mono-data text-xs flex items-center justify-center">13</div>
+<div class="w-8 h-8 rounded bg-violet-tint text-violet-ink font-mono-data text-xs flex items-center justify-center font-bold shadow-sm">14</div>
+<div class="w-8 h-8 rounded bg-chalk-white text-text-secondary font-mono-data text-xs flex items-center justify-center">15</div>
+<div class="w-8 h-8 rounded bg-chalk-white text-text-secondary font-mono-data text-xs flex items-center justify-center">16</div>
+</div>
+<div class="text-[10px] font-mono-data text-text-secondary flex flex-col gap-1 pt-2">
+<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-emerald-vivid"></span> Answered (7)</div>
+<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-amber-tint"></span> Flagged (1)</div>
+<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-chalk-white"></span> Unvisited (8)</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Pillar 2: Real-time Live Invigilation & Proctor Cockpit -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start bg-surface rounded-2xl p-6 lg:p-10 shadow-sm">
+<!-- Mockup: Invigilation Console Table (7 cols) -->
+<div class="lg:col-span-7 bg-chalk-white rounded-xl shadow-md p-5 flex flex-col gap-4 order-2 lg:order-1">
+<div class="flex items-center justify-between pb-2">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-emerald-vivid"></span>
+<span class="font-headline-md text-headline-md text-on-surface">Live Exam Hall Monitor</span>
+</div>
+<span class="font-mono-data text-xs text-text-secondary">Auto-poll: 5.0s • Active: 48 / 50</span>
+</div>
+<!-- High-density candidate table per design guide -->
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-default text-xs">
+<thead class="bg-surface-subtle text-text-secondary font-mono-data uppercase text-[11px]">
+<tr>
+<th class="py-2.5 px-3">Seat / PIN</th>
+<th class="py-2.5 px-3">Candidate</th>
+<th class="py-2.5 px-3 text-right">Answered</th>
+<th class="py-2.5 px-3 text-right">Time Left</th>
+<th class="py-2.5 px-3">Status</th>
+<th class="py-2.5 px-3 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-fine font-mono-data">
+<tr class="hover:bg-violet-wash/50">
+<td class="py-3 px-3 font-bold text-on-surface">LAB-01 • 882941</td>
+<td class="py-3 px-3 font-sans font-medium text-foreground">Adebayo, Samuel</td>
+<td class="py-3 px-3 text-right text-emerald-ink-tint font-bold">44/50 (88%)</td>
+<td class="py-3 px-3 text-right text-text-strong">18:20</td>
+<td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-tint text-emerald-ink-tint text-[10px] font-bold">ONLINE</span></td>
+<td class="py-3 px-3 text-right">
+<button class="px-2 py-1 rounded bg-surface-muted hover:bg-violet-tint text-text-strong text-[11px]">+5m</button>
+</td>
+</tr>
+<tr class="hover:bg-violet-wash/50 bg-amber-tint/20">
+<td class="py-3 px-3 font-bold text-on-surface">LAB-02 • 739211</td>
+<td class="py-3 px-3 font-sans font-medium text-foreground">Okafor, Chidinma</td>
+<td class="py-3 px-3 text-right text-text-strong">31/50 (62%)</td>
+<td class="py-3 px-3 text-right text-text-strong">18:15</td>
+<td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-amber-tint text-amber-ink-tint text-[10px] font-bold">2 TAB SWITCHES</span></td>
+<td class="py-3 px-3 text-right">
+<button class="px-2 py-1 rounded bg-amber-vivid text-on-primary text-[11px] font-bold">Flag</button>
+</td>
+</tr>
+<tr class="hover:bg-violet-wash/50">
+<td class="py-3 px-3 font-bold text-on-surface">LAB-03 • 449102</td>
+<td class="py-3 px-3 font-sans font-medium text-foreground">Bello, Ibrahim K.</td>
+<td class="py-3 px-3 text-right text-emerald-ink-tint font-bold">49/50 (98%)</td>
+<td class="py-3 px-3 text-right text-text-strong">11:04</td>
+<td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-tint text-emerald-ink-tint text-[10px] font-bold">ONLINE</span></td>
+<td class="py-3 px-3 text-right">
+<button class="px-2 py-1 rounded bg-surface-muted hover:bg-violet-tint text-text-strong text-[11px]">+5m</button>
+</td>
+</tr>
+<tr class="hover:bg-violet-wash/50 bg-crimson-tint/30">
+<td class="py-3 px-3 font-bold text-on-surface">LAB-04 • 104882</td>
+<td class="py-3 px-3 font-sans font-medium text-foreground">Eze, Christopher</td>
+<td class="py-3 px-3 text-right text-crimson-ink-tint font-bold">12/50 (24%)</td>
+<td class="py-3 px-3 text-right text-crimson-vivid font-bold">LOCKED</td>
+<td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-crimson-tint text-crimson-ink-tint text-[10px] font-bold">UNAUTHORIZED APP</span></td>
+<td class="py-3 px-3 text-right">
+<button class="px-2 py-1 rounded bg-crimson-ink-white text-on-primary text-[11px] font-bold">Unlock</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="flex items-center justify-between text-xs text-text-secondary pt-2">
+<span>Broadcast message to hall:</span>
+<span class="font-mono-data text-[11px] text-violet-ink font-semibold cursor-pointer">“15 minutes remaining. Check unvisited questions.” →</span>
+</div>
+</div>
+<!-- Pillar 2 Details (5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-5 order-1 lg:order-2">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-cobalt-tint text-cobalt-ink rounded font-mono-data text-xs font-bold w-fit">
+            PILLAR 02 • PROCTOR DASHBOARD
+          </div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Live Invigilation &amp; Anti-Malpractice Telemetry</h3>
+<p class="font-body-default text-body-default text-text-secondary leading-relaxed">
+            Invigilate 500 seated terminals from a single tablet or laptop. Detect window switches, multi-monitor setups, and connection disruptions immediately without leaving your seat.
+          </p>
+<ul class="flex flex-col gap-2.5 pt-2">
+<li class="flex items-center gap-2.5 font-body-default text-sm text-text-strong">
+<span class="material-symbols-outlined text-cobalt-vivid text-[18px]">security</span>
+              Immediate tab blur detection and persistent infraction logs
+            </li>
+<li class="flex items-center gap-2.5 font-body-default text-sm text-text-strong">
+<span class="material-symbols-outlined text-cobalt-vivid text-[18px]">lock</span>
+              One-click terminal lockdown for suspicious devices
+            </li>
+<li class="flex items-center gap-2.5 font-body-default text-sm text-text-strong">
+<span class="material-symbols-outlined text-cobalt-vivid text-[18px]">more_time</span>
+              Selective +5 / +10 mins compensation timer injection for specific interrupted candidates
+            </li>
+</ul>
+</div>
+</div>
+<!-- Pillar 3 & 4 Grid: AI Rubrics & Cryptographic Slips -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Pillar 3: AI-Assisted Marking & Rubric Studio -->
+<div class="bg-surface rounded-2xl p-8 shadow-sm flex flex-col gap-6">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-violet-tint text-violet-ink rounded font-mono-data text-xs font-bold w-fit">
+            PILLAR 03 • ESSAY GRADING
+          </div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">AI-Assisted Marking &amp; Rubric Studio</h3>
+<p class="font-body-default text-body-default text-text-secondary leading-relaxed">
+            Grade Section B (Theory &amp; Extended Essays) at 10x speed. Provide teachers with WAEC-aligned marking guides: Content (10mks), Organization (10mks), Expression (20mks), and Mechanical Accuracy (10mks).
+          </p>
+<!-- Rubric Preview Box -->
+<div class="bg-chalk-white p-4 rounded-xl shadow-xs flex flex-col gap-3">
+<div class="flex items-center justify-between text-xs">
+<span class="font-bold text-on-surface">WAEC English Language Essay (Paper 1, Q2)</span>
+<span class="font-mono-data text-violet-ink font-bold">Suggested: 38/50</span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-[11px] font-mono-data">
+<span class="text-text-secondary">Expression &amp; Vocabulary</span>
+<span class="font-bold text-on-surface">16 / 20</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-violet-ink w-[80%] rounded-full"></div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-[11px] font-mono-data">
+<span class="text-text-secondary">Mechanical Accuracy (Grammar/Spelling)</span>
+<span class="font-bold text-on-surface">7 / 10</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-emerald-vivid w-[70%] rounded-full"></div>
+</div>
+</div>
+<p class="font-body-default text-[11px] text-text-secondary italic pt-1">
+              “Strong rhetorical question in paragraph 2. Deducted 3 marks for comma splices in Section B.”
+            </p>
+</div>
+</div>
+<!-- Pillar 4: Cryptographic Result Slips -->
+<div class="bg-surface rounded-2xl p-8 shadow-sm flex flex-col gap-6">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-tint text-emerald-ink-tint rounded font-mono-data text-xs font-bold w-fit">
+            PILLAR 04 • RESULT INTEGRITY
+          </div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Cryptographic &amp; Printable Result Slips</h3>
+<p class="font-body-default text-body-default text-text-secondary leading-relaxed">
+            Eliminate exam result tampering. Every completed attempt generates a SHA-256 cryptographic hash embedded in a verifiable QR code. Parents and university boards can verify authenticity instantly on cbt.pln.ng/verify.
+          </p>
+<!-- Result Slip Preview Box -->
+<div class="bg-chalk-white p-4 rounded-xl shadow-xs flex flex-col gap-3 font-mono-data text-xs">
+<div class="flex justify-between items-center pb-2 bg-surface-subtle p-2 rounded">
+<span class="font-bold text-on-surface">PARALEARN OFFICIAL RESULT SLIP</span>
+<span class="text-emerald-ink-tint font-bold">VERIFIED HASH</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-text-secondary">Candidate:</span>
+<span class="font-bold text-on-surface">Okafor, Chidinma (SS3B)</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-text-secondary">Overall Score:</span>
+<span class="font-bold text-emerald-ink-white bg-emerald-tint px-2 py-0.5 rounded">84% • Grade A1 (Distinction)</span>
+</div>
+<div class="flex items-center justify-between text-[10px] text-text-placeholder">
+<span>SHA256: 4e9f7a...8b21c4</span>
+<span>Timestamp: 2025-03-29T11:42:01+01:00</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- BUILT FOR NIGERIAN EDUCATIONAL MILESTONES -->
+<section class="w-full bg-surface-container-low py-16 px-6 lg:px-12">
+<div class="max-w-7xl mx-auto flex flex-col gap-10">
+<div class="flex flex-col gap-3 max-w-2xl">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-violet-ink">Curriculum &amp; Exam Board Ready</span>
+<h2 class="font-headline-lg lg:text-display text-on-surface">Calibrated for WAEC, JAMB UTME, and NECO.</h2>
+<p class="font-body-default text-body-default text-text-secondary text-sm">
+          Stop shoe-horning western quiz plugins into Nigerian examination structures. ParaLearn handles complex secondary school grading out of the box.
+        </p>
+</div>
+<!-- Feature Support Matrix -->
+<div class="bg-chalk-white rounded-2xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-default text-sm">
+<thead class="bg-surface-subtle text-text-secondary font-label-eyebrow uppercase text-xs">
+<tr>
+<th class="py-4 px-6">Specification</th>
+<th class="py-4 px-6">WAEC SSCE Sim</th>
+<th class="py-4 px-6">JAMB UTME Practice</th>
+<th class="py-4 px-6">School Term Exams (JSS1–SS3)</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-fine">
+<tr>
+<td class="py-4 px-6 font-semibold text-on-surface">Structure Format</td>
+<td class="py-4 px-6 text-text-strong font-mono-data text-xs">OBJ (50Q) + Theory Section</td>
+<td class="py-4 px-6 text-text-strong font-mono-data text-xs">4 Subjects • 180 Questions</td>
+<td class="py-4 px-6 text-text-strong font-mono-data text-xs">Custom CA (20mks) + Exam (60mks)</td>
+</tr>
+<tr>
+<td class="py-4 px-6 font-semibold text-on-surface">Grading Scale</td>
+<td class="py-4 px-6 text-text-strong">
+<span class="px-2 py-0.5 rounded bg-surface-container font-mono-data text-xs font-bold">A1 through F9</span>
+</td>
+<td class="py-4 px-6 text-text-strong">
+<span class="px-2 py-0.5 rounded bg-surface-container font-mono-data text-xs font-bold">Raw Score / 400</span>
+</td>
+<td class="py-4 px-6 text-text-strong">
+<span class="px-2 py-0.5 rounded bg-surface-container font-mono-data text-xs font-bold">Direct SIS Term Marks</span>
+</td>
+</tr>
+<tr>
+<td class="py-4 px-6 font-semibold text-on-surface">Candidate Pass Generation</td>
+<td class="py-4 px-6 text-text-secondary">Printable 8-per-page Photo PIN Slips</td>
+<td class="py-4 px-6 text-text-secondary">Registration Number + Biometric Check</td>
+<td class="py-4 px-6 text-text-secondary">Auto-linked Student Portal ID</td>
+</tr>
+<tr>
+<td class="py-4 px-6 font-semibold text-on-surface">Bandwidth Requirement</td>
+<td class="py-4 px-6 text-emerald-ink-tint font-mono-data text-xs font-bold">Preloaded (Zero Active Net)</td>
+<td class="py-4 px-6 text-emerald-ink-tint font-mono-data text-xs font-bold">Sub-28kbps Peak</td>
+<td class="py-4 px-6 text-emerald-ink-tint font-mono-data text-xs font-bold">Local LAN Mesh Certified</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<!-- DEVELOPER & API INTEGRATION SECTION -->
+<section class="w-full bg-chalk-white py-20 px-6 lg:px-12">
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+<div class="lg:col-span-5 flex flex-col gap-6">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-violet-tint text-violet-ink rounded font-mono-data text-xs font-bold w-fit">
+          API v2.4 • HEADLESS CBT
+        </div>
+<h2 class="font-display text-display text-on-surface tracking-tight">Headless CBT for EdTechs &amp; State Boards.</h2>
+<p class="font-body-default text-body-default text-text-secondary leading-relaxed">
+          Embed the resilient ParaLearn examination engine into your existing web portal, school LMS, or mobile app. Programmatically generate candidate access tokens, listen to webhook attempts, and fetch verified score cards.
+        </p>
+<div class="flex flex-col gap-3 font-mono-data text-xs text-text-strong">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-ink-white text-[16px]">check</span>
+<span>REST Endpoints with API Key &amp; HMAC Signature</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-ink-white text-[16px]">check</span>
+<span>Real-time Webhook: <code class="text-violet-ink font-bold">exam.attempt.completed</code></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-ink-white text-[16px]">check</span>
+<span>99.98% Uptime SLA on Nigerian routing nodes</span>
+</div>
+</div>
+<div class="pt-2">
+<a class="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-surface-muted hover:bg-surface-subtle font-body-strong text-body-strong text-foreground transition-all" data-path="api-docs" href="#">
+<span>Explore Developer Documentation</span>
+<span class="material-symbols-outlined text-[18px]">code</span>
+</a>
+</div>
+</div>
+<!-- Dark Code Box -->
+<div class="lg:col-span-7 bg-foreground text-chalk-white rounded-2xl p-6 shadow-xl font-mono-data text-xs overflow-x-auto flex flex-col gap-4">
+<div class="flex items-center justify-between pb-3 text-text-placeholder border-b border-surface-variant/20">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-crimson-vivid"></span>
+<span class="w-3 h-3 rounded-full bg-amber-vivid"></span>
+<span class="w-3 h-3 rounded-full bg-emerald-vivid"></span>
+<span class="ml-2 text-chalk-white font-bold">POST /v2/cbt/exams/create-session</span>
+</div>
+<span class="text-[10px] text-text-secondary uppercase">Node / Python / PHP</span>
+</div>
+<pre class="text-chalk-white/90 leading-relaxed"><code><span class="text-lavender-muted">// 1. Initialize an examination hall with candidate roster</span>
+<span class="text-tertiary-fixed">const</span> response = <span class="text-tertiary-fixed">await</span> fetch(<span class="text-amber-line">'https://api.pln.ng/v2/cbt/sessions'</span>, {
+  method: <span class="text-amber-line">'POST'</span>,
+  headers: {
+    <span class="text-amber-line">'Authorization'</span>: <span class="text-amber-line">'Bearer sec_live_094821a8...'</span>,
+    <span class="text-amber-line">'Content-Type'</span>: <span class="text-amber-line">'application/json'</span>
+  },
+  body: JSON.stringify({
+    hall_name: <span class="text-amber-line">"SS3 First Term Mock Exam 2025"</span>,
+    exam_code: <span class="text-amber-line">"MATH-8842"</span>,
+    duration_minutes: 60,
+    allow_offline_cache: <span class="text-cobalt-line">true</span>,
+    grading_scheme: <span class="text-amber-line">"WAEC_STANDARD_A1_F9"</span>,
+    candidates: [
+      { id: <span class="text-amber-line">"STU-001"</span>, full_name: <span class="text-amber-line">"Daniel Olawale"</span>, seat: <span class="text-amber-line">"LAB-04"</span> }
+    ]
+  })
+});
+
+<span class="text-lavender-muted">// 2. Candidate access token and encrypted PIN generated</span>
+<span class="text-tertiary-fixed">const</span> { session_token, candidate_pin } = <span class="text-tertiary-fixed">await</span> response.json();
+<span class="text-text-placeholder">// Output: { candidate_pin: "882-941", status: "READY" }</span></code></pre>
+<div class="flex items-center justify-between pt-3 text-[11px] text-text-placeholder">
+<span>Response latency: 24ms • Payload: 1.2KB</span>
+<span class="text-emerald-vivid font-bold">201 CREATED</span>
+</div>
+</div>
+</div>
+</section>
+<!-- SOCIAL PROOF & TESTIMONIALS FROM NIGERIAN EDUCATORS -->
+<section class="w-full bg-surface py-20 px-6 lg:px-12">
+<div class="max-w-7xl mx-auto flex flex-col gap-12">
+<div class="text-center max-w-2xl mx-auto flex flex-col gap-3">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-violet-ink">Field Tested in Nigerian Schools</span>
+<h2 class="font-display text-headline-lg lg:text-display text-on-surface">Trusted by administrators who cannot afford failure.</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Testimonial 1 -->
+<div class="bg-chalk-white p-8 rounded-2xl shadow-sm flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-4">
+<div class="flex text-amber-vivid">
+<span class="material-symbols-outlined text-[20px]">star</span>
+<span class="material-symbols-outlined text-[20px]">star</span>
+<span class="material-symbols-outlined text-[20px]">star</span>
+<span class="material-symbols-outlined text-[20px]">star</span>
+<span class="material-symbols-outlined text-[20px]">star</span>
+</div>
+<p class="font-body-default text-body-default text-text-strong text-base italic leading-relaxed">
+              “During our SS2 mock examinations, the central generator tripped twice. In previous years, students lost all their typed essays. With ParaLearn CBT, not a single keystroke was lost. The system resumed instantly the second terminals were rebooted.”
+            </p>
+</div>
+<div class="flex items-center gap-3 pt-4">
+<div class="w-11 h-11 rounded-full bg-violet-tint text-violet-ink font-bold flex items-center justify-center font-headline-md text-sm">
+              VP
+            </div>
+<div>
+<div class="font-headline-md text-sm text-on-surface">Vice Principal (Academics)</div>
+<div class="font-body-default text-xs text-text-secondary">King's College Lagos</div>
+</div>
+</div>
+</div>
+<!-- Testimonial 2 -->
+<div class="bg-chalk-white p-8 rounded-2xl shadow-sm flex flex-col justify-between gap-6">
+<div class="flex flex-col gap-4">
+<div class="flex text-amber-vivid">
+<span class="material-symbols-outlined text-[20px]">star</span>
+<span class="material-symbols-outlined text-[20px]">star</span>
+<span class="material-symbols-outlined text-[20px]">star</span>
+<span class="material-symbols-outlined text-[20px]">star</span>
+<span class="material-symbols-outlined text-[20px]">star</span>
+</div>
+<p class="font-body-default text-body-default text-text-strong text-base italic leading-relaxed">
+              “Setting up PINs for 600 JAMB prep candidates used to take days of Excel printing. Now we generate slips and send WhatsApp passes in 10 minutes. The instant WAEC-style grading saved our staff over 120 hours of manual marking.”
+            </p>
+</div>
+<div class="flex items-center gap-3 pt-4">
+<div class="w-11 h-11 rounded-full bg-cobalt-tint text-cobalt-ink font-bold flex items-center justify-center font-headline-md text-sm">
+              ET
+            </div>
+<div>
+<div class="font-headline-md text-sm text-on-surface">Director of Examinations</div>
+<div class="font-body-default text-xs text-text-secondary">Excellence Tutorial Centre, Ibadan</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- FINAL DUAL CTA BANNER -->
+<section class="w-full bg-foreground text-chalk-white py-16 px-6 lg:px-12">
+<div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+<!-- Left CTA: Candidate Jump -->
+<div class="bg-inverse-surface p-8 lg:p-10 rounded-2xl flex flex-col justify-between gap-6 shadow-md">
+<div class="flex flex-col gap-3">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-emerald-vivid tracking-wider font-bold">For Candidates</span>
+<h3 class="font-headline-lg text-headline-lg text-chalk-white">Ready to sit your exam?</h3>
+<p class="font-body-default text-body-default text-text-placeholder leading-relaxed">
+            Have an access code like MATH-8842? Jump straight into the lobby. No login or password credentials necessary.
+          </p>
+</div>
+<div class="pt-4">
+<a class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-chalk-white text-foreground hover:bg-surface-subtle font-body-strong text-body-strong w-full sm:w-auto transition-all cursor-pointer" href="#exam-code-input" onclick="document.getElementById('exam-code-input').focus();">
+<span>Go to Exam Entrance</span>
+<span class="material-symbols-outlined text-[18px]">arrow_upward</span>
+</a>
+</div>
+</div>
+<!-- Right CTA: Examiner Workspace -->
+<div class="bg-primary-container p-8 lg:p-10 rounded-2xl flex flex-col justify-between gap-6 shadow-md">
+<div class="flex flex-col gap-3">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-secondary-fixed tracking-wider font-bold">For Schools &amp; Tutors</span>
+<h3 class="font-headline-lg text-headline-lg text-chalk-white">Running an exam hall or school?</h3>
+<p class="font-body-default text-body-default text-chalk-white/80 leading-relaxed">
+            Start free with 50 candidate credits. Upload your questions via Word/Excel or use AI question generation.
+          </p>
+</div>
+<div class="pt-4">
+<a class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-chalk-white text-primary font-body-strong text-body-strong w-full sm:w-auto hover:bg-surface-subtle transition-all" data-path="create-hall" href="#">
+<span>Create Free Workspace</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+</div></main><footer class="w-full bg-surface-container-low py-12"><div class="max-w-7xl mx-auto px-6 lg:px-12"><div class="flex flex-wrap items-center justify-between gap-4 pb-8 border-b border-border-fine"><div class="flex items-center gap-3"><div class="w-2.5 h-2.5 rounded-full bg-emerald-vivid animate-pulse"></div><span class="font-mono-data text-mono-data text-emerald-ink-tint font-medium">All systems operational</span><span class="text-border-medium">•</span><span class="font-mono-data text-mono-data text-text-secondary">Offline Sync Engine v4.2 active</span></div><div class="flex items-center gap-2"><span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">Target Bandwidth:</span><span class="font-mono-data text-mono-data text-on-surface font-semibold bg-chalk-white px-2.5 py-1 rounded border border-border-fine">2G / High Latency Certified</span></div></div><div class="grid grid-cols-2 md:grid-cols-4 gap-8 py-10"><div class="flex flex-col gap-3"><span class="font-label-eyebrow text-label-eyebrow text-text-secondary uppercase tracking-wider">Exam Suite</span><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="waec-jamb-prep" href="#">WAEC SSCE Sim</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="waec-jamb-prep" href="#">JAMB UTME Practice</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="features" href="#">Anti-Malpractice Lock</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="features" href="#">Biometric Verification</a></div><div class="flex flex-col gap-3"><span class="font-label-eyebrow text-label-eyebrow text-text-secondary uppercase tracking-wider">Architecture</span><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="offline-tech" href="#">Local Mesh LAN Server</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="offline-tech" href="#">Dual Delta Cache (IndexedDB)</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="how-it-works" href="#">Auto-Save Handshake</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="pricing" href="#">Institutional Deployment</a></div><div class="flex flex-col gap-3"><span class="font-label-eyebrow text-label-eyebrow text-text-secondary uppercase tracking-wider">Developers &amp; Schools</span><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="api-docs" href="#">REST &amp; Webhook API</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="api-docs" href="#">Custom Question Bank Importer</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="school-integration" href="#">School Portal Integration</a><a class="font-body-default text-body-default text-on-surface-variant hover:text-on-surface transition-colors" data-path="school-integration" href="#">Cyber Café Licensing</a></div><div class="flex flex-col gap-3"><span class="font-label-eyebrow text-label-eyebrow text-text-secondary uppercase tracking-wider">Clear Register Trust</span><p class="font-body-default text-body-default text-text-secondary leading-relaxed">Engineered specifically for low-infrastructure computer-based testing across Nigerian tertiary institutions, state secondary boards, and private testing centers.</p></div></div><div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-border-fine"><div class="flex items-center gap-2"><span class="font-body-default text-body-default text-text-secondary">© 2025 ParaLearn Technologies Ltd. Made for Nigeria &amp; West Africa.</span></div><div class="flex items-center gap-6"><a class="font-label-sm text-label-sm text-text-secondary hover:text-on-surface transition-colors" data-path="terms" href="#">Security &amp; Integrity Policy</a><a class="font-label-sm text-label-sm text-text-secondary hover:text-on-surface transition-colors" data-path="privacy" href="#">Privacy Register</a><a class="font-label-sm text-label-sm text-text-secondary hover:text-on-surface transition-colors" data-path="contact" href="#">NUC/TRCN Compliance Helpdesk</a></div></div></div></footer></body></html>

@@ -3,26 +3,25 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ShieldCheck,
-  Wifi,
-  Clock,
-  HelpCircle,
   AlertTriangle,
-  CheckCircle2,
-  XCircle,
   ArrowRight,
-  User,
-  KeyRound,
-  Laptop,
-  Mail,
-  Phone,
+  Building2,
+  Check,
+  Clock,
+  FileText,
+  Hash,
+  ListChecks,
+  Loader2,
+  ShieldAlert,
+  UserRound,
+  Wifi,
+  WifiOff,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import CbtBrand from "./CbtBrand";
 import "./cbt-workspace.css";
+import "./cbt-candidate.css";
 import {
   saveCandidateSession,
   loadCandidateSession,
@@ -41,12 +40,30 @@ interface ExamMetadata {
   institutionName: string;
   durationMins: number;
   questionCount: number;
+  totalMarks: number;
   instructions: string;
   requiresPin: boolean;
   maxTabViolations: number;
   isPublished: boolean;
   startsAt: string | null;
   endsAt: string | null;
+}
+
+/** "2:05 PM" today, "18 Nov, 2:05 PM" on another day */
+function formatWhen(iso: string, now = Date.now()) {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  if (d.toDateString() === new Date(now).toDateString()) return time;
+  return `${d.toLocaleDateString(undefined, { day: "numeric", month: "short" })}, ${time}`;
+}
+
+/** "in 44 minutes", "in 2 hours", for a start time that hasn't come yet */
+function timeUntil(iso: string, now = Date.now()) {
+  const mins = Math.ceil((new Date(iso).getTime() - now) / 60000);
+  if (mins <= 1) return "in less than a minute";
+  if (mins < 60) return `in ${mins} minutes`;
+  const hours = Math.round(mins / 60);
+  return hours < 24 ? `in about ${hours} hour${hours === 1 ? "" : "s"}` : `on ${new Date(iso).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" })}`;
 }
 
 /** Whether candidates can start now, and why not */
@@ -74,10 +91,12 @@ function CandidatePinInput({
   value,
   onChange,
   length = 6,
+  invalid = false,
 }: {
   value: string;
   onChange: (val: string) => void;
   length?: number;
+  invalid?: boolean;
 }) {
   const inputsRef = React.useRef<(HTMLInputElement | null)[]>([]);
 
@@ -118,7 +137,7 @@ function CandidatePinInput({
   };
 
   return (
-    <div className="flex gap-1.5 sm:gap-2 max-w-full justify-between sm:justify-start">
+    <div className={`cand-pin ${length === 6 ? "is-six" : ""} ${invalid ? "is-invalid" : ""}`}>
       {Array.from({ length }).map((_, i) => (
         <input
           key={i}
@@ -127,10 +146,13 @@ function CandidatePinInput({
           }}
           type="text"
           maxLength={1}
+          aria-label={`PIN character ${i + 1} of ${length}`}
+          aria-invalid={invalid || undefined}
+          autoComplete="off"
+          autoCapitalize="characters"
           value={value[i] || ""}
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
-          className="w-9 h-10 min-w-0 sm:w-11 sm:h-11 text-center font-mono font-bold text-base sm:text-lg rounded-[var(--radius-md)] border border-[var(--border-fine)] bg-white text-[var(--foreground)] focus:border-[var(--violet-ink)] focus:ring-2 focus:ring-[var(--violet-ink)]/20 outline-none transition-all shadow-xs"
         />
       ))}
     </div>
@@ -187,6 +209,14 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
     if (queryAttemptId) setExternalAttemptId(queryAttemptId.trim());
   }, [searchParams]);
 
+  // Re-checks the exam window as time passes, so Start turns on by itself when the exam opens
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 15000);
+    return () => clearInterval(tick);
+  }, []);
+  const [newCode, setNewCode] = useState("");
+
   // System Diagnostics
   const [diagnostics, setDiagnostics] = useState({
     browser: "checking", // ready | error
@@ -202,6 +232,7 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
         institutionName: remoteExam.workspaceName,
         durationMins: remoteExam.durationMins,
         questionCount: remoteExam.totalQuestions,
+        totalMarks: remoteExam.totalMarks,
         instructions:
           remoteExam.instructions ||
           "Answer all questions. Your responses are saved continuously and submitted when time expires.",
@@ -407,439 +438,431 @@ export default function CandidateLobby({ examCode }: CandidateLobbyProps) {
       }
     }
     const notFound = Boolean(examLookupError) && !isLoadingExam;
-    const lookupMessage = (examLookupError as any)?.data?.message;
+    const lookupMessage: string | undefined = (examLookupError as any)?.data?.message;
+    const genericLookup = !lookupMessage || /not found/i.test(lookupMessage);
     return (
-      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4 sm:p-6 text-[var(--foreground)]">
-        <div className="w-full max-w-md bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] p-6 sm:p-8 text-center space-y-4">
-          {notFound ? (
-            <>
-              <XCircle className="w-10 h-10 mx-auto text-[var(--crimson-signal)]" />
-              <h1 className="text-lg font-bold">Exam room unavailable</h1>
-              <p className="text-sm text-[var(--text-secondary)]">
-                {lookupMessage ||
-                  `We couldn't open exam room "${normalizedExamCode}". Check the code with your examiner and try again.`}
-              </p>
-              <Button
-                type="button"
-                onClick={() => router.push("/take")}
-                className="w-full h-11 bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)]"
-              >
-                Enter a different code
-              </Button>
-            </>
-          ) : (
-            <p className="text-sm font-semibold text-[var(--text-secondary)]">
-              Loading exam room {normalizedExamCode}...
-            </p>
-          )}
-        </div>
+      <div className="cbt-surface cand-page">
+        <header className="cand-topbar">
+          <CbtBrand />
+        </header>
+        <main className="cand-center-main">
+          <div className="cand-card cand-message" role={notFound ? "alert" : "status"}>
+            {notFound ? (
+              <>
+                <span className="cand-message-icon is-bad" aria-hidden>
+                  <XCircle size={26} />
+                </span>
+                <h1>We couldn&apos;t find that exam</h1>
+                <p>
+                  {genericLookup ? (
+                    <>
+                      No open exam uses the code{" "}
+                      <strong className="cand-mono">{normalizedExamCode}</strong>.
+                    </>
+                  ) : (
+                    lookupMessage
+                  )}
+                </p>
+                {genericLookup && (
+                <p className="cand-message-help">
+                  Check the code on your hall slip or exam message, or ask your examiner.
+                </p>
+                )}
+                <form
+                  className="cand-code-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const code = newCode.trim().toUpperCase();
+                    if (code) router.push(`/take/${encodeURIComponent(code)}`);
+                  }}
+                >
+                  <label htmlFor="cand-new-code" className="sr-only">
+                    Exam code
+                  </label>
+                  <input
+                    id="cand-new-code"
+                    className="cand-input is-code"
+                    placeholder="Exam code"
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    value={newCode}
+                    onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                  />
+                  <button type="submit" className="cand-btn primary" disabled={!newCode.trim()}>
+                    Try this code
+                    <ArrowRight size={17} aria-hidden />
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <Loader2 size={26} className="cand-spin text-[var(--violet-ink)]" aria-hidden />
+                <p>
+                  Opening exam room <span className="cand-mono">{normalizedExamCode}</span>
+                </p>
+              </>
+            )}
+          </div>
+        </main>
       </div>
     );
   }
 
-  const availability = availabilityOf(metadata);
+  const availability = availabilityOf(metadata, now);
+  const startsLater = Boolean(
+    metadata.isPublished && metadata.startsAt && now < new Date(metadata.startsAt).getTime(),
+  );
+  const hasClosed = Boolean(
+    metadata.isPublished && metadata.endsAt && now > new Date(metadata.endsAt).getTime(),
+  );
+  // Closed or unpublished: nothing to fill in. Opening later: details can be entered while waiting.
+  const blocked = !availability.open && !startsLater;
+  const windowChip = !metadata.isPublished
+    ? { tone: "is-warn", text: "Not open yet" }
+    : startsLater
+      ? { tone: "is-warn", text: `Opens ${formatWhen(metadata.startsAt as string, now)}` }
+      : hasClosed
+        ? { tone: "is-bad", text: "Closed" }
+        : metadata.endsAt
+          ? { tone: "is-ok", text: `Open until ${formatWhen(metadata.endsAt, now)}` }
+          : { tone: "is-ok", text: "Open now" };
+  const online = diagnostics.connection !== "error";
+  const detailsLabel = metadata.requiresPin ? "Your PIN" : "Your details";
+  const pinInvalid = pinLookup === "unknown" && metadata.requiresPin;
+
+  const welcome = enrolledName && (
+    <div className="cand-welcome" role="status">
+      <div className="cand-welcome-person">
+        <span className="cand-avatar" aria-hidden>
+          <UserRound size={20} />
+        </span>
+        <div className="min-w-0">
+          <p>Welcome</p>
+          <strong>{enrolledName}</strong>
+        </div>
+      </div>
+      <button type="button" onClick={clearEnrolled} className="cand-link">
+        Not you?
+      </button>
+    </div>
+  );
+
+  // Access PIN: required for roster exams; for walk-ins it is the participant ID used to rejoin
+  const pinField =
+    metadata.requiresPin || isResuming ? (
+      <div className="cand-field" role="group" aria-labelledby="cand-pin-label">
+        <div className="cand-field-row">
+          <span id="cand-pin-label">{metadata.requiresPin ? "Access PIN" : "Participant ID"}</span>
+          <small>
+            {metadata.requiresPin
+              ? "On your hall slip or exam message"
+              : "Restored from this device"}
+          </small>
+        </div>
+        <CandidatePinInput
+          value={candidatePin}
+          onChange={(val) => setCandidatePin(val)}
+          length={metadata.requiresPin ? 6 : Math.max(7, candidatePin.length)}
+          invalid={pinInvalid}
+        />
+        {pinLookup === "checking" && (
+          <p className="cand-hint" role="status">
+            <Loader2 size={14} className="cand-spin" aria-hidden />
+            Checking your PIN…
+          </p>
+        )}
+        {pinInvalid && (
+          <p className="cand-hint bad" role="alert">
+            <AlertTriangle size={14} aria-hidden />
+            That PIN isn&apos;t on this exam&apos;s list. Check the PIN on your hall slip, or ask
+            your examiner.
+          </p>
+        )}
+      </div>
+    ) : (
+      <details className="cand-rejoin">
+        <summary>Rejoining? Enter your participant ID</summary>
+        <input
+          type="text"
+          aria-label="Participant ID"
+          placeholder="e.g. P7KQ2MX"
+          value={candidatePin}
+          onChange={(e) => setCandidatePin(e.target.value.toUpperCase())}
+          className="cand-input is-code"
+        />
+      </details>
+    );
+
+  const nameField = (
+    <label className="cand-field" htmlFor="candidate-full-name">
+      Full name
+      <input
+        type="text"
+        required
+        id="candidate-full-name"
+        autoComplete="name"
+        placeholder="e.g. Daniel Olawale"
+        value={candidateName}
+        onChange={(e) => setCandidateName(e.target.value)}
+        className="cand-input"
+      />
+    </label>
+  );
+
+  const contactFields = (
+    <details className="cand-rejoin cand-contact">
+      <summary>Add your email or phone (optional)</summary>
+      <div className="cand-two">
+        <label className="cand-field">
+          Email
+          <input
+            type="email"
+            aria-label="Email (optional)"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={candidateEmail}
+            onChange={(e) => setCandidateEmail(e.target.value)}
+            className="cand-input"
+          />
+        </label>
+        <label className="cand-field">
+          Phone
+          <input
+            type="tel"
+            aria-label="Phone (optional)"
+            autoComplete="tel"
+            placeholder="080..."
+            value={candidatePhone}
+            onChange={(e) => setCandidatePhone(e.target.value)}
+            className="cand-input"
+          />
+        </label>
+      </div>
+    </details>
+  );
+
+  // Why the exam can't be started, and what to do about it
+  const stateNotice = !metadata.isPublished ? (
+    <section className="cand-state-card is-warn" role="status" aria-labelledby="cand-state-title">
+      <Clock size={22} aria-hidden />
+      <div>
+        <h2 id="cand-state-title">This exam isn&apos;t open yet</h2>
+        <p>
+          Your examiner hasn&apos;t opened it. Wait until they tell you to start, then check again.
+        </p>
+        <button type="button" className="cand-btn" onClick={() => window.location.reload()}>
+          Check again
+        </button>
+      </div>
+    </section>
+  ) : hasClosed ? (
+    <section className="cand-state-card is-bad" role="status" aria-labelledby="cand-state-title">
+      <XCircle size={22} aria-hidden />
+      <div>
+        <h2 id="cand-state-title">This exam has closed</h2>
+        <p>
+          It closed {metadata.endsAt ? `at ${formatWhen(metadata.endsAt, now)}` : "earlier"}. If you
+          think this is a mistake, speak to your examiner.
+        </p>
+        <button type="button" className="cand-btn" onClick={() => router.push("/take")}>
+          Enter a different code
+        </button>
+      </div>
+    </section>
+  ) : startsLater ? (
+    <section className="cand-state-card is-info" role="status" aria-labelledby="cand-state-title">
+      <Clock size={22} aria-hidden />
+      <div>
+        <h2 id="cand-state-title">
+          Opens {timeUntil(metadata.startsAt as string, now)}
+        </h2>
+        <p>
+          The exam starts at {formatWhen(metadata.startsAt as string, now)}. You can enter your
+          details now. Start turns on by itself when the exam opens.
+        </p>
+      </div>
+    </section>
+  ) : null;
 
   return (
-    <div className="cbt-surface flex flex-col items-center px-4 py-8 sm:py-12">
-      <div className="mb-8">
+    <div className="cbt-surface cand-page">
+      <header className="cand-topbar">
         <CbtBrand />
-      </div>
-      <ol
-        className="flex flex-wrap justify-center gap-6 text-xs text-slate-600 mb-8"
-        aria-label="Candidate journey"
-      >
-        <li>1. Exam code</li>
-        <li aria-current="step" className="font-bold text-violet-800">
-          2. Your details
-        </li>
-        <li>3. Examination</li>
-      </ol>
-      {/* Container */}
-      <div className="w-full max-w-xl overflow-hidden">
-        {/* Header Ribbon */}
-        <div className="border-b border-[var(--border-fine)] py-5">
-          <div className="flex items-center justify-between mb-2">
-            <Badge
-              variant="outline"
-              className="bg-[var(--violet-tint)] text-[var(--violet-ink)] border-[var(--violet-ink)]/20 font-mono text-xs uppercase tracking-wider"
-            >
-              Room Code: {metadata.code}
-            </Badge>
-            <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] font-medium">
-              <Clock className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-              <span>{metadata.durationMins} Minutes</span>
-            </div>
-          </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-2 max-w-full truncate">
-            <Laptop className="w-3.5 h-3.5 text-violet-600 shrink-0" />
-            <span className="truncate">
-              Exam Centre: <strong>{metadata.institutionName}</strong>
+        <span className={`cand-chip ${online ? "is-ok" : "is-warn"}`} role="status">
+          {online ? <Wifi size={14} aria-hidden /> : <WifiOff size={14} aria-hidden />}
+          {online ? "Online" : "Offline"}
+        </span>
+      </header>
+
+      <main className="cand-lobby">
+        <ol className="cand-steps" aria-label="Your progress">
+          <li className="is-done">
+            <span className="cand-step-mark" aria-hidden>
+              <Check size={15} strokeWidth={3} />
+            </span>
+            <span className="cand-step-text">
+              <small>Step 1</small>
+              <strong>
+                Code <span className="cand-mono">{metadata.code}</span>
+              </strong>
+            </span>
+          </li>
+          <li className="cand-step-line is-done" aria-hidden />
+          <li className="is-current" aria-current="step">
+            <span className="cand-step-mark" aria-hidden>
+              2
+            </span>
+            <span className="cand-step-text">
+              <small>Step 2</small>
+              <strong>{detailsLabel}</strong>
+            </span>
+          </li>
+          <li className="cand-step-line" aria-hidden />
+          <li>
+            <span className="cand-step-mark" aria-hidden>
+              3
+            </span>
+            <span className="cand-step-text">
+              <small>Step 3</small>
+              <strong>Examination</strong>
+            </span>
+          </li>
+        </ol>
+
+        <header className="cand-exam-head" aria-labelledby="exam-title">
+          {metadata.institutionName && (
+            <p className="cand-exam-school">
+              <Building2 size={15} aria-hidden />
+              {metadata.institutionName}
+            </p>
+          )}
+          <h1 id="exam-title">{metadata.title}</h1>
+          <div className="cand-exam-facts">
+            <span>
+              <Clock size={15} aria-hidden />
+              {metadata.durationMins} minutes
+            </span>
+            <span>
+              <ListChecks size={15} aria-hidden />
+              {metadata.questionCount} question{metadata.questionCount === 1 ? "" : "s"}
+            </span>
+            {metadata.totalMarks > 0 && (
+              <span>
+                <Hash size={15} aria-hidden />
+                {metadata.totalMarks} marks
+              </span>
+            )}
+            <span className={`cand-chip ${windowChip.tone}`}>
+              <span className="cand-dot" aria-hidden />
+              {windowChip.text}
             </span>
           </div>
+        </header>
 
-          <h1 className="text-xl sm:text-2xl font-bold font-sans tracking-tight text-[var(--foreground)]">
-            {metadata.title}
-          </h1>
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5">
-            Room Code:{" "}
-            <strong className="font-mono text-violet-700">
-              {metadata.code}
-            </strong>{" "}
-            &bull; Duration: {metadata.durationMins} Mins
-          </p>
+        <form onSubmit={handleStartExam} className={`cand-lobby-grid ${blocked ? "is-blocked" : ""}`}>
+          {stateNotice && <div className="cand-area-state">{stateNotice}</div>}
 
-          {(metadata.startsAt || metadata.endsAt) && (
-            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>
-                Assessment window:{" "}
+          {!blocked && (
+            <section className="cand-panel cand-card cand-area-details" aria-labelledby="candidate-details">
+              <div className="cand-panel-head">
+                <h2 id="candidate-details">
+                  {metadata.requiresPin ? "Enter your access PIN" : "Your details"}
+                </h2>
+                <p className="cand-panel-lead">
+                  {metadata.requiresPin
+                    ? "Type the 6-digit PIN your examiner gave you. Your name appears once the PIN is recognised."
+                    : "Enter your name as you want it on your result slip. No account is needed."}
+                </p>
+              </div>
+
+              {metadata.requiresPin ? (
+                <>
+                  {pinField}
+                  {welcome}
+                </>
+              ) : (
+                <>
+                  {welcome || nameField}
+                  {!isResuming && !enrolledName && contactFields}
+                  {pinField}
+                </>
+              )}
+            </section>
+          )}
+
+          <section className="cand-notes cand-area-notes" aria-labelledby="exam-rules">
+            <div className="cand-notes-block">
+              <h2>
+                <FileText size={17} aria-hidden />
+                Instructions
+              </h2>
+              <p className="cand-instructions">{metadata.instructions}</p>
+            </div>
+            <div className="cand-rules">
+              <h2 id="exam-rules">
+                <ShieldAlert size={17} aria-hidden />
+                Stay on the exam page
+              </h2>
+              <p>
+                Switching to another tab or app, or minimising the browser, is recorded. After{" "}
                 <strong>
-                  {metadata.startsAt
-                    ? new Date(metadata.startsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
-                    : "now"}
-                  {" – "}
-                  {metadata.endsAt
-                    ? new Date(metadata.endsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
-                    : "no closing time"}
+                  {metadata.maxTabViolations} switch{metadata.maxTabViolations === 1 ? "" : "es"}
                 </strong>
-              </span>
+                , your exam is submitted automatically and locked.
+              </p>
             </div>
-          )}
-          {!availability.open && (
-            <div role="alert" className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
-              {availability.message}
-            </div>
-          )}
-        </div>
-
-        {/* Form Body */}
-        <form onSubmit={handleStartExam} className="py-6 space-y-6">
-          {metadata.requiresPin ? (
-            <>
-          {/* Access PIN: required for roster exams, optional for walk-ins rejoining */}
-          {metadata.requiresPin || isResuming ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-                  {metadata.requiresPin
-                    ? "Access PIN / Candidate Number"
-                    : "Participant ID"}
-                </label>
-                <span className="text-xs text-[var(--text-secondary)]">
-                  {metadata.requiresPin
-                    ? "Issued by examiner"
-                    : "Restored from this device"}
-                </span>
-              </div>
-              <div className="flex justify-start">
-                <CandidatePinInput
-                  value={candidatePin}
-                  onChange={(val) => setCandidatePin(val)}
-                  length={
-                    metadata.requiresPin ? 6 : Math.max(7, candidatePin.length)
-                  }
-                />
-              </div>
-              {pinLookup === "checking" && (
-                <p className="text-xs text-[var(--text-secondary)]">Checking your PIN…</p>
-              )}
-              {pinLookup === "unknown" && metadata.requiresPin && (
-                <p className="text-xs text-[var(--crimson-signal)]" role="alert">
-                  That PIN isn&apos;t on this exam&apos;s list. Check the PIN on your exam slip.
-                </p>
-              )}
-            </div>
-          ) : (
-            <details className="text-xs text-[var(--text-secondary)]">
-              <summary className="cursor-pointer font-semibold">
-                Rejoining? Enter your participant ID
-              </summary>
-              <div className="pt-2">
-                <Input
-                  type="text"
-                  placeholder="e.g. P7KQ2MX"
-                  value={candidatePin}
-                  onChange={(e) =>
-                    setCandidatePin(e.target.value.toUpperCase())
-                  }
-                  className="h-10 font-mono uppercase rounded-[var(--radius-md)] border-[var(--border-fine)] focus-visible:ring-[var(--violet-ink)]"
-                />
-              </div>
-            </details>
-          )}
-          {enrolledName ? (
-            <div
-              className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--violet-ink)]/30 bg-[var(--violet-tint)] px-4 py-3"
-              role="status"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <User className="w-4 h-4 shrink-0 text-[var(--violet-ink)]" />
-                <p className="text-sm text-[var(--foreground)] min-w-0">
-                  Welcome, <strong className="break-words">{enrolledName}</strong>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={clearEnrolled}
-                className="shrink-0 text-xs font-semibold text-[var(--violet-ink)] underline"
-              >
-                Not you?
-              </button>
-            </div>
-          ) : (
-            !metadata.requiresPin && (
-            <div className="space-y-1.5">
-              <label
-                htmlFor="candidate-full-name"
-                className="text-xs font-semibold text-slate-700 flex items-center gap-1.5"
-              >
-                <User className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-                Candidate Full Name
-              </label>
-              <Input
-                type="text"
-                required
-                id="candidate-full-name"
-                autoComplete="name"
-                placeholder="e.g. Daniel Olawale"
-                value={candidateName}
-                onChange={(e) => setCandidateName(e.target.value)}
-                className="h-11 text-base font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] focus-visible:ring-[var(--violet-ink)]"
-              />
-            </div>
-            )
-          )}
-            </>
-          ) : (
-            <>
-          {enrolledName ? (
-            <div
-              className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--violet-ink)]/30 bg-[var(--violet-tint)] px-4 py-3"
-              role="status"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <User className="w-4 h-4 shrink-0 text-[var(--violet-ink)]" />
-                <p className="text-sm text-[var(--foreground)] min-w-0">
-                  Welcome, <strong className="break-words">{enrolledName}</strong>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={clearEnrolled}
-                className="shrink-0 text-xs font-semibold text-[var(--violet-ink)] underline"
-              >
-                Not you?
-              </button>
-            </div>
-          ) : (
-            !metadata.requiresPin && (
-            <div className="space-y-1.5">
-              <label
-                htmlFor="candidate-full-name"
-                className="text-xs font-semibold text-slate-700 flex items-center gap-1.5"
-              >
-                <User className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-                Candidate Full Name
-              </label>
-              <Input
-                type="text"
-                required
-                id="candidate-full-name"
-                autoComplete="name"
-                placeholder="e.g. Daniel Olawale"
-                value={candidateName}
-                onChange={(e) => setCandidateName(e.target.value)}
-                className="h-11 text-base font-medium rounded-[var(--radius-md)] border-[var(--border-fine)] focus-visible:ring-[var(--violet-ink)]"
-              />
-            </div>
-            )
-          )}
-          {/* Participant contact details */}
-          {!isResuming && !enrolledName && !metadata.requiresPin && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-                  Email{" "}
-                  <span className="normal-case font-normal">(optional)</span>
-                </label>
-                <Input
-                  type="email"
-                  aria-label="Email (optional)"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={candidateEmail}
-                  onChange={(e) => setCandidateEmail(e.target.value)}
-                  className="h-11 text-base rounded-[var(--radius-md)] border-[var(--border-fine)] focus-visible:ring-[var(--violet-ink)]"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-                  Phone{" "}
-                  <span className="normal-case font-normal">(optional)</span>
-                </label>
-                <Input
-                  type="tel"
-                  aria-label="Phone (optional)"
-                  autoComplete="tel"
-                  placeholder="080..."
-                  value={candidatePhone}
-                  onChange={(e) => setCandidatePhone(e.target.value)}
-                  className="h-11 text-base rounded-[var(--radius-md)] border-[var(--border-fine)] focus-visible:ring-[var(--violet-ink)]"
-                />
-              </div>
-            </div>
-          )}
-          {/* Access PIN: required for roster exams, optional for walk-ins rejoining */}
-          {metadata.requiresPin || isResuming ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-[var(--violet-ink)]" />
-                  {metadata.requiresPin
-                    ? "Access PIN / Candidate Number"
-                    : "Participant ID"}
-                </label>
-                <span className="text-xs text-[var(--text-secondary)]">
-                  {metadata.requiresPin
-                    ? "Issued by examiner"
-                    : "Restored from this device"}
-                </span>
-              </div>
-              <div className="flex justify-start">
-                <CandidatePinInput
-                  value={candidatePin}
-                  onChange={(val) => setCandidatePin(val)}
-                  length={
-                    metadata.requiresPin ? 6 : Math.max(7, candidatePin.length)
-                  }
-                />
-              </div>
-              {pinLookup === "checking" && (
-                <p className="text-xs text-[var(--text-secondary)]">Checking your PIN…</p>
-              )}
-              {pinLookup === "unknown" && metadata.requiresPin && (
-                <p className="text-xs text-[var(--crimson-signal)]" role="alert">
-                  That PIN isn&apos;t on this exam&apos;s list. Check the PIN on your exam slip.
-                </p>
-              )}
-            </div>
-          ) : (
-            <details className="text-xs text-[var(--text-secondary)]">
-              <summary className="cursor-pointer font-semibold">
-                Rejoining? Enter your participant ID
-              </summary>
-              <div className="pt-2">
-                <Input
-                  type="text"
-                  placeholder="e.g. P7KQ2MX"
-                  value={candidatePin}
-                  onChange={(e) =>
-                    setCandidatePin(e.target.value.toUpperCase())
-                  }
-                  className="h-10 font-mono uppercase rounded-[var(--radius-md)] border-[var(--border-fine)] focus-visible:ring-[var(--violet-ink)]"
-                />
-              </div>
-            </details>
-          )}
-            </>
-          )}
-
-          <section
-            className="border-t border-slate-200 pt-5"
-            aria-labelledby="exam-instructions"
-          >
-            <h2 id="exam-instructions" className="text-sm font-bold mb-2">
-              Examination instructions
-            </h2>
-            <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-wrap break-words">
-              {metadata.instructions}
-            </p>
           </section>
 
-          {/* Rules & Malpractice Warning Box */}
-          <div className="bg-[var(--amber-tint)] border border-[var(--amber-signal)]/30 rounded-[var(--radius-md)] p-3.5 text-xs text-[#92400e] space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-[13px]">
-              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
-              <span>Exam Integrity Notice</span>
-            </div>
-            <p className="leading-relaxed">
-              This is a monitored exam hall. Leaving this window, switching
-              browser tabs, or minimizing the screen is logged. Accumulating{" "}
-              <strong>
-                {metadata.maxTabViolations} malpractice violations
-              </strong>{" "}
-              will trigger immediate automatic submission and lock your attempt.
-            </p>
-          </div>
-
-          {/* System Diagnostics Strip */}
-          <div className="pt-2 border-t border-[var(--border-fine)]">
-            <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-2">
-              <span className="font-semibold uppercase tracking-wider">
-                System Readiness
-              </span>
-              <span className="text-[11px] text-slate-600">
-                {diagnostics.connection === "ready"
-                  ? "Device online"
-                  : "Device offline"}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 xs:grid-cols-3 gap-1.5 sm:gap-2">
-              <div className="flex items-center gap-1.5 p-1.5 sm:p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-[11px] sm:text-xs">
-                {diagnostics.browser === "ready" ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+          {!blocked && (
+            <section className="cand-start cand-area-start" aria-label="Start the exam">
+              <button
+                type="submit"
+                disabled={isVerifying || !availability.open}
+                className="cand-btn primary"
+                aria-describedby="cand-start-note"
+              >
+                {isVerifying ? (
+                  <>
+                    <Loader2 size={18} className="cand-spin" aria-hidden />
+                    Preparing exam room…
+                  </>
+                ) : startsLater ? (
+                  <>
+                    <Clock size={18} aria-hidden />
+                    Opens {formatWhen(metadata.startsAt as string, now)}
+                  </>
                 ) : (
-                  <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)] shrink-0" />
+                  <>
+                    Start examination
+                    <ArrowRight size={18} aria-hidden />
+                  </>
                 )}
-                <span className="truncate">Browser OK</span>
-              </div>
-              <div className="flex items-center gap-1.5 p-1.5 sm:p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-[11px] sm:text-xs">
-                {diagnostics.visibilityApi === "ready" ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+              </button>
+              <p id="cand-start-note" className={`cand-start-status ${online ? "" : "bad"}`} role="status">
+                {!online ? (
+                  <>
+                    <AlertTriangle size={14} aria-hidden />
+                    You&apos;re offline. Connect to the internet to start.
+                  </>
                 ) : (
-                  <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)] shrink-0" />
+                  <>
+                    <Clock size={14} aria-hidden />
+                    The {metadata.durationMins}-minute timer starts when you press Start. Answers
+                    save on this device as you go.
+                  </>
                 )}
-                <span className="truncate">Anti-Cheat</span>
-              </div>
-              <div className="flex items-center gap-1.5 p-1.5 sm:p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-fine)] text-[11px] sm:text-xs">
-                {diagnostics.connection === "ready" ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                ) : (
-                  <XCircle className="w-3.5 h-3.5 text-[var(--crimson-signal)] shrink-0" />
-                )}
-                <span>
-                  {diagnostics.connection === "ready" ? "Connected" : "Offline"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Submit CTA Button */}
-          <Button
-            type="submit"
-            disabled={isVerifying || !availability.open}
-            className="w-full h-12 text-base font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)] transition-all flex items-center justify-center gap-2"
-          >
-            {isVerifying ? (
-              <span>Preparing Exam Room...</span>
-            ) : (
-              <>
-                <span>Start Examination Now</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </Button>
+              </p>
+              {diagnostics.visibilityApi === "error" && (
+                <p className="cand-start-status bad">
+                  <AlertTriangle size={14} aria-hidden />
+                  This browser can&apos;t detect tab switches. Use an up-to-date browser.
+                </p>
+              )}
+            </section>
+          )}
         </form>
-
-        {/* Footer info */}
-        <div className="bg-[var(--surface-subtle)] border-t border-[var(--border-fine)] px-6 py-3 text-center text-[11px] text-[var(--text-secondary)]">
-          Powered by <strong className="text-violet-700">ParaLearn CBT</strong>{" "}
-          &bull; Secure Standalone Assessment Engine
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="web_dashboard" name="shell-type"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    @layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}
+    ::-webkit-scrollbar{display:none;}
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "crimson-tint": "#fddada",
+            "inverse-surface": "#233144",
+            "emerald-ink-white": "#047857",
+            "violet-line": "#dfceef",
+            "amber-ink-tint": "#92400e",
+            "cobalt-tint": "#dbe9ff",
+            "surface-container-highest": "#d5e3fd",
+            "tertiary-fixed": "#6ffbbe",
+            "surface": "#f8f9ff",
+            "error-container": "#ffdad6",
+            "foreground": "#0f172a",
+            "text-strong": "#334155",
+            "violet-wash": "#f7f3ff",
+            "on-secondary-fixed": "#131b2e",
+            "crimson-ink-white": "#b91c1c",
+            "primary-fixed-dim": "#d5bbff",
+            "on-surface": "#0d1c2f",
+            "on-secondary-container": "#5c647a",
+            "crimson-ink-tint": "#991b1b",
+            "primary-fixed": "#ecdcff",
+            "error": "#ba1a1a",
+            "emerald-line": "#a7f3d0",
+            "inverse-on-surface": "#ebf1ff",
+            "border-fine": "#e2e8f0",
+            "surface-container-lowest": "#ffffff",
+            "amber-vivid": "#f28c1f",
+            "background": "#f8f9ff",
+            "primary-container": "#641bc4",
+            "tertiary": "#003f29",
+            "emerald-tint": "#dff9d8",
+            "primary": "#49009a",
+            "crimson-vivid": "#e60023",
+            "emerald-ink-tint": "#065f46",
+            "outline": "#7c7486",
+            "on-primary-fixed": "#270058",
+            "on-error": "#ffffff",
+            "on-surface-variant": "#4b4454",
+            "cobalt-vivid": "#2a64f6",
+            "secondary-fixed-dim": "#bec6e0",
+            "on-background": "#0d1c2f",
+            "on-primary-fixed-variant": "#5d0abd",
+            "card": "#ffffff",
+            "on-secondary-fixed-variant": "#3f465c",
+            "amber-line": "#fde68a",
+            "surface-container-high": "#dde9ff",
+            "chalk-white": "#fdfdff",
+            "on-error-container": "#93000a",
+            "violet-ink": "#641bc4",
+            "cobalt-ink": "#1e40af",
+            "surface-bright": "#f8f9ff",
+            "tertiary-fixed-dim": "#4edea3",
+            "secondary": "#565e74",
+            "text-secondary": "#64748b",
+            "surface-container": "#e6eeff",
+            "surface-dim": "#ccdbf4",
+            "crimson-line": "#fecaca",
+            "on-tertiary-container": "#44d69b",
+            "surface-muted": "#f1f5f9",
+            "surface-container-low": "#eff4ff",
+            "emerald-vivid": "#10b981",
+            "on-secondary": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "on-tertiary-fixed-variant": "#005236",
+            "tertiary-container": "#00593c",
+            "outline-variant": "#cdc3d7",
+            "cobalt-line": "#bfdbfe",
+            "violet-pressed": "#5214a3",
+            "secondary-fixed": "#dae2fd",
+            "on-primary": "#ffffff",
+            "violet-hover": "#7b22e8",
+            "inverse-primary": "#d5bbff",
+            "secondary-container": "#dae2fd",
+            "border-medium": "#cbd5e1",
+            "text-placeholder": "#94a3b8",
+            "surface-subtle": "#f8fafc",
+            "amber-tint": "#ffe9cc",
+            "amber-ink-white": "#b45309",
+            "on-primary-container": "#ceb1ff",
+            "violet-tint": "#f0e5ff",
+            "surface-variant": "#d5e3fd",
+            "on-tertiary-fixed": "#002113",
+            "lavender-muted": "#ad8ed6",
+            "surface-tint": "#7635d6"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "1rem",
+            "space-xs": "0.25rem",
+            "margin-md": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-2xl": "3rem",
+            "space-lg": "1.5rem",
+            "margin-lg": "2rem",
+            "gutter-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin": "1rem",
+            "space-md": "1rem"
+          },
+          "fontFamily": {
+            "display": ["Manrope"],
+            "question-text-mobile": ["Manrope"],
+            "answer-option": ["Manrope"],
+            "label-eyebrow": ["Manrope"],
+            "headline-md": ["Manrope"],
+            "title": ["Manrope"],
+            "timer-display": ["JetBrains Mono"],
+            "body-default": ["Manrope"],
+            "body-strong": ["Manrope"],
+            "display-mobile": ["Manrope"],
+            "label-sm": ["Manrope"],
+            "question-text": ["Manrope"],
+            "pin-box": ["JetBrains Mono"],
+            "headline-lg": ["Manrope"],
+            "mono-data": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "display": ["36px", { "lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "800" }],
+            "question-text-mobile": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+            "answer-option": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label-eyebrow": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "700" }],
+            "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "700" }],
+            "title": ["15px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "timer-display": ["20px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-default": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-strong": ["14px", { "lineHeight": "22px", "fontWeight": "600" }],
+            "display-mobile": ["28px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "question-text": ["18px", { "lineHeight": "28px", "fontWeight": "500" }],
+            "pin-box": ["22px", { "lineHeight": "28px", "fontWeight": "700" }],
+            "headline-lg": ["20px", { "lineHeight": "26px", "fontWeight": "700" }],
+            "mono-data": ["13px", { "lineHeight": "18px", "fontWeight": "400" }]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-chalk-white font-body-default text-on-surface antialiased">
+<!-- Persistent 232px Sidebar -->
+<aside class="fixed left-0 top-0 h-full w-[232px] bg-chalk-white z-50 flex flex-col justify-between border-r border-border-fine">
+<div class="flex flex-col flex-1 overflow-y-auto">
+<div class="h-16 px-space-md flex items-center gap-space-sm border-b border-border-fine shrink-0">
+<img alt="ParaLearn CBT Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrB_9Z0ISU32JF8A2JyLRXK3ryHZjW0kBh-GQ3ZL1QTofGiXJOJOhSYrRNyxa8umwhAd5-wnmWqSjMeM3OmxIUn5nkk8Bt2NdFWuO5UonQyX9weW3Oqz7A0IHH6EQVVxW6ssv9DBUKzEPN9JcdAB7IUQOHlPrUr6H6wrHaSM1tu1dI4V2wIg_5S0EpckQzJHMfliDfxX7YzT-XhuACo3Ovu5Cfk9_-Ok0SbP8FkYisWo"/>
+<div class="flex flex-col min-w-0">
+<span class="font-title text-title text-on-surface truncate leading-none">ParaLearn CBT</span>
+<span class="font-label-eyebrow text-label-eyebrow text-violet-ink uppercase tracking-wider mt-1">Examiner Workspace</span>
+</div>
+</div>
+<div class="px-space-md pt-space-md pb-space-xs">
+<span class="font-label-eyebrow text-label-eyebrow text-text-placeholder uppercase tracking-wider">Exam Suite</span>
+</div>
+<nav class="px-space-sm flex flex-col gap-1">
+<a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="examinations" href="#">
+<span class="material-symbols-outlined text-[20px]">assignment</span>
+<span class="font-body-default text-body-default">Examinations</span>
+</a>
+<a class="flex items-center justify-between px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="candidate-monitor" href="#">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[20px]">monitoring</span>
+<span class="font-body-default text-body-default">Candidate Monitor</span>
+</div>
+<span class="flex h-2 w-2 rounded-full bg-emerald-vivid ring-2 ring-emerald-tint"></span>
+</a>
+<a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="question-studio" href="#">
+<span class="material-symbols-outlined text-[20px]">edit_note</span>
+<span class="font-body-default text-body-default">Question Studio</span>
+</a>
+<a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg bg-violet-tint text-violet-ink font-body-strong transition-colors" data-path="candidates-and-pins" href="#">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+<span class="font-body-default text-body-default">Candidates &amp; PINs</span>
+</a>
+</nav>
+<div class="px-space-md pt-space-lg pb-space-xs">
+<span class="font-label-eyebrow text-label-eyebrow text-text-placeholder uppercase tracking-wider">Resources</span>
+</div>
+<nav class="px-space-sm flex flex-col gap-1">
+<a class="flex items-center justify-between px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="candidate-entrance" href="#">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[20px]">open_in_new</span>
+<span class="font-body-default text-body-default">Candidate Entrance</span>
+</div>
+<span class="font-mono-data text-[11px] text-text-placeholder">↗</span>
+</a>
+<a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="developer-api" href="#">
+<span class="material-symbols-outlined text-[20px]">api</span>
+<span class="font-body-default text-body-default">Developer API</span>
+</a>
+<a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="settings-and-keys" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="font-body-default text-body-default">Settings &amp; Keys</span>
+</a>
+</nav>
+</div>
+<!-- Workspace context footer -->
+<div class="p-space-sm border-t border-border-fine bg-surface-subtle">
+<div class="p-space-sm bg-surface-container-lowest rounded-lg border border-border-fine flex flex-col gap-2 mb-2">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-text-secondary truncate">King's College Lagos</span>
+<span class="material-symbols-outlined text-[16px] text-text-placeholder">domain</span>
+</div>
+<div class="flex items-center justify-between bg-violet-wash px-2 py-1 rounded border border-violet-line">
+<span class="font-mono-data text-[11px] text-violet-ink font-semibold">350 Credits Available</span>
+<span class="material-symbols-outlined text-[14px] text-violet-ink">bolt</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-1 rounded-lg hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-title text-[13px] text-on-surface truncate leading-tight">Dr. Folake Adeleke</span>
+<span class="font-label-sm text-[11px] text-text-secondary truncate leading-tight">f.adeleke@paralearn.edu</span>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-crimson-ink-white p-1 rounded transition-colors" title="Sign out" type="button">
+<span class="material-symbols-outlined text-[18px]">logout</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Main Layout -->
+<div class="pl-[232px]">
+<!-- Unified Sticky Action Strip (Guide §1.4: replaces redundant double header & internal breadcrumbs) -->
+<header class="sticky top-0 z-40 w-full bg-chalk-white/95 backdrop-blur border-b border-border-fine px-space-lg py-2.5 shadow-sm">
+<div class="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+<!-- Breadcrumb Hierarchy + Exam Selector Dropdown -->
+<div class="flex flex-wrap items-center gap-2 sm:gap-2.5 min-w-0">
+<div class="flex items-center gap-1.5 text-text-secondary text-[13px] shrink-0 font-medium">
+<span class="hover:text-on-surface">King's College Lagos</span>
+<span class="text-text-placeholder font-mono-data text-xs">/</span>
+<span class="hover:text-on-surface">Examinations</span>
+<span class="text-text-placeholder font-mono-data text-xs">/</span>
+<span class="text-on-surface font-semibold">Candidates &amp; PINs</span>
+</div>
+<div class="flex items-center gap-2 flex-wrap">
+<div class="relative inline-flex items-center">
+<button class="group flex items-center gap-2 px-3 py-1.5 bg-violet-wash border border-violet-line rounded-lg text-left hover:bg-violet-tint transition-all shadow-xs" id="examSelectBtn" type="button">
+<span class="material-symbols-outlined text-violet-ink text-[18px]">verified</span>
+<span class="font-body-strong text-body-strong text-on-surface truncate max-w-[280px] sm:max-w-md">2026/2027 SS2 Mathematics Mock (MATH-8842)</span>
+<span class="material-symbols-outlined text-text-secondary text-[16px] group-hover:translate-y-0.5 transition-transform">expand_more</span>
+</button>
+</div>
+<!-- Active count pill -->
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-mono-data bg-emerald-tint text-emerald-ink-tint border border-emerald-line font-medium shrink-0">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-vivid animate-pulse"></span>
+              76 Enrolled · 34 Testing Now
+            </span>
+</div>
+</div>
+<!-- Primary Action Cluster -->
+<div class="flex items-center gap-2 shrink-0">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-border-medium hover:bg-surface-subtle text-on-surface font-body-strong text-[13px] transition-all shadow-xs" id="openPrintModalBtn" type="button">
+<span class="material-symbols-outlined text-text-secondary text-[17px]">print</span>
+<span>Print Hall Slips</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-border-medium hover:bg-surface-subtle text-on-surface font-body-strong text-[13px] transition-all shadow-xs" type="button">
+<span class="material-symbols-outlined text-violet-ink text-[17px]">school</span>
+<span>Import from ParaLearn</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-violet-ink hover:bg-violet-hover active:bg-violet-pressed text-card font-body-strong text-[13px] transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[17px]">person_add</span>
+<span>+ Enrol Candidate</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Canvas Container -->
+<main class="w-full bg-chalk-white min-h-[calc(100vh-65px)]">
+<div class="max-w-7xl mx-auto px-space-lg py-5 flex flex-col gap-4">
+<!-- 4 Summary Metrics (Preserved) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+<!-- Metric 1: Total Enrolled -->
+<div class="p-4 bg-card rounded-xl border border-border-fine shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary tracking-wider">Total Enrolled</span>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-display text-display text-on-surface leading-none">76</span>
+<span class="font-label-sm text-label-sm text-text-placeholder">candidates</span>
+</div>
+<span class="font-mono-data text-[11px] text-text-secondary mt-1">100% capacity verified</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-subtle border border-border-fine flex items-center justify-center text-text-strong">
+<span class="material-symbols-outlined text-[22px]">group</span>
+</div>
+</div>
+<!-- Metric 2: Testing Now -->
+<div class="p-4 bg-card rounded-xl border border-violet-line bg-gradient-to-br from-violet-wash/50 to-transparent shadow-sm flex items-center justify-between relative overflow-hidden">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-ink opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-violet-ink"></span>
+</span>
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-violet-ink tracking-wider">Testing Now</span>
+</div>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-display text-display text-violet-ink leading-none">34</span>
+<span class="font-label-sm text-label-sm text-violet-ink/80">live in hall</span>
+</div>
+<span class="font-mono-data text-[11px] text-violet-ink mt-1">Real-time sync active</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-violet-tint text-violet-ink flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">desktop_windows</span>
+</div>
+</div>
+<!-- Metric 3: Completed -->
+<div class="p-4 bg-card rounded-xl border border-border-fine shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-emerald-ink-tint tracking-wider">Completed</span>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-display text-display text-on-surface leading-none">42</span>
+<span class="font-label-sm text-label-sm text-emerald-ink-tint font-semibold">submitted</span>
+</div>
+<span class="font-mono-data text-[11px] text-text-secondary mt-1">Avg Score: 71.4%</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-emerald-tint text-emerald-ink-tint flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">task_alt</span>
+</div>
+</div>
+<!-- Metric 4: Unused / Ready PINs -->
+<div class="p-4 bg-card rounded-xl border border-border-fine shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary tracking-wider">Unused / Ready PINs</span>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-display text-display text-on-surface leading-none">0</span>
+<span class="font-label-sm text-label-sm text-text-placeholder">passes left</span>
+</div>
+<span class="font-mono-data text-[11px] text-text-secondary mt-1">All candidates logged in</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-subtle border border-border-fine flex items-center justify-center text-text-placeholder">
+<span class="material-symbols-outlined text-[22px]">key_off</span>
+</div>
+</div>
+</div>
+<!-- Compact, Collapsible Explainer Guide Bar (Saves ~150px vertical real estate on 1366x768 screens) -->
+<div class="w-full bg-violet-wash/60 border border-violet-line rounded-lg overflow-hidden transition-all">
+<div class="px-3.5 py-2 flex items-center justify-between gap-3 text-body-default">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-violet-ink text-[18px] shrink-0">info</span>
+<span class="text-on-surface font-body-default text-[13px] truncate">
+<strong class="font-body-strong text-violet-ink">Entry Verification:</strong> 6-Digit PINs auto-assigned &amp; cryptographic tokens active.
+              </span>
+</div>
+<button class="inline-flex items-center gap-1 font-body-strong text-violet-ink hover:text-violet-hover text-[12px] shrink-0" id="toggleGuideBtn" type="button">
+<span id="guideToggleText">View Distribution Channels</span>
+<span class="material-symbols-outlined text-[16px] transition-transform" id="guideToggleIcon">expand_more</span>
+</button>
+</div>
+<!-- Collapsed drawer content (hidden by default) -->
+<div class="hidden border-t border-violet-line/70 p-3 bg-surface-container-lowest grid grid-cols-1 md:grid-cols-3 gap-3" id="guideDrawer">
+<div class="flex items-start gap-2.5 p-2.5 rounded-lg bg-surface-subtle border border-border-fine">
+<div class="w-7 h-7 rounded bg-card border border-border-medium flex items-center justify-center text-violet-ink font-mono-data text-xs font-bold shrink-0">6#</div>
+<div class="flex flex-col text-[12px]">
+<span class="font-body-strong text-on-surface">6-Digit Access PIN</span>
+<span class="text-text-secondary mt-0.5">Cryptographic token printed on hall slips for physical kiosk verification.</span>
+</div>
+</div>
+<div class="flex items-start gap-2.5 p-2.5 rounded-lg bg-surface-subtle border border-border-fine">
+<div class="w-7 h-7 rounded bg-card border border-border-medium flex items-center justify-center text-cobalt-ink shrink-0">
+<span class="material-symbols-outlined text-[16px]">link</span>
+</div>
+<div class="flex flex-col text-[12px] min-w-0">
+<span class="font-body-strong text-on-surface">One-Click Link</span>
+<span class="font-mono-data text-[10px] text-violet-ink bg-card px-1 py-0.5 rounded mt-0.5 truncate border border-border-fine">cbt.pln.ng/take/MATH-8842?pin=...</span>
+</div>
+</div>
+<div class="flex items-start gap-2.5 p-2.5 rounded-lg bg-surface-subtle border border-border-fine">
+<div class="w-7 h-7 rounded bg-card border border-border-medium flex items-center justify-center text-emerald-ink-white shrink-0">
+<span class="material-symbols-outlined text-[16px]">chat</span>
+</div>
+<div class="flex flex-col text-[12px]">
+<span class="font-body-strong text-on-surface">WhatsApp Ready Pass</span>
+<span class="text-text-secondary mt-0.5">Dispatches instant digital pass and session rules directly to candidate phone.</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Filter, Search & Two-Tier Batch Selection Bar -->
+<div class="flex flex-col gap-2.5">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+<!-- Filter Tabs -->
+<div class="flex items-center gap-1 p-1 bg-surface-muted rounded-lg border border-border-fine overflow-x-auto">
+<button class="tab-btn px-3 py-1.5 rounded font-body-strong text-[13px] bg-card text-on-surface shadow-xs whitespace-nowrap" data-filter="all" type="button">
+                All <span class="font-mono-data text-xs text-text-secondary ml-1">76</span>
+</button>
+<button class="tab-btn px-3 py-1.5 rounded font-body-default text-[13px] text-text-secondary hover:text-on-surface whitespace-nowrap" data-filter="testing" type="button">
+                Testing Now <span class="font-mono-data text-xs text-violet-ink ml-1 font-semibold">34</span>
+</button>
+<button class="tab-btn px-3 py-1.5 rounded font-body-default text-[13px] text-text-secondary hover:text-on-surface whitespace-nowrap" data-filter="completed" type="button">
+                Completed <span class="font-mono-data text-xs text-emerald-ink-tint ml-1">42</span>
+</button>
+<button class="tab-btn px-3 py-1.5 rounded font-body-default text-[13px] text-text-secondary hover:text-on-surface whitespace-nowrap" data-filter="ready" type="button">
+                PIN Ready <span class="font-mono-data text-xs text-text-placeholder ml-1">0</span>
+</button>
+<button class="tab-btn px-3 py-1.5 rounded font-body-default text-[13px] text-text-secondary hover:text-on-surface whitespace-nowrap" data-filter="locked" type="button">
+                Locked <span class="font-mono-data text-xs text-crimson-ink-tint ml-1">1</span>
+</button>
+</div>
+<!-- Omnibox Search -->
+<div class="relative flex-1 max-w-lg w-full">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-placeholder text-[19px]">search</span>
+<input class="w-full h-9 pl-9 pr-4 bg-card rounded-lg border border-border-medium font-body-default text-[13px] text-on-surface placeholder:text-text-placeholder focus:outline-none focus:border-violet-ink focus:ring-1 focus:ring-violet-ink" id="searchInput" placeholder="Search candidate, reg no, or 6-digit PIN..." type="text"/>
+</div>
+</div>
+<!-- Two-Tier Batch Selection Bar (shown when checkboxes are selected) -->
+<div class="hidden bg-violet-wash border border-violet-line rounded-lg p-2.5 items-center justify-between gap-3 text-[13px] transition-all" id="batchActionBar">
+<div class="flex items-center gap-2 flex-wrap">
+<span class="inline-flex items-center gap-1 font-body-strong text-violet-ink">
+<span class="material-symbols-outlined text-[18px]">check_box</span>
+<span id="selectedCountText">8 candidates on this page selected.</span>
+</span>
+<button class="text-violet-ink hover:underline font-body-strong underline-offset-2 ml-1" id="selectAllGlobalBtn" type="button">
+                Select all 76 candidates across all pages
+              </button>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-card border border-border-medium hover:bg-surface-subtle text-emerald-ink-tint font-body-strong text-xs transition-colors shadow-xs" onclick="bulkSendWhatsapp()" type="button">
+<span class="material-symbols-outlined text-[16px]">send</span>
+<span>Bulk WhatsApp Passes</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-card border border-border-medium hover:bg-surface-subtle text-on-surface font-body-strong text-xs transition-colors shadow-xs" onclick="openModal()" type="button">
+<span class="material-symbols-outlined text-text-secondary text-[16px]">print</span>
+<span>Print Selected Slips</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-card border border-border-medium hover:bg-surface-subtle text-on-surface font-body-strong text-xs transition-colors shadow-xs" onclick="exportCsv()" type="button">
+<span class="material-symbols-outlined text-[16px]">download</span>
+<span>Export CSV</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Candidate Roster Table with Normalized Ergonomic Actions -->
+<div class="bg-card rounded-xl border border-border-fine shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse" id="rosterTable">
+<thead>
+<tr class="bg-surface-subtle border-b border-border-medium">
+<th class="w-10 px-3.5 py-3 text-center">
+<input class="rounded border-border-medium text-violet-ink focus:ring-violet-ink" id="selectAllCheckbox" type="checkbox"/>
+</th>
+<th class="px-4 py-3 font-label-eyebrow text-label-eyebrow text-text-secondary uppercase tracking-wider">Candidate &amp; Reg No</th>
+<th class="px-4 py-3 font-label-eyebrow text-label-eyebrow text-text-secondary uppercase tracking-wider">Access PIN</th>
+<th class="px-4 py-3 font-label-eyebrow text-label-eyebrow text-text-secondary uppercase tracking-wider">Exam Code</th>
+<th class="px-4 py-3 font-label-eyebrow text-label-eyebrow text-text-secondary uppercase tracking-wider">Test State / Recovery</th>
+<th class="px-4 py-3 font-label-eyebrow text-label-eyebrow text-text-secondary uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-fine text-body-default">
+<!-- Row 1: Testing Now -->
+<tr class="hover:bg-violet-wash/40 transition-colors group">
+<td class="px-3.5 py-3 text-center">
+<input class="row-checkbox rounded border-border-medium text-violet-ink focus:ring-violet-ink" type="checkbox"/>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-violet-ink flex items-center justify-center font-title text-[13px] font-bold">
+                        DO
+                      </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-strong text-body-strong text-on-surface truncate">Daniel Olawale</span>
+<span class="font-mono-data text-[12px] text-text-secondary">KCL/2024/091 · 0803 123 4567</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-subtle border border-border-medium rounded-lg">
+<span class="font-mono-data text-body-strong text-on-surface font-bold tracking-wider">482-913</span>
+<button class="copy-pin-btn text-text-secondary hover:text-violet-ink p-0.5 rounded" data-pin="482913" title="Copy 6-digit PIN" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="font-mono-data text-[12px] px-2 py-0.5 rounded bg-surface-subtle text-text-strong border border-border-fine">MATH-8842</span>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-tint border border-violet-line text-violet-ink">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-ink opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-violet-ink"></span>
+</span>
+<span class="font-label-sm text-label-sm font-semibold">Testing Now (Q. 28/40)</span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<div class="inline-flex items-center gap-1.5 justify-end">
+<button class="copy-link-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-body-strong text-violet-ink bg-violet-wash hover:bg-violet-tint border border-violet-line rounded-md transition-colors" data-code="MATH-8842" data-pin="482913" title="Copy direct exam link" type="button">
+<span class="material-symbols-outlined text-[15px]">link</span>
+<span>Copy Link</span>
+</button>
+<div class="relative inline-block text-left row-menu-wrap">
+<button class="p-1 text-text-secondary hover:text-on-surface hover:bg-surface-subtle rounded transition-colors" onclick="toggleRowMenu(this)" title="More options" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-card rounded-lg shadow-lg border border-border-medium py-1 z-30 font-body-default text-xs text-on-surface text-left">
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="sendWhatsapp('Daniel Olawale', '482-913', 'MATH-8842')" type="button">
+<span class="material-symbols-outlined text-[16px] text-emerald-ink-tint">chat</span> Send WhatsApp Pass
+                          </button>
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="openSingleSlip('Daniel Olawale', '482-913', 'KCL/2024/091')" type="button">
+<span class="material-symbols-outlined text-[16px]">print</span> Print Hall Slip
+                          </button>
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="showToast('Regenerating PIN for Daniel Olawale...')" type="button">
+<span class="material-symbols-outlined text-[16px]">sync</span> Regenerate PIN
+                          </button>
+<div class="border-t border-border-fine my-1"></div>
+<button class="w-full px-3 py-1.5 text-left hover:bg-crimson-tint/30 text-crimson-ink-white flex items-center gap-2" onclick="showToast('Candidate removed from session', 'delete')" type="button">
+<span class="material-symbols-outlined text-[16px]">person_remove</span> Remove
+                          </button>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 2: Completed -->
+<tr class="hover:bg-violet-wash/40 transition-colors group">
+<td class="px-3.5 py-3 text-center">
+<input class="row-checkbox rounded border-border-medium text-violet-ink focus:ring-violet-ink" type="checkbox"/>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-emerald-tint text-emerald-ink-tint flex items-center justify-center font-title text-[13px] font-bold">
+                        AB
+                      </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-strong text-body-strong text-on-surface truncate">Amina Bello</span>
+<span class="font-mono-data text-[12px] text-text-secondary">KCL/2024/014 · 0802 889 1234</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-subtle border border-border-medium rounded-lg opacity-85">
+<span class="font-mono-data text-body-strong text-text-secondary font-bold tracking-wider">319-402</span>
+<button class="copy-pin-btn text-text-secondary hover:text-violet-ink p-0.5 rounded" data-pin="319402" title="Copy PIN" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="font-mono-data text-[12px] px-2 py-0.5 rounded bg-surface-subtle text-text-strong border border-border-fine">MATH-8842</span>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-2">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-tint border border-emerald-line text-emerald-ink-tint font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                        Completed
+                      </span>
+<span class="font-mono-data text-[13px] font-bold text-on-surface">74% <span class="text-text-placeholder font-normal font-sans">(74/100)</span></span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<div class="inline-flex items-center gap-1.5 justify-end">
+<button class="open-single-slip-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-body-strong text-on-surface bg-card hover:bg-surface-subtle border border-border-medium rounded-md transition-colors shadow-xs" data-name="Amina Bello" data-pin="319-402" data-reg="KCL/2024/014" type="button">
+<span class="material-symbols-outlined text-[15px] text-text-secondary">print</span>
+<span>Print Slip</span>
+</button>
+<div class="relative inline-block text-left row-menu-wrap">
+<button class="p-1 text-text-secondary hover:text-on-surface hover:bg-surface-subtle rounded transition-colors" onclick="toggleRowMenu(this)" title="More options" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-card rounded-lg shadow-lg border border-border-medium py-1 z-30 font-body-default text-xs text-on-surface text-left">
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="sendWhatsapp('Amina Bello', '319-402', 'MATH-8842')" type="button">
+<span class="material-symbols-outlined text-[16px] text-emerald-ink-tint">chat</span> WhatsApp Result
+                          </button>
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="showToast('Result slip generated for Amina Bello')" type="button">
+<span class="material-symbols-outlined text-[16px]">description</span> View Script
+                          </button>
+<div class="border-t border-border-fine my-1"></div>
+<button class="w-full px-3 py-1.5 text-left hover:bg-crimson-tint/30 text-crimson-ink-white flex items-center gap-2" onclick="showToast('Candidate archived')" type="button">
+<span class="material-symbols-outlined text-[16px]">archive</span> Archive
+                          </button>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 3: Testing Now -->
+<tr class="hover:bg-violet-wash/40 transition-colors group">
+<td class="px-3.5 py-3 text-center">
+<input class="row-checkbox rounded border-border-medium text-violet-ink focus:ring-violet-ink" type="checkbox"/>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-violet-ink flex items-center justify-center font-title text-[13px] font-bold">
+                        CE
+                      </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-strong text-body-strong text-on-surface truncate">Chukwudi Eze</span>
+<span class="font-mono-data text-[12px] text-text-secondary">KCL/2024/112 · 0814 555 7788</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-subtle border border-border-medium rounded-lg">
+<span class="font-mono-data text-body-strong text-on-surface font-bold tracking-wider">771-084</span>
+<button class="copy-pin-btn text-text-secondary hover:text-violet-ink p-0.5 rounded" data-pin="771084" title="Copy PIN" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="font-mono-data text-[12px] px-2 py-0.5 rounded bg-surface-subtle text-text-strong border border-border-fine">MATH-8842</span>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-tint border border-violet-line text-violet-ink">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-ink opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-violet-ink"></span>
+</span>
+<span class="font-label-sm text-label-sm font-semibold">Testing Now (Q. 12/40)</span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<div class="inline-flex items-center gap-1.5 justify-end">
+<button class="copy-link-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-body-strong text-violet-ink bg-violet-wash hover:bg-violet-tint border border-violet-line rounded-md transition-colors" data-code="MATH-8842" data-pin="771084" title="Copy direct exam link" type="button">
+<span class="material-symbols-outlined text-[15px]">link</span>
+<span>Copy Link</span>
+</button>
+<div class="relative inline-block text-left row-menu-wrap">
+<button class="p-1 text-text-secondary hover:text-on-surface hover:bg-surface-subtle rounded transition-colors" onclick="toggleRowMenu(this)" title="More options" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-card rounded-lg shadow-lg border border-border-medium py-1 z-30 font-body-default text-xs text-on-surface text-left">
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="sendWhatsapp('Chukwudi Eze', '771-084', 'MATH-8842')" type="button">
+<span class="material-symbols-outlined text-[16px] text-emerald-ink-tint">chat</span> Send WhatsApp Pass
+                          </button>
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="openSingleSlip('Chukwudi Eze', '771-084', 'KCL/2024/112')" type="button">
+<span class="material-symbols-outlined text-[16px]">print</span> Print Hall Slip
+                          </button>
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="showToast('Regenerating PIN...')" type="button">
+<span class="material-symbols-outlined text-[16px]">sync</span> Regenerate PIN
+                          </button>
+<div class="border-t border-border-fine my-1"></div>
+<button class="w-full px-3 py-1.5 text-left hover:bg-crimson-tint/30 text-crimson-ink-white flex items-center gap-2" onclick="showToast('Candidate removed')" type="button">
+<span class="material-symbols-outlined text-[16px]">person_remove</span> Remove
+                          </button>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 4: Completed -->
+<tr class="hover:bg-violet-wash/40 transition-colors group">
+<td class="px-3.5 py-3 text-center">
+<input class="row-checkbox rounded border-border-medium text-violet-ink focus:ring-violet-ink" type="checkbox"/>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-emerald-tint text-emerald-ink-tint flex items-center justify-center font-title text-[13px] font-bold">
+                        FA
+                      </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-strong text-body-strong text-on-surface truncate">Fatima Abubakar</span>
+<span class="font-mono-data text-[12px] text-text-secondary">KCL/2024/007 · 0805 221 9901</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-subtle border border-border-medium rounded-lg opacity-85">
+<span class="font-mono-data text-body-strong text-text-secondary font-bold tracking-wider">509-322</span>
+<button class="copy-pin-btn text-text-secondary hover:text-violet-ink p-0.5 rounded" data-pin="509322" title="Copy PIN" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="font-mono-data text-[12px] px-2 py-0.5 rounded bg-surface-subtle text-text-strong border border-border-fine">MATH-8842</span>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-2">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-tint border border-emerald-line text-emerald-ink-tint font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                        Completed
+                      </span>
+<span class="font-mono-data text-[13px] font-bold text-on-surface">88% <span class="text-text-placeholder font-normal font-sans">(88/100)</span></span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<div class="inline-flex items-center gap-1.5 justify-end">
+<button class="open-single-slip-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-body-strong text-on-surface bg-card hover:bg-surface-subtle border border-border-medium rounded-md transition-colors shadow-xs" data-name="Fatima Abubakar" data-pin="509-322" data-reg="KCL/2024/007" type="button">
+<span class="material-symbols-outlined text-[15px] text-text-secondary">print</span>
+<span>Print Slip</span>
+</button>
+<div class="relative inline-block text-left row-menu-wrap">
+<button class="p-1 text-text-secondary hover:text-on-surface hover:bg-surface-subtle rounded transition-colors" onclick="toggleRowMenu(this)" title="More options" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-card rounded-lg shadow-lg border border-border-medium py-1 z-30 font-body-default text-xs text-on-surface text-left">
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="sendWhatsapp('Fatima Abubakar', '509-322', 'MATH-8842')" type="button">
+<span class="material-symbols-outlined text-[16px] text-emerald-ink-tint">chat</span> WhatsApp Result
+                          </button>
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="showToast('Result slip loaded')" type="button">
+<span class="material-symbols-outlined text-[16px]">description</span> View Script
+                          </button>
+<div class="border-t border-border-fine my-1"></div>
+<button class="w-full px-3 py-1.5 text-left hover:bg-crimson-tint/30 text-crimson-ink-white flex items-center gap-2" onclick="showToast('Candidate archived')" type="button">
+<span class="material-symbols-outlined text-[16px]">archive</span> Archive
+                          </button>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 5: Locked / Malpractice Review with Clear Recovery State (Guide item 4) -->
+<tr class="bg-crimson-tint/15 hover:bg-crimson-tint/25 transition-colors group">
+<td class="px-3.5 py-3 text-center">
+<input class="row-checkbox rounded border-border-medium text-violet-ink focus:ring-violet-ink" type="checkbox"/>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-crimson-tint text-crimson-ink-white flex items-center justify-center font-title text-[13px] font-bold">
+                        KO
+                      </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-strong text-body-strong text-crimson-ink-white truncate">Kelechi Okafor</span>
+<span class="font-mono-data text-[12px] text-crimson-ink-tint">KCL/2024/045 · 0812 990 0012</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-crimson-tint/40 border border-crimson-line rounded-lg">
+<span class="font-mono-data text-body-strong text-crimson-ink-white font-bold tracking-wider line-through">194-672</span>
+<span class="material-symbols-outlined text-crimson-ink-tint text-[16px]" title="PIN invalidated">block</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="font-mono-data text-[12px] px-2 py-0.5 rounded bg-surface-subtle text-text-strong border border-border-fine">MATH-8842</span>
+</td>
+<td class="px-4 py-3">
+<div class="flex flex-col gap-0.5">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-crimson-tint border border-crimson-line text-crimson-ink-white font-label-sm text-[12px] font-semibold w-fit">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+                        Session Locked (3 Tab Switches) • PIN 194-672 invalid
+                      </div>
+<span class="text-[11px] font-mono-data text-crimson-ink-tint flex items-center gap-1 pl-1">
+<span class="material-symbols-outlined text-[13px]">history</span> Stopped at Q.21 (Saved)
+                      </span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<div class="inline-flex items-center gap-1.5 justify-end">
+<!-- Explicit Recovery Action with Helper Microcopy Tooltip -->
+<div class="group/rearm relative inline-block text-left">
+<button class="inline-flex items-center gap-1 px-3 py-1.5 bg-crimson-ink-white hover:bg-crimson-vivid active:bg-crimson-ink-tint text-card rounded-md font-body-strong text-xs transition-colors shadow-xs" onclick="rearmCandidate('Kelechi Okafor', 'MATH-8842')" type="button">
+<span class="material-symbols-outlined text-[15px]">lock_reset</span>
+<span>Re-Arm PIN</span>
+</button>
+<!-- Helper tooltip -->
+<div class="absolute right-0 bottom-full mb-1.5 hidden group-hover/rearm:block w-52 p-2 bg-inverse-surface text-inverse-on-surface text-[11px] rounded-lg shadow-xl pointer-events-none z-30 leading-snug">
+                          Re-arming keeps saved answers and allows resume from Q.21 with a fresh single-use code.
+                        </div>
+</div>
+<div class="relative inline-block text-left row-menu-wrap">
+<button class="p-1 text-text-secondary hover:text-on-surface hover:bg-surface-subtle rounded transition-colors" onclick="toggleRowMenu(this)" title="More options" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-card rounded-lg shadow-lg border border-border-medium py-1 z-30 font-body-default text-xs text-on-surface text-left">
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="showToast('Incident audit log downloaded')" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span> View Incident Log
+                          </button>
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="openSingleSlip('Kelechi Okafor', '194-672', 'KCL/2024/045')" type="button">
+<span class="material-symbols-outlined text-[16px]">print</span> Print Hall Slip
+                          </button>
+<div class="border-t border-border-fine my-1"></div>
+<button class="w-full px-3 py-1.5 text-left hover:bg-crimson-tint/30 text-crimson-ink-white flex items-center gap-2" onclick="showToast('Candidate disqualified from session')" type="button">
+<span class="material-symbols-outlined text-[16px]">cancel</span> Disqualify
+                          </button>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 6: Testing Now -->
+<tr class="hover:bg-violet-wash/40 transition-colors group">
+<td class="px-3.5 py-3 text-center">
+<input class="row-checkbox rounded border-border-medium text-violet-ink focus:ring-violet-ink" type="checkbox"/>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-violet-ink flex items-center justify-center font-title text-[13px] font-bold">
+                        TA
+                      </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-strong text-body-strong text-on-surface truncate">Tariq Al-Mansoor</span>
+<span class="font-mono-data text-[12px] text-text-secondary">KCL/2024/180 · 0706 112 3490</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-subtle border border-border-medium rounded-lg">
+<span class="font-mono-data text-body-strong text-on-surface font-bold tracking-wider">650-418</span>
+<button class="copy-pin-btn text-text-secondary hover:text-violet-ink p-0.5 rounded" data-pin="650418" title="Copy PIN" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="font-mono-data text-[12px] px-2 py-0.5 rounded bg-surface-subtle text-text-strong border border-border-fine">MATH-8842</span>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-tint border border-violet-line text-violet-ink">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-ink opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-violet-ink"></span>
+</span>
+<span class="font-label-sm text-label-sm font-semibold">Testing Now (Q. 35/40)</span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<div class="inline-flex items-center gap-1.5 justify-end">
+<button class="copy-link-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-body-strong text-violet-ink bg-violet-wash hover:bg-violet-tint border border-violet-line rounded-md transition-colors" data-code="MATH-8842" data-pin="650418" title="Copy direct exam link" type="button">
+<span class="material-symbols-outlined text-[15px]">link</span>
+<span>Copy Link</span>
+</button>
+<div class="relative inline-block text-left row-menu-wrap">
+<button class="p-1 text-text-secondary hover:text-on-surface hover:bg-surface-subtle rounded transition-colors" onclick="toggleRowMenu(this)" title="More options" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-card rounded-lg shadow-lg border border-border-medium py-1 z-30 font-body-default text-xs text-on-surface text-left">
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="sendWhatsapp('Tariq Al-Mansoor', '650-418', 'MATH-8842')" type="button">
+<span class="material-symbols-outlined text-[16px] text-emerald-ink-tint">chat</span> Send WhatsApp Pass
+                          </button>
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="openSingleSlip('Tariq Al-Mansoor', '650-418', 'KCL/2024/180')" type="button">
+<span class="material-symbols-outlined text-[16px]">print</span> Print Hall Slip
+                          </button>
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="showToast('Regenerating PIN...')" type="button">
+<span class="material-symbols-outlined text-[16px]">sync</span> Regenerate PIN
+                          </button>
+<div class="border-t border-border-fine my-1"></div>
+<button class="w-full px-3 py-1.5 text-left hover:bg-crimson-tint/30 text-crimson-ink-white flex items-center gap-2" onclick="showToast('Candidate removed')" type="button">
+<span class="material-symbols-outlined text-[16px]">person_remove</span> Remove
+                          </button>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 7: Completed -->
+<tr class="hover:bg-violet-wash/40 transition-colors group">
+<td class="px-3.5 py-3 text-center">
+<input class="row-checkbox rounded border-border-medium text-violet-ink focus:ring-violet-ink" type="checkbox"/>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-emerald-tint text-emerald-ink-tint flex items-center justify-center font-title text-[13px] font-bold">
+                        ZB
+                      </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-strong text-body-strong text-on-surface truncate">Zainab Balogun</span>
+<span class="font-mono-data text-[12px] text-text-secondary">KCL/2024/052 · 0809 334 5511</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-subtle border border-border-medium rounded-lg opacity-85">
+<span class="font-mono-data text-body-strong text-text-secondary font-bold tracking-wider">823-199</span>
+<button class="copy-pin-btn text-text-secondary hover:text-violet-ink p-0.5 rounded" data-pin="823199" title="Copy PIN" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="font-mono-data text-[12px] px-2 py-0.5 rounded bg-surface-subtle text-text-strong border border-border-fine">MATH-8842</span>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-2">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-tint border border-emerald-line text-emerald-ink-tint font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                        Completed
+                      </span>
+<span class="font-mono-data text-[13px] font-bold text-on-surface">62% <span class="text-text-placeholder font-normal font-sans">(62/100)</span></span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<div class="inline-flex items-center gap-1.5 justify-end">
+<button class="open-single-slip-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-body-strong text-on-surface bg-card hover:bg-surface-subtle border border-border-medium rounded-md transition-colors shadow-xs" data-name="Zainab Balogun" data-pin="823-199" data-reg="KCL/2024/052" type="button">
+<span class="material-symbols-outlined text-[15px] text-text-secondary">print</span>
+<span>Print Slip</span>
+</button>
+<div class="relative inline-block text-left row-menu-wrap">
+<button class="p-1 text-text-secondary hover:text-on-surface hover:bg-surface-subtle rounded transition-colors" onclick="toggleRowMenu(this)" title="More options" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-card rounded-lg shadow-lg border border-border-medium py-1 z-30 font-body-default text-xs text-on-surface text-left">
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="sendWhatsapp('Zainab Balogun', '823-199', 'MATH-8842')" type="button">
+<span class="material-symbols-outlined text-[16px] text-emerald-ink-tint">chat</span> WhatsApp Result
+                          </button>
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="showToast('Result slip loaded')" type="button">
+<span class="material-symbols-outlined text-[16px]">description</span> View Script
+                          </button>
+<div class="border-t border-border-fine my-1"></div>
+<button class="w-full px-3 py-1.5 text-left hover:bg-crimson-tint/30 text-crimson-ink-white flex items-center gap-2" onclick="showToast('Candidate archived')" type="button">
+<span class="material-symbols-outlined text-[16px]">archive</span> Archive
+                          </button>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 8: Completed -->
+<tr class="hover:bg-violet-wash/40 transition-colors group">
+<td class="px-3.5 py-3 text-center">
+<input class="row-checkbox rounded border-border-medium text-violet-ink focus:ring-violet-ink" type="checkbox"/>
+</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-emerald-tint text-emerald-ink-tint flex items-center justify-center font-title text-[13px] font-bold">
+                        ED
+                      </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-strong text-body-strong text-on-surface truncate">Emeka Danjuma</span>
+<span class="font-mono-data text-[12px] text-text-secondary">KCL/2024/119 · 0807 445 9922</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-subtle border border-border-medium rounded-lg opacity-85">
+<span class="font-mono-data text-body-strong text-text-secondary font-bold tracking-wider">904-118</span>
+<button class="copy-pin-btn text-text-secondary hover:text-violet-ink p-0.5 rounded" data-pin="904118" title="Copy PIN" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="font-mono-data text-[12px] px-2 py-0.5 rounded bg-surface-subtle text-text-strong border border-border-fine">MATH-8842</span>
+</td>
+<td class="px-4 py-3">
+<div class="inline-flex items-center gap-2">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-tint border border-emerald-line text-emerald-ink-tint font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                        Completed
+                      </span>
+<span class="font-mono-data text-[13px] font-bold text-on-surface">91% <span class="text-text-placeholder font-normal font-sans">(91/100)</span></span>
+</div>
+</td>
+<td class="px-4 py-3 text-right">
+<div class="inline-flex items-center gap-1.5 justify-end">
+<button class="open-single-slip-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-body-strong text-on-surface bg-card hover:bg-surface-subtle border border-border-medium rounded-md transition-colors shadow-xs" data-name="Emeka Danjuma" data-pin="904-118" data-reg="KCL/2024/119" type="button">
+<span class="material-symbols-outlined text-[15px] text-text-secondary">print</span>
+<span>Print Slip</span>
+</button>
+<div class="relative inline-block text-left row-menu-wrap">
+<button class="p-1 text-text-secondary hover:text-on-surface hover:bg-surface-subtle rounded transition-colors" onclick="toggleRowMenu(this)" title="More options" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-card rounded-lg shadow-lg border border-border-medium py-1 z-30 font-body-default text-xs text-on-surface text-left">
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="sendWhatsapp('Emeka Danjuma', '904-118', 'MATH-8842')" type="button">
+<span class="material-symbols-outlined text-[16px] text-emerald-ink-tint">chat</span> WhatsApp Result
+                          </button>
+<button class="w-full px-3 py-1.5 text-left hover:bg-surface-subtle flex items-center gap-2" onclick="showToast('Result slip loaded')" type="button">
+<span class="material-symbols-outlined text-[16px]">description</span> View Script
+                          </button>
+<div class="border-t border-border-fine my-1"></div>
+<button class="w-full px-3 py-1.5 text-left hover:bg-crimson-tint/30 text-crimson-ink-white flex items-center gap-2" onclick="showToast('Candidate archived')" type="button">
+<span class="material-symbols-outlined text-[16px]">archive</span> Archive
+                          </button>
+</div>
+</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="px-space-md py-space-sm bg-surface-subtle border-t border-border-fine flex flex-col sm:flex-row items-center justify-between gap-2">
+<div class="text-text-secondary font-mono-data text-label-sm">
+              Page 1 of 10 · 8 records displayed
+            </div>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded border border-border-fine bg-surface text-text-placeholder text-label-sm cursor-not-allowed" disabled="" type="button">Previous</button>
+<button class="px-2.5 py-1 rounded bg-violet-ink text-card font-body-strong text-label-sm shadow-sm" type="button">1</button>
+<button class="px-2.5 py-1 rounded border border-border-medium bg-card text-on-surface hover:bg-surface-subtle text-label-sm" type="button">2</button>
+<button class="px-2.5 py-1 rounded border border-border-medium bg-card text-on-surface hover:bg-surface-subtle text-label-sm" type="button">3</button>
+<span class="px-1 text-text-placeholder font-mono-data text-label-sm">…</span>
+<button class="px-2.5 py-1 rounded border border-border-medium bg-card text-on-surface hover:bg-surface-subtle text-label-sm" type="button">10</button>
+<button class="px-2.5 py-1 rounded border border-border-medium bg-card text-on-surface hover:bg-surface-subtle text-label-sm" type="button">Next</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Print Hall Slips Preview Modal (Slide-over / Sheet) -->
+<div aria-labelledby="modal-title" aria-modal="true" class="fixed inset-0 z-50 hidden" id="printModal" role="dialog">
+<div class="fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm transition-opacity" id="modalBackdrop"></div>
+<div class="fixed inset-0 z-10 overflow-y-auto">
+<div class="flex min-h-full items-end justify-center p-0 text-center sm:items-center sm:p-4">
+<div class="relative transform overflow-hidden rounded-t-2xl sm:rounded-2xl bg-surface-container-lowest text-left shadow-2xl transition-all w-full max-w-4xl border border-border-fine my-0 sm:my-8 flex flex-col max-h-[942px]">
+<!-- Modal Header -->
+<div class="px-space-lg py-space-md bg-chalk-white border-b border-border-fine flex items-center justify-between shrink-0">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-violet-tint text-violet-ink flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">receipt_long</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface" id="modal-title">Official Hall Slips &amp; Access Badges</h3>
+<p class="font-label-sm text-label-sm text-text-secondary mt-0.5">Ready-to-cut A4 printable docket (2 admission slips per row with dotted tear lines)</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-ink hover:bg-violet-hover text-card font-body-strong text-body-default transition-all shadow-sm" onclick="window.print()" type="button">
+<span class="material-symbols-outlined text-[18px]">print</span>
+<span>Print Slips</span>
+</button>
+<button class="text-text-placeholder hover:text-on-surface p-1.5 rounded-lg transition-colors" id="closePrintModalBtn" type="button">
+<span class="material-symbols-outlined text-[22px]">close</span>
+</button>
+</div>
+</div>
+<!-- Printable Area Container -->
+<div class="p-space-lg overflow-y-auto bg-surface-subtle flex-1 flex flex-col gap-6">
+<div class="flex items-center justify-between bg-violet-wash border border-violet-line p-space-sm rounded-lg text-violet-ink">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">info</span>
+<span class="font-body-default text-body-default">Printed slips contain watermarks and anti-tamper QR hashes. Candidates present this slip at computer check-in.</span>
+</div>
+<span class="font-mono-data text-[12px] font-bold">2 Slips / Page</span>
+</div>
+<!-- 2-Per-Row Exam Slips Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+<div class="hidden md:flex absolute inset-y-0 left-1/2 -translate-x-1/2 w-0 border-r-2 border-dashed border-border-medium pointer-events-none z-20 items-center justify-center">
+<span class="bg-card px-1 py-2 text-[10px] font-mono-data text-text-placeholder uppercase tracking-widest [writing-mode:vertical-rl] rounded border border-border-fine">
+                  ✂ Cut / Perforate Here
+                </span>
+</div>
+<!-- SLIP 1 -->
+<div class="bg-card rounded-xl border-2 border-dashed border-border-medium p-4 relative overflow-hidden flex flex-col justify-between shadow-sm min-h-[360px]">
+<div class="absolute -right-8 -bottom-8 pointer-events-none opacity-5 rotate-[-25deg] select-none text-[84px] font-black text-on-surface tracking-tighter">
+                  PARALEARN
+                </div>
+<div>
+<div class="flex items-center justify-between border-b border-border-fine pb-3">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded bg-primary text-card flex items-center justify-center font-display text-[12px] font-extrabold">PL</div>
+<div>
+<span class="font-label-eyebrow text-[11px] uppercase tracking-wider text-violet-ink font-bold block leading-none">King's College Lagos</span>
+<span class="font-title text-[13px] text-on-surface font-bold leading-tight">SS2 Mock Examination 2026/2027</span>
+</div>
+</div>
+<span class="font-mono-data text-[10px] text-text-placeholder">SLIP-091A</span>
+</div>
+<div class="flex gap-3 py-3 items-center">
+<div class="w-16 h-20 bg-surface-muted border border-border-fine rounded flex flex-col items-center justify-center text-text-placeholder shrink-0">
+<span class="material-symbols-outlined text-[28px]">account_box</span>
+<span class="text-[9px] font-mono-data uppercase">Photo</span>
+</div>
+<div class="flex flex-col min-w-0 flex-1 gap-0.5">
+<span class="font-label-eyebrow text-[10px] uppercase text-text-placeholder">Candidate Name</span>
+<span class="font-body-strong text-[14px] text-on-surface font-bold truncate">Daniel Olawale</span>
+<div class="grid grid-cols-2 gap-1 mt-1 font-mono-data text-[11px] text-text-secondary">
+<div>
+<span class="text-text-placeholder block text-[9px] uppercase font-sans">Reg No</span>
+<span class="font-semibold text-on-surface">KCL/2024/091</span>
+</div>
+<div>
+<span class="text-text-placeholder block text-[9px] uppercase font-sans">Seat / Lab</span>
+<span class="font-semibold text-on-surface">LAB-2 · ST-14</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-violet-wash border border-violet-line rounded-lg p-2.5 my-1 flex items-center justify-between">
+<div>
+<span class="font-label-eyebrow text-[10px] uppercase tracking-wider text-violet-ink block leading-none">6-Digit Exam PIN</span>
+<span class="font-mono-data text-[22px] font-extrabold text-violet-ink tracking-widest leading-tight">482 - 913</span>
+</div>
+<div class="text-right">
+<span class="font-label-eyebrow text-[10px] uppercase tracking-wider text-text-placeholder block leading-none">Paper Code</span>
+<span class="font-mono-data text-[13px] font-bold text-on-surface">MATH-8842</span>
+</div>
+</div>
+</div>
+<div class="border-t border-border-fine pt-2 mt-2 flex items-center justify-between">
+<div class="flex flex-col text-[10px] text-text-secondary leading-tight max-w-[210px]">
+<span class="font-bold text-on-surface">Exam Rules:</span>
+<span>1. Present this slip &amp; student ID at entry.</span>
+<span>2. Electronic gadgets &amp; unapproved calcs prohibited.</span>
+</div>
+<div class="w-12 h-12 bg-card border border-border-medium rounded p-1 flex items-center justify-center shrink-0">
+<svg class="w-full h-full text-on-surface fill-current" viewbox="0 0 24 24">
+<path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h4v2h-4v-2zm-4-2h2v4h-2v-4zm6 6h2v2h-2v-2zm-4 0h2v2h-2v-2zm2-2h2v2h-2v-2zm-4-2h2v2h-2v-2zm0 4h2v2h-2v-2zM6 6h2v2H6V6zm12 0h2v2h-2V6zM6 18h2v2H6v-2z"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- SLIP 2 -->
+<div class="bg-card rounded-xl border-2 border-dashed border-border-medium p-4 relative overflow-hidden flex flex-col justify-between shadow-sm min-h-[360px]">
+<div class="absolute -right-8 -bottom-8 pointer-events-none opacity-5 rotate-[-25deg] select-none text-[84px] font-black text-on-surface tracking-tighter">
+                  PARALEARN
+                </div>
+<div>
+<div class="flex items-center justify-between border-b border-border-fine pb-3">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded bg-primary text-card flex items-center justify-center font-display text-[12px] font-extrabold">PL</div>
+<div>
+<span class="font-label-eyebrow text-[11px] uppercase tracking-wider text-violet-ink font-bold block leading-none">King's College Lagos</span>
+<span class="font-title text-[13px] text-on-surface font-bold leading-tight">SS2 Mock Examination 2026/2027</span>
+</div>
+</div>
+<span class="font-mono-data text-[10px] text-text-placeholder">SLIP-014B</span>
+</div>
+<div class="flex gap-3 py-3 items-center">
+<div class="w-16 h-20 bg-surface-muted border border-border-fine rounded flex flex-col items-center justify-center text-text-placeholder shrink-0">
+<span class="material-symbols-outlined text-[28px]">account_box</span>
+<span class="text-[9px] font-mono-data uppercase">Photo</span>
+</div>
+<div class="flex flex-col min-w-0 flex-1 gap-0.5">
+<span class="font-label-eyebrow text-[10px] uppercase text-text-placeholder">Candidate Name</span>
+<span class="font-body-strong text-[14px] text-on-surface font-bold truncate">Amina Bello</span>
+<div class="grid grid-cols-2 gap-1 mt-1 font-mono-data text-[11px] text-text-secondary">
+<div>
+<span class="text-text-placeholder block text-[9px] uppercase font-sans">Reg No</span>
+<span class="font-semibold text-on-surface">KCL/2024/014</span>
+</div>
+<div>
+<span class="text-text-placeholder block text-[9px] uppercase font-sans">Seat / Lab</span>
+<span class="font-semibold text-on-surface">LAB-2 · ST-15</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-violet-wash border border-violet-line rounded-lg p-2.5 my-1 flex items-center justify-between">
+<div>
+<span class="font-label-eyebrow text-[10px] uppercase tracking-wider text-violet-ink block leading-none">6-Digit Exam PIN</span>
+<span class="font-mono-data text-[22px] font-extrabold text-violet-ink tracking-widest leading-tight">319 - 402</span>
+</div>
+<div class="text-right">
+<span class="font-label-eyebrow text-[10px] uppercase tracking-wider text-text-placeholder block leading-none">Paper Code</span>
+<span class="font-mono-data text-[13px] font-bold text-on-surface">MATH-8842</span>
+</div>
+</div>
+</div>
+<div class="border-t border-border-fine pt-2 mt-2 flex items-center justify-between">
+<div class="flex flex-col text-[10px] text-text-secondary leading-tight max-w-[210px]">
+<span class="font-bold text-on-surface">Exam Rules:</span>
+<span>1. Present this slip &amp; student ID at entry.</span>
+<span>2. Electronic gadgets &amp; unapproved calcs prohibited.</span>
+</div>
+<div class="w-12 h-12 bg-card border border-border-medium rounded p-1 flex items-center justify-center shrink-0">
+<svg class="w-full h-full text-on-surface fill-current" viewbox="0 0 24 24">
+<path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h4v2h-4v-2zm-4-2h2v4h-2v-4zm6 6h2v2h-2v-2zm-4 0h2v2h-2v-2zm2-2h2v2h-2v-2zm-4-2h2v2h-2v-2zm0 4h2v2h-2v-2zM6 6h2v2H6V6zm12 0h2v2h-2V6zM6 18h2v2H6v-2z"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Modal Action Bar -->
+<div class="px-space-lg py-space-sm bg-surface-subtle border-t border-border-fine flex items-center justify-between shrink-0">
+<span class="font-mono-data text-[12px] text-text-secondary">Viewing Batch 1 of 38 (Candidates 1 - 2)</span>
+<div class="flex items-center gap-2">
+<button class="px-4 py-2 border border-border-medium rounded-lg text-on-surface hover:bg-surface-container-high font-body-strong text-body-default transition-all" id="closePrintModalFooterBtn" type="button">
+                Cancel
+              </button>
+<button class="px-4 py-2 bg-violet-ink hover:bg-violet-hover text-card rounded-lg font-body-strong text-body-default transition-all shadow-sm flex items-center gap-1.5" onclick="window.print()" type="button">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Generate Clean PDF</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Toast Notification Node -->
+<div class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-inverse-surface text-inverse-on-surface shadow-xl border border-border-medium font-body-default text-body-default" id="toastNotification">
+<span class="material-symbols-outlined text-emerald-tint text-[18px]" id="toastIcon">check_circle</span>
+<span id="toastMessage">Copied to clipboard</span>
+</div>
+<!-- Application Logic -->
+<script>
+    function showToast(message, icon = 'check_circle') {
+      const toast = document.getElementById('toastNotification');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+      if (!toast) return;
+      
+      toastMsg.textContent = message;
+      toastIcon.textContent = icon;
+      
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2800);
+    }
+
+    // Toggle Collapsible Explainer Guide
+    const toggleGuideBtn = document.getElementById('toggleGuideBtn');
+    const guideDrawer = document.getElementById('guideDrawer');
+    const guideToggleText = document.getElementById('guideToggleText');
+    const guideToggleIcon = document.getElementById('guideToggleIcon');
+
+    if (toggleGuideBtn && guideDrawer) {
+      toggleGuideBtn.addEventListener('click', () => {
+        const isHidden = guideDrawer.classList.toggle('hidden');
+        guideToggleText.textContent = isHidden ? 'View Distribution Channels' : 'Hide Channels';
+        guideToggleIcon.textContent = isHidden ? 'expand_more' : 'expand_less';
+      });
+    }
+
+    // Two-Tier Batch Selection Handling
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    const batchActionBar = document.getElementById('batchActionBar');
+    const selectedCountText = document.getElementById('selectedCountText');
+    const selectAllGlobalBtn = document.getElementById('selectAllGlobalBtn');
+
+    function updateBatchSelection() {
+      const selected = document.querySelectorAll('.row-checkbox:checked').length;
+      if (selected > 0) {
+        batchActionBar.classList.remove('hidden');
+        batchActionBar.classList.add('flex');
+        selectedCountText.textContent = `${selected} candidate${selected > 1 ? 's' : ''} on this page selected.`;
+      } else {
+        batchActionBar.classList.add('hidden');
+        batchActionBar.classList.remove('flex');
+      }
+      if (selectAllCheckbox) {
+        selectAllCheckbox.checked = (selected === rowCheckboxes.length && selected > 0);
+      }
+    }
+
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener('change', () => {
+        rowCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+        updateBatchSelection();
+      });
+    }
+
+    rowCheckboxes.forEach(cb => {
+      cb.addEventListener('change', updateBatchSelection);
+    });
+
+    if (selectAllGlobalBtn) {
+      selectAllGlobalBtn.addEventListener('click', () => {
+        rowCheckboxes.forEach(cb => cb.checked = true);
+        selectedCountText.textContent = 'All 76 candidates across all 10 pages selected.';
+        selectAllGlobalBtn.classList.add('hidden');
+        showToast('All 76 roster candidates selected');
+      });
+    }
+
+    // Row Action Menus (Toggle dropdown and dismiss on click outside)
+    function toggleRowMenu(btn) {
+      const menu = btn.nextElementSibling;
+      const isOpen = !menu.classList.contains('hidden');
+      document.querySelectorAll('.row-menu-wrap > div').forEach(d => d.classList.add('hidden'));
+      if (!isOpen) {
+        menu.classList.remove('hidden');
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.row-menu-wrap')) {
+        document.querySelectorAll('.row-menu-wrap > div').forEach(d => d.classList.add('hidden'));
+      }
+    });
+
+    // Copy PIN Handlers
+    document.querySelectorAll('.copy-pin-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const pin = btn.getAttribute('data-pin');
+        if (pin) {
+          navigator.clipboard.writeText(pin).then(() => {
+            showToast(`Access PIN ${pin} copied!`, 'content_copy');
+          }).catch(() => {
+            showToast(`PIN ${pin} copied`);
+          });
+        }
+      });
+    });
+
+    // Copy Link Handlers
+    document.querySelectorAll('.copy-link-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const code = btn.getAttribute('data-code');
+        const pin = btn.getAttribute('data-pin');
+        const url = `https://cbt.pln.ng/take/${code}?pin=${pin}`;
+        navigator.clipboard.writeText(url).then(() => {
+          showToast('Direct exam link copied!', 'link');
+        }).catch(() => {
+          showToast('Link copied to clipboard');
+        });
+      });
+    });
+
+    // WhatsApp Dispatch
+    window.sendWhatsapp = function(candidateName, pin, examCode) {
+      const text = encodeURIComponent(`*ParaLearn CBT Pass*\nHello ${candidateName},\nYour Exam PIN for ${examCode} is: *${pin}*\nDirect link: https://cbt.pln.ng/take/${examCode}?pin=${pin.replace('-', '')}\nGood luck!`);
+      showToast(`WhatsApp pass prepared for ${candidateName}`, 'chat');
+      window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+    };
+
+    window.bulkSendWhatsapp = function() {
+      showToast('Dispatching 8 WhatsApp passes in queue...', 'forward_to_inbox');
+    };
+
+    window.exportCsv = function() {
+      showToast('Generating candidates_roster_MATH-8842.csv...', 'download');
+    };
+
+    // Re-Arm Recovery Logic for Locked Candidates (Guide Item 4)
+    window.rearmCandidate = function(candidateName, examCode) {
+      const newPin = `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
+      showToast(`${candidateName} Re-Armed! New PIN: ${newPin}. Resuming from Q.21`, 'lock_open');
+      const row = document.querySelector('tr.bg-crimson-tint\\/15');
+      if (row) {
+        row.classList.remove('bg-crimson-tint/15', 'hover:bg-crimson-tint/25');
+        row.classList.add('bg-emerald-tint/20');
+        const stateCell = row.children[4];
+        if (stateCell) {
+          stateCell.innerHTML = `
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-tint border border-emerald-line text-emerald-ink-tint font-label-sm text-[12px] font-semibold">
+              <span class="material-symbols-outlined text-[14px]">lock_open</span>
+              PIN Re-Armed • Ready to Resume Q.21
+            </div>
+          `;
+        }
+      }
+    };
+
+    // Filter Tabs
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => {
+          b.classList.remove('bg-card', 'text-on-surface', 'shadow-xs', 'font-body-strong');
+          b.classList.add('text-text-secondary', 'font-body-default');
+        });
+        btn.classList.add('bg-card', 'text-on-surface', 'shadow-xs', 'font-body-strong');
+        btn.classList.remove('text-text-secondary', 'font-body-default');
+        showToast(`Filtered by: ${btn.textContent.trim().split(' ')[0]}`);
+      });
+    });
+
+    // Modal Control
+    const printModal = document.getElementById('printModal');
+    const openModalBtn = document.getElementById('openPrintModalBtn');
+    const closeModalBtn = document.getElementById('closePrintModalBtn');
+    const closeModalFooterBtn = document.getElementById('closePrintModalFooterBtn');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+
+    window.openModal = function() {
+      if (printModal) {
+        printModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      }
+    };
+
+    window.closeModal = function() {
+      if (printModal) {
+        printModal.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+    };
+
+    if (openModalBtn) openModalBtn.addEventListener('click', openModal);
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+    if (closeModalFooterBtn) closeModalFooterBtn.addEventListener('click', closeModal);
+    if (modalBackdrop) modalBackdrop.addEventListener('click', closeModal);
+
+    window.openSingleSlip = function(name, pin, reg) {
+      openModal();
+    };
+
+    // Search Box
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#rosterTable tbody tr');
+        rows.forEach(r => {
+          const text = r.textContent.toLowerCase();
+          r.style.display = text.includes(q) ? '' : 'none';
+        });
+      });
+    }
+  </script>
+</body></html>

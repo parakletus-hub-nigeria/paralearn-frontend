@@ -5,40 +5,47 @@ import Link from "next/link";
 import { ImportFromParalearnModal } from "@cbt/components/CBT/ImportFromParalearnModal";
 import { useSearchParams } from "next/navigation";
 import {
-  ArrowLeft,
-  School,
-  Users,
-  UserPlus,
-  FileSpreadsheet,
-  Printer,
-  Share2,
-  Copy,
+  AlertCircle,
+  BarChart3,
   Check,
-  Search,
-  KeyRound,
   CheckCircle2,
-  AlertTriangle,
+  ChevronDown,
   Clock,
+  Copy,
   ExternalLink,
-  MessageCircle,
-  Download,
-  Filter,
-  Trash2,
   Info,
+  KeyRound,
+  Link2,
+  Loader2,
+  Lock,
+  MessageCircle,
+  MoreVertical,
+  Plus,
+  Printer,
+  RefreshCw,
+  School,
+  Search,
+  ShieldAlert,
+  Trash2,
+  UserPlus,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import "@cbt/components/CBT/cbt-dashboard.css";
 import { 
   getExaminerSession, 
   ExaminerWorkspace,
@@ -90,13 +97,27 @@ function CandidatesPageContent() {
   const [newRegNumber, setNewRegNumber] = useState("");
   const [upsertCandidate, { isLoading: isSavingCandidate }] = useUpsertCandidateMutation();
   const [deleteCandidate] = useDeleteCandidateMutation();
-  const { data: workspaceExams = [] } = useListWorkspaceExamsQuery(examiner?.id || "", {
+  const {
+    data: remoteExams = [],
+    error: examsError,
+    isLoading: examsLoading,
+    isFetching: examsFetching,
+    refetch: refetchExams,
+  } = useListWorkspaceExamsQuery(examiner?.id || "", {
     skip: !examiner?.id,
   });
+  // When the server can't be reached, fall back to the exam list saved on this computer
+  const [storedExams, setStoredExamsList] = useState<typeof remoteExams>([]);
+  const workspaceExams = remoteExams.length ? remoteExams : storedExams;
   const selectedExam = workspaceExams.find((exam) => exam.id === selectedExamId);
   const activeExamId = selectedExamId || workspaceExams[0]?.id || "";
   const activeRoomCode = selectedExam?.accessCode || workspaceExams[0]?.accessCode || newRoomCode;
-  const { data: remoteCandidates = [], isFetching: isLoadingCandidates } = useListCandidatesQuery(
+  const {
+    data: remoteCandidates = [],
+    isFetching: isLoadingCandidates,
+    error: candidatesError,
+    refetch: refetchCandidates,
+  } = useListCandidatesQuery(
     { examId: activeExamId, search: searchQuery || undefined },
     { skip: !activeExamId }
   );
@@ -104,6 +125,7 @@ function CandidatesPageContent() {
   // Print Slips Dialog State
   const [isPrintOpen, setIsPrintOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     purgeAllDemoData();
@@ -114,6 +136,7 @@ function CandidatesPageContent() {
       setCandidates(stored);
 
       const exams = loadStoredExams(session.id);
+      setStoredExamsList(exams);
       if (exams.length > 0) {
         setAvailableRoomCodes(exams.map((e) => e.accessCode));
         setNewRoomCode(exams[0].accessCode);
@@ -154,11 +177,11 @@ function CandidatesPageContent() {
   }, [wantsImport, examiner?.type, workspaceExams.length]);
 
   useEffect(() => {
-    if (!activeExamId || !activeRoomCode || isLoadingCandidates) return;
+    if (!activeExamId || !activeRoomCode || isLoadingCandidates || candidatesError) return;
     const mapped = remoteCandidates.map((candidate: any) => ({
       id: candidate.id,
       name: candidate.candidateName,
-      regNumber: candidate.metadata?.regNumber || candidate.studentId || "—",
+      regNumber: candidate.metadata?.regNumber || candidate.studentId || "",
       pin: candidate.candidatePin,
       phone: candidate.phone || "",
       roomCode: activeRoomCode,
@@ -172,7 +195,7 @@ function CandidatesPageContent() {
     })) as CandidateRecord[];
     setCandidates(mapped);
     saveStoredCandidates(mapped, examiner?.id);
-  }, [activeExamId, activeRoomCode, examiner?.id, isLoadingCandidates, remoteCandidates]);
+  }, [activeExamId, activeRoomCode, examiner?.id, isLoadingCandidates, candidatesError, remoteCandidates]);
 
   const handleCopyPin = (pin: string) => {
     navigator.clipboard.writeText(pin);
@@ -230,7 +253,7 @@ function CandidatesPageContent() {
       const newCandidate: CandidateRecord = {
         id: created.id,
         name: created.candidateName,
-        regNumber: regNumber || "—",
+        regNumber,
         pin: created.candidatePin,
         phone: created.phone || "",
         roomCode: activeRoomCode || newRoomCode.trim().toUpperCase(),
@@ -296,40 +319,88 @@ function CandidatesPageContent() {
     return matchesSearch && matchesStatus;
   });
 
-  return (
-    <div className="min-h-screen bg-[#fdfdff] text-[#0f172a] font-sans antialiased selection:bg-[#641bc4]/10 selection:text-[#641bc4]">
-      {/* ── HEADER ───────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#e2e8f0] px-6 py-4">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/cbt"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#641bc4] transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Back to CBT Workspace
-            </Link>
-            <span className="text-slate-300">/</span>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold tracking-tight text-slate-900 text-sm">Candidates & PINs</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-violet-100 text-[#641bc4] border border-violet-200">
-                {candidates.length} Registered
-              </span>
-            </div>
-          </div>
+  const counts: Record<string, number> = {
+    ALL: candidates.length,
+    ENROLLED: candidates.filter((c) => c.status === "ENROLLED").length,
+    IN_PROGRESS: candidates.filter((c) => c.status === "IN_PROGRESS").length,
+    COMPLETED: candidates.filter((c) => c.status === "COMPLETED").length,
+    FLAGGED: candidates.filter((c) => c.status === "FLAGGED").length,
+  };
+  const TABS: Array<[string, string]> = [
+    ["ALL", "All"],
+    ["ENROLLED", "PIN ready"],
+    ["IN_PROGRESS", "Testing now"],
+    ["COMPLETED", "Completed"],
+    ["FLAGGED", "Locked"],
+  ];
+  const STATE_LABEL: Record<CandidateRecord["status"], string> = {
+    ENROLLED: "PIN ready",
+    IN_PROGRESS: "Testing now",
+    COMPLETED: "Completed",
+    FLAGGED: "Locked",
+  };
+  const monitorHref = activeExamId ? `/cbt/exams/${activeExamId}/monitor` : "/cbt";
+  const initialsOf = (name: string) =>
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join("") || "?";
+  const filtering = !!searchQuery || statusFilter !== "ALL";
+  const formatPin = (pin: string) => (pin.length === 6 ? `${pin.slice(0, 3)}-${pin.slice(3)}` : pin);
+  // Page states, in order: exams still loading, exams unavailable, no exams yet, then the roster
+  const examsPending = !!examiner && examsLoading && !workspaceExams.length;
+  const examsUnavailable = !!examsError && !workspaceExams.length;
+  const noExams = !examsPending && !examsUnavailable && workspaceExams.length === 0;
+  const rosterFailed = !!candidatesError && candidates.length === 0;
 
-          <div className="flex flex-wrap items-center gap-3">
-            {examiner && (
-              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-mono text-xs px-2.5 py-1">
-                {examiner.credits} Credits Available
-              </Badge>
+  return (
+    <main className="cbt-dashboard">
+      <div className="cbt-page-heading">
+        <div className="min-w-0">
+          <h1>Candidates &amp; PINs</h1>
+          {workspaceExams.length > 0 && candidates.length > 0 && (
+            <p className="cbt-heading-sub">
+              <span>{candidates.length} enrolled</span>
+              {counts.IN_PROGRESS > 0 && <span>{counts.IN_PROGRESS} writing now</span>}
+              {counts.COMPLETED > 0 && <span>{counts.COMPLETED} submitted</span>}
+            </p>
+          )}
+        </div>
+        {workspaceExams.length > 0 && (
+          <div className="cbt-page-actions">
+            <button
+              className="cbt-button"
+              onClick={() => setIsPrintOpen(true)}
+              disabled={candidates.length === 0}
+              title={candidates.length === 0 ? "Enrol candidates first" : undefined}
+            >
+              <Printer size={15} aria-hidden />
+              Print hall slips
+            </button>
+            {examiner?.type === "INSTITUTION" && (
+              <button className="cbt-button" onClick={() => setIsImportOpen(true)}>
+                <School size={15} aria-hidden />
+                Import from ParaLearn
+              </button>
             )}
-            {workspaceExams.length > 0 && (
+            <button className="cbt-button primary" onClick={() => setIsAddOpen(true)}>
+              <UserPlus size={15} aria-hidden />
+              Enrol candidate
+            </button>
+          </div>
+        )}
+      </div>
+
+      {workspaceExams.length > 0 && (
+        <div className="cbt-exam-picker">
+          <label>
+            <span className="cbt-picker-label">Exam</span>
+            <span className="cbt-select-wrap">
               <select
-                aria-label="Exam"
                 value={activeExamId}
                 onChange={(e) => setSelectedExamId(e.target.value)}
-                className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold"
               >
                 {workspaceExams.map((exam) => (
                   <option key={exam.id} value={exam.id}>
@@ -337,611 +408,442 @@ function CandidatesPageContent() {
                   </option>
                 ))}
               </select>
-            )}
-            <Link href={activeRoomCode ? `/take/${activeRoomCode}` : `/take`} target="_blank">
-              <Button variant="outline" size="sm" className="h-8 text-xs font-bold border-slate-200 flex items-center gap-1.5">
-                <span>Open Student Lobby</span>
-                <ExternalLink className="w-3 h-3 text-[#641bc4]" />
-              </Button>
-            </Link>
-          </div>
+              <ChevronDown size={16} aria-hidden />
+            </span>
+          </label>
+          <Link
+            href={activeRoomCode ? `/take/${activeRoomCode}` : `/take`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open candidate lobby
+            <ExternalLink size={12} aria-hidden />
+            <span className="sr-only">(opens in a new tab)</span>
+          </Link>
         </div>
-      </header>
+      )}
 
-      {/* ── MAIN CONTENT ─────────────────────────────────────────────────── */}
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        
-        {/* Page Title & Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Candidate Access & PIN Dissemination
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Issue secure 6-digit access PINs, print examination passes, or dispatch direct test links to students.
-            </p>
-          </div>
+      {examsPending ? (
+        <div className="cbt-table-card" aria-busy="true" aria-label="Loading exams">
+          {[0, 1, 2].map((n) => (
+            <div key={n} className="cbt-skeleton" />
+          ))}
+        </div>
+      ) : examsUnavailable ? (
+        <div className="cbt-empty is-error" role="alert">
+          <AlertCircle size={28} aria-hidden />
+          <h2>Couldn&apos;t load your exams</h2>
+          <p>Candidates belong to an exam, so this page needs the exam list. Check this computer&apos;s internet connection, then try again.</p>
+          <button className="cbt-button primary" disabled={examsFetching} onClick={() => refetchExams()}>
+            <RefreshCw size={15} className={examsFetching ? "animate-spin" : ""} aria-hidden />
+            {examsFetching ? "Trying again" : "Try again"}
+          </button>
+        </div>
+      ) : noExams ? (
+        <div className="cbt-empty">
+          <Users size={28} aria-hidden />
+          <h2>Create an exam first</h2>
+          <p>Candidates and their PINs belong to an exam. Create one, then come back to enrol candidates or import a class.</p>
+          <Link className="cbt-button primary" href="/cbt?new=1">
+            <Plus size={15} aria-hidden />
+            New exam
+          </Link>
+        </div>
+      ) : (
+      <>
+      <div className="cbt-guide">
+        <button
+          type="button"
+          aria-expanded={guideOpen}
+          aria-controls="cbt-entry-guide"
+          onClick={() => setGuideOpen((open) => !open)}
+        >
+          <Info size={16} aria-hidden />
+          <span>
+            <strong>Getting candidates in:</strong>{" "}
+            each one gets a 6-digit PIN on a slip, by link, or by signing up at the lobby.
+          </span>
+          <span className="cbt-guide-toggle">
+            {guideOpen ? "Hide" : "How it works"}
+            <ChevronDown
+              size={14}
+              aria-hidden
+              style={{ transform: guideOpen ? "rotate(180deg)" : undefined }}
+            />
+          </span>
+        </button>
+        {guideOpen && (
+          <ol id="cbt-entry-guide">
+            <li>
+              <strong>1. Printed PIN slips</strong>
+              Print hall slips for the computer lab, or send each candidate their PIN on
+              WhatsApp.
+            </li>
+            <li>
+              <strong>2. Link with the PIN filled in</strong>
+              <span>
+                Share <code>/take/CODE?pin=XXXXXX</code>, which fills in the exam code and
+                PIN, so there is nothing to type.
+              </span>
+            </li>
+            <li>
+              <strong>3. Sign up at the lobby</strong>
+              Write the exam code on the board. Candidates enter their name and phone in
+              the lobby and get a PIN on the spot.
+            </li>
+          </ol>
+        )}
+      </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            
-            {/* Import from ParaLearn: school workspaces only */}
-            {examiner?.type === "INSTITUTION" && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setIsImportOpen(true)}
-                className="h-9 px-3.5 text-xs font-bold border-violet-200 bg-violet-50/60 hover:bg-violet-100 text-[#641bc4] flex items-center gap-1.5 rounded-xl shadow-2xs transition-all"
-              >
-                <School className="w-3.5 h-3.5 text-[#641bc4]" />
-                <span>Import from ParaLearn</span>
-              </Button>
-            )}
-
-            {/* Print Slips Modal Trigger */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsPrintOpen(true)}
-              className="h-9 px-3.5 text-xs font-bold border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 rounded-xl shadow-2xs"
+      {candidatesError && candidates.length > 0 && (
+        <div className="cbt-notice is-warning" role="alert">
+          <AlertCircle size={18} className="shrink-0" aria-hidden />
+          <span>Couldn&apos;t reach the server, so this roster may be out of date.</span>
+          <button className="cbt-notice-action" onClick={() => refetchCandidates()}>
+            Try again
+          </button>
+        </div>
+      )}
+      <div className="cbt-table-card">
+        {(candidates.length > 0 || filtering) && (
+        <div className="cbt-table-toolbar">
+        <div className="cbt-tabs" role="group" aria-label="Filter candidates">
+          {TABS.map(([key, label]) => (
+            <button
+              key={key}
+              aria-pressed={statusFilter === key}
+              onClick={() => setStatusFilter(key)}
             >
-              <Printer className="w-3.5 h-3.5 text-[#641bc4]" />
-              <span>Print Hall Slips</span>
-            </Button>
-
-            {/* Add Candidate Modal Trigger */}
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  size="sm"
-                  className="h-9 px-4 text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white flex items-center gap-1.5 rounded-xl shadow-sm"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>Enrol Candidate</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-lg font-bold text-slate-900">Enrol New Candidate</DialogTitle>
-                  <DialogDescription className="text-xs text-slate-500">
-                    A unique 6-digit access PIN will be generated automatically for this student.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <form onSubmit={handleAddCandidate} className="space-y-4 pt-2">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Full Name</label>
-                    <Input
-                      placeholder="e.g. Oluwaseun Adeleke"
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      required
-                      className="text-xs font-medium"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Phone / WhatsApp Number</label>
-                    <Input
-                      placeholder="e.g. 08031234567"
-                      value={newPhone}
-                      onChange={(e) => setNewPhone(e.target.value)}
-                      className="text-xs font-medium"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label htmlFor="cbt-new-reg" className="text-xs font-bold text-slate-700">
-                      Registration number (optional)
-                    </label>
-                    <Input
-                      id="cbt-new-reg"
-                      placeholder="e.g. JSS1/024"
-                      value={newRegNumber}
-                      maxLength={60}
-                      onChange={(e) => setNewRegNumber(e.target.value)}
-                      className="text-xs font-medium"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Target Exam Room Code</label>
-                    <Input
-                      placeholder="Exam room code"
-                      value={newRoomCode}
-                      onChange={(e) => setNewRoomCode(e.target.value.toUpperCase())}
-                      disabled={workspaceExams.length > 0}
-                      className="text-xs font-mono font-bold uppercase"
-                    />
-                    {workspaceExams.length > 0 && (
-                      <div className="grid grid-cols-1 gap-1 pt-1">
-                        <label className="text-[11px] font-semibold text-slate-500">Select Exam</label>
-                        <select
-                          value={activeExamId}
-                          onChange={(e) => {
-                            const exam = workspaceExams.find((item) => item.id === e.target.value);
-                            setSelectedExamId(e.target.value);
-                            if (exam) setNewRoomCode(exam.accessCode);
-                          }}
-                          className="h-9 rounded-md border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-[#641bc4] focus:ring-2 focus:ring-[#641bc4]/15"
-                        >
-                          {workspaceExams.map((exam) => (
-                            <option key={exam.id} value={exam.id}>
-                              {exam.title} ({exam.accessCode})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-
-                  <DialogFooter className="pt-3">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsAddOpen(false)}
-                      className="text-xs font-semibold"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      size="sm"
-                      disabled={isSavingCandidate}
-                      className="text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white px-5"
-                    >
-                      {isSavingCandidate ? "Issuing..." : "Issue PIN & Enrol"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
+              {label}
+              <small>{counts[key]}</small>
+            </button>
+          ))}
         </div>
-
-        {/* ── DISSEMINATION WORKFLOW EXPLAINER ───────────────────────────────── */}
-        <div className="bg-gradient-to-r from-violet-50/70 via-white to-slate-50 border border-violet-100 rounded-2xl p-5 shadow-2xs space-y-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#641bc4]">
-            <Info className="w-4 h-4" />
-            <span>How Candidates Receive & Use Their Access Codes:</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-600">
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1.5">
-              <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                <span className="w-4 h-4 rounded-full bg-violet-100 text-[#641bc4] font-mono text-[10px] flex items-center justify-center font-bold">1</span>
-                Pre-Assigned PIN Slips
-              </span>
-              <p className="text-[11px] leading-relaxed text-slate-500">
-                Print physical photocard slips for the computer lab or click the WhatsApp button to blast the candidate their personalized 6-digit PIN.
-              </p>
-            </div>
-
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1.5">
-              <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                <span className="w-4 h-4 rounded-full bg-violet-100 text-[#641bc4] font-mono text-[10px] flex items-center justify-center font-bold">2</span>
-                1-Click Magic Link
-              </span>
-              <p className="text-[11px] leading-relaxed text-slate-500">
-                Share <code className="bg-slate-100 px-1 py-0.5 rounded text-[10px]">/take/ROOM?pin=XXXXXX</code> with the student. Clicking it auto-fills their credentials without typing.
-              </p>
-            </div>
-
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1.5">
-              <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                <span className="w-4 h-4 rounded-full bg-violet-100 text-[#641bc4] font-mono text-[10px] flex items-center justify-center font-bold">3</span>
-                Open Hall Self-Enrolment
-              </span>
-              <p className="text-[11px] leading-relaxed text-slate-500">
-                Write the Room Code on the whiteboard. Candidates enter their Name & Phone at the lobby and are auto-issued a PIN on the spot.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── METRICS TILES ─────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1">
-            <span className="text-xs font-medium text-slate-500">Total Enrolled</span>
-            <p className="text-2xl font-extrabold text-slate-900 font-mono">{candidates.length}</p>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1">
-            <span className="text-xs font-medium text-slate-500">Completed Sessions</span>
-            <p className="text-2xl font-extrabold text-emerald-700 font-mono">
-              {candidates.filter((c) => c.status === "COMPLETED").length}
-            </p>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1">
-            <span className="text-xs font-medium text-slate-500">Live in Hall</span>
-            <p className="text-2xl font-extrabold text-[#641bc4] font-mono">
-              {candidates.filter((c) => c.status === "IN_PROGRESS").length}
-            </p>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1">
-            <span className="text-xs font-medium text-slate-500">Unused Passes</span>
-            <p className="text-2xl font-extrabold text-amber-700 font-mono">
-              {candidates.filter((c) => c.status === "ENROLLED").length}
-            </p>
-          </div>
-        </div>
-
-        {/* ── FILTER & SEARCH BAR ───────────────────────────────────────────── */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Search by name, PIN, or reg no..."
+        <div className="cbt-list-tools">
+          <label className="cbt-search">
+            <Search size={16} />
+            <span className="sr-only">Search candidates</span>
+            <input
+              placeholder="Search name, reg no or PIN"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 text-xs font-medium"
             />
+          </label>
+          {counts.ENROLLED > 0 && (
+            <button
+              className="cbt-button quiet"
+              onClick={handleClearAllCandidates}
+              title="Remove candidates who haven't started. Anyone who sat the exam keeps their record."
+            >
+              <Trash2 size={14} />
+              Clear unused PINs
+            </button>
+          )}
+        </div>
+      </div>
+
+        )}
+        {isLoadingCandidates && (
+          <div className="cbt-table-status" role="status">
+            Loading candidates for this exam...
           </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-xs font-semibold text-slate-600">Status:</span>
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs font-semibold">
-              {["ALL", "ENROLLED", "IN_PROGRESS", "COMPLETED"].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className={`px-2.5 py-1 rounded-md transition-all ${
-                    statusFilter === s
-                      ? "bg-white text-slate-900 shadow-2xs font-bold"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  {s === "ALL" ? "All" : s === "IN_PROGRESS" ? "Live" : s.charAt(0) + s.slice(1).toLowerCase()}
-                </button>
-              ))}
-            </div>
-
-            {candidates.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearAllCandidates}
-                className="h-8 text-xs text-slate-400 hover:text-red-600 hover:bg-red-50 px-2"
-                title="Clear all candidates to clean slate"
+        )}
+        {rosterFailed ? (
+          <div className="cbt-empty is-error" role="alert">
+            <AlertCircle size={28} aria-hidden />
+            <h2>Couldn&apos;t load the candidates for this exam</h2>
+            <p>Check this computer&apos;s internet connection, then try again. Nothing has been removed.</p>
+            <button className="cbt-button primary" onClick={() => refetchCandidates()}>
+              <RefreshCw size={15} aria-hidden />
+              Try again
+            </button>
+          </div>
+        ) : filteredCandidates.length === 0 ? (
+          <div className="cbt-empty">
+            <Users size={32} />
+            <h2>{filtering ? "No matching candidates" : "No candidates enrolled yet"}</h2>
+            <p>
+              {filtering
+                ? "Try another name, PIN or status."
+                : "Enrol candidates to issue 6-digit PINs, hall slips and WhatsApp passes. Or let them sign up at the lobby with the exam code."}
+            </p>
+            {filtering ? (
+              <button
+                className="cbt-button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("ALL");
+                }}
               >
-                <Trash2 className="w-3.5 h-3.5 mr-1" />
-                <span className="hidden sm:inline">Clear Roster</span>
-              </Button>
+                Clear filters
+              </button>
+            ) : (
+              <button className="cbt-button primary" onClick={() => setIsAddOpen(true)}>
+                <UserPlus size={15} />
+                Enrol first candidate
+              </button>
             )}
           </div>
-        </div>
-
-        {/* ── CANDIDATES TABLE (Desktop) & CARDS (Mobile) ────────────────────── */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
-          {isLoadingCandidates && (
-            <div className="border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-500">
-              Syncing candidate roster from CBT microservice...
-            </div>
-          )}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
-                <tr>
-                  <th className="py-3 px-4">Candidate & Reg No</th>
-                  <th className="py-3 px-4">Exam Room</th>
-                  <th className="py-3 px-4">Access PIN</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Score & WAEC</th>
-                  <th className="py-3 px-4 text-right">Dissemination Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredCandidates.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-16 text-center">
-                      <div className="space-y-3 max-w-sm mx-auto">
-                        <div className="w-12 h-12 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
-                          <Users className="w-6 h-6" />
+        ) : (
+          <table className="cbt-exam-table">
+            <thead>
+              <tr>
+                <th>Candidate &amp; reg no</th>
+                <th>Access PIN</th>
+                <th>State</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCandidates.map((candidate) => {
+                const locked = candidate.status === "FLAGGED";
+                const hasPhone = !!whatsAppNumber(candidate.phone);
+                const linkCopied = copiedLink === candidate.id;
+                return (
+                  <tr key={candidate.id} className={locked ? "is-locked" : undefined}>
+                    <td>
+                      <div className="cbt-exam-cell">
+                        <span className="cbt-exam-initial" aria-hidden>
+                          {initialsOf(candidate.name)}
+                        </span>
+                        <div className="min-w-0">
+                          <span className="cbt-exam-name">
+                            {candidate.name}
+                          </span>
+                          <div className="cbt-exam-meta">
+                            <span>{candidate.regNumber || "No reg no"}</span>
+                            {candidate.phone && <span className="cbt-meta-phone">{candidate.phone}</span>}
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <h4 className="font-bold text-sm text-slate-900">
-                            {searchQuery || statusFilter !== "ALL" ? "No matching candidates" : "No candidates enrolled yet"}
-                          </h4>
-                          <p className="text-xs text-slate-500">
-                            {searchQuery || statusFilter !== "ALL"
-                              ? "Try adjusting your search query or status filter."
-                              : "Enrol candidates to generate 6-digit access PINs, printable photocard slips, and 1-click WhatsApp exam passes."}
-                          </p>
-                        </div>
-                        {!searchQuery && statusFilter === "ALL" && (
-                          <Button
-                            size="sm"
-                            onClick={() => setIsAddOpen(true)}
-                            className="h-8 text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white rounded-lg shadow-xs inline-flex items-center gap-1.5"
-                          >
-                            <UserPlus className="w-3.5 h-3.5" />
-                            <span>Enrol First Candidate</span>
-                          </Button>
-                        )}
                       </div>
                     </td>
-                  </tr>
-                ) : (
-                  filteredCandidates.map((candidate) => (
-                    <tr key={candidate.id} className="hover:bg-slate-50/70 transition-colors">
-                      {/* Name & Reg */}
-                      <td className="py-3 px-4">
-                        <div className="font-extrabold text-slate-900 text-sm">{candidate.name}</div>
-                        <div className="font-mono text-[11px] text-slate-400">{candidate.regNumber} &bull; {candidate.phone}</div>
-                      </td>
-
-                      {/* Exam Room */}
-                      <td className="py-3 px-4">
-                        <span className="font-mono font-bold text-slate-700 px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
-                          {candidate.roomCode}
-                        </span>
-                      </td>
-
-                      {/* Access PIN */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-black text-[#641bc4] tracking-wider bg-violet-50 px-2.5 py-0.5 rounded-md border border-violet-100">
-                            {candidate.pin}
-                          </span>
-                          <button
-                            onClick={() => handleCopyPin(candidate.pin)}
-                            className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                            title="Copy PIN"
-                          >
-                            {copiedPin === candidate.pin ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-700" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-3 px-4">
-                        {candidate.status === "COMPLETED" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
-                            Finished
-                          </span>
-                        )}
-                        {candidate.status === "IN_PROGRESS" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-[#641bc4]">
-                            <Clock className="w-3.5 h-3.5 text-[#641bc4] animate-spin" />
-                            Testing Now
-                          </span>
-                        )}
-                        {candidate.status === "ENROLLED" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                            PIN Ready
-                          </span>
-                        )}
-                        {candidate.status === "FLAGGED" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
-                            Locked
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Score */}
-                      <td className="py-3 px-4">
-                        {candidate.score !== undefined ? (
-                          <div className="flex items-center gap-1.5 font-mono">
-                            <strong className="text-slate-900 font-bold">{candidate.score}%</strong>
-                            {candidate.grade && (
-                              <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px]">
-                                {candidate.grade}
-                              </Badge>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 text-xs italic">
-                            {candidate.status === "IN_PROGRESS" ? "Writing" : "Not taken yet"}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* Copy Magic Link */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopyDirectLink(candidate)}
-                            className="h-8 px-2.5 text-[11px] font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100"
-                            title="Copy link with auto-filled PIN"
-                          >
-                            {copiedLink === candidate.id ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-700 mr-1" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5 mr-1 text-slate-400" />
-                            )}
-                            <span>{copiedLink === candidate.id ? "Copied" : "Copy Link"}</span>
-                          </Button>
-
-                          {/* WhatsApp Blast */}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSendWhatsApp(candidate)}
-                            className="h-8 px-2.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
-                            title="Send PIN & Link via WhatsApp"
-                          >
-                            <MessageCircle className="w-3.5 h-3.5 text-emerald-700 mr-1" />
-                            <span>WhatsApp</span>
-                          </Button>
-
-                          {/* Delete Candidate */}
-                          <button
-                            onClick={() => handleDeleteCandidate(candidate.id)}
-                            className="p-1.5 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-1"
-                            title="Remove candidate from roster"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Card List (< md) */}
-          <div className="md:hidden divide-y divide-slate-100">
-            {filteredCandidates.length === 0 ? (
-              <div className="py-12 px-4 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-violet-100 text-[#641bc4] flex items-center justify-center mx-auto">
-                  <Users className="w-6 h-6" />
-                </div>
-                <h4 className="font-bold text-sm text-slate-900">
-                  {searchQuery || statusFilter !== "ALL" ? "No matching candidates" : "No candidates enrolled yet"}
-                </h4>
-                <p className="text-xs text-slate-500">
-                  {searchQuery || statusFilter !== "ALL"
-                    ? "Try adjusting your search query or status filter."
-                    : "Enrol candidates to generate 6-digit access PINs and passes."}
-                </p>
-                {!searchQuery && statusFilter === "ALL" && (
-                  <Button
-                    size="sm"
-                    onClick={() => setIsAddOpen(true)}
-                    className="h-8 text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white rounded-lg"
-                  >
-                    <UserPlus className="w-3.5 h-3.5 mr-1" />
-                    <span>Enrol First Candidate</span>
-                  </Button>
-                )}
-              </div>
-            ) : (
-              filteredCandidates.map((candidate) => (
-                <div key={candidate.id} className="p-4 space-y-3 bg-white">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-sm text-slate-900 truncate">{candidate.name}</h4>
-                      <p className="font-mono text-[11px] text-slate-500">
-                        {candidate.regNumber} &bull; {candidate.phone}
-                      </p>
-                    </div>
-                    <div className="shrink-0">
-                      {candidate.status === "COMPLETED" && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                          Finished
-                        </span>
-                      )}
-                      {candidate.status === "IN_PROGRESS" && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-[#641bc4]">
-                          <Clock className="w-3 h-3 text-[#641bc4] animate-spin" />
-                          Testing
-                        </span>
-                      )}
-                      {candidate.status === "ENROLLED" && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                          PIN Ready
-                        </span>
-                      )}
-                      {candidate.status === "FLAGGED" && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
-                          Locked
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                    <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold">Exam Room</span>
-                      <div className="font-mono font-bold text-slate-700 truncate">{candidate.roomCode}</div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold">Access PIN</span>
-                      <div className="flex items-center gap-1.5 font-mono text-xs font-black text-[#641bc4]">
-                        <span>{candidate.pin}</span>
+                    <td>
+                      <span
+                        className={`cbt-pin ${candidate.status === "COMPLETED" ? "is-used" : ""}`}
+                      >
+                        {formatPin(candidate.pin)}
                         <button
                           onClick={() => handleCopyPin(candidate.pin)}
-                          className="p-1 rounded text-slate-400 hover:text-slate-700"
+                          aria-label={`Copy PIN for ${candidate.name}`}
                           title="Copy PIN"
                         >
                           {copiedPin === candidate.pin ? (
-                            <Check className="w-3 h-3 text-emerald-700" />
+                            <Check size={14} className="text-emerald-700" />
                           ) : (
-                            <Copy className="w-3 h-3" />
+                            <Copy size={14} />
                           )}
                         </button>
+                      </span>
+                    </td>
+                    <td className="cbt-mobile-full">
+                      <span className={`cbt-status ${candidate.status.toLowerCase()}`}>
+                        {candidate.status === "COMPLETED" ? (
+                          <CheckCircle2 size={12} aria-hidden />
+                        ) : candidate.status === "IN_PROGRESS" ? (
+                          <Clock size={12} aria-hidden />
+                        ) : candidate.status === "FLAGGED" ? (
+                          <Lock size={12} aria-hidden />
+                        ) : (
+                          <KeyRound size={12} aria-hidden />
+                        )}
+                        {STATE_LABEL[candidate.status]}
+                      </span>
+                      {candidate.score !== undefined ? (
+                        <span className="cbt-score ml-2">
+                          {candidate.score}%
+                          {candidate.grade && <small>({candidate.grade})</small>}
+                        </span>
+                      ) : locked ? (
+                        <small className="cbt-status-note">Can&apos;t continue until unlocked</small>
+                      ) : null}
+                    </td>
+                    <td>
+                      <div className="cbt-row-actions">
+                        {locked ? (
+                          <Link className="cbt-button danger" href={monitorHref}>
+                            <ShieldAlert size={14} />
+                            Review lock
+                          </Link>
+                        ) : candidate.status === "COMPLETED" ? (
+                          <Link className="cbt-button" href={monitorHref}>
+                            <BarChart3 size={14} />
+                            View result
+                          </Link>
+                        ) : candidate.status === "ENROLLED" && hasPhone ? (
+                          <button
+                            className="cbt-button"
+                            onClick={() => handleSendWhatsApp(candidate)}
+                          >
+                            <MessageCircle size={14} className="text-emerald-700" />
+                            Send on WhatsApp
+                          </button>
+                        ) : (
+                          <button
+                            className="cbt-button"
+                            onClick={() => handleCopyDirectLink(candidate)}
+                          >
+                            {linkCopied ? (
+                              <Check size={14} className="text-emerald-700" />
+                            ) : (
+                              <Link2 size={14} />
+                            )}
+                            {linkCopied ? "Link copied" : "Copy link"}
+                          </button>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className="cbt-icon cbt-kebab"
+                              aria-label={`More actions for ${candidate.name}`}
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="cbt-menu">
+                            <DropdownMenuItem onSelect={() => handleCopyDirectLink(candidate)}>
+                              <Link2 size={14} />
+                              Copy link with PIN
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleCopyPin(candidate.pin)}>
+                              <Copy size={14} />
+                              Copy PIN
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleSendWhatsApp(candidate)}>
+                              <MessageCircle size={14} />
+                              Send pass on WhatsApp
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="is-danger"
+                              onSelect={() => handleDeleteCandidate(candidate.id)}
+                            >
+                              <Trash2 size={14} />
+                              Remove from exam
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                    </div>
-                  </div>
-
-                  {candidate.score !== undefined && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-slate-500">Score:</span>
-                      <strong className="text-slate-900 font-bold font-mono">{candidate.score}%</strong>
-                      <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px]">
-                        {candidate.grade}
-                      </Badge>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopyDirectLink(candidate)}
-                      className="flex-1 h-8 text-[11px] font-semibold border-slate-200"
-                    >
-                      {copiedLink === candidate.id ? (
-                        <Check className="w-3 h-3 text-emerald-700 mr-1" />
-                      ) : (
-                        <Copy className="w-3 h-3 mr-1 text-slate-400" />
-                      )}
-                      <span>{copiedLink === candidate.id ? "Copied" : "Copy Link"}</span>
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSendWhatsApp(candidate)}
-                      className="flex-1 h-8 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
-                    >
-                      <MessageCircle className="w-3 h-3 text-emerald-700 mr-1" />
-                      <span>WhatsApp</span>
-                    </Button>
-
-                    <button
-                      onClick={() => handleDeleteCandidate(candidate.id)}
-                      className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Remove candidate"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+        {filteredCandidates.length > 0 && (
+          <div className="cbt-list-footer">
+            <span>
+              Showing {filteredCandidates.length} of {candidates.length} candidate
+              {candidates.length === 1 ? "" : "s"}
+            </span>
           </div>
-        </div>
-      </main>
+        )}
+      </div>
 
-      {/* ── PRINTABLE EXAMINATION SLIPS MODAL ─────────────────────────────── */}
-      <Dialog open={isPrintOpen} onOpenChange={setIsPrintOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+      </>
+      )}
+
+      {/* Enrol one candidate */}
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="cbt-dialog sm:max-w-md rounded-lg">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center justify-between">
-              <span>Print Candidate Examination Hall Slips</span>
-              <Button
-                size="sm"
-                onClick={() => window.print()}
-                className="h-8 text-xs font-bold bg-[#641bc4] hover:bg-[#5214a3] text-white flex items-center gap-1.5"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Print All Slips</span>
-              </Button>
+            <DialogTitle>Enrol a candidate</DialogTitle>
+            <DialogDescription>
+              They get a 6-digit PIN that no one else in this exam has.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleAddCandidate} className="cbt-form">
+            <label>
+              Full name
+              <input
+                placeholder="e.g. Oluwaseun Adeleke"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                required
+                autoFocus
+              />
+            </label>
+            <div className="cbt-form-grid">
+              <label>
+                Phone or WhatsApp (optional)
+                <input
+                  type="tel"
+                  placeholder="e.g. 08031234567"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                />
+              </label>
+              <label htmlFor="cbt-new-reg">
+                Registration number (optional)
+                <input
+                  id="cbt-new-reg"
+                  placeholder="e.g. JSS1/024"
+                  value={newRegNumber}
+                  maxLength={60}
+                  onChange={(e) => setNewRegNumber(e.target.value)}
+                />
+              </label>
+            </div>
+            {workspaceExams.length > 0 ? (
+              <label>
+                Exam
+                <select
+                  value={activeExamId}
+                  onChange={(e) => {
+                    const exam = workspaceExams.find((item) => item.id === e.target.value);
+                    setSelectedExamId(e.target.value);
+                    if (exam) setNewRoomCode(exam.accessCode);
+                  }}
+                >
+                  {workspaceExams.map((exam) => (
+                    <option key={exam.id} value={exam.id}>
+                      {exam.title} ({exam.accessCode})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <label>
+                Exam code
+                <input
+                  className="font-mono uppercase"
+                  placeholder="Exam code"
+                  value={newRoomCode}
+                  onChange={(e) => setNewRoomCode(e.target.value.toUpperCase())}
+                />
+              </label>
+            )}
+            <div className="cbt-form-footer">
+              <button type="button" className="cbt-button" onClick={() => setIsAddOpen(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="cbt-button primary" disabled={isSavingCandidate}>
+                {isSavingCandidate ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : (
+                  <KeyRound size={15} />
+                )}
+                {isSavingCandidate ? "Issuing PIN..." : "Issue PIN and enrol"}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Printable hall slips */}
+      <Dialog open={isPrintOpen} onOpenChange={setIsPrintOpen}>
+        <DialogContent className="cbt-dialog sm:max-w-3xl max-h-[85vh] overflow-y-auto rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between gap-3 pr-8">
+              <span>Hall slips</span>
+              <button className="cbt-button primary" onClick={() => window.print()}>
+                <Printer size={15} />
+                Print all slips
+              </button>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Cut-out examination slips to distribute to students entering the computer testing hall.
+            <DialogDescription>
+              One slip per candidate, two to a row. Cut them out and hand them out at the hall door.
             </DialogDescription>
           </DialogHeader>
 
@@ -952,37 +854,31 @@ function CandidatesPageContent() {
             #cbt-print-slips { position: absolute; inset: 0 auto auto 0; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
             #cbt-print-slips > div { break-inside: avoid; }
           }`}</style>
-          <div id="cbt-print-slips" className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-4">
+          <div id="cbt-print-slips" className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
             {candidates.map((candidate) => (
-              <div
-                key={candidate.id}
-                className="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-white space-y-2.5 text-left"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <div className="font-extrabold text-xs text-[#641bc4]">ParaLearn CBT Pass</div>
-                  <span className="font-mono text-[10px] text-slate-400">{candidate.regNumber}</span>
+              <div key={candidate.id} className="cbt-slip">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <strong className="text-xs text-[var(--violet-ink)]">ParaLearn CBT pass</strong>
+                  <span className="font-mono text-[11px] text-slate-600">{candidate.regNumber}</span>
                 </div>
-
-                <div className="space-y-0.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Candidate Name</span>
-                  <div className="font-extrabold text-sm text-slate-900">{candidate.name}</div>
+                <div>
+                  <span className="block text-[11px] font-semibold uppercase text-slate-600">Candidate</span>
+                  <strong className="text-sm">{candidate.name}</strong>
                 </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block">Room Code</span>
-                    <span className="font-mono font-bold text-xs text-slate-800">{candidate.roomCode}</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-2">
+                    <span className="block text-[10px] font-semibold uppercase text-slate-600">Exam code</span>
+                    <span className="font-mono text-xs font-bold">{candidate.roomCode}</span>
                   </div>
-                  <div className="bg-violet-50 p-2 rounded-lg border border-violet-100">
-                    <span className="text-[9px] uppercase font-bold text-[#641bc4] block">6-Digit PIN</span>
-                    <span className="font-mono font-black text-sm text-[#641bc4]">{candidate.pin}</span>
+                  <div className="rounded-md border border-violet-200 bg-violet-50 p-2">
+                    <span className="block text-[10px] font-semibold uppercase text-[var(--violet-ink)]">PIN</span>
+                    <span className="font-mono text-sm font-bold text-[var(--violet-ink)]">{formatPin(candidate.pin)}</span>
                   </div>
                 </div>
-
-                <div className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-100">
+                <p className="border-t border-slate-200 pt-2 text-[11px] text-slate-600">
                   Go to <strong>{typeof window !== "undefined" ? window.location.host : "cbt.pln.ng"}/take</strong>, enter the
                   exam code, your full name and this PIN.
-                </div>
+                </p>
               </div>
             ))}
           </div>
@@ -998,7 +894,7 @@ function CandidatesPageContent() {
         examTitle={selectedExam?.title || "Current Exam"}
         defaultEmail={examiner?.ownerEmail || ""}
       />
-    </div>
+    </main>
   );
 }
 
@@ -1007,8 +903,9 @@ export default function CandidatesPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full border-2 border-[var(--border-fine)] border-t-[var(--violet-ink)] animate-spin" />
+        <div className="cbt-dashboard" aria-busy="true" aria-label="Loading candidates">
+          <div className="cbt-skeleton" />
+          <div className="cbt-skeleton" />
         </div>
       }
     >

@@ -2,25 +2,23 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  CheckCircle2, 
-  Printer, 
-  Award, 
-  Clock, 
-  ShieldCheck, 
+import {
   AlertCircle,
-  RotateCcw,
-  QrCode,
+  CheckCircle2,
+  Clock,
   FileText,
+  Loader2,
+  LogOut,
   MessageSquare,
-  Sparkles
+  Printer,
+  ShieldCheck,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import CbtBrand from "./CbtBrand";
 import { loadCandidateSession, clearCandidateSession, CandidateSession } from "@cbt/lib/cbtSessionManager";
 import { useGetResultSlipQuery } from "@cbt/store/cbtMicroserviceApi";
 import { startCbtSync } from "@cbt/lib/cbtOfflineSync";
 import "./cbt-workspace.css";
+import "./cbt-candidate.css";
 
 interface CandidateResultSlipProps {
   examCode: string;
@@ -39,17 +37,27 @@ function waecGrade(pct: number) {
   return "F9";
 }
 
-function gradeTint(grade: string) {
-  if (grade.startsWith("A") || grade.startsWith("B")) return "bg-[var(--emerald-tint)] text-[#065f46]";
-  if (grade.startsWith("C")) return "bg-[var(--cobalt-tint)] text-[#1e40af]";
-  if (grade.startsWith("D") || grade.startsWith("E")) return "bg-[var(--amber-tint)] text-[#92400e]";
-  return "bg-[var(--crimson-tint)] text-[#991b1b]";
+function gradeTone(grade: string) {
+  if (grade.startsWith("A") || grade.startsWith("B")) return "is-good";
+  if (grade.startsWith("C")) return "is-mid";
+  if (grade.startsWith("D") || grade.startsWith("E")) return "is-low";
+  return "is-fail";
+}
+
+const OBJECTIVE_TYPES = new Set(["MCQ", "TRUE_FALSE", "MULTI_SELECT"]);
+
+/** "18 Nov 2026, 11:35 am": day first, as Nigerian schools write dates */
+function formatDateTime(iso: string) {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}, ${d.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true })}`;
 }
 
 export default function CandidateResultSlip({ examCode }: CandidateResultSlipProps) {
   const router = useRouter();
   const [session, setSession] = useState<CandidateSession | null>(null);
   const [pendingReviewPoll, setPendingReviewPoll] = useState(0);
+  // Finish deletes this device's copy, so it asks first
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const { data: remoteSlip } = useGetResultSlipQuery(
     { attemptId: session?.attemptId || "", token: session?.attemptToken },
     { skip: !session?.attemptId, pollingInterval: pendingReviewPoll },
@@ -110,232 +118,270 @@ export default function CandidateResultSlip({ examCode }: CandidateResultSlipPro
 
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 text-sm text-[var(--text-secondary)]">
-        Loading your result…
+      <div className="cbt-surface cand-center">
+        <div className="cand-card">
+          <Loader2 size={28} className="animate-spin text-[var(--violet-ink)]" aria-hidden />
+          <p>Loading your result…</p>
+        </div>
       </div>
     );
   }
 
+  // Marks available per part, from the questions this device was given
+  const objectiveMax = (session.questions || [])
+    .filter((q) => OBJECTIVE_TYPES.has(q.type))
+    .reduce((sum, q) => sum + (Number(q.marks) || 0), 0);
+  const writtenMax = (session.questions || [])
+    .filter((q) => !OBJECTIVE_TYPES.has(q.type))
+    .reduce((sum, q) => sum + (Number(q.marks) || 0), 0);
+  const counts = breakdown && breakdown.totalQuestions > 0 ? breakdown : null;
+  const showScore = !isDisqualified && !resultsWithheld;
+  const examTitle = remoteSlip?.examTitle || session.examTitle || "Examination";
+  const candidateName = remoteSlip?.candidateName || session.candidateName || "Candidate";
+  const timeSpent = remoteSlip?.timeSpentMins;
+  const feedbackItems = Object.entries(feedback?.byQuestion || {}).filter(([, text]) => text);
+  const questionNumber = (qId: string) => {
+    const idx = (session.questions || []).findIndex((q) => q.id === qId);
+    return idx >= 0 ? idx + 1 : null;
+  };
+  const schoolName: string | undefined = remoteSlip?.workspaceName || remoteSlip?.institutionName;
+  // Roster PINs are 6 digits; walk-ins get a participant ID
+  const idLabel = /^\d{6}$/.test(session.candidatePin || "") ? "Access PIN" : "Participant ID";
+  const showGrade = grandTotalMarks > 0;
+
+  const statusChip = isDisqualified
+    ? { tone: "is-bad", text: "Locked" }
+    : resultsWithheld
+      ? { tone: "", text: "Submitted" }
+      : isPendingReview
+        ? { tone: "is-warn", text: "Provisional" }
+        : { tone: "is-ok", text: "Final result" };
+
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-3 sm:p-8 font-sans text-[var(--foreground)] print:bg-white print:p-0">
-      
-      {/* Container */}
-      <div className="w-full max-w-xl bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden print:border-none print:shadow-none">
-        
-        {/* Slip Header */}
-        <div className="bg-[var(--surface-muted)] border-b border-[var(--border-fine)] p-4 sm:p-6 text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white shadow-xs border border-[var(--border-fine)] mb-1">
-            {isDisqualified ? (
-              <AlertCircle className="w-6 h-6 text-[var(--crimson-signal)]" />
-            ) : isPendingReview || resultsWithheld ? (
-              <Clock className="w-6 h-6 text-amber-700" />
-            ) : (
-              <Award className="w-6 h-6 text-[var(--violet-ink)]" />
-            )}
+    <div className="cbt-surface cand-page">
+      <main className="cand-slip">
+        <article className="cand-slip-card cand-card" aria-labelledby="slip-title">
+          <div className="cand-slip-brand">
+            <CbtBrand />
+            <span>Result slip</span>
           </div>
-
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--foreground)]">
-            Official Examination Result Slip
-          </h1>
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
-            Exam Room Code: <strong className="font-mono text-violet-700">{examCode.toUpperCase()}</strong>
-          </p>
-
-          {isPendingReview && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-800 border border-amber-300 rounded-full text-xs font-semibold">
-              <Clock className="w-3.5 h-3.5" />
-              <span>Provisional &bull; Essays Awaiting Examiner Grading</span>
+          <header className="cand-slip-head">
+            <div className="min-w-0">
+              {schoolName && <p className="cand-slip-school">{schoolName}</p>}
+              <h1 id="slip-title">{examTitle}</h1>
+              <p>
+                Exam code <span className="cand-mono font-semibold">{examCode.toUpperCase()}</span>
+              </p>
             </div>
-          )}
-        </div>
+            <span className={`cand-chip ${statusChip.tone}`}>
+              <span className="cand-dot" aria-hidden />
+              {statusChip.text}
+            </span>
+          </header>
 
-        {/* Slip Content */}
-        <div className="p-4 sm:p-8 space-y-5 sm:space-y-6">
-          
-          {/* Candidate Info Grid */}
-          <div className="grid grid-cols-2 gap-4 pb-6 border-b border-[var(--border-fine)] text-xs">
+          <dl className="cand-slip-details">
             <div>
-              <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Candidate Name</span>
-              <div className="font-bold text-sm text-[var(--foreground)] mt-0.5 truncate">
-                {remoteSlip?.candidateName || session?.candidateName || "Candidate"}
-              </div>
+              <dt>Candidate</dt>
+              <dd>{candidateName}</dd>
             </div>
-
             <div>
-              <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Access PIN</span>
-              <div className="font-bold font-mono text-sm text-[var(--foreground)] mt-0.5">
-                {session.candidatePin}
-              </div>
+              <dt>{idLabel}</dt>
+              <dd className="cand-mono">{session.candidatePin}</dd>
             </div>
-
             <div>
-              <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Submission Time</span>
-              <div className="font-medium text-xs text-[var(--foreground)] mt-0.5">
-                {submittedAt
-                  ? `${new Date(submittedAt).toLocaleDateString()} ${new Date(submittedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                  : "—"}
-              </div>
+              <dt>Submitted</dt>
+              <dd>
+                {submittedAt ? formatDateTime(submittedAt) : "Not recorded"}
+                {timeSpent ? (
+                  <span className="block text-xs font-normal text-[var(--text-secondary)]">
+                    {timeSpent} min used
+                  </span>
+                ) : null}
+              </dd>
             </div>
-
             <div>
-              <span className="text-[var(--text-secondary)] uppercase font-semibold text-[10px]">Security Audit</span>
-              <div
-                className={`font-medium text-xs flex items-center gap-1 mt-0.5 ${
-                  violationCount > 0 ? "text-[#92400e]" : "text-emerald-700"
-                }`}
-              >
-                {violationCount > 0 ? <AlertCircle className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                <span>
-                  {violationCount} tab switch{violationCount === 1 ? "" : "es"} recorded
-                </span>
-              </div>
+              <dt>Tab switches</dt>
+              <dd className={violationCount > 0 ? "warn" : "ok"}>
+                {violationCount > 0 ? (
+                  <AlertCircle size={14} className="inline -mt-0.5 mr-1" aria-hidden />
+                ) : (
+                  <ShieldCheck size={14} className="inline -mt-0.5 mr-1" aria-hidden />
+                )}
+                {violationCount === 0 ? "None" : `${violationCount} recorded`}
+              </dd>
             </div>
-          </div>
+          </dl>
 
-          {/* Performance Highlight Box */}
           {isDisqualified ? (
-            <div className="bg-[var(--crimson-tint)] border border-[var(--crimson-signal)]/40 rounded-[var(--radius-md)] p-5 text-center space-y-2">
-              <div className="font-bold text-base text-[#991b1b]">Examination Disqualified</div>
-              <p className="text-xs text-[#991b1b]/90 max-w-sm mx-auto">
-                This attempt was flagged and locked due to exceeding allowed tab-switch and malpractice thresholds.
+            <section className="cand-state is-bad" role="status">
+              <h2>
+                <AlertCircle size={18} aria-hidden />
+                This attempt was locked
+              </h2>
+              <p>
+                The exam was submitted automatically after too many tab switches. Speak to your
+                examiner if you think this is a mistake.
               </p>
-            </div>
+            </section>
           ) : resultsWithheld ? (
-            <div className="bg-[var(--surface-subtle)] border border-[var(--border-fine)] rounded-[var(--radius-md)] p-6 text-center space-y-2">
-              <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-700" />
-              <div className="font-bold text-base text-[var(--foreground)]">Your exam has been submitted</div>
-              <p className="text-xs text-[var(--text-secondary)] max-w-sm mx-auto">
-                Your examiner will release results later. Keep this slip as proof of submission.
-              </p>
-            </div>
+            <section className="cand-state is-neutral" role="status">
+              <h2>
+                <CheckCircle2 size={18} aria-hidden />
+                Your exam has been submitted
+              </h2>
+              <p>Your examiner will release results later. Keep this slip as proof of submission.</p>
+            </section>
           ) : isPendingReview ? (
-            <div className="bg-amber-50/50 border border-amber-200 rounded-[var(--radius-md)] p-6 text-center space-y-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-amber-800">
-                Objective MCQ Performance (Provisional)
-              </span>
-
-              <div className="flex items-baseline justify-center gap-2">
-                <span className="text-4xl sm:text-5xl font-extrabold font-mono text-amber-950 tracking-tight">
-                  {objectiveScore}
-                </span>
-                <span className="text-sm font-mono text-amber-800">
-                  objective marks so far
-                </span>
-              </div>
-
-              <div className="p-3 bg-white rounded-lg border border-amber-200 text-xs text-amber-900 text-left space-y-1">
-                <div className="font-bold flex items-center gap-1.5 text-amber-800">
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Theory &amp; Essay Questions Status:</span>
+            <>
+              <section className="cand-score">
+                <div className="cand-score-main">
+                  <span className="cand-eyebrow">Objective score so far</span>
+                  <div className="cand-score-figure">
+                    <strong>{objectiveScore}</strong>
+                    {objectiveMax > 0 && <span>of {objectiveMax} marks</span>}
+                  </div>
                 </div>
-                <p className="text-[11px] leading-relaxed text-amber-700">
-                  Your examiner is marking your written answers. This page updates by itself when your final result is ready.
+              </section>
+              <section className="cand-state is-pending" role="status">
+                <h2>
+                  <Clock size={18} aria-hidden />
+                  Written answers are being marked
+                </h2>
+                <p>
+                  Your examiner is marking your written answers. This page updates by itself when
+                  your final result is ready.
                 </p>
-              </div>
-            </div>
+              </section>
+            </>
           ) : (
-            <div className="bg-[var(--surface-subtle)] border border-[var(--border-fine)] rounded-[var(--radius-md)] p-6 text-center space-y-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                Final Assessment Score
-              </span>
-
-              <div className="flex items-baseline justify-center gap-2">
-                <span className="text-4xl sm:text-5xl font-extrabold font-mono text-[var(--foreground)] tracking-tight">
-                  {percentage}%
-                </span>
-                <span className="text-sm font-mono text-[var(--text-secondary)]">
-                  ({totalScore} / {grandTotalMarks} Marks)
-                </span>
+            <section className="cand-score">
+              <div className="cand-score-main">
+                <span className="cand-eyebrow">Final score</span>
+                <div className="cand-score-figure">
+                  <strong>{percentage}%</strong>
+                  <span>
+                    {totalScore} of {grandTotalMarks} marks
+                  </span>
+                </div>
               </div>
-
-              {isGraded && (
-                <div className="grid grid-cols-2 gap-2 text-xs font-mono py-1">
-                  <div className="bg-white p-2 rounded border border-slate-200">
-                    <span className="text-slate-500 block text-[10px]">Objective MCQ</span>
-                    <span className="font-bold text-slate-800">{objectiveScore} Marks</span>
-                  </div>
-                  <div className="bg-white p-2 rounded border border-slate-200">
-                    <span className="text-slate-500 block text-[10px]">Theory &amp; Essay</span>
-                    <span className="font-bold text-slate-800">{essayScore} Marks</span>
-                  </div>
+              {showGrade && (
+                <div className={`cand-grade ${gradeTone(grade)}`}>
+                  <small>Grade</small>
+                  <strong>{grade}</strong>
                 </div>
               )}
-
-              <div>
-                <Badge className={`${gradeTint(grade)} font-bold text-xs uppercase px-3 py-1 rounded-full border-0`}>
-                  Grade: {grade}
-                </Badge>
-              </div>
-            </div>
+            </section>
           )}
 
-          {/* Examiner feedback */}
-          {!resultsWithheld && (feedback?.comment || Object.keys(feedback?.byQuestion || {}).length > 0) && (
-            <div className="space-y-2 border-t border-[var(--border-fine)] pt-4">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5 text-violet-600" />
-                <span>Examiner feedback</span>
-              </div>
-              {feedback?.comment && (
-                <p className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700">
-                  {feedback.comment}
-                </p>
-              )}
-              {Object.entries(feedback?.byQuestion || {})
-                .filter(([, text]) => text)
-                .map(([qId, text], idx) => (
-                  <p key={qId} className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700">
-                    <strong>Written answer {idx + 1}:</strong> {String(text)}
-                  </p>
-                ))}
-            </div>
+          {showScore && (objectiveMax > 0 || writtenMax > 0 || counts) && (
+            <section className="cand-breakdown" aria-label="Score breakdown">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Part</th>
+                    <th scope="col">Marks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(objectiveMax > 0 || writtenMax === 0) && (
+                    <tr>
+                      <td>
+                        Objective questions
+                        {counts && (
+                          <span className="block text-xs text-[var(--text-secondary)]">
+                            {counts.correctCount} correct · {counts.wrongCount} wrong ·{" "}
+                            {counts.unansweredCount} not answered
+                          </span>
+                        )}
+                      </td>
+                      <td className="cand-mono">
+                        {objectiveScore}
+                        {objectiveMax > 0 ? ` / ${objectiveMax}` : ""}
+                      </td>
+                    </tr>
+                  )}
+                  {writtenMax > 0 && (
+                    <tr>
+                      <td>Written answers</td>
+                      {isPendingReview ? (
+                        <td className="is-pending">Being marked</td>
+                      ) : (
+                        <td className="cand-mono">
+                          {essayScore} / {writtenMax}
+                        </td>
+                      )}
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </section>
           )}
 
-          {/* Digital Signature & Verification Barcode */}
-          <div className="pt-2 flex items-center justify-between text-xs text-[var(--text-secondary)] border-t border-[var(--border-fine)]">
-            <div className="space-y-0.5">
-              <div className="font-mono text-[11px] font-semibold text-[var(--foreground)]">
-                Attempt reference
-              </div>
-              <div className="font-mono text-[10px] text-[var(--text-secondary)]">
-                {(session.attemptId || "").slice(-12).toUpperCase() || "—"}
-              </div>
+          {showScore && (feedback?.comment || feedbackItems.length > 0) && (
+            <section className="cand-feedback" aria-labelledby="examiner-feedback">
+              <h2 id="examiner-feedback">
+                <MessageSquare size={16} aria-hidden />
+                Examiner feedback
+              </h2>
+              {feedback?.comment && <blockquote>{feedback.comment}</blockquote>}
+              {feedbackItems.map(([qId, text], idx) => {
+                const number = questionNumber(qId);
+                return (
+                  <blockquote key={qId}>
+                    <strong>{number ? `Question ${number}` : `Written answer ${idx + 1}`}</strong>
+                    {String(text)}
+                  </blockquote>
+                );
+              })}
+            </section>
+          )}
+
+          <footer className="cand-slip-foot">
+            <span>
+              <FileText size={13} className="inline -mt-0.5 mr-1" aria-hidden />
+              Attempt reference{" "}
+              <span className="cand-mono font-semibold text-[var(--foreground)]">
+                {(session.attemptId || "").slice(-12).toUpperCase() || "None"}
+              </span>
+            </span>
+            <span>Generated by ParaLearn CBT on {formatDateTime(new Date().toISOString())}</span>
+          </footer>
+        </article>
+
+        {confirmLeave ? (
+          <section className="cand-leave print:hidden" role="alertdialog" aria-labelledby="cand-leave-title">
+            <h2 id="cand-leave-title">Leave this page?</h2>
+            <p>
+              You won&apos;t be able to open this slip again on this device. Print it first if you
+              need a copy.
+            </p>
+            <div className="cand-slip-actions">
+              <button type="button" onClick={() => setConfirmLeave(false)} className="cand-btn">
+                Stay on this page
+              </button>
+              <button type="button" onClick={handlePrint} className="cand-btn">
+                <Printer size={16} aria-hidden />
+                Print slip
+              </button>
+              <button type="button" onClick={handleFinish} className="cand-btn primary">
+                <LogOut size={16} aria-hidden />
+                Yes, leave
+              </button>
             </div>
-
-            <div className="flex items-center gap-1.5 font-mono text-[11px] text-[var(--text-secondary)]">
-              <QrCode className="w-5 h-5 text-[var(--foreground)]" />
-              <span>Official Slip</span>
-            </div>
+          </section>
+        ) : (
+          <div className="cand-slip-actions print:hidden">
+            <button type="button" onClick={handlePrint} className="cand-btn">
+              <Printer size={16} aria-hidden />
+              Print slip
+            </button>
+            <button type="button" onClick={() => setConfirmLeave(true)} className="cand-btn primary">
+              <LogOut size={16} aria-hidden />
+              Finish and leave
+            </button>
           </div>
-
-          {/* Action Buttons (Hidden on Print) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-2 print:hidden">
-            <Button
-              variant="outline"
-              onClick={handlePrint}
-              className="w-full sm:flex-1 h-11 text-xs font-semibold rounded-[var(--radius-md)] border-[var(--border-fine)] hover:bg-[var(--surface-muted)]"
-            >
-              <Printer className="w-4 h-4 mr-2" />
-              <span>Print Official Slip</span>
-            </Button>
-
-            <Button
-              onClick={handleFinish}
-              className="w-full sm:flex-1 h-11 text-xs font-bold bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
-            >
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              <span>Finish</span>
-            </Button>
-          </div>
-
-        </div>
-
-        {/* Footnote */}
-        <div className="bg-slate-50 border-t border-[var(--border-fine)] px-6 py-2.5 text-center text-[10px] text-[var(--text-secondary)] print:hidden">
-          Issued by <strong className="text-violet-700">ParaLearn CBT</strong>
-        </div>
-
-      </div>
+        )}
+      </main>
     </div>
   );
 }

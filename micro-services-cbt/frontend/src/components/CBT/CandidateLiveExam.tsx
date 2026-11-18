@@ -13,27 +13,22 @@ import {
   CheckCircle2,
   AlertTriangle,
   Bookmark,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
   Send,
-  Wifi,
-  Menu,
-  X,
-  RotateCcw,
-  BookOpen,
   Award,
   AlignLeft,
   FileText,
-  Tag,
   Check,
   Loader2,
   WifiOff,
+  CloudUpload,
+  LayoutGrid,
+  UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Kbd } from "@/components/ui/kbd";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,7 +69,9 @@ import {
   SUBMISSION_SYNCED_EVENT,
   type CbtSyncState,
 } from "@cbt/lib/cbtOfflineSync";
+import CbtBrand from "./CbtBrand";
 import "./cbt-workspace.css";
+import "./cbt-candidate.css";
 
 /** Keys that pick options A–F, in on-screen order */
 const OPTION_KEYS = ["a", "b", "c", "d", "e", "f"];
@@ -157,6 +154,8 @@ export default function CandidateLiveExam({
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   const [isRubricDialogOpen, setIsRubricDialogOpen] = useState(false);
   const [isMobilePaletteOpen, setIsMobilePaletteOpen] = useState(false);
+  // Tab-switch warning the candidate must acknowledge (shown on return to the page)
+  const [violationNotice, setViolationNotice] = useState<{ count: number; max: number } | null>(null);
 
   // Sync state
   const [syncStatus, setSyncStatus] = useState<"synced" | "saving">("synced");
@@ -273,15 +272,9 @@ export default function CandidateLiveExam({
           void queueTelemetry(updated, "tab_switch", activeQuestionIdx);
         }
 
-        toast.error(
-          `Malpractice Alert: Tab switch detected! (Violation ${violationCount} of ${maxTabViolations})`,
-          {
-            duration: 4000,
-            icon: (
-              <ShieldAlert className="w-5 h-5 text-[var(--crimson-signal)]" />
-            ),
-          },
-        );
+        if (violationCount < maxTabViolations) {
+          setViolationNotice({ count: violationCount, max: maxTabViolations });
+        }
 
         if (violationCount >= maxTabViolations) {
           handleFinalSubmit("malpractice");
@@ -304,7 +297,7 @@ export default function CandidateLiveExam({
       if (!currentQ) return;
       // Leave browser shortcuts (Ctrl+C, Cmd+P...) and open dialogs alone
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (isSubmitDialogOpen || isRubricDialogOpen || submittingRef.current) return;
+      if (isSubmitDialogOpen || isRubricDialogOpen || violationNotice || submittingRef.current) return;
       // Don't intercept if student is in an open text input or textarea
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
@@ -327,7 +320,7 @@ export default function CandidateLiveExam({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentQ, activeQuestionIdx, session, isSubmitDialogOpen, isRubricDialogOpen]);
+  }, [currentQ, activeQuestionIdx, session, isSubmitDialogOpen, isRubricDialogOpen, violationNotice]);
 
   // Actions
   const selectChoice = (choiceId: string) => {
@@ -421,6 +414,8 @@ export default function CandidateLiveExam({
 
   // Once the server has scored the submission, show the result; otherwise
   // reflect whether it is waiting for a connection or was rejected
+  // Both the submit handler and the sync event call this; only the first should announce and redirect
+  const finishedRef = useRef(false);
   const finishIfSynced = useCallback(() => {
     const current = sessionRef.current;
     if (!current) return;
@@ -428,6 +423,8 @@ export default function CandidateLiveExam({
     if (!latest) return;
 
     if (latest.status !== "in_progress") {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
       const reason = current.pendingSubmit?.reason;
       if (latest.status === "disqualified" || reason === "malpractice") {
         toast.error("Exam locked due to repeated malpractice violations.");
@@ -592,201 +589,223 @@ export default function CandidateLiveExam({
 
   const essayCharCount = essayDraft.length;
 
-  if (!session || questions.length === 0 || !currentQ) {
+  if (!session) {
     return (
-      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-6 text-center">
-        <div className="max-w-md rounded-[var(--radius-lg)] border border-[var(--border-fine)] bg-white p-6 shadow-[var(--shadow-card)]">
-          <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-amber-700" />
-          <h1 className="text-lg font-bold text-[var(--foreground)]">
-            Exam session unavailable
-          </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            This page needs a live CBT attempt from the microservice. Return to
-            the lobby and start the exam again.
-          </p>
-          <Button
-            onClick={() =>
-              router.replace(`/take/${encodeURIComponent(examCode)}`)
-            }
-            className="mt-5 bg-[var(--violet-ink)] text-white hover:bg-[var(--violet-hover)]"
-          >
-            Return to Lobby
-          </Button>
+      <div className="cbt-surface cand-center">
+        <div className="cand-card" role="status">
+          <Loader2 size={26} className="cand-spin text-[var(--violet-ink)]" aria-hidden />
+          <p>Opening your exam…</p>
         </div>
       </div>
     );
   }
 
+  if (questions.length === 0 || !currentQ) {
+    return (
+      <div className="cbt-surface cand-center">
+        <div className="cand-card">
+          <AlertTriangle size={32} className="text-amber-700" aria-hidden />
+          <h1>Exam session unavailable</h1>
+          <p>
+            This page needs an exam you started from the lobby. Return to the lobby and start the
+            exam again.
+          </p>
+          <button
+            type="button"
+            onClick={() => router.replace(`/take/${encodeURIComponent(examCode)}`)}
+            className="cand-btn primary w-full"
+          >
+            Return to lobby
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isAnsweredAt = (idx: number) => {
+    const value = session.answers[questions[idx].id];
+    return Boolean(value && value.toString().trim().length > 0);
+  };
+  const isFlaggedAt = (idx: number) => session.flaggedQuestionIds.includes(questions[idx].id);
+
+  /** Moves to the next question after the current one that matches, wrapping round */
+  const jumpTo = (matches: (idx: number) => boolean) => {
+    for (let step = 1; step <= questions.length; step++) {
+      const idx = (activeQuestionIdx + step) % questions.length;
+      if (matches(idx)) {
+        openQuestion(idx);
+        return;
+      }
+    }
+  };
+
+  // On phones the navigator sits below the question, so bring the question back into view
+  const openQuestion = (idx: number) => {
+    setActiveQuestionIdx(idx);
+    setIsMobilePaletteOpen(false);
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      document.getElementById("cand-question")?.scrollIntoView({ block: "start" });
+    }
+  };
+
+  const timerTone =
+    secondsRemaining < 60 ? "is-critical" : secondsRemaining < 300 ? "is-low" : "";
+  // Said once per band (5 minutes, 1 minute), inline and to screen readers
+  const timeNotice =
+    secondsRemaining <= 0
+      ? null
+      : secondsRemaining <= 60
+        ? { tone: "is-critical", text: "Less than a minute left. Your exam submits by itself when the timer reaches 00:00." }
+        : secondsRemaining <= 300
+          ? { tone: "is-low", text: "5 minutes left. Your answers are saved. Use the time to check unanswered and flagged questions." }
+          : null;
+  const unansweredNumbers = questions
+    .map((_, idx) => idx)
+    .filter((idx) => !isAnsweredAt(idx));
+  const answeredPct = questions.length ? Math.round((answeredCount / questions.length) * 100) : 0;
+  const isObjective = OBJECTIVE.has(currentQ.type);
+  // F flags the question, so option keys stop at E
+  const lastOptionKey = OPTION_KEYS[Math.min(currentQ.options?.length || 0, 5) - 1]?.toUpperCase();
+  const saveChip = !syncState.online
+    ? { tone: "is-warn", icon: <WifiOff size={14} aria-hidden />, text: "Offline: answers saved on this device" }
+    : syncState.pending > 0 || syncStatus === "saving"
+      ? { tone: "is-violet", icon: <CloudUpload size={14} aria-hidden />, text: "Saving…" }
+      : { tone: "is-ok", icon: <CheckCircle2 size={14} aria-hidden />, text: "All answers saved" };
+
+  const wordCountTone =
+    currentQ.minWords && essayWordCount < currentQ.minWords
+      ? "low"
+      : currentQ.maxWords && essayWordCount > currentQ.maxWords && currentQ.type === "SHORT_ESSAY"
+        ? "over"
+        : "ok";
+
+  // Word count with its guideline, in words as well as colour
+  const wordCountNote =
+    wordCountTone === "low"
+      ? "below the minimum"
+      : wordCountTone === "over"
+        ? "over the limit"
+        : currentQ.minWords || currentQ.maxWords
+          ? "within the guideline"
+          : "";
+  const pendingReason = session.pendingSubmit?.reason;
+  const minutesLeft = Math.floor(secondsRemaining / 60);
+  const goToQuestionFromDialog = (idx: number) => {
+    setIsSubmitDialogOpen(false);
+    openQuestion(idx);
+  };
+
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col font-sans text-[var(--foreground)] select-none">
-      {/* ── STICKY HUD HEADER (56px) ─────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 min-h-16 bg-white border-b border-[var(--border-fine)] px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-        {/* Left: Exam Info & Progress */}
-        <div className="flex items-center gap-3">
-          <div className="font-bold text-sm sm:text-base tracking-tight truncate max-w-[180px] sm:max-w-md">
-            {resolvedExamTitle}
-          </div>
-          <Badge
-            variant="outline"
-            className="hidden sm:inline-flex bg-[var(--surface-muted)] text-[var(--foreground)] border-[var(--border-fine)] text-xs font-mono shrink-0"
-          >
-            Question {activeQuestionIdx + 1} of {questions.length}
-          </Badge>
+    <div className="cbt-surface cand-page cand-live">
+      {/* ── Header: who, saved state, time, submit ── */}
+      <header className="cand-live-bar">
+        <div className="cand-live-left">
+          <span className="cand-brand-slot">
+            <CbtBrand />
+          </span>
+          <span className="cand-divider" aria-hidden />
+          <span className="cand-person" title={`${session.candidateName} · ${session.candidatePin}`}>
+            <UserRound size={18} aria-hidden />
+            <strong>{session.candidateName}</strong>
+            {session.candidatePin && <span>{session.candidatePin}</span>}
+          </span>
         </div>
-
-        {/* Center: Timer Pill */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <div
-            className={`flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-[var(--radius-pill)] font-mono text-xs sm:text-sm font-bold border transition-colors ${
-              secondsRemaining < 60
-                ? "bg-[var(--crimson-tint)] border-[var(--crimson-signal)] text-[#991b1b] animate-pulse"
-                : secondsRemaining < 300
-                  ? "bg-[var(--amber-tint)] border-[var(--amber-signal)] text-[#92400e]"
-                  : "bg-[var(--surface-muted)] border-[var(--border-fine)] text-[var(--foreground)]"
-            }`}
-          >
-            <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="tabular-nums">
-              {formatTimer(secondsRemaining)}
-            </span>
-          </div>
-
-          {/* Sync chip: always visible while offline */}
-          <div
+        <div className="cand-live-right">
+          <span
             role="status"
-            className={`${syncState.online ? "hidden md:flex" : "flex"} items-center gap-1 text-[11px] text-[var(--text-secondary)] font-medium`}
+            className={`cand-chip cand-save-chip ${saveChip.tone} ${syncState.online && syncState.pending === 0 ? "is-quiet" : ""}`}
           >
-            {syncState.online ? (
-              <span
-                className={`w-2 h-2 rounded-full ${syncState.pending === 0 ? "bg-[var(--emerald-signal)]" : "bg-[var(--amber-signal)]"}`}
-              />
-            ) : (
-              <WifiOff className="w-3.5 h-3.5 text-amber-700" />
-            )}
-            <span>
-              {!syncState.online
-                ? "Offline, answers saved on this device"
-                : syncState.pending === 0
-                  ? "All answers saved"
-                  : "Saving..."}
-            </span>
-          </div>
-        </div>
-
-        {/* Right: Actions & Palette Mobile Toggle */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <Button
-            size="sm"
+            {saveChip.icon}
+            {saveChip.text}
+          </span>
+          <span className={`cand-timer ${timerTone}`} role="timer" aria-label={`Time remaining ${formatTimer(secondsRemaining)}`}>
+            <Timer size={18} aria-hidden />
+            {formatTimer(secondsRemaining)}
+          </span>
+          <button
+            type="button"
             onClick={() => setIsSubmitDialogOpen(true)}
-            className="h-8 sm:h-9 px-2.5 sm:px-4 text-xs font-bold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-white rounded-[var(--radius-md)]"
+            className="cand-btn cand-submit"
           >
-            <Send className="w-3.5 h-3.5 mr-1 sm:mr-1.5" />
-            <span className="hidden sm:inline">Submit Exam</span>
+            <Send size={16} aria-hidden />
+            <span className="hidden sm:inline">Submit exam</span>
             <span className="sm:hidden">Submit</span>
-          </Button>
-
-          {/* Mobile Palette Button */}
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setIsMobilePaletteOpen(!isMobilePaletteOpen)}
-            aria-label="Toggle question navigator"
-            aria-expanded={isMobilePaletteOpen}
-            className="lg:hidden h-9 w-9 border-[var(--border-fine)]"
-          >
-            <Menu className="w-4 h-4" />
-          </Button>
+          </button>
         </div>
       </header>
 
-      {/* ── MAIN WORKSPACE (2-Column Grid) ───────────────────────────────── */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-6 lg:p-8 flex gap-4 lg:gap-8 items-start">
-        {/* Left Column: Question Canvas */}
-        <main className="flex-1 min-w-0 bg-white p-5 sm:p-8 space-y-6">
-          {/* Question Header & Meta */}
-          <div className="flex items-center justify-between pb-4 border-b border-[var(--border-fine)] flex-wrap gap-2">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="font-bold text-base sm:text-lg text-[var(--foreground)]">
+      {/* Time warnings: shown inline and announced once per band */}
+      <div className="cand-time-live" aria-live="polite">
+        {timeNotice && (
+          <p className={`cand-time-notice ${timeNotice.tone}`}>
+            <AlertTriangle size={16} aria-hidden />
+            {timeNotice.text}
+          </p>
+        )}
+      </div>
+
+      <div className="cand-live-title">
+        <h1>
+          <span>{resolvedExamTitle}</span>
+          <span className="cand-chip is-violet cand-mono">{examCode.toUpperCase()}</span>
+        </h1>
+        <p>
+          {answeredCount} of {questions.length} answered
+          {flaggedCount > 0 ? ` · ${flaggedCount} flagged` : ""}
+        </p>
+      </div>
+
+      <div className="cand-live-grid">
+        {/* ── Question ── */}
+        <main id="cand-question" className="cand-question cand-card">
+          <div className="cand-q-head">
+            <div className="cand-q-title">
+              {currentQ.section && <p className="cand-q-section">{currentQ.section}</p>}
+              <h2>
                 Question {activeQuestionIdx + 1}
-              </span>
-
-              {/* Format Badge */}
-              <Badge
-                variant="outline"
-                className={`text-xs font-mono uppercase px-2 py-0.5 border ${
-                  currentQ.type === "LONG_ESSAY"
-                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                    : currentQ.type === "SHORT_ESSAY"
-                      ? "bg-amber-50 text-amber-700 border-amber-200"
-                      : "bg-slate-100 text-slate-700 border-slate-200"
-                }`}
-              >
+                <small>of {questions.length}</small>
+              </h2>
+              <p className="cand-q-meta">
                 {TYPE_LABELS[currentQ.type] || currentQ.type}
-              </Badge>
-
-              <span className="text-xs text-[var(--text-secondary)] font-mono">
-                ({currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"})
-              </span>
-
-              {/* Rubric View Button for candidates */}
+                <span aria-hidden>·</span>
+                <span className="cand-mono">
+                  {currentQ.marks} {currentQ.marks === 1 ? "mark" : "marks"}
+                </span>
+              </p>
               {currentQ.rubric && (
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => setIsRubricDialogOpen(true)}
-                  className="h-7 px-2.5 text-xs font-semibold border-amber-200 text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-md flex items-center gap-1"
+                  className="cand-inline-link"
                 >
-                  <Award className="w-3.5 h-3.5 text-amber-700" />
-                  <span>View Scoring Rubric</span>
-                </Button>
+                  <Award size={14} aria-hidden />
+                  How this is marked
+                </button>
               )}
             </div>
-
-            {/* Flag Review Toggle */}
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              type="button"
               onClick={handleToggleFlag}
-              className={`h-8 px-3 text-xs font-semibold rounded-[var(--radius-md)] border transition-all ${
-                isFlagged
-                  ? "bg-[var(--amber-tint)] border-[var(--amber-signal)] text-[#92400e]"
-                  : "bg-white border-[var(--border-fine)] text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
-              }`}
+              aria-pressed={isFlagged}
+              className={`cand-btn cand-flag ${isFlagged ? "is-on" : ""}`}
             >
-              <Bookmark
-                className={`w-3.5 h-3.5 mr-1.5 ${isFlagged ? "fill-current" : ""}`}
-              />
-              <span>
-                {isFlagged ? "Flagged for Review" : "Flag for Review"}
-              </span>
-              <Kbd className="ml-1.5 hidden sm:inline-flex">F</Kbd>
-            </Button>
+              <Bookmark size={16} className={isFlagged ? "fill-current" : ""} aria-hidden />
+              {isFlagged ? "Flagged" : "Flag for review"}
+              <span className="cand-kbd">F</span>
+            </button>
           </div>
 
-          {/* Section Indicator */}
-          {currentQ.section && (
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200/60 w-fit">
-              <Tag className="w-3.5 h-3.5 text-violet-600" />
-              <span>{currentQ.section}</span>
-            </div>
-          )}
+          <div className="cand-prompt">{currentQ.prompt}</div>
 
-          {/* Question Prompt */}
-          <div className="text-base sm:text-lg leading-relaxed text-[var(--foreground)] font-medium select-text">
-            {currentQ.prompt}
-          </div>
-
-          {/* ── CONDITIONAL CANVAS: MCQ, TRUE/FALSE & MULTIPLE ANSWERS ── */}
-          {OBJECTIVE.has(currentQ.type) && currentQ.options && (
+          {/* ── Multiple choice, true/false and multiple answers ── */}
+          {isObjective && currentQ.options && (
             <div
-              className="space-y-3 pt-2"
+              className="cand-options"
               role={currentQ.type === "MULTI_SELECT" ? "group" : "radiogroup"}
               aria-label="Answer options"
             >
               {currentQ.type === "MULTI_SELECT" && (
-                <p className="text-xs font-semibold text-[var(--text-secondary)]">
-                  Select all that apply.
-                </p>
+                <p className="cand-options-note">Select all that apply.</p>
               )}
               {currentQ.options.map((opt, idx) => {
                 const isMulti = currentQ.type === "MULTI_SELECT";
@@ -811,493 +830,461 @@ export default function CandidateLiveExam({
                         choose();
                       }
                     }}
-                    className={`w-full min-h-[56px] p-3.5 sm:p-4 rounded-[var(--radius-md)] border text-left cursor-pointer transition-all flex items-center gap-3.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--violet-ink)] ${
-                      isSelected
-                        ? "bg-[var(--violet-tint)] border-[var(--violet-ink)] text-[var(--foreground)] shadow-xs ring-1 ring-[var(--violet-ink)]"
-                        : "bg-white border-[var(--border-fine)] text-[var(--foreground)] hover:bg-[var(--surface-subtle)] hover:border-[var(--border-medium)]"
-                    }`}
+                    className={`cand-option ${isMulti ? "is-multi" : ""}`}
                   >
-                    {/* Key Label Badge (square for multiple answers) */}
-                    <span
-                      className={`w-7 h-7 ${isMulti ? "rounded-md" : "rounded-full"} flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
-                        isSelected
-                          ? "bg-[var(--violet-ink)] text-white"
-                          : "bg-[var(--surface-muted)] text-[var(--text-secondary)]"
-                      }`}
-                    >
-                      {isMulti && isSelected ? <Check className="w-4 h-4" /> : keyLabel}
-                    </span>
-
-                    {/* Choice Text */}
-                    <span className="flex-1 text-sm sm:text-base font-normal leading-snug">
+                    <span className="cand-option-key">{keyLabel}</span>
+                    <span className="cand-option-text">
                       {opt.text}
+                      {isSelected && !isMulti && (
+                        <span className="cand-option-chosen">Your answer</span>
+                      )}
                     </span>
-
-                    {/* Keyboard shortcut hint */}
-                    <Kbd className="hidden sm:inline-flex opacity-40">{keyLabel}</Kbd>
+                    <span className="cand-option-tick" aria-hidden>
+                      {isSelected && <Check size={15} strokeWidth={3} />}
+                    </span>
                   </div>
                 );
               })}
             </div>
           )}
 
-          {/* ── CONDITIONAL CANVAS: SHORT ESSAY (20 - 100 words) ── */}
-          {currentQ.type === "SHORT_ESSAY" && (
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <AlignLeft className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Short Answer Response</span>
-                  {currentQ.minWords && currentQ.maxWords && (
-                    <span className="text-[11px] text-slate-400">
-                      (Guideline: {currentQ.minWords}–{currentQ.maxWords} words)
-                    </span>
+          {/* ── Short answer and essay ── */}
+          {(currentQ.type === "SHORT_ESSAY" || currentQ.type === "LONG_ESSAY") && (
+            <div className="cand-essay">
+              <div className="cand-essay-meta">
+                <label htmlFor="cand-essay-input">
+                  {currentQ.type === "SHORT_ESSAY" ? (
+                    <AlignLeft size={15} aria-hidden />
+                  ) : (
+                    <FileText size={15} aria-hidden />
                   )}
-                </span>
-                <span
-                  className={`font-mono text-xs font-bold ${
-                    currentQ.minWords && essayWordCount < currentQ.minWords
-                      ? "text-amber-700"
-                      : currentQ.maxWords && essayWordCount > currentQ.maxWords
-                        ? "text-rose-600"
-                        : "text-emerald-700"
-                  }`}
-                >
-                  {essayWordCount} words &bull; {essayCharCount} characters
+                  {currentQ.type === "SHORT_ESSAY" ? "Short answer" : "Essay"}
+                  {currentQ.type === "SHORT_ESSAY" && currentQ.minWords && currentQ.maxWords ? (
+                    <small>
+                      {currentQ.minWords} to {currentQ.maxWords} words
+                    </small>
+                  ) : currentQ.type === "LONG_ESSAY" && currentQ.minWords ? (
+                    <small>at least {currentQ.minWords} words</small>
+                  ) : null}
+                </label>
+                <span className={`cand-count ${wordCountTone}`} aria-live="off">
+                  {essayWordCount} {essayWordCount === 1 ? "word" : "words"}
+                  {wordCountNote && <span className="cand-count-note">, {wordCountNote}</span>}
                 </span>
               </div>
-
               <textarea
-                rows={5}
+                id="cand-essay-input"
+                rows={currentQ.type === "SHORT_ESSAY" ? 6 : 14}
                 value={essayDraft}
                 onChange={(e) => handleEssayChange(e.target.value)}
-                placeholder="Type your concise response here. Be precise and address key definitions, principles, or derivations..."
-                className="w-full p-4 text-sm sm:text-base font-normal leading-relaxed rounded-[var(--radius-md)] border border-slate-300 bg-white text-[var(--foreground)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none select-text resize-y"
+                aria-label={currentQ.type === "SHORT_ESSAY" ? "Your answer" : "Your essay"}
+                placeholder={
+                  currentQ.type === "SHORT_ESSAY"
+                    ? "Type your answer here."
+                    : "Write your essay here. Plan your points, then write them out in paragraphs."
+                }
               />
-
-              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                <span>Autosaved continuously to session and cloud backup.</span>
-                {syncStatus === "saving" && (
-                  <span className="text-amber-700 font-medium">
-                    Saving keystrokes...
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ── CONDITIONAL CANVAS: LONG ESSAY (150 - 800 words) ── */}
-          {currentQ.type === "LONG_ESSAY" && (
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between text-xs text-slate-500 flex-wrap gap-2">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <FileText className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Comprehensive Essay Canvas</span>
-                  {currentQ.minWords && (
-                    <span className="text-[11px] text-slate-400">
-                      (Minimum required: {currentQ.minWords} words)
-                    </span>
-                  )}
-                </span>
-
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`font-mono text-xs font-bold ${
-                      currentQ.minWords && essayWordCount < currentQ.minWords
-                        ? "text-amber-700"
-                        : "text-emerald-700"
-                    }`}
-                  >
-                    {essayWordCount} words &bull; {essayCharCount} chars
-                  </span>
-                </div>
-              </div>
-
-              <textarea
-                rows={12}
-                value={essayDraft}
-                onChange={(e) => handleEssayChange(e.target.value)}
-                placeholder="Craft your comprehensive essay here. Structure your arguments clearly with introductory thesis, body paragraphs, and concluding synthesis..."
-                className="w-full p-4 text-sm sm:text-base font-normal leading-relaxed rounded-[var(--radius-md)] border border-slate-300 bg-white text-[var(--foreground)] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none select-text resize-y"
-              />
-
-              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+              <div className="cand-essay-foot">
                 <span>
-                  Your writing is automatically persisted across browser
-                  refreshes.
+                  {syncStatus === "saving"
+                    ? "Saving…"
+                    : !syncState.online
+                      ? "Saved on this device. It will be sent when you're back online."
+                      : syncState.pending > 0
+                        ? "Saved on this device. Sending to the exam server…"
+                        : "Saved and sent to the exam server."}
                 </span>
-                {syncStatus === "saving" && (
-                  <span className="text-blue-600 font-medium">
-                    Syncing essay...
-                  </span>
-                )}
+                <span className="cand-mono">{essayCharCount} characters</span>
               </div>
             </div>
           )}
 
-          {/* Bottom Navigation Toolbar */}
-          <div className="pt-5 sm:pt-6 border-t border-[var(--border-fine)] flex items-center justify-between gap-2">
-            <Button
-              variant="outline"
+          <div className="cand-q-nav">
+            <button
+              type="button"
               disabled={activeQuestionIdx === 0}
               onClick={goToPrev}
-              className="h-10 sm:h-11 px-3 sm:px-5 font-semibold text-xs sm:text-sm bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)]/80 text-[var(--foreground)] border-[var(--border-fine)] rounded-[var(--radius-md)]"
+              className="cand-btn"
             >
-              <ChevronLeft className="w-4 h-4 mr-0.5 sm:mr-1" />
-              <span>Previous</span>
-              <Kbd className="ml-2 hidden sm:inline-flex">P</Kbd>
-            </Button>
+              <ChevronLeft size={18} aria-hidden />
+              Previous
+              <span className="cand-kbd">P</span>
+            </button>
 
-            {currentQ.type === "MCQ" ? (
-              <span className="text-xs text-[var(--text-secondary)] hidden sm:inline">
-                Use keyboard keys <Kbd>A</Kbd>-<Kbd>D</Kbd> to select
-              </span>
-            ) : (
-              <span className="text-xs text-[var(--text-secondary)] hidden sm:inline">
-                Press Next to save &amp; continue
-              </span>
-            )}
+            <span className="cand-q-nav-hint">
+              {isObjective ? "Your choice saves as soon as you pick it" : "Your answer saves as you type"}
+            </span>
 
             {activeQuestionIdx < questions.length - 1 ? (
-              <Button
-                onClick={goToNext}
-                className="h-10 sm:h-11 px-3 sm:px-5 font-bold text-xs sm:text-sm bg-[var(--violet-ink)] hover:bg-[var(--violet-hover)] text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
-              >
-                <span>Next Question</span>
-                <Kbd className="ml-2 hidden sm:inline-flex bg-white/20 text-white">
-                  N
-                </Kbd>
-                <ChevronRight className="w-4 h-4 ml-0.5 sm:ml-1" />
-              </Button>
+              <button type="button" onClick={goToNext} className="cand-btn primary">
+                Next
+                <span className="cand-kbd">N</span>
+                <ChevronRight size={18} aria-hidden />
+              </button>
             ) : (
-              <Button
+              <button
+                type="button"
                 onClick={() => setIsSubmitDialogOpen(true)}
-                className="h-10 sm:h-11 px-3 sm:px-5 font-bold text-xs sm:text-sm bg-emerald-700 hover:bg-emerald-800 text-white rounded-[var(--radius-md)] shadow-[var(--shadow-card)]"
+                className="cand-btn primary"
               >
-                <span>Review &amp; Submit</span>
-                <Send className="w-3.5 h-3.5 ml-1 sm:ml-1.5" />
-              </Button>
+                Review and submit
+                <Send size={16} aria-hidden />
+              </button>
             )}
           </div>
+
+          <p className="cand-hotkeys" aria-label="Keyboard shortcuts">
+            {isObjective && lastOptionKey && (
+              <span>
+                <span className="cand-kbd">A</span>
+                <span aria-hidden>to</span>
+                <span className="cand-kbd">{lastOptionKey}</span> choose
+              </span>
+            )}
+            <span>
+              <span className="cand-kbd">N</span> next
+            </span>
+            <span>
+              <span className="cand-kbd">P</span> previous
+            </span>
+            <span>
+              <span className="cand-kbd">F</span> flag
+            </span>
+          </p>
         </main>
 
-        {/* Mobile Backdrop Overlay (< lg) */}
-        {isMobilePaletteOpen && (
-          <div
-            onClick={() => setIsMobilePaletteOpen(false)}
-            className="fixed inset-0 bg-slate-900/40 z-30 lg:hidden backdrop-blur-2xs transition-opacity"
-          />
-        )}
-
-        {/* Right Column: Question Palette Grid (Sticky) */}
+        {/* ── Navigator ── */}
         <aside
-          className={`fixed lg:static inset-y-0 right-0 z-40 w-[84vw] max-w-xs sm:w-80 bg-white border-l lg:border border-[var(--border-fine)] lg:rounded-[var(--radius-lg)] p-4 sm:p-5 shadow-[var(--shadow-dialog)] lg:shadow-[var(--shadow-card)] flex flex-col transition-transform ${
-            isMobilePaletteOpen
-              ? "translate-x-0"
-              : "translate-x-full lg:translate-x-0"
-          }`}
+          id="cand-navigator"
+          className={`cand-navigator cand-card ${isMobilePaletteOpen ? "is-open" : ""}`}
+          aria-labelledby="navigator-title"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--border-fine)] mb-4">
-            <h3 className="font-bold text-sm tracking-tight text-[var(--foreground)]">
-              Question Palette
-            </h3>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMobilePaletteOpen(false)}
-              className="lg:hidden h-7 w-7"
-            >
-              <X className="w-4 h-4" />
-            </Button>
+          <div className="cand-nav-head">
+            <h2 id="navigator-title">
+              <LayoutGrid size={18} aria-hidden />
+              Questions
+            </h2>
+            <span className="cand-nav-pct cand-mono">{answeredPct}% done</span>
           </div>
+          <div
+            className="cand-progress"
+            role="progressbar"
+            aria-label="Questions answered"
+            aria-valuemin={0}
+            aria-valuemax={questions.length}
+            aria-valuenow={answeredCount}
+          >
+            <span style={{ transform: `scaleX(${answeredPct / 100})` }} />
+          </div>
+          <dl className="cand-counts">
+            <div className="is-answered">
+              <dt>Answered</dt>
+              <dd>{answeredCount}</dd>
+            </div>
+            <div className={unansweredCount > 0 ? "is-open" : ""}>
+              <dt>Unanswered</dt>
+              <dd>{unansweredCount}</dd>
+            </div>
+            <div className="is-flagged">
+              <dt>Flagged</dt>
+              <dd>{flaggedCount}</dd>
+            </div>
+          </dl>
 
-          {/* Palette Grid (5 columns) */}
-          <div className="flex-1 overflow-y-auto max-h-[380px] grid grid-cols-5 gap-2 pr-1">
+          <button
+            type="button"
+            onClick={() => setIsMobilePaletteOpen(!isMobilePaletteOpen)}
+            aria-expanded={isMobilePaletteOpen}
+            aria-controls="cand-question-grid"
+            className="cand-btn cand-nav-toggle"
+          >
+            {isMobilePaletteOpen ? "Hide question numbers" : "Show all question numbers"}
+            <ChevronDown
+              size={16}
+              aria-hidden
+              className={isMobilePaletteOpen ? "rotate-180" : ""}
+            />
+          </button>
+
+          <div id="cand-question-grid" className="cand-grid">
             {questions.map((q, idx) => {
-              const answerVal = session?.answers[q.id];
-              const isAnswered =
-                answerVal && answerVal.toString().trim().length > 0;
-              const isCurrent = idx === activeQuestionIdx;
-              const hasFlag = session?.flaggedQuestionIds.includes(q.id);
-
+              const answered = isAnsweredAt(idx);
+              const flagged = isFlaggedAt(idx);
+              const current = idx === activeQuestionIdx;
+              const state = [
+                answered ? "answered" : "not answered",
+                flagged ? "flagged" : "",
+                current ? "current" : "",
+              ]
+                .filter(Boolean)
+                .join(", ");
               return (
                 <button
                   key={q.id}
-                  onClick={() => {
-                    setActiveQuestionIdx(idx);
-                    setIsMobilePaletteOpen(false);
-                  }}
-                  className={`h-11 w-full rounded-[var(--radius-md)] font-mono text-xs font-bold relative transition-all flex flex-col items-center justify-center ${
-                    isCurrent ? "ring-2 ring-[var(--violet-ink)] shadow-xs" : ""
-                  } ${
-                    isAnswered
-                      ? "bg-[var(--emerald-tint)] text-[#065f46] border border-[#a7f3d0]"
-                      : "bg-white text-[var(--text-secondary)] border border-[var(--border-fine)] hover:bg-[var(--surface-muted)]"
-                  }`}
+                  type="button"
+                  onClick={() => openQuestion(idx)}
+                  aria-label={`Question ${idx + 1}, ${state}`}
+                  aria-current={current ? "step" : undefined}
+                  className={`cand-cell ${flagged ? "is-flagged" : answered ? "is-answered" : ""} ${current ? "is-current" : ""}`}
                 >
-                  <span>{idx + 1}</span>
+                  {idx + 1}
+                  {flagged && <Bookmark size={10} className="cand-cell-flag fill-current" aria-hidden />}
                   {q.type !== "MCQ" && (
-                    <span className="text-[8px] uppercase tracking-tighter opacity-70">
+                    <span className="cand-cell-type" aria-hidden>
                       {q.type === "SHORT_ESSAY"
                         ? "S"
                         : q.type === "LONG_ESSAY"
-                          ? "L"
+                          ? "E"
                           : q.type === "MULTI_SELECT"
                             ? "M"
                             : "TF"}
                     </span>
-                  )}
-
-                  {/* Flag indicator dot */}
-                  {hasFlag && (
-                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[var(--amber-signal)] ring-1 ring-white" />
                   )}
                 </button>
               );
             })}
           </div>
 
-          {/* Palette Legend */}
-          <div className="pt-4 border-t border-[var(--border-fine)] mt-4 space-y-2 text-xs text-[var(--text-secondary)]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 rounded-[var(--radius-xs)] bg-[var(--emerald-tint)] border border-[#a7f3d0]" />
-                <span>Answered</span>
-              </div>
-              <span className="font-mono font-bold text-[var(--foreground)]">
-                {answeredCount}
-              </span>
-            </div>
+          <div className="cand-jump">
+            <button
+              type="button"
+              className="cand-btn"
+              disabled={unansweredCount === 0}
+              onClick={() => jumpTo((idx) => !isAnsweredAt(idx))}
+            >
+              Next unanswered
+            </button>
+            <button
+              type="button"
+              className="cand-btn"
+              disabled={flaggedCount === 0}
+              onClick={() => jumpTo(isFlaggedAt)}
+            >
+              <Bookmark size={14} aria-hidden />
+              Next flagged
+            </button>
+          </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 rounded-[var(--radius-xs)] bg-white border border-[var(--border-fine)]" />
-                <span>Unanswered</span>
-              </div>
-              <span className="font-mono font-bold text-[var(--foreground)]">
-                {unansweredCount}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 rounded-[var(--radius-xs)] bg-[var(--amber-tint)] border border-[var(--amber-signal)]/40 relative">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--amber-signal)] absolute top-0.5 right-0.5" />
-                </span>
-                <span>Flagged</span>
-              </div>
-              <span className="font-mono font-bold text-[var(--foreground)]">
-                {flaggedCount}
-              </span>
-            </div>
+          <div className="cand-legend" aria-hidden>
+            <span>
+              <i className="is-answered" /> Answered
+            </span>
+            <span>
+              <i /> Not answered
+            </span>
+            <span>
+              <i className="is-flagged" /> Flagged
+            </span>
+            <span>
+              <i className="is-current" /> Current
+            </span>
           </div>
         </aside>
       </div>
 
-      {/* ── CANDIDATE SCORING RUBRIC DIALOG ──────────────────────────────── */}
+      {/* ── How a written question is marked ── */}
       <Dialog open={isRubricDialogOpen} onOpenChange={setIsRubricDialogOpen}>
-        <DialogContent className="max-w-lg bg-white border border-slate-200 rounded-xl p-6">
+        <DialogContent className="cbt-dialog cand-dialog max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Award className="w-5 h-5 text-amber-700" />
-              <span>{currentQ.rubric?.name || "Marking Rubric Criteria"}</span>
+            <DialogTitle className="cand-dialog-title">
+              <Award size={20} className="text-amber-700" aria-hidden />
+              {currentQ.rubric?.name || "How this question is marked"}
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              This question will be scored by examiners according to the
-              following academic rubric (Total:{" "}
-              {currentQ.rubric?.totalMarks || currentQ.marks} Marks).
+            <DialogDescription className="cand-dialog-lead">
+              Your examiner marks this answer against these points, out of{" "}
+              {currentQ.rubric?.totalMarks || currentQ.marks} marks.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto">
+          <ul className="cand-rubric">
             {currentQ.rubric?.criteria?.map((crit, idx) => (
-              <div
-                key={crit.id || idx}
-                className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1"
-              >
-                <div className="flex items-center justify-between font-bold text-xs text-slate-800">
-                  <span>{crit.title}</span>
-                  <Badge
-                    variant="outline"
-                    className="font-mono text-amber-700 bg-amber-50 border-amber-200"
-                  >
-                    Max: {crit.maxMarks} Marks
-                  </Badge>
+              <li key={crit.id || idx}>
+                <div className="cand-rubric-head">
+                  <strong>{crit.title}</strong>
+                  <span className="cand-mono">up to {crit.maxMarks}</span>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  {crit.description}
-                </p>
+                {crit.description && <p>{crit.description}</p>}
                 {crit.levels && crit.levels.length > 0 && (
-                  <div className="pt-2 grid grid-cols-2 gap-1.5 text-[11px]">
+                  <dl className="cand-rubric-levels">
                     {crit.levels.map((lvl, lIdx) => (
-                      <div
-                        key={lIdx}
-                        className="bg-white p-1.5 rounded border border-slate-200"
-                      >
-                        <span className="font-semibold text-slate-700">
-                          {lvl.label} ({lvl.points}m):{" "}
-                        </span>
-                        <span className="text-slate-500">{lvl.descriptor}</span>
+                      <div key={lIdx}>
+                        <dt>
+                          {lvl.label} <span className="cand-mono">({lvl.points})</span>
+                        </dt>
+                        <dd>{lvl.descriptor}</dd>
                       </div>
                     ))}
-                  </div>
+                  </dl>
                 )}
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
 
-          <div className="flex justify-end pt-2">
-            <Button
-              size="sm"
-              onClick={() => setIsRubricDialogOpen(false)}
-              className="bg-slate-900 text-white"
-            >
-              Got it
-            </Button>
+          <div className="cand-dialog-actions">
+            <button type="button" className="cand-btn primary" onClick={() => setIsRubricDialogOpen(false)}>
+              Back to the question
+            </button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* ── SUBMIT CONFIRMATION ALERT DIALOG ─────────────────────────────── */}
-      <AlertDialog
-        open={isSubmitDialogOpen}
-        onOpenChange={setIsSubmitDialogOpen}
-      >
-        <AlertDialogContent className="max-w-md bg-white border border-[var(--border-fine)] rounded-[var(--radius-lg)] p-6">
+      {/* ── Submit confirmation ── */}
+      <AlertDialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+        <AlertDialogContent className="cbt-dialog cand-dialog max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold tracking-tight text-[var(--foreground)]">
-              Confirm Exam Submission
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-[var(--text-secondary)] pt-2">
-              Are you sure you want to end your examination session? Once
-              submitted, answers cannot be altered.
+            <AlertDialogTitle className="cand-dialog-title">Submit your exam?</AlertDialogTitle>
+            <AlertDialogDescription className="cand-dialog-lead">
+              You have answered <strong>{answeredCount}</strong> of{" "}
+              <strong>{questions.length}</strong> questions
+              {secondsRemaining > 60 ? `, with ${minutesLeft} minutes left` : ""}. Once you submit,
+              you can&apos;t change your answers.
             </AlertDialogDescription>
-            <div className="space-y-3 pt-2">
-              {hasEssayQuestions && (
-                <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-md text-xs text-amber-800">
-                  <strong>Notice:</strong> This examination includes essay
-                  questions. Your objective questions will be scored
-                  immediately, while your essays will be submitted for examiner
-                  and AI evaluation.
-                </div>
-              )}
-
-              <div className="bg-[var(--surface-muted)] p-3.5 rounded-[var(--radius-md)] border border-[var(--border-fine)] text-xs text-[var(--foreground)] grid grid-cols-3 gap-2 text-center font-mono">
-                <div>
-                  <div className="text-[var(--text-secondary)] uppercase text-[10px]">
-                    Answered
-                  </div>
-                  <div className="text-base font-bold text-emerald-700">
-                    {answeredCount}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[var(--text-secondary)] uppercase text-[10px]">
-                    Unanswered
-                  </div>
-                  <div className="text-base font-bold text-[var(--crimson-signal)]">
-                    {unansweredCount}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[var(--text-secondary)] uppercase text-[10px]">
-                    Flagged
-                  </div>
-                  <div className="text-base font-bold text-amber-700">
-                    {flaggedCount}
-                  </div>
-                </div>
-              </div>
-            </div>
           </AlertDialogHeader>
 
-          <AlertDialogFooter className="mt-4 gap-2">
-            <AlertDialogCancel className="h-10 px-4 text-xs font-semibold rounded-[var(--radius-md)] border-[var(--border-fine)]">
-              Return to Exam
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => handleFinalSubmit("manual")}
-              className="h-10 px-5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-[var(--radius-md)]"
-            >
-              Confirm Final Submission
+          <div className="cand-submit-summary">
+            {unansweredCount > 0 ? (
+              <div className="cand-submit-row is-open">
+                <AlertTriangle size={18} aria-hidden />
+                <div>
+                  <strong>
+                    {unansweredCount} not answered
+                  </strong>
+                  <p>
+                    Question{unansweredNumbers.length === 1 ? "" : "s"}{" "}
+                    {unansweredNumbers.slice(0, 12).map((idx) => idx + 1).join(", ")}
+                    {unansweredNumbers.length > 12 ? ` and ${unansweredNumbers.length - 12} more` : ""}
+                  </p>
+                  <button
+                    type="button"
+                    className="cand-inline-link"
+                    onClick={() => goToQuestionFromDialog(unansweredNumbers[0])}
+                  >
+                    Go to question {unansweredNumbers[0] + 1}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="cand-submit-row is-done">
+                <CheckCircle2 size={18} aria-hidden />
+                <div>
+                  <strong>Every question has an answer</strong>
+                </div>
+              </div>
+            )}
+            {flaggedCount > 0 && (
+              <div className="cand-submit-row is-flagged">
+                <Bookmark size={18} aria-hidden />
+                <div>
+                  <strong>{flaggedCount} flagged for review</strong>
+                  <p>Flags are only for you. Flagged answers are still submitted.</p>
+                </div>
+              </div>
+            )}
+            {hasEssayQuestions && (
+              <p className="cand-submit-note">
+                Objective questions are scored straight away. Your examiner marks the written
+                answers.
+              </p>
+            )}
+          </div>
+
+          <AlertDialogFooter className="cand-dialog-actions">
+            <AlertDialogCancel className="cand-btn">Back to exam</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleFinalSubmit("manual")} className="cand-btn primary">
+              <Send size={16} aria-hidden />
+              Submit exam
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── SUBMISSION PROGRESS / FAILURE OVERLAY ─────────────────────────── */}
+      {/* ── Tab-switch warning: must be acknowledged ── */}
+      <AlertDialog
+        open={Boolean(violationNotice) && submitState === "idle"}
+        onOpenChange={(open) => !open && setViolationNotice(null)}
+      >
+        <AlertDialogContent className="cbt-dialog cand-dialog is-warning max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="cand-dialog-title">
+              <ShieldAlert size={22} aria-hidden />
+              You left the exam page
+            </AlertDialogTitle>
+            <AlertDialogDescription className="cand-dialog-lead">
+              This is warning <strong>{violationNotice?.count}</strong> of{" "}
+              <strong>{violationNotice?.max}</strong>. Your examiner can see it.{" "}
+              {violationNotice && violationNotice.max - violationNotice.count === 1
+                ? "If you leave once more, your exam is submitted automatically and locked."
+                : `After ${violationNotice ? violationNotice.max - violationNotice.count : 0} more, your exam is submitted automatically and locked.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="cand-dialog-actions">
+            <AlertDialogAction className="cand-btn primary" onClick={() => setViolationNotice(null)}>
+              Return to exam
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Submission progress / failure ── */}
       {submitState !== "idle" && (
         <div
           role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="cand-overlay-title"
           aria-live="assertive"
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+          className="cand-overlay"
         >
-          <div className="w-full max-w-sm rounded-[var(--radius-lg)] bg-white p-6 text-center shadow-xl">
+          <div>
             {submitState === "sending" && (
               <>
-                <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-emerald-700" />
-                <h2 className="text-lg font-bold text-[var(--foreground)]">
-                  Submitting your exam…
+                <Loader2 size={32} className="cand-spin text-[var(--violet-ink)]" aria-hidden />
+                <h2 id="cand-overlay-title">
+                  {pendingReason === "timeout" ? "Time is up. Submitting your exam…" : "Submitting your exam…"}
                 </h2>
-                <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                  Please keep this page open.
+                <p>
+                  {pendingReason === "malpractice"
+                    ? `You left the exam page ${maxTabViolations} times, so your exam is being submitted and locked. Keep this page open.`
+                    : "Keep this page open. Your answers are already saved on this device."}
                 </p>
               </>
             )}
             {submitState === "queued" && (
               <>
-                <CheckCircle2 className="mx-auto mb-3 h-8 w-8 text-emerald-700" />
-                <h2 className="text-lg font-bold text-[var(--foreground)]">
-                  Your exam is submitted on this device
-                </h2>
-                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                <CheckCircle2 size={32} className="text-emerald-700" aria-hidden />
+                <h2 id="cand-overlay-title">Your exam is submitted on this device</h2>
+                <p>
                   {syncState.online
                     ? "We're sending it to the exam server now."
                     : "You're offline. Your answers are saved here and will be sent automatically when you reconnect."}
                 </p>
-                <p className="mt-2 text-xs text-[var(--text-secondary)]">
-                  Your result appears once it has been sent. If you close this page,
-                  open this exam link again on this device when you&apos;re online.
+                <p className="cand-overlay-small">
+                  Your result appears once it has been sent. If you close this page, open this exam
+                  link again on this device when you&apos;re online.
                 </p>
-                <Button
+                <button
+                  type="button"
                   onClick={() => syncNow().then(finishIfSynced)}
                   disabled={!syncState.online}
-                  className="mt-4 h-10 w-full bg-emerald-700 text-sm font-bold text-white hover:bg-emerald-800"
+                  className="cand-btn primary"
                 >
                   {syncState.online ? "Send now" : "Waiting for a connection"}
-                </Button>
+                </button>
               </>
             )}
             {submitState === "failed" && (
               <>
-                <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-[var(--crimson-signal)]" />
-                <h2 className="text-lg font-bold text-[var(--foreground)]">
-                  Submission not accepted
-                </h2>
-                <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                  {submitError}
-                </p>
-                <p className="mt-2 text-xs text-[var(--text-secondary)]">
-                  Your answers are still saved on this device.
-                </p>
-                <Button
-                  onClick={retrySubmission}
-                  className="mt-4 h-10 w-full bg-emerald-700 text-sm font-bold text-white hover:bg-emerald-800"
-                >
+                <AlertTriangle size={32} className="text-[var(--crimson-ink)]" aria-hidden />
+                <h2 id="cand-overlay-title">Submission not accepted</h2>
+                <p>{submitError}</p>
+                <p className="cand-overlay-small">Your answers are still saved on this device.</p>
+                <button type="button" onClick={retrySubmission} className="cand-btn primary">
                   Try again
-                </Button>
+                </button>
               </>
             )}
           </div>
         </div>
       )}
-
-      {/* ── FOOTER WATERMARK ─────────────────────────────────────────────── */}
-      <footer className="py-3 px-4 border-t border-[var(--border-fine)] bg-white/60 text-center text-[11px] text-[var(--text-secondary)]">
-        Powered by <strong className="text-violet-700">ParaLearn CBT</strong>{" "}
-        &bull; High-Concurrency Assessment Engine
-      </footer>
     </div>
   );
 }

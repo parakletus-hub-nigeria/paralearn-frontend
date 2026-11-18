@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"error":"#ba1a1a","emerald-vivid":"#10b981","emerald-ink-white":"#047857","surface-container-high":"#dde9ff","surface-variant":"#d5e3fd","tertiary-container":"#00593c","border-medium":"#cbd5e1","text-placeholder":"#94a3b8","crimson-vivid":"#e60023","cobalt-vivid":"#2a64f6","inverse-primary":"#d5bbff","tertiary-fixed-dim":"#4edea3","crimson-tint":"#fddada","emerald-ink-tint":"#065f46","emerald-line":"#a7f3d0","primary":"#49009a","crimson-ink-tint":"#991b1b","on-tertiary-container":"#44d69b","on-background":"#0d1c2f","on-surface":"#0d1c2f","inverse-on-surface":"#ebf1ff","primary-fixed":"#ecdcff","inverse-surface":"#233144","amber-ink-tint":"#92400e","error-container":"#ffdad6","violet-wash":"#f7f3ff","surface-bright":"#f8f9ff","text-strong":"#334155","foreground":"#0f172a","surface-container-low":"#eff4ff","on-tertiary-fixed-variant":"#005236","amber-line":"#fde68a","on-primary-fixed":"#270058","background":"#f8f9ff","amber-tint":"#ffe9cc","lavender-muted":"#ad8ed6","on-primary-container":"#ceb1ff","secondary":"#565e74","text-secondary":"#64748b","primary-container":"#641bc4","outline-variant":"#cdc3d7","surface":"#f8f9ff","cobalt-tint":"#dbe9ff","violet-ink":"#641bc4","secondary-container":"#dae2fd","surface-muted":"#f1f5f9","secondary-fixed-dim":"#bec6e0","primary-fixed-dim":"#d5bbff","violet-tint":"#f0e5ff","on-primary-fixed-variant":"#5d0abd","on-primary":"#ffffff","card":"#ffffff","violet-hover":"#7b22e8","amber-ink-white":"#b45309","chalk-white":"#fdfdff","surface-container-lowest":"#ffffff","on-secondary-fixed-variant":"#3f465c","on-error":"#ffffff","crimson-ink-white":"#b91c1c","border-fine":"#e2e8f0","on-error-container":"#93000a","tertiary-fixed":"#6ffbbe","on-tertiary":"#ffffff","outline":"#7c7486","on-surface-variant":"#4b4454","on-secondary-container":"#5c647a","on-secondary":"#ffffff","violet-pressed":"#5214a3","surface-tint":"#7635d6","surface-subtle":"#f8fafc","cobalt-line":"#bfdbfe","surface-dim":"#ccdbf4","amber-vivid":"#f28c1f","on-tertiary-fixed":"#002113","tertiary":"#003f29","surface-container":"#e6eeff","violet-line":"#dfceef","surface-container-highest":"#d5e3fd","cobalt-ink":"#1e40af","crimson-line":"#fecaca","on-secondary-fixed":"#131b2e","emerald-tint":"#dff9d8","secondary-fixed":"#dae2fd"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"gutter-lg":"1.5rem","space-2xl":"3rem","space-xs":"0.25rem","space-sm":"0.5rem","space-md":"1rem","gutter":"1rem","margin-md":"1.5rem","margin":"1rem","space-xl":"2rem","margin-lg":"2rem","space-lg":"1.5rem"},"fontFamily":{"display":["Manrope"],"question-text":["Manrope"],"timer-display":["JetBrains Mono"],"pin-box":["JetBrains Mono"],"headline-md":["Manrope"],"label-eyebrow":["Manrope"],"mono-data":["JetBrains Mono"],"body-default":["Manrope"],"label-sm":["Manrope"],"question-text-mobile":["Manrope"],"answer-option":["Manrope"],"title":["Manrope"],"body-strong":["Manrope"],"headline-lg":["Manrope"],"display-mobile":["Manrope"]},"fontSize":{"display":["36px",{"lineHeight":"40px","letterSpacing":"-0.03em","fontWeight":"800"}],"question-text":["18px",{"lineHeight":"28px","fontWeight":"500"}],"timer-display":["20px",{"lineHeight":"24px","fontWeight":"600"}],"pin-box":["22px",{"lineHeight":"28px","fontWeight":"700"}],"headline-md":["18px",{"lineHeight":"24px","fontWeight":"700"}],"label-eyebrow":["12px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"700"}],"mono-data":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-default":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-sm":["12px",{"lineHeight":"16px","fontWeight":"500"}],"question-text-mobile":["16px",{"lineHeight":"24px","fontWeight":"500"}],"answer-option":["16px",{"lineHeight":"24px","fontWeight":"400"}],"title":["15px",{"lineHeight":"20px","fontWeight":"600"}],"body-strong":["14px",{"lineHeight":"22px","fontWeight":"600"}],"headline-lg":["20px",{"lineHeight":"26px","fontWeight":"700"}],"display-mobile":["28px",{"lineHeight":"32px","letterSpacing":"-0.02em","fontWeight":"800"}]}}}</script></head><body class="bg-surface font-body-default text-body-default text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-card shadow-[0_1px_8px_rgba(15,23,42,0.04)]"><div class="h-16 w-full px-margin-lg flex items-center justify-between"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[20px]">verified</span></div><div class="flex flex-col"><span class="font-headline-md text-headline-md tracking-tight text-primary leading-none">ParaLearn</span><span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary leading-none mt-space-xs">CBT Evaluation</span></div></div><div class="hidden md:flex items-center gap-space-sm"><div class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-lg bg-surface-container-low text-text-strong"><span class="material-symbols-outlined text-secondary text-[16px]">school</span><span class="font-label-sm text-label-sm font-semibold">King's College Lagos</span></div><div class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-lg bg-surface-muted text-text-strong"><span class="font-label-eyebrow text-label-eyebrow text-text-secondary">ROOM</span><span class="font-mono-data text-mono-data font-semibold text-primary">MATH-8842</span></div></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-lg bg-emerald-tint text-emerald-ink-tint"><span class="material-symbols-outlined text-emerald-ink-tint text-[16px]">verified_user</span><span class="font-label-sm text-label-sm font-semibold hidden sm:inline">Verified Certified Score</span></div><nav class="flex items-center gap-space-xs" data-active-classes="bg-violet-tint text-on-surface font-bold"><a aria-current="page" class="px-space-md py-space-sm rounded-lg transition-colors bg-violet-tint text-on-surface font-bold" data-path="candidate-results" href="#">Result Slip</a><a class="px-space-md py-space-sm rounded-lg font-body-strong text-body-strong text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="score-breakdown" href="#">Breakdown</a><a class="px-space-md py-space-sm rounded-lg font-body-strong text-body-strong text-on-surface-variant hover:bg-violet-wash hover:text-on-surface transition-colors" data-path="certificate-view" href="#">Certificate</a></nav><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface"><div class="flex flex-col w-full">
+<!-- Top Notification Banner (Provisional Status & Auto-Refresh) -->
+<aside aria-label="Provisional Status" class="w-full bg-amber-tint px-margin-lg py-space-sm flex items-center justify-between text-amber-ink-tint">
+<div class="max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-xs text-left">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[18px] shrink-0 text-amber-ink-white" style="font-variation-settings: 'FILL' 1;">pending_actions</span>
+<span class="font-body-strong text-body-strong">Provisional Assessment Record</span>
+<span class="hidden sm:inline text-amber-ink-tint">•</span>
+<span class="font-body-default text-body-default">Theory & Written Responses Currently Under Examiner Evaluation.</span>
+</div>
+<div class="flex items-center gap-space-xs text-amber-ink-white font-mono-data text-mono-data shrink-0">
+<span class="inline-block w-2 h-2 rounded-full bg-amber-vivid animate-pulse"></span>
+<span>Auto-refreshing in <strong id="refresh-countdown">18</strong>s</span>
+<button class="ml-space-xs text-amber-ink-tint underline font-body-strong hover:text-amber-ink-white transition-colors cursor-pointer text-xs" id="refresh-now-btn">Refresh Now</button>
+</div>
+</div>
+</aside>
+<!-- Document Canvas Wrapper -->
+<div class="w-full max-w-7xl mx-auto px-margin-md sm:px-margin-lg py-space-xl flex flex-col gap-space-xl">
+<!-- Official Result Slip Sheet -->
+<article class="w-full bg-card rounded-xl shadow-md p-space-lg sm:p-space-2xl relative overflow-hidden">
+<!-- Watermark Background Element -->
+<div class="absolute -right-16 -top-16 opacity-[0.03] select-none pointer-events-none">
+<span class="material-symbols-outlined text-[320px] text-primary">school</span>
+</div>
+<!-- Institutional Header & Verification Stamp -->
+<header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-space-lg pb-space-lg bg-surface-subtle -mx-space-lg -mt-space-lg sm:-mx-space-2xl sm:-mt-space-2xl p-space-lg sm:p-space-2xl">
+<!-- Crest & School Details -->
+<div class="flex items-start gap-space-md">
+<div class="w-16 h-16 rounded-xl bg-primary flex items-center justify-center text-on-primary shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[36px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">Official Examination Authority</span>
+<span class="px-space-xs py-0.5 rounded text-[11px] font-bold bg-violet-tint text-primary font-mono-data">CONFIDENTIAL</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-foreground tracking-tight">KING'S COLLEGE LAGOS</h1>
+<p class="font-body-default text-body-default text-text-secondary">Department of Mathematics & Natural Sciences</p>
+<p class="font-body-strong text-body-strong text-primary mt-space-xs">2026/2027 SS2 Mathematics Mock Examination <span class="font-mono-data text-mono-data text-text-secondary">(MATH-8842)</span></p>
+</div>
+</div>
+<!-- Official Seal & Metadata -->
+<div class="flex flex-col sm:items-end gap-space-xs w-full lg:w-auto">
+<div class="inline-flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-violet-ink text-on-primary shadow-sm self-start sm:self-end">
+<span class="material-symbols-outlined text-[18px]">military_tech</span>
+<span class="font-body-strong text-body-strong tracking-wide">Official Result Slip</span>
+</div>
+<div class="flex items-center gap-space-xs text-emerald-ink-tint font-mono-data text-mono-data bg-emerald-tint px-space-sm py-0.5 rounded mt-space-xs self-start sm:self-end">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span>Certified PLN-SECURE-90214</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-secondary self-start sm:self-end">Issued: Thursday, 14 Nov 2026 • 10:48 AM WAT</span>
+</div>
+</header>
+<!-- Candidate Identity & Proctor Audit Strip -->
+<section aria-label="Candidate and Security Information" class="mt-space-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Candidate Identity -->
+<div class="bg-surface-subtle p-space-md rounded-xl flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">Candidate Name</span>
+<span class="material-symbols-outlined text-secondary text-[18px]">person</span>
+</div>
+<div class="mt-space-sm">
+<div class="font-headline-md text-headline-md text-foreground">Daniel Olawale</div>
+<div class="font-mono-data text-mono-data text-text-secondary mt-space-xs">Reg: <strong class="text-text-strong">KCL/2024/091</strong></div>
+<div class="font-label-sm text-label-sm text-text-secondary mt-0.5">Assigned: Lab B — PC 14</div>
+</div>
+</div>
+<!-- Session Credential -->
+<div class="bg-surface-subtle p-space-md rounded-xl flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">Access Tokens</span>
+<span class="material-symbols-outlined text-secondary text-[18px]">key</span>
+</div>
+<div class="mt-space-sm">
+<div class="font-mono-data text-pin-box text-primary font-bold tracking-wider">482-913</div>
+<div class="flex items-center justify-between font-mono-data text-mono-data text-text-secondary mt-space-xs">
+<span class="truncate">ID: PLN-MTH-90214</span>
+<button class="text-primary hover:text-violet-hover p-1" onclick="navigator.clipboard.writeText('PLN-MTH-90214'); this.innerText='done';" title="Copy ID">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+<div class="font-label-sm text-label-sm text-emerald-ink-tint font-medium mt-0.5">CBT Session Verified</div>
+</div>
+</div>
+<!-- Timing Audit -->
+<div class="bg-surface-subtle p-space-md rounded-xl flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">Session Timing</span>
+<span class="material-symbols-outlined text-secondary text-[18px]">timer</span>
+</div>
+<div class="mt-space-sm">
+<div class="font-mono-data text-timer-display text-foreground font-semibold">58m 42s <span class="font-body-default text-body-default text-text-secondary font-normal">/ 90m</span></div>
+<div class="font-mono-data text-mono-data text-text-secondary mt-space-xs">Submitted: 10:42:19 AM</div>
+<div class="font-label-sm text-label-sm text-emerald-ink-white font-medium mt-0.5">Finished 31m 18s early</div>
+</div>
+</div>
+<!-- Proctor Integrity Audit -->
+<div class="bg-surface-subtle p-space-md rounded-xl flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">Proctor Audit</span>
+<span class="material-symbols-outlined text-emerald-ink-tint text-[18px]">shield</span>
+</div>
+<div class="mt-space-sm">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm bg-emerald-tint text-emerald-ink-tint px-space-sm py-0.5 rounded-full font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-vivid"></span> Clean Session
+            </span>
+<div class="font-mono-data text-mono-data text-text-secondary mt-space-xs">Focus Lock: <span class="font-bold text-text-strong">100% Retained</span></div>
+<div class="font-label-sm text-label-sm text-text-secondary mt-0.5">Tab Strikes: <span class="font-mono-data text-text-strong">0 / 3 Allowed</span></div>
+</div>
+</div>
+</section>
+<!-- Primary Score & Performance Overview Box -->
+<section aria-label="Score Overview" class="mt-space-xl p-space-lg rounded-xl bg-surface-container-low flex flex-col gap-space-lg">
+<div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-space-lg">
+<!-- Main Hero Score Block -->
+<div class="flex items-center gap-space-lg">
+<div class="relative w-28 h-28 shrink-0 flex items-center justify-center bg-card rounded-xl shadow-sm">
+<svg class="w-24 h-24 -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-muted" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+<path class="text-primary-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="76, 100" stroke-linecap="round" stroke-width="3.5"></path>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+<span class="font-display text-display text-primary leading-none">76</span>
+<span class="font-label-eyebrow text-[10px] uppercase text-text-secondary leading-none mt-1">/ 100</span>
+</div>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-lg text-headline-lg text-foreground">Current Cumulative Score</span>
+<span class="px-space-sm py-0.5 rounded-full bg-amber-tint text-amber-ink-tint font-label-eyebrow text-label-eyebrow uppercase font-bold">Provisional</span>
+</div>
+<p class="font-body-default text-body-default text-text-secondary mt-1">
+                WAEC Equivalent Projection: <strong class="text-text-strong font-body-strong">B2 (Very Good)</strong> — Based on currently evaluated sections.
+              </p>
+<div class="flex items-center gap-space-sm text-text-secondary text-label-sm font-label-sm mt-space-xs">
+<span>Objective: 56.0 / 60</span>
+<span>•</span>
+<span>Theory Credit to Date: 20.0 / 40</span>
+<span>•</span>
+<span class="text-amber-ink-tint font-semibold">20 marks pending evaluation</span>
+</div>
+</div>
+</div>
+<!-- Grade Rubric Reference Pill -->
+<div class="bg-card p-space-md rounded-lg shadow-sm flex flex-col sm:flex-row items-center gap-space-md shrink-0 self-stretch lg:self-auto justify-between">
+<div class="text-center sm:text-left">
+<span class="font-label-eyebrow text-label-eyebrow text-text-secondary uppercase">Projected Grade</span>
+<div class="font-display text-display text-emerald-ink-white font-bold leading-none mt-1">B2</div>
+</div>
+<div class="hidden sm:block w-px h-10 bg-border-fine"></div>
+<div class="text-xs text-text-secondary space-y-0.5">
+<div>A1 Distinction: ≥ 80%</div>
+<div class="font-bold text-primary">B2 Very Good: 75% - 79% (Current)</div>
+<div>B3 Good: 70% - 74%</div>
+</div>
+</div>
+</div>
+<!-- Section Performance Cards (3-Column Grid) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md pt-space-md">
+<!-- Section A -->
+<div class="bg-card p-space-md rounded-xl flex flex-col justify-between shadow-sm">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">Section A</span>
+<span class="px-space-xs py-0.5 rounded text-[11px] font-bold bg-emerald-tint text-emerald-ink-tint">MCQ (40 Qs)</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-foreground mt-space-xs">Objective & Computation</h2>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-display text-display text-emerald-ink-tint">38.0</span>
+<span class="font-body-default text-body-default text-text-secondary">/ 40.0 Marks</span>
+<span class="font-mono-data text-mono-data font-bold text-emerald-ink-tint ml-auto">95.0%</span>
+</div>
+<div class="w-full bg-surface-muted h-2 rounded-full overflow-hidden mt-space-sm">
+<div class="bg-emerald-vivid h-full rounded-full" style="width: 95%;"></div>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm bg-surface-subtle -mx-space-md -mb-space-md px-space-md py-space-sm rounded-b-xl flex items-center justify-between text-label-sm font-label-sm text-emerald-ink-tint">
+<span class="flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[16px]">check_circle</span> 38 Correct, 2 Flagged
+              </span>
+<span class="text-text-secondary">Auto-Graded</span>
+</div>
+</div>
+<!-- Section B -->
+<div class="bg-card p-space-md rounded-xl flex flex-col justify-between shadow-sm">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">Section B</span>
+<span class="px-space-xs py-0.5 rounded text-[11px] font-bold bg-emerald-tint text-emerald-ink-tint">Numerical</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-foreground mt-space-xs">Short Numerical Input</h2>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-display text-display text-emerald-ink-tint">18.0</span>
+<span class="font-body-default text-body-default text-text-secondary">/ 20.0 Marks</span>
+<span class="font-mono-data text-mono-data font-bold text-emerald-ink-tint ml-auto">90.0%</span>
+</div>
+<div class="w-full bg-surface-muted h-2 rounded-full overflow-hidden mt-space-sm">
+<div class="bg-emerald-vivid h-full rounded-full" style="width: 90%;"></div>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm bg-surface-subtle -mx-space-md -mb-space-md px-space-md py-space-sm rounded-b-xl flex items-center justify-between text-label-sm font-label-sm text-emerald-ink-tint">
+<span class="flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[16px]">check_circle</span> 9 of 10 Correct
+              </span>
+<span class="text-text-secondary">System Commit</span>
+</div>
+</div>
+<!-- Section C (Pending / Provisional) -->
+<div class="bg-card p-space-md rounded-xl flex flex-col justify-between shadow-sm">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-amber-ink-white font-bold">Section C</span>
+<span class="px-space-xs py-0.5 rounded text-[11px] font-bold bg-amber-tint text-amber-ink-tint">Evaluation Pending</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-foreground mt-space-xs">Theory & Derivations</h2>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-display text-display text-amber-vivid">20.0*</span>
+<span class="font-body-default text-body-default text-text-secondary">/ 40.0 Marks</span>
+<span class="font-mono-data text-mono-data font-bold text-amber-ink-white ml-auto">50.0% Initial</span>
+</div>
+<div class="w-full bg-surface-muted h-2 rounded-full overflow-hidden mt-space-sm">
+<div class="bg-amber-vivid h-full rounded-full" style="width: 50%;"></div>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm bg-surface-subtle -mx-space-md -mb-space-md px-space-md py-space-sm rounded-b-xl flex items-center justify-between text-label-sm font-label-sm text-amber-ink-white">
+<span class="flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> Dr. F. Adeleke Reviewing
+              </span>
+<span class="text-text-secondary">Q.3 & Q.4</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section Detailed Audit & Examiner Commentary -->
+<section aria-label="Detailed Audit" class="mt-space-xl flex flex-col gap-space-lg">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-xs">
+<div>
+<h2 class="font-headline-md text-headline-md text-foreground">Detailed Question Response Audit</h2>
+<p class="font-body-default text-body-default text-text-secondary">Selective sample of flagged, audited, and rubric-scored theory derivations.</p>
+</div>
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary bg-surface-muted px-space-sm py-space-xs rounded">Live Marking Session</span>
+</div>
+<!-- Audited Questions Cards -->
+<div class="space-y-space-md">
+<!-- Item 1: Correct MCQ Detail -->
+<div class="bg-card p-space-md rounded-xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-md max-w-2xl">
+<div class="w-10 h-10 rounded-lg bg-emerald-tint text-emerald-ink-tint flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">check</span>
+</div>
+<div>
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-mono-data text-mono-data font-bold text-text-strong">Question 14 (Section A)</span>
+<span class="font-label-sm text-label-sm text-text-secondary">• Quadratic Polynomial Roots</span>
+</div>
+<p class="font-body-default text-body-default text-foreground mt-1">
+                  Candidate Selected: <span class="font-bold text-emerald-ink-tint">Option A: x = -3, x = 1/2</span>. Correct canonical factorization verified.
+                </p>
+</div>
+</div>
+<div class="flex md:flex-col items-end justify-between w-full md:w-auto text-right">
+<span class="font-mono-data text-mono-data font-bold text-emerald-ink-tint">+2.0 / 2.0 Marks</span>
+<span class="font-label-sm text-label-sm text-text-secondary">Verified by System</span>
+</div>
+</div>
+<!-- Item 2: Theory Proof Rubric Breakdown -->
+<div class="bg-card p-space-md rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-space-sm">
+<div class="flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-amber-tint text-amber-ink-tint flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">rate_review</span>
+</div>
+<div>
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-mono-data text-mono-data font-bold text-text-strong">Question 3 (Section C)</span>
+<span class="px-space-xs py-0.5 rounded text-[11px] font-bold bg-amber-tint text-amber-ink-tint">Theory Derivation</span>
+</div>
+<h3 class="font-title text-title text-foreground mt-0.5">Proof of the General Quadratic Formula by Completing the Square</h3>
+</div>
+</div>
+<div class="flex md:flex-col items-end justify-between w-full md:w-auto text-right">
+<span class="font-mono-data text-mono-data font-bold text-primary">16.0 / 20.0 Marks</span>
+<span class="font-label-sm text-label-sm text-amber-ink-white font-medium">AI-Assisted Rubric Pre-Score</span>
+</div>
+</div>
+<!-- Examiner's Note Box -->
+<div class="bg-violet-wash p-space-md rounded-lg">
+<div class="flex items-center gap-space-xs text-primary font-body-strong text-body-strong">
+<span class="material-symbols-outlined text-[18px]">edit_note</span>
+<span>Examiner Note — Dr. F. Adeleke (Lead Assessor):</span>
+</div>
+<p class="font-body-default text-body-default text-text-strong mt-space-xs leading-relaxed">
+                “Strong algebraic transitions through the division of coefficient <em>a</em> and correct expansion of the binomial square. Solid proof completion; minor 4-mark deduction due to omission of the explicit non-negativity constraint explanation for the discriminant (b² - 4ac ≥ 0) under real coefficients.”
+              </p>
+</div>
+</div>
+</div>
+<!-- Overall Chief Examiner Remark Card -->
+<div class="p-space-md bg-surface-container-low rounded-xl flex items-start gap-space-md">
+<span class="material-symbols-outlined text-primary text-[24px] shrink-0 mt-0.5">format_quote</span>
+<div>
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">Chief Invigilator & Faculty Review</span>
+<p class="font-body-strong text-body-strong text-foreground mt-space-xs">
+              “Exemplary computational rigor in objective sections. On track for an A1/B2 distinction once remaining theoretical questions finalize this afternoon.”
+            </p>
+<div class="font-label-sm text-label-sm text-text-secondary mt-1">Prof. C. E. Maduka, Examination Board Director</div>
+</div>
+</div>
+</section>
+<!-- Cryptographic Verification & Anti-Tamper Audit Panel -->
+<footer class="mt-space-xl pt-space-lg bg-surface-subtle -mx-space-lg -mb-space-lg sm:-mx-space-2xl sm:-mb-space-2xl p-space-lg sm:p-space-2xl flex flex-col md:flex-row items-center justify-between gap-space-lg">
+<!-- QR Code Visual Block -->
+<div class="flex items-center gap-space-md">
+<!-- QR Matrix Representation -->
+<div class="w-20 h-20 bg-card p-1.5 rounded-lg shadow-sm shrink-0 flex items-center justify-center">
+<svg class="w-full h-full text-foreground" fill="currentColor" viewbox="0 0 24 24">
+<path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14-2h4v2h-4v-2zm-4 0h2v4h-2v-4zm4 4h4v4h-4v-4zm-2 2h2v2h-2v-2zm-2-2h2v2h-2v-2zm6-4v2h2v-2h-2zM5 5h2v2H5V5zm12 0h2v2h-2V5zM5 17h2v2H5v-2z"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">Cryptographic Audit QR</span>
+<span class="font-body-strong text-body-strong text-foreground">Scan to verify tamper-proof record</span>
+<span class="font-mono-data text-mono-data text-primary hover:underline cursor-pointer">cbt.pln.ng/verify/PLN-90214</span>
+</div>
+</div>
+<!-- Checksum & System Signature -->
+<div class="flex flex-col md:items-end gap-space-xs text-left md:text-right">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[16px] text-text-secondary">fingerprint</span>
+<span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">SHA-256 Attempt Checksum</span>
+</div>
+<span class="font-mono-data text-mono-data text-text-strong bg-card px-space-sm py-1 rounded shadow-sm break-all">
+            d8f3a9e407bc11e2f89c44b12c8e10034ef8c983
+          </span>
+<div class="font-label-sm text-label-sm text-text-secondary mt-0.5">
+            Verified by ParaLearn Offline-First Engine v4.1.8 • Anti-Tamper Clock Timestamped
+          </div>
+</div>
+</footer>
+</article>
+<!-- Sticky Bottom Action Footer Bar -->
+<div class="sticky bottom-4 z-40 w-full bg-card rounded-xl shadow-xl p-space-md flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm text-text-secondary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-primary text-[18px]">info</span>
+<span>Local snapshot stored in offline cache. Verify paper copy before clearing.</span>
+</div>
+<div class="flex items-center gap-space-sm w-full sm:w-auto justify-end">
+<!-- Secondary Download PDF Button -->
+<button class="px-space-md py-space-sm rounded-lg font-body-strong text-body-strong text-foreground bg-surface-subtle hover:bg-surface-muted transition-colors flex items-center gap-space-xs cursor-pointer min-h-[44px]" id="download-pdf-btn">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Download PDF Slip</span>
+</button>
+<!-- Primary Print Slip Button -->
+<button class="px-space-md py-space-sm rounded-lg font-body-strong text-body-strong text-on-primary bg-violet-ink hover:bg-violet-hover active:bg-violet-pressed transition-transform active:scale-[0.98] flex items-center gap-space-xs shadow-sm cursor-pointer min-h-[44px]" id="print-slip-btn" onclick="window.print()">
+<span class="material-symbols-outlined text-[18px]">print</span>
+<span>Print Official Slip</span>
+</button>
+<!-- Exit Action with Safety Confirmation Modal -->
+<button class="px-space-md py-space-sm rounded-lg font-body-strong text-body-strong text-crimson-ink-tint hover:bg-crimson-tint transition-colors flex items-center gap-space-xs cursor-pointer min-h-[44px]" id="exit-terminal-btn">
+<span class="material-symbols-outlined text-[18px]">logout</span>
+<span class="hidden md:inline">Finish & Exit Terminal</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Exit Confirmation Dialog Overlay (Hidden by default) -->
+<dialog class="fixed inset-0 z-50 bg-black/40 w-full h-full p-4 flex items-center justify-center backdrop-blur-sm hidden" id="exit-modal" style="border: none;">
+<div class="bg-card w-full max-w-md rounded-xl shadow-xl p-space-lg flex flex-col gap-space-md">
+<div class="flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-full bg-crimson-tint text-crimson-ink-tint flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">warning</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-foreground">Clear Session & Exit?</h3>
+<p class="font-body-default text-body-default text-text-secondary mt-1">
+            Ensure you have saved or printed your official result slip. Exiting will flush candidate authentication tokens and securely clear the local cache on this CBT terminal.
+          </p>
+</div>
+</div>
+<div class="flex items-center justify-end gap-space-sm pt-space-sm">
+<button class="px-space-md py-space-sm rounded-lg font-body-strong text-body-strong text-foreground bg-surface-subtle hover:bg-surface-muted min-h-[44px]" id="cancel-exit-btn">
+          Cancel
+        </button>
+<button class="px-space-md py-space-sm rounded-lg font-body-strong text-body-strong text-on-error bg-crimson-ink-white hover:bg-red-800 min-h-[44px]" id="confirm-exit-btn">
+          Confirm & Flush Terminal
+        </button>
+</div>
+</div>
+</dialog>
+<!-- Dynamic Auto-Refresh & Interaction Scripts -->
+<script>
+    (function initResultSlipInteractions() {
+      let secondsRemaining = 18;
+      const countdownElem = document.getElementById('refresh-countdown');
+      const refreshBtn = document.getElementById('refresh-now-btn');
+
+      const timer = setInterval(() => {
+        secondsRemaining--;
+        if (countdownElem) {
+          countdownElem.textContent = secondsRemaining;
+        }
+        if (secondsRemaining <= 0) {
+          secondsRemaining = 30;
+          triggerSimulatedRefresh();
+        }
+      }, 1000);
+
+      function triggerSimulatedRefresh() {
+        if (countdownElem) {
+          countdownElem.textContent = '30';
+        }
+        const banner = document.querySelector('aside[aria-label="Provisional Status"]');
+        if (banner) {
+          banner.classList.add('opacity-75');
+          setTimeout(() => banner.classList.remove('opacity-75'), 500);
+        }
+      }
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+          secondsRemaining = 30;
+          triggerSimulatedRefresh();
+        });
+      }
+
+      // Exit Confirmation Modal controls
+      const exitBtn = document.getElementById('exit-terminal-btn');
+      const exitModal = document.getElementById('exit-modal');
+      const cancelExit = document.getElementById('cancel-exit-btn');
+      const confirmExit = document.getElementById('confirm-exit-btn');
+
+      if (exitBtn && exitModal) {
+        exitBtn.addEventListener('click', () => {
+          exitModal.classList.remove('hidden');
+        });
+      }
+
+      if (cancelExit && exitModal) {
+        cancelExit.addEventListener('click', () => {
+          exitModal.classList.add('hidden');
+        });
+      }
+
+      if (confirmExit && exitModal) {
+        confirmExit.addEventListener('click', () => {
+          alert('Session closed. Terminal storage cleared securely.');
+          window.location.href = '#';
+        });
+      }
+
+      // Download PDF Slip simulation
+      const downloadBtn = document.getElementById('download-pdf-btn');
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+          const originalText = downloadBtn.innerHTML;
+          downloadBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Generating PDF...';
+          setTimeout(() => {
+            downloadBtn.innerHTML = originalText;
+            window.print();
+          }, 600);
+        });
+      }
+    })();
+  </script>
+</div></main><footer class="w-full bg-surface-container-low py-space-xl mt-space-2xl"><div class="max-w-7xl mx-auto px-margin-lg flex flex-col md:flex-row items-center justify-between gap-space-md"><div class="flex flex-col sm:flex-row items-center gap-space-sm text-center sm:text-left"><span class="font-label-eyebrow text-label-eyebrow uppercase text-text-secondary">Candidate Ref:</span><span class="font-mono-data text-mono-data text-text-strong font-semibold">PLC-2024-KCL-09144</span><span class="hidden sm:inline text-border-medium">•</span><span class="font-body-default text-body-default text-text-secondary">Exam Room: MATH-8842</span></div><div class="flex items-center gap-space-lg"><a class="flex items-center gap-space-xs font-mono-data text-mono-data text-primary hover:text-violet-hover underline underline-offset-4" data-path="cryptographic-verification" href="#"><span class="material-symbols-outlined text-[16px]">lock_reset</span>SHA-256 Record Verification</a><span class="font-body-default text-body-default text-text-secondary">© 2024 ParaLearn CBT Systems. All rights reserved.</span></div></div></footer></body></html>
