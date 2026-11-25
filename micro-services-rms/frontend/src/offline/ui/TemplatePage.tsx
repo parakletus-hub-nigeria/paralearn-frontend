@@ -36,11 +36,13 @@ const PREVIEW_SUBJECTS = 2;
 export default function TemplatePage({
   schoolName,
   subdomain,
+  ownerKey,
   onBack,
   onSignInNeeded,
 }: {
   schoolName: string;
   subdomain: string;
+  ownerKey: string;
   onBack: () => void;
   onSignInNeeded: () => void;
 }) {
@@ -48,21 +50,22 @@ export default function TemplatePage({
   const [problems, setProblems] = useState<Problem[]>([]);
   const [busy, setBusy] = useState<Format | null>(null);
   const [roster, setRoster] = useState<RosterClass[] | null>(null);
+  const settingsKey = `${STORAGE_KEY}:${ownerKey}`;
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(settingsKey);
       if (saved) setS({ ...DEFAULTS, ...JSON.parse(saved) });
     } catch {
       /* private mode or blocked storage: keep defaults */
     }
-  }, []);
+  }, [settingsKey]);
 
   const update = (patch: Partial<Settings>) =>
     setS((prev) => {
       const next = { ...prev, ...patch };
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        localStorage.setItem(settingsKey, JSON.stringify(next));
       } catch {
         /* not essential */
       }

@@ -110,7 +110,9 @@ frontend/src/
   (Ẹ̀mí prints as Ẹmí). The fonts are saved for offline use on the first online visit; if they
   were never saved, those letters fall back to plain ones (Ọlá prints as Ola).
 - **Storage:** IndexedDB database `paralearn-results-offline`. Batches stay on this laptop;
-  school card profiles are kept separately by ParaLearn school address. The app asks the browser
+  batches and template settings are scoped to the signed-in user and school, while school card
+  profiles are kept by ParaLearn school address. A session change signs out other open Results
+  tabs and prevents another account's batches from appearing or syncing. The app asks the browser
   for persistent storage so batches aren't evicted when the disk is low.
 - **K12 calls** go through the host's `/api/proxy/*` rewrite (`K12_BACKEND_URL`), so they are
   same-origin and the refresh cookie stays on rms.pln.ng.

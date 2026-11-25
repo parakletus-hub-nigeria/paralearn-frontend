@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { AlertTriangle, CheckCircle2, CloudOff, CloudUpload, FileText, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { db, deleteBatch, getProfile, getSession, requestPersistentStorage, type BatchRecord, type K12Session, type SchoolProfile } from "../storage/db";
+import { accountKey, db, deleteBatch, getAccountBatch, getAccountBatches, getProfile, getSession, requestPersistentStorage, type BatchRecord, type K12Session, type SchoolProfile } from "../storage/db";
 import { K12Error, fetchSchoolBranding, signOut, syncBatch, syncPending } from "../storage/k12";
 import { fetchLogo } from "./logo";
 import { setUpOffline, type OfflineReadiness } from "./serviceWorker";
@@ -144,22 +144,25 @@ function classSummary(names: string[]) {
 }
 
 function Home({
+  session,
   onOpen,
   onTemplate,
   onSignInNeeded,
 }: {
+  session: K12Session;
   onOpen: (id: string, fresh?: boolean) => void;
   onTemplate: () => void;
   onSignInNeeded: () => void;
 }) {
+  const ownerKey = accountKey(session);
   // An error reading IndexedDB (a blocked or private browser) shows a message, not an endless skeleton
   const loaded = useLiveQuery(async () => {
     try {
-      return { list: await db.batches.orderBy("createdAt").reverse().toArray(), error: null };
+      return { list: await getAccountBatches(ownerKey), error: null };
     } catch (err) {
       return { list: [] as BatchRecord[], error: err instanceof Error ? err.message : "Unknown error" };
     }
-  }, []);
+  }, [ownerKey]);
   const batches = loaded?.list;
   const generation = useGeneration();
   const [toDelete, setToDelete] = useState<BatchRecord | null>(null);
@@ -178,7 +181,7 @@ function Home({
     setDeleting(true);
     try {
       if (generation?.batchId === toDelete.id) cancelGeneration();
-      await deleteBatch(toDelete.id);
+      await deleteBatch(toDelete.id, ownerKey);
       toast.success("Batch deleted from this laptop.");
       setToDelete(null);
     } catch {
@@ -207,7 +210,7 @@ function Home({
         </div>
       </div>
 
-      <NewBatch onCreated={(id) => onOpen(id, true)} onTemplate={onTemplate} />
+      <NewBatch session={session} onCreated={(id) => onOpen(id, true)} onTemplate={onTemplate} />
 
       <section aria-labelledby="batches-heading" className="rms-batches">
         <div className="rms-section-head">
@@ -404,13 +407,20 @@ export default function OfflineResultsApp() {
   // The school confirms its card header once, before the first batch
   const [profileSetup, setProfileSetup] = useState(false);
   const [view, go] = useView();
+  const sessionRevision = useRef(0);
+  const ownerKey = session ? accountKey(session) : null;
   // The open batch's file name, for the breadcrumb
   const batchId = view.kind === "batch" ? view.id : null;
-  const openBatchName = useLiveQuery(async () => (batchId ? (await db.batches.get(batchId))?.fileName : undefined), [batchId]);
+  const openBatchName = useLiveQuery(async () => {
+    if (!batchId || !ownerKey) return undefined;
+    return (await getAccountBatch(batchId, ownerKey))?.fileName;
+  }, [batchId, ownerKey]);
 
   useEffect(() => {
+    const revision = sessionRevision.current;
     getSession().then(async (s) => {
       const p = await getProfile(s?.subdomain);
+      if (revision !== sessionRevision.current) return;
       setSessionState(s);
       setProfile(p);
       setProfileSetup(!p.schoolName);
@@ -419,6 +429,28 @@ export default function OfflineResultsApp() {
     requestPersistentStorage();
     setUpOffline().then(setReadiness);
   }, []);
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const channel = new BroadcastChannel("rms-session");
+    channel.onmessage = async () => {
+      const revision = ++sessionRevision.current;
+      const next = await getSession();
+      const nextProfile = await getProfile(next?.subdomain);
+      if (revision !== sessionRevision.current) return;
+      const accountChanged = !next || !session || accountKey(next) !== accountKey(session);
+      if (accountChanged) {
+        cancelGeneration();
+      }
+      setSessionState(next);
+      setProfile(nextProfile);
+      setProfileSetup(!!next && !nextProfile.schoolName);
+      setReSignIn(false);
+      setLoaded(true);
+      if (accountChanged && view.kind === "batch") go("#/");
+    };
+    return () => channel.close();
+  }, [go, session, view.kind]);
 
   // Send any scores waiting from offline work, now and whenever the connection returns
   useEffect(() => {
@@ -441,6 +473,12 @@ export default function OfflineResultsApp() {
     // Leave #/signin or #/create behind so the workspace opens on its home screen
     if (/^#\/(signin|create)$/.test(window.location.hash)) go("#/");
     const current = await getProfile(s.subdomain);
+    const active = await getSession();
+    if (!active || active.accessToken !== s.accessToken) return;
+    sessionRevision.current++;
+    setSessionState(s);
+    setProfile(current);
+    setProfileSetup(!current.schoolName);
     if (!current.schoolName) {
       // Prefill the card header from the school's ParaLearn details before showing the form,
       // so a late answer can't overwrite what the user has started typing
@@ -468,6 +506,7 @@ export default function OfflineResultsApp() {
   };
 
   const doSignOut = async () => {
+    cancelGeneration();
     await signOut();
     setSessionState(null);
     // Back to the sign-in form on this laptop, not the public landing page
@@ -519,6 +558,7 @@ export default function OfflineResultsApp() {
             </div>
           </div>
           <SchoolProfileForm
+            key={session.subdomain}
             initial={profile}
             profileScope={session.subdomain}
             firstRun={profileSetup}
@@ -531,15 +571,18 @@ export default function OfflineResultsApp() {
         </main>
       ) : view.kind === "template" ? (
         <TemplatePage
+          key={ownerKey!}
           schoolName={profile.schoolName}
           subdomain={session.subdomain}
+          ownerKey={ownerKey!}
           onBack={() => go("#/")}
           onSignInNeeded={() => setReSignIn(true)}
         />
       ) : view.kind === "batch" ? (
         <BatchView
-          key={view.id}
+          key={`${view.id}:${ownerKey}`}
           batchId={view.id}
+          ownerKey={ownerKey!}
           profile={profile}
           autoStart={view.fresh}
           onBack={() => go("#/")}
@@ -547,6 +590,8 @@ export default function OfflineResultsApp() {
         />
       ) : (
         <Home
+          key={ownerKey!}
+          session={session}
           onOpen={(id, fresh) => go(`#/batch/${id}${fresh ? "?new" : ""}`)}
           onTemplate={() => go("#/template")}
           onSignInNeeded={() => setReSignIn(true)}

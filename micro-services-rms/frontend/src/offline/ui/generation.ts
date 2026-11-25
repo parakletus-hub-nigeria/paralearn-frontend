@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { db, getClassResults, getProfile, getSession, recordId, type BatchRecord, type SchoolProfile } from "../storage/db";
+import { db, getAccountBatch, getClassResults, getProfile, getSession, recordId, type BatchRecord, type SchoolProfile } from "../storage/db";
 import { CancelledError, cancelCardDrawing, drawCards } from "../workers/client";
 import type { CardContext } from "../pdf/reportCardPdf";
 
@@ -72,14 +72,13 @@ export function cancelGeneration(batchId?: string) {
   cancelCardDrawing();
 }
 
-export async function generateBatch(batchId: string): Promise<"done" | "cancelled"> {
+export async function generateBatch(batchId: string, ownerKey: string): Promise<"done" | "cancelled"> {
   if (state) throw new Error("Report cards are already being generated.");
   cancelled = false;
-  const batch = await db.batches.get(batchId);
+  const batch = await getAccountBatch(batchId, ownerKey);
   if (!batch) throw new Error("This batch no longer exists.");
-  const classes = await getClassResults(batchId);
-  const session = await getSession();
-  const profile = await getProfile(session?.subdomain);
+  const classes = await getClassResults(batchId, ownerKey);
+  const profile = await getProfile(batch.ownerKey.split(":")[0]);
   const ctx = cardContext(profile, batch);
   const madeWith = profileFingerprint(profile);
   const overallTotal = classes.reduce((a, c) => a + c.students.length, 0);
@@ -121,8 +120,10 @@ export async function generateBatch(batchId: string): Promise<"done" | "cancelle
 }
 
 /** Drops saved booklets, e.g. after the school profile changed, so the next run redraws them */
-export async function clearBooklets(batchId: string) {
+export async function clearBooklets(batchId: string, ownerKey: string) {
   await db.transaction("rw", db.booklets, db.batches, async () => {
+    const batch = await getAccountBatch(batchId, ownerKey);
+    if (!batch) throw new Error("This batch no longer exists.");
     await db.booklets.where("batchId").equals(batchId).delete();
     await db.batches.update(batchId, { generatedClasses: [], cardsMadeWith: undefined });
   });

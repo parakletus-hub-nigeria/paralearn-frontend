@@ -20,7 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { db, deleteBatch, getClassResults, type BatchRecord, type BookletRecord, type SchoolProfile } from "../storage/db";
+import { db, deleteBatch, getAccountBatch, getClassResults, type BatchRecord, type BookletRecord, type SchoolProfile } from "../storage/db";
 import { K12Error, syncBatch } from "../storage/k12";
 import { buildReportCardsPdf } from "../pdf/reportCardPdf";
 import type { ClassResult, SheetIssue, StudentResult } from "../engine/types";
@@ -326,20 +326,25 @@ function CardPreview({
 
 export default function BatchView({
   batchId,
+  ownerKey,
   profile,
   autoStart,
   onBack,
   onSignInNeeded,
 }: {
   batchId: string;
+  ownerKey: string;
   profile: SchoolProfile;
   autoStart: boolean;
   onBack: () => void;
   onSignInNeeded: () => void;
 }) {
-  const batch = useLiveQuery(() => db.batches.get(batchId), [batchId]);
+  const batch = useLiveQuery(() => getAccountBatch(batchId, ownerKey), [batchId, ownerKey]);
   const [classes, setClasses] = useState<ClassResult[] | null>(null);
-  const booklets = useLiveQuery(() => db.booklets.where("batchId").equals(batchId).toArray(), [batchId]);
+  const booklets = useLiveQuery(async () => {
+    if (!(await getAccountBatch(batchId, ownerKey))) return [];
+    return db.booklets.where("batchId").equals(batchId).toArray();
+  }, [batchId, ownerKey]);
   const [classIdx, setClassIdx] = useState(0);
   const [studentId, setStudentId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -351,8 +356,9 @@ export default function BatchView({
   const gen = useGeneration();
 
   useEffect(() => {
-    getClassResults(batchId).then(setClasses);
-  }, [batchId]);
+    setClasses(null);
+    getClassResults(batchId, ownerKey).then(setClasses);
+  }, [batchId, ownerKey]);
 
   const cls = classes?.[classIdx] ?? null;
   const sorted = useMemo(() => (cls ? [...cls.students].sort((a, b) => a.position - b.position || a.row - b.row) : []), [cls]);
@@ -366,13 +372,13 @@ export default function BatchView({
 
   const start = useCallback(async () => {
     try {
-      const outcome = await generateBatch(batchId);
+      const outcome = await generateBatch(batchId, ownerKey);
       if (outcome === "done") toast.success("All report cards are ready.");
       else toast.info("Stopped. Finished classes are saved; resume any time.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't generate the report cards.");
     }
-  }, [batchId]);
+  }, [batchId, ownerKey]);
 
   // Newly worked-out batch: show the first card (below), then generate the rest
   useEffect(() => {
@@ -384,11 +390,11 @@ export default function BatchView({
   const remove = useCallback(async () => {
     // Only stop generation if it's this batch's cards being made, not another batch's
     cancelGeneration(batchId);
-    await deleteBatch(batchId);
+    await deleteBatch(batchId, ownerKey);
     setConfirmDelete(false);
     toast.success("Batch deleted.");
     onBack();
-  }, [batchId, onBack]);
+  }, [batchId, onBack, ownerKey]);
 
   /** Selects a student and, where the preview sits below the list (tablets and phones), brings it into view */
   const pick = useCallback((id: string) => {
@@ -460,7 +466,7 @@ export default function BatchView({
   const busyNote = busyElsewhere ? "Another batch is making its cards. This one can start when it finishes." : undefined;
 
   const redo = async () => {
-    await clearBooklets(batch.id);
+    await clearBooklets(batch.id, ownerKey);
     await start();
   };
 

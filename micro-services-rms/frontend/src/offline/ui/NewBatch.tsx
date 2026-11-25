@@ -3,7 +3,7 @@
 import React, { useRef, useState } from "react";
 import { AlertTriangle, ChevronDown, FileSpreadsheet, Loader2, UploadCloud, X } from "lucide-react";
 import { processWorkbook } from "../workers/client";
-import { saveBatch, type BatchRecord } from "../storage/db";
+import { saveBatch, type BatchRecord, type K12Session } from "../storage/db";
 import type { SheetIssue } from "../engine/types";
 import { TERMS, currentSession } from "./util";
 import IssueList from "./IssueList";
@@ -60,7 +60,15 @@ function SheetDiagram() {
 }
 
 /** Reads the workbook and computes every result on this laptop, then saves the batch */
-export default function NewBatch({ onCreated, onTemplate }: { onCreated: (batchId: string) => void; onTemplate: () => void }) {
+export default function NewBatch({
+  onCreated,
+  onTemplate,
+  session: activeSession,
+}: {
+  onCreated: (batchId: string) => void;
+  onTemplate: () => void;
+  session: K12Session;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -97,7 +105,7 @@ export default function NewBatch({ onCreated, onTemplate }: { onCreated: (batchI
         setBlocking(results.issues);
         return;
       }
-      const batch: BatchRecord = {
+      const batch: Omit<BatchRecord, "ownerKey"> = {
         id: crypto.randomUUID(),
         fileName: file.name,
         createdAt: new Date().toISOString(),
@@ -109,7 +117,7 @@ export default function NewBatch({ onCreated, onTemplate }: { onCreated: (batchI
         generatedClasses: [],
         sync: { status: "pending" },
       };
-      await saveBatch(batch, results.classes);
+      await saveBatch(batch, results.classes, activeSession);
       setFile(null);
       onCreated(batch.id);
     } catch (err) {

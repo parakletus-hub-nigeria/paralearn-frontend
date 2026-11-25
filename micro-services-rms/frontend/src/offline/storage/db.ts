@@ -33,6 +33,7 @@ export type SyncState =
 
 export interface BatchRecord {
   id: string;
+  ownerKey: string;
   fileName: string;
   createdAt: string;
   term: string;
@@ -71,6 +72,10 @@ export interface KeyValue {
   value: unknown;
 }
 
+export function accountKey(session: Pick<K12Session, "subdomain" | "user">): string {
+  return `${session.subdomain.trim().toLowerCase()}:${session.user.id}`;
+}
+
 class RmsOfflineDB extends Dexie {
   kv!: Table<KeyValue, string>;
   batches!: Table<BatchRecord, string>;
@@ -85,6 +90,21 @@ class RmsOfflineDB extends Dexie {
       classResults: "id, batchId",
       booklets: "id, batchId",
     });
+    this.version(2)
+      .stores({
+        kv: "key",
+        batches: "id, createdAt, ownerKey",
+        classResults: "id, batchId",
+        booklets: "id, batchId",
+      })
+      .upgrade(async (tx) => {
+        const saved = await tx.table("kv").get("session");
+        const session = saved?.value as K12Session | undefined;
+        const ownerKey = session?.user?.id && session.subdomain ? accountKey(session) : "legacy-unassigned";
+        await tx.table("batches").toCollection().modify((batch) => {
+          batch.ownerKey = ownerKey;
+        });
+      });
   }
 }
 
@@ -121,6 +141,11 @@ export async function setSession(session: K12Session | null) {
   if (current?.subdomain) await moveLegacyProfile(current.subdomain);
   if (session) await db.kv.put({ key: "session", value: session });
   else await db.kv.delete("session");
+  if (typeof BroadcastChannel !== "undefined") {
+    const channel = new BroadcastChannel("rms-session");
+    channel.postMessage("changed");
+    channel.close();
+  }
 }
 
 export async function getProfile(subdomain?: string): Promise<SchoolProfile> {
@@ -134,20 +159,33 @@ export async function saveProfile(profile: SchoolProfile, subdomain: string) {
   await db.kv.put({ key: profileKey(subdomain), value: profile });
 }
 
-export async function saveBatch(batch: BatchRecord, classes: ClassResult[]) {
+export async function saveBatch(batch: Omit<BatchRecord, "ownerKey">, classes: ClassResult[], session: K12Session) {
   await db.transaction("rw", db.batches, db.classResults, async () => {
-    await db.batches.put(batch);
+    await db.batches.put({ ...batch, ownerKey: accountKey(session) });
     await db.classResults.bulkPut(classes.map((result, index) => ({ id: recordId(batch.id, index), batchId: batch.id, index, result })));
   });
 }
 
-export async function getClassResults(batchId: string): Promise<ClassResult[]> {
+export async function getAccountBatches(ownerKey: string): Promise<BatchRecord[]> {
+  const rows = await db.batches.where("ownerKey").equals(ownerKey).toArray();
+  return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function getAccountBatch(batchId: string, ownerKey: string): Promise<BatchRecord | undefined> {
+  const batch = await db.batches.get(batchId);
+  return batch?.ownerKey === ownerKey ? batch : undefined;
+}
+
+export async function getClassResults(batchId: string, ownerKey: string): Promise<ClassResult[]> {
+  if (!(await getAccountBatch(batchId, ownerKey))) return [];
   const rows = await db.classResults.where("batchId").equals(batchId).toArray();
   return rows.sort((a, b) => a.index - b.index).map((r) => r.result);
 }
 
-export async function deleteBatch(batchId: string) {
+export async function deleteBatch(batchId: string, ownerKey: string) {
   await db.transaction("rw", db.batches, db.classResults, db.booklets, async () => {
+    const batch = await db.batches.get(batchId);
+    if (batch?.ownerKey !== ownerKey) return;
     await db.batches.delete(batchId);
     await db.classResults.where("batchId").equals(batchId).delete();
     await db.booklets.where("batchId").equals(batchId).delete();

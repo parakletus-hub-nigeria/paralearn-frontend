@@ -1,6 +1,6 @@
 "use client";
 
-import { getClassResults, getSession, setSession, db, type BatchRecord, type K12Session } from "./db";
+import { accountKey, getAccountBatch, getAccountBatches, getClassResults, getSession, setSession, db, type BatchRecord, type K12Session } from "./db";
 import { buildK12WorkbookFile } from "../workers/client";
 
 /**
@@ -185,8 +185,14 @@ export async function fetchStudentRoster(): Promise<RosterClass[]> {
   );
 }
 
-async function setSync(batchId: string, sync: BatchRecord["sync"]) {
-  await db.batches.update(batchId, { sync });
+async function setSync(batchId: string, ownerKey: string, sync: BatchRecord["sync"]) {
+  await db.transaction("rw", db.batches, async () => {
+    const batch = await db.batches.get(batchId);
+    if (batch?.ownerKey !== ownerKey) {
+      throw new K12Error("This batch belongs to a different ParaLearn account.");
+    }
+    await db.batches.update(batchId, { sync });
+  });
 }
 
 /**
@@ -207,15 +213,17 @@ export function syncBatch(batchId: string): Promise<void> {
 
 async function sendBatch(batchId: string): Promise<void> {
   if (typeof navigator !== "undefined" && !navigator.onLine) throw new K12Error("You're offline. Scores will sync when you reconnect.");
-  await setSync(batchId, { status: "syncing", startedAt: new Date().toISOString() });
+  const session = await freshSession();
+  const ownerKey = accountKey(session);
+  const batch = await getAccountBatch(batchId, ownerKey);
+  if (!batch) throw new K12Error("This batch belongs to a different ParaLearn account. Sign in with the account that created it.");
+  await setSync(batchId, ownerKey, { status: "syncing", startedAt: new Date().toISOString() });
   try {
-    const session = await freshSession();
-    const classes = await getClassResults(batchId);
-    const batch = await db.batches.get(batchId);
+    const classes = await getClassResults(batchId, ownerKey);
     const { bytes, droppedColumns } = await buildK12WorkbookFile(classes);
 
     const form = new FormData();
-    const fileName = (batch?.fileName || "results.xlsx").replace(/\.(xlsx|xls)$/i, "") + " (ParaLearn sync).xlsx";
+    const fileName = batch.fileName.replace(/\.(xlsx|xls)$/i, "") + " (ParaLearn sync).xlsx";
     form.append("file", new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), fileName);
     form.append("id", session.user.id);
 
@@ -241,10 +249,10 @@ async function sendBatch(batchId: string): Promise<void> {
 
     const body = await res.json().catch(() => ({}));
     const processed = typeof body?.processed === "number" ? body.processed : body?.data?.processed;
-    await setSync(batchId, { status: "synced", at: new Date().toISOString(), processed, droppedColumns });
+    await setSync(batchId, ownerKey, { status: "synced", at: new Date().toISOString(), processed, droppedColumns });
   } catch (err) {
     const e = err instanceof K12Error ? err : new K12Error(err instanceof Error ? err.message : "Sync failed.");
-    await setSync(batchId, { status: "failed", at: new Date().toISOString(), error: e.message, needsSignIn: e.needsSignIn });
+    await setSync(batchId, ownerKey, { status: "failed", at: new Date().toISOString(), error: e.message, needsSignIn: e.needsSignIn });
     throw e;
   }
 }
@@ -253,12 +261,15 @@ async function sendBatch(batchId: string): Promise<void> {
 export async function syncPending(): Promise<{ synced: number; failed: number }> {
   const session = await getSession();
   if (!session || !navigator.onLine) return { synced: 0, failed: 0 };
-  const batches = await db.batches.toArray();
+  const ownerKey = accountKey(session);
+  const batches = await getAccountBatches(ownerKey);
   let synced = 0;
   let failed = 0;
   for (const listed of batches) {
+    const active = await getSession();
+    if (!active || accountKey(active) !== ownerKey) break;
     // Re-read: the list is a snapshot, and "Send now" may have sent this batch since
-    const b = await db.batches.get(listed.id);
+    const b = await getAccountBatch(listed.id, ownerKey);
     if (!b) continue;
     // A sync interrupted by closing the tab is left as "syncing"; retry it after two minutes
     const stuck = b.sync.status === "syncing" && Date.now() - Date.parse(b.sync.startedAt) > 120_000;
