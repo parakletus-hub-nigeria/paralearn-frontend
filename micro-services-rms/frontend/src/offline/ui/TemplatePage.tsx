@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Download, FileSpreadsheet, Loader2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download, FileSpreadsheet, Loader2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_SUBJECTS, SCORE_COLUMNS, buildCsvTemplate, cleanList, type ScoreColumnKey } from "../engine/csvTemplate";
+import { fetchStudentRoster, K12Error, type RosterClass } from "../storage/k12";
 import { downloadBlob, plural, safeFileName } from "./util";
 import "./rms-forms.css";
 
@@ -26,16 +27,27 @@ const DEFAULTS: Settings = {
 };
 
 type Problem = "classes" | "subjects" | "columns" | "rows";
-type Format = "csv" | "xlsx";
+type Format = "csv" | "xlsx" | "roster";
 
 /** How many subject columns the preview shows before "and N more" */
 const PREVIEW_SUBJECTS = 2;
 
 /** For schools without their own result sheet: build a CSV (or Excel file) to fill in, then open it */
-export default function TemplatePage({ schoolName, onBack }: { schoolName: string; onBack: () => void }) {
+export default function TemplatePage({
+  schoolName,
+  subdomain,
+  onBack,
+  onSignInNeeded,
+}: {
+  schoolName: string;
+  subdomain: string;
+  onBack: () => void;
+  onSignInNeeded: () => void;
+}) {
   const [s, setS] = useState<Settings>(DEFAULTS);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [busy, setBusy] = useState<Format | null>(null);
+  const [roster, setRoster] = useState<RosterClass[] | null>(null);
 
   useEffect(() => {
     try {
@@ -80,6 +92,26 @@ export default function TemplatePage({ schoolName, onBack }: { schoolName: strin
 
   const removeClass = (name: string) => update({ classes: classes.filter((c) => c !== name).join("\n") });
 
+  const importRoster = async () => {
+    setBusy("roster");
+    try {
+      const result = await fetchStudentRoster();
+      setRoster(result);
+      update({
+        classes: result.map((cls) => cls.className).join("\n"),
+        rowsPerClass: Math.max(1, ...result.map((cls) => cls.students.length)),
+      });
+      const total = result.reduce((count, cls) => count + cls.students.length, 0);
+      if (total) toast.success(`Imported ${plural(total, "student")} from ${plural(result.length, "class")}.`);
+      else toast.error("No enrolled students were found. You can still add student names manually.");
+    } catch (err) {
+      if (err instanceof K12Error && err.needsSignIn) onSignInNeeded();
+      toast.error(err instanceof Error ? err.message : "Couldn't import the ParaLearn student roster.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const download = async (format: Format) => {
     if (current.length) {
       setProblems(current);
@@ -93,6 +125,7 @@ export default function TemplatePage({ schoolName, onBack }: { schoolName: strin
       scoreColumns: s.scoreColumns,
       rowsPerClass: rows,
       includeTeacherColumns: s.includeTeacherColumns,
+      roster: roster || undefined,
     });
     const name = `${safeFileName(schoolName || "School")} result sheet template`;
     if (format === "csv") {
@@ -107,11 +140,12 @@ export default function TemplatePage({ schoolName, onBack }: { schoolName: strin
       const book = XLSX.read(csv.replace(/^﻿/, ""), { type: "string", raw: true });
       const sheet = book.Sheets[book.SheetNames[0]];
       const header = csv.replace(/^﻿/, "").split("\r\n")[0].split(",");
-      // Admission numbers like 0012 or KC/001 must stay text, or Excel rewrites them
+      // Admission numbers like 0012 or KC/001 must stay text, or Excel rewrites them.
+      // Preserve values imported from ParaLearn while forcing text formatting.
       const range = XLSX.utils.decode_range(sheet["!ref"] || "A1");
       for (let r = 1; r <= range.e.r; r++) {
         const ref = XLSX.utils.encode_cell({ r, c: 3 });
-        sheet[ref] = { t: "s", v: "", z: "@" };
+        sheet[ref] = { ...(sheet[ref] || {}), t: "s", z: "@" };
       }
       sheet["!cols"] = header.map((h, i) => ({ wch: i === 2 ? 28 : i < 2 ? 8 : Math.max(10, Math.min(24, h.length + 2)) }));
       const first = book.SheetNames[0];
@@ -131,6 +165,15 @@ export default function TemplatePage({ schoolName, onBack }: { schoolName: strin
   const previewSubjects = subjects.slice(0, PREVIEW_SUBJECTS);
   const hiddenColumns = Math.max(0, subjects.length - PREVIEW_SUBJECTS) * labels.length + (s.includeTeacherColumns ? 3 : 0);
   const sampleClass = classes[0] || "JSS 1A";
+  const sampleRoster = roster?.find((cls) => cls.className.toLowerCase() === sampleClass.toLowerCase())?.students || [];
+  const previewRows = (sampleRoster.length ? sampleRoster.slice(0, 3) : [null, null, null]).map((student, index) => ({
+    number: index + 1,
+    student,
+  }));
+  const totalRows = classes.reduce((count, cls) => {
+    const students = roster?.find((entry) => entry.className.toLowerCase() === cls.toLowerCase())?.students;
+    return count + (students?.length || rows);
+  }, 0);
 
   return (
     <main className="rms-page">
@@ -145,6 +188,10 @@ export default function TemplatePage({ schoolName, onBack }: { schoolName: strin
           <p className="rms-tpl-lede">Set your classes and subjects, download the sheet, and have teachers fill in one row per student.</p>
         </div>
         <div className="rms-page-actions">
+          <button type="button" className="rms-button" onClick={importRoster} disabled={!!busy}>
+            {busy === "roster" ? <Loader2 size={16} className="animate-spin" /> : <Users size={16} />}
+            {busy === "roster" ? "Importing students" : roster ? "Refresh student roster" : "Import students from ParaLearn"}
+          </button>
           <button type="button" className="rms-button" onClick={() => download("xlsx")} disabled={!!busy}>
             {busy === "xlsx" ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
             Excel (.xlsx)
@@ -310,7 +357,7 @@ export default function TemplatePage({ schoolName, onBack }: { schoolName: strin
               <strong>{columnCount}</strong> columns
             </span>
             <span>
-              <strong>{rowsOk ? classes.length * rows : 0}</strong> rows to fill
+              <strong>{rowsOk ? totalRows : 0}</strong> student rows
             </span>
           </p>
           <div className="rms-tpl-sheet" tabIndex={0} role="region" aria-label="Preview of the first rows of the sheet">
@@ -332,12 +379,12 @@ export default function TemplatePage({ schoolName, onBack }: { schoolName: strin
                 </tr>
               </thead>
               <tbody>
-                {[1, 2, 3].map((n) => (
-                  <tr key={n}>
+                {previewRows.map(({ number, student }) => (
+                  <tr key={number}>
                     <td>{sampleClass}</td>
-                    <td className="num">{n}</td>
-                    <td />
-                    <td />
+                    <td className="num">{number}</td>
+                    <td>{student?.name || ""}</td>
+                    <td>{student?.admissionNo || ""}</td>
                     {previewSubjects.flatMap((sub) => labels.map((l) => <td key={`${sub}-${l}`} />))}
                     {hiddenColumns > 0 && <td className="is-more" />}
                   </tr>

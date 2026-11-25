@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { db, getClassResults, getProfile, recordId, type BatchRecord, type SchoolProfile } from "../storage/db";
+import { db, getClassResults, getProfile, getSession, recordId, type BatchRecord, type SchoolProfile } from "../storage/db";
 import { CancelledError, cancelCardDrawing, drawCards } from "../workers/client";
 import type { CardContext } from "../pdf/reportCardPdf";
 
@@ -78,7 +78,8 @@ export async function generateBatch(batchId: string): Promise<"done" | "cancelle
   const batch = await db.batches.get(batchId);
   if (!batch) throw new Error("This batch no longer exists.");
   const classes = await getClassResults(batchId);
-  const profile = await getProfile();
+  const session = await getSession();
+  const profile = await getProfile(session?.subdomain);
   const ctx = cardContext(profile, batch);
   const madeWith = profileFingerprint(profile);
   const overallTotal = classes.reduce((a, c) => a + c.students.length, 0);

@@ -48,7 +48,10 @@ appears about 0.35 s after choosing the sheet.
 ## The CSV template
 
 Built in the browser from the school's classes, subjects and chosen score columns
-(`offline/engine/csvTemplate.ts`). It's one table for the whole school, one row per student:
+(`offline/engine/csvTemplate.ts`). While online, a signed-in school can import its active classes
+and student rosters from ParaLearn Core; the generated file then includes student names and student
+IDs. Schools can still create a blank template or use it offline. It's one table for the whole
+school, one row per student:
 
 ```
 Class,S/N,Student Name,Admission No,Mathematics 1st CA,Mathematics 2nd CA,Mathematics Exam,...,Teacher's Comment,Days Present,Days Opened
@@ -106,8 +109,9 @@ frontend/src/
   pdf-lib can't position a second mark, so a tone mark on a dotted letter is dropped
   (Ẹ̀mí prints as Ẹmí). The fonts are saved for offline use on the first online visit; if they
   were never saved, those letters fall back to plain ones (Ọlá prints as Ola).
-- **Storage:** IndexedDB database `paralearn-results-offline`. The app asks the browser for
-  persistent storage so batches aren't evicted when the disk is low.
+- **Storage:** IndexedDB database `paralearn-results-offline`. Batches stay on this laptop;
+  school card profiles are kept separately by ParaLearn school address. The app asks the browser
+  for persistent storage so batches aren't evicted when the disk is low.
 - **K12 calls** go through the host's `/api/proxy/*` rewrite (`K12_BACKEND_URL`), so they are
   same-origin and the refresh cookie stays on rms.pln.ng.
 

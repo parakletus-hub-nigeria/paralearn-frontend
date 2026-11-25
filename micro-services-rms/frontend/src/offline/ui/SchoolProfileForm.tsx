@@ -126,10 +126,12 @@ function CardPreview({ color, colours, logoUrl, schoolName, motto, contact, next
 /** School details printed at the top of every card; stored on this laptop */
 export default function SchoolProfileForm({
   initial,
+  profileScope,
   onSaved,
   firstRun = false,
 }: {
   initial: SchoolProfile;
+  profileScope: string;
   onSaved: (p: SchoolProfile) => void;
   firstRun?: boolean;
 }) {
@@ -237,7 +239,7 @@ export default function SchoolProfileForm({
     setSaving(true);
     const stored = clean(form);
     try {
-      await saveProfile(stored);
+      await saveProfile(stored, profileScope);
       setSaved(stored);
       setForm(stored);
       toast.success("School profile saved on this laptop.");

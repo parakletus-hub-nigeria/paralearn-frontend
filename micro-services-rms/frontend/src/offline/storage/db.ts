@@ -67,7 +67,7 @@ export interface BookletRecord {
 }
 
 export interface KeyValue {
-  key: "session" | "profile";
+  key: string;
   value: unknown;
 }
 
@@ -106,18 +106,32 @@ export async function getSession(): Promise<K12Session | null> {
   return ((await db.kv.get("session"))?.value as K12Session | undefined) ?? null;
 }
 
+const profileKey = (subdomain: string) => `profile:${subdomain}`;
+
+async function moveLegacyProfile(subdomain: string) {
+  const legacy = await db.kv.get("profile");
+  if (!legacy) return;
+  const key = profileKey(subdomain);
+  if (!(await db.kv.get(key))) await db.kv.put({ ...legacy, key });
+  await db.kv.delete("profile");
+}
+
 export async function setSession(session: K12Session | null) {
+  const current = await getSession();
+  if (current?.subdomain) await moveLegacyProfile(current.subdomain);
   if (session) await db.kv.put({ key: "session", value: session });
   else await db.kv.delete("session");
 }
 
-export async function getProfile(): Promise<SchoolProfile> {
-  const stored = (await db.kv.get("profile"))?.value as Partial<SchoolProfile> | undefined;
+export async function getProfile(subdomain?: string): Promise<SchoolProfile> {
+  const stored = subdomain
+    ? ((await db.kv.get(profileKey(subdomain)))?.value as Partial<SchoolProfile> | undefined)
+    : undefined;
   return { ...DEFAULT_PROFILE, ...(stored || {}) };
 }
 
-export async function saveProfile(profile: SchoolProfile) {
-  await db.kv.put({ key: "profile", value: profile });
+export async function saveProfile(profile: SchoolProfile, subdomain: string) {
+  await db.kv.put({ key: profileKey(subdomain), value: profile });
 }
 
 export async function saveBatch(batch: BatchRecord, classes: ClassResult[]) {

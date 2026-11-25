@@ -30,6 +30,7 @@ export interface TemplateOptions {
   scoreColumns: ScoreColumnKey[];
   rowsPerClass: number;
   includeTeacherColumns: boolean;
+  roster?: Array<{ className: string; students: Array<{ name: string; admissionNo: string | null }> }>;
 }
 
 const csvCell = (v: string | number) => {
@@ -63,8 +64,18 @@ export function buildCsvTemplate(opts: TemplateOptions): string {
   const blanks = header.length - 2;
   const rows: (string | number)[][] = [header];
   const classes = opts.classes.length ? opts.classes : ["JSS 1A"];
+  const rosterByClass = new Map(
+    (opts.roster || []).map((cls) => [cls.className.trim().toLowerCase(), cls.students])
+  );
   for (const cls of classes) {
-    for (let i = 1; i <= Math.max(1, opts.rowsPerClass); i++) rows.push([cls, i, ...Array(blanks).fill("")]);
+    const students = rosterByClass.get(cls.trim().toLowerCase());
+    if (students?.length) {
+      for (const [index, student] of students.entries()) {
+        rows.push([cls, index + 1, student.name, student.admissionNo || "", ...Array(header.length - 4).fill("")]);
+      }
+    } else {
+      for (let i = 1; i <= Math.max(1, opts.rowsPerClass); i++) rows.push([cls, i, ...Array(blanks).fill("")]);
+    }
   }
   // BOM so Excel on Windows opens names with accents correctly
   return "﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";

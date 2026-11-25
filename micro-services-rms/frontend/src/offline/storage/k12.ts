@@ -17,6 +17,16 @@ export class K12Error extends Error {
   }
 }
 
+export interface RosterStudent {
+  name: string;
+  admissionNo: string | null;
+}
+
+export interface RosterClass {
+  className: string;
+  students: RosterStudent[];
+}
+
 /** "kings", "kings.pln.ng" or "https://kings.pln.ng/login" -> "kings" */
 export function normalizeSubdomain(input: string): string {
   const host = input.trim().toLowerCase().replace(/^https?:\/\//, "").split(/[/?#]/)[0];
@@ -87,6 +97,92 @@ async function freshSession(): Promise<K12Session> {
   const renewed = { ...session, accessToken };
   await setSession(renewed);
   return renewed;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+function responseList(body: unknown, label: string): unknown[] {
+  const data = isRecord(body) ? body.data : undefined;
+  const nested = isRecord(data) ? data.data : undefined;
+  const candidates: unknown[] = [body, data, nested];
+  const list = candidates.find(Array.isArray);
+  if (!Array.isArray(list)) throw new K12Error(`ParaLearn returned an unexpected ${label} list. Please try again.`);
+  return list;
+}
+
+async function getCoreList(path: string, session: K12Session, label: string): Promise<unknown[]> {
+  let res: Response;
+  try {
+    res = await fetch(`${K12}${path}`, {
+      credentials: "same-origin",
+      headers: {
+        authorization: `Bearer ${session.accessToken}`,
+        "x-tenant-subdomain": session.subdomain,
+      },
+    });
+  } catch {
+    throw new K12Error("Lost the connection while loading students. Try again when you're online.");
+  }
+  if (res.status === 401 || res.status === 403) {
+    throw new K12Error(
+      res.status === 401 ? "Your ParaLearn sign-in has expired. Sign in again to import students." : "This account isn't allowed to view the school's student roster.",
+      res.status,
+      res.status === 401
+    );
+  }
+  if (!res.ok) throw new K12Error(await errorMessage(res, `ParaLearn couldn't load ${label} (error ${res.status}).`), res.status);
+  return responseList(await res.json(), label);
+}
+
+/** Loads active class rosters using the same authenticated Core APIs used by the main RMS. */
+export async function fetchStudentRoster(): Promise<RosterClass[]> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    throw new K12Error("Connect to the internet to import student names from ParaLearn.");
+  }
+  const session = await freshSession();
+  const classes = await getCoreList("/classes?isActive=true", session, "class");
+  const validClasses = classes.flatMap((entry) => {
+    if (!isRecord(entry) || typeof entry.id !== "string" || !entry.id || typeof entry.name !== "string" || !entry.name.trim()) return [];
+    return [{ id: entry.id, name: entry.name.trim() }];
+  });
+  if (!validClasses.length) throw new K12Error("No active classes were found in this ParaLearn school.");
+
+  const names = new Set<string>();
+  const duplicate = validClasses.find((cls) => {
+    const key = cls.name.trim().toLowerCase().replace(/\s+/g, " ");
+    if (names.has(key)) return true;
+    names.add(key);
+    return false;
+  });
+  if (duplicate) {
+    throw new K12Error(`ParaLearn has more than one active class named "${duplicate.name}". Rename the duplicate class before importing its roster.`);
+  }
+
+  return Promise.all(
+    validClasses.map(async (cls) => {
+      const students = await getCoreList(
+        `/users?classId=${encodeURIComponent(cls.id)}&role=student`,
+        session,
+        `student roster for ${cls.name}`
+      );
+      return {
+        className: cls.name.trim(),
+        students: students.flatMap((entry): RosterStudent[] => {
+          if (!isRecord(entry)) return [];
+          const student = isRecord(entry.student) ? entry.student : isRecord(entry.user) ? entry.user : entry;
+          const firstName = typeof student.firstName === "string" ? student.firstName.trim() : "";
+          const lastName = typeof student.lastName === "string" ? student.lastName.trim() : "";
+          const name = [firstName, lastName].filter(Boolean).join(" ") || (typeof student.name === "string" ? student.name.trim() : "");
+          if (!name) return [];
+          const admissionNo = [student.studentId, student.studentIdNumber].find(
+            (value): value is string => typeof value === "string" && !!value.trim()
+          );
+          return [{ name, admissionNo: admissionNo?.trim() || null }];
+        }),
+      };
+    })
+  );
 }
 
 async function setSync(batchId: string, sync: BatchRecord["sync"]) {

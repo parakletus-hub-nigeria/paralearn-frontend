@@ -409,7 +409,8 @@ export default function OfflineResultsApp() {
   const openBatchName = useLiveQuery(async () => (batchId ? (await db.batches.get(batchId))?.fileName : undefined), [batchId]);
 
   useEffect(() => {
-    Promise.all([getSession(), getProfile()]).then(([s, p]) => {
+    getSession().then(async (s) => {
+      const p = await getProfile(s?.subdomain);
       setSessionState(s);
       setProfile(p);
       setProfileSetup(!p.schoolName);
@@ -439,7 +440,7 @@ export default function OfflineResultsApp() {
   const onSignedIn = async (s: K12Session) => {
     // Leave #/signin or #/create behind so the workspace opens on its home screen
     if (/^#\/(signin|create)$/.test(window.location.hash)) go("#/");
-    const current = await getProfile();
+    const current = await getProfile(s.subdomain);
     if (!current.schoolName) {
       // Prefill the card header from the school's ParaLearn details before showing the form,
       // so a late answer can't overwrite what the user has started typing
@@ -458,6 +459,9 @@ export default function OfflineResultsApp() {
         logo: found?.logoBytes ? { bytes: found.logoBytes, type: "png" } : current.logo,
       });
       setProfileSetup(true);
+    } else {
+      setProfile(current);
+      setProfileSetup(false);
     }
     setReSignIn(false);
     setSessionState(s);
@@ -516,6 +520,7 @@ export default function OfflineResultsApp() {
           </div>
           <SchoolProfileForm
             initial={profile}
+            profileScope={session.subdomain}
             firstRun={profileSetup}
             onSaved={(p) => {
               setProfile(p);
@@ -525,7 +530,12 @@ export default function OfflineResultsApp() {
           />
         </main>
       ) : view.kind === "template" ? (
-        <TemplatePage schoolName={profile.schoolName} onBack={() => go("#/")} />
+        <TemplatePage
+          schoolName={profile.schoolName}
+          subdomain={session.subdomain}
+          onBack={() => go("#/")}
+          onSignInNeeded={() => setReSignIn(true)}
+        />
       ) : view.kind === "batch" ? (
         <BatchView
           key={view.id}
