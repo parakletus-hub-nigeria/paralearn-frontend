@@ -285,17 +285,12 @@ export async function fetchStudentRoster(): Promise<ImportedRoster> {
   }
   let session = await freshSession();
 
-  // 1. Load active classes (fall back to all classes, or teacher's assigned classes on 403)
+  // 1. Load school classes (GET /classes — same call as Core RMS; fall back to teacher's assigned classes on 403)
   let rawClasses: unknown[] = [];
   try {
-    const res = await getCoreJson("/classes?isActive=true", session, "class list");
+    const res = await getCoreJson("/classes", session, "class list");
     session = res.session;
     rawClasses = extractArray(res.body) ?? [];
-    if (!rawClasses.length) {
-      const allRes = await getCoreJson("/classes", session, "class list");
-      session = allRes.session;
-      rawClasses = extractArray(allRes.body) ?? [];
-    }
   } catch (err) {
     if (err instanceof K12Error && err.status === 403) {
       const teacherRes = await getCoreJson(`/classes/teacher/${encodeURIComponent(session.user.id)}`, session, "assigned classes");
@@ -310,6 +305,7 @@ export async function fetchStudentRoster(): Promise<ImportedRoster> {
   const validClasses = rawClasses.flatMap((entry) => {
     if (!isRecord(entry)) return [];
     const cls = isRecord(entry.class) ? entry.class : entry;
+    if (cls.isActive === false) return [];
     if (typeof cls.id !== "string" || !cls.id || typeof cls.name !== "string" || !cls.name.trim()) return [];
     if (seenIds.has(cls.id)) return [];
     seenIds.add(cls.id);
