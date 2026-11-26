@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { db, getAccountBatch, getClassResults, getProfile, getSession, recordId, type BatchRecord, type SchoolProfile } from "../storage/db";
+import { db, getAccountBatch, getClassResults, getProfile, recordId, type BatchRecord, type SchoolProfile } from "../storage/db";
 import { CancelledError, cancelCardDrawing, drawCards } from "../workers/client";
 import type { CardContext } from "../pdf/reportCardPdf";
 

@@ -4,8 +4,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Download, FileSpreadsheet, Loader2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_SUBJECTS, SCORE_COLUMNS, buildCsvTemplate, cleanList, type ScoreColumnKey } from "../engine/csvTemplate";
-import { fetchStudentRoster, K12Error, type RosterClass } from "../storage/k12";
-import { downloadBlob, plural, safeFileName } from "./util";
+import { clearRoster, getRoster, saveRoster, type CachedRoster } from "../storage/db";
+import { fetchStudentRoster, K12Error, normalizeClassKey } from "../storage/k12";
+import { downloadBlob, plural, safeFileName, timeAgo, useOnline } from "./util";
 import "./rms-forms.css";
 
 const STORAGE_KEY = "rms-csv-template-settings";
@@ -46,20 +47,36 @@ export default function TemplatePage({
   onBack: () => void;
   onSignInNeeded: () => void;
 }) {
+  const online = useOnline();
   const [s, setS] = useState<Settings>(DEFAULTS);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [busy, setBusy] = useState<Format | null>(null);
-  const [roster, setRoster] = useState<RosterClass[] | null>(null);
+  const [cachedRoster, setCachedRoster] = useState<CachedRoster | null>(null);
+  const roster = cachedRoster?.classes ?? null;
   const settingsKey = `${STORAGE_KEY}:${ownerKey}`;
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(settingsKey);
-      if (saved) setS({ ...DEFAULTS, ...JSON.parse(saved) });
+      setS(saved ? { ...DEFAULTS, ...JSON.parse(saved) } : DEFAULTS);
     } catch {
-      /* private mode or blocked storage: keep defaults */
+      setS(DEFAULTS);
     }
   }, [settingsKey]);
+
+  useEffect(() => {
+    let active = true;
+    getRoster(ownerKey)
+      .then((saved) => {
+        if (active) setCachedRoster(saved);
+      })
+      .catch(() => {
+        if (active) setCachedRoster(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [ownerKey]);
 
   const update = (patch: Partial<Settings>) =>
     setS((prev) => {
@@ -82,6 +99,10 @@ export default function TemplatePage({
   const rowsOk = Number.isFinite(s.rowsPerClass) && s.rowsPerClass >= 1 && s.rowsPerClass <= 200;
   const rows = rowsOk ? Math.round(s.rowsPerClass) : 0;
   const subjectsAreDefault = cleanList(s.subjects).join("|") === DEFAULT_SUBJECTS.join("|");
+  const rosterByClass = useMemo(
+    () => new Map((roster || []).map((cls) => [normalizeClassKey(cls.className), cls.students])),
+    [roster]
+  );
 
   // Errors only show after a download attempt, then clear as each one is fixed
   const current: Problem[] = [
@@ -95,18 +116,39 @@ export default function TemplatePage({
 
   const removeClass = (name: string) => update({ classes: classes.filter((c) => c !== name).join("\n") });
 
+  const clearImportedRoster = async () => {
+    setCachedRoster(null);
+    await clearRoster(ownerKey).catch(() => undefined);
+    toast.info("Cleared imported student names. Downloads will use blank rows.");
+  };
+
   const importRoster = async () => {
     setBusy("roster");
     try {
       const result = await fetchStudentRoster();
-      setRoster(result);
-      update({
-        classes: result.map((cls) => cls.className).join("\n"),
-        rowsPerClass: Math.max(1, ...result.map((cls) => cls.students.length)),
-      });
-      const total = result.reduce((count, cls) => count + cls.students.length, 0);
-      if (total) toast.success(`Imported ${plural(total, "student")} from ${plural(result.length, "class")}.`);
-      else toast.error("No enrolled students were found. You can still add student names manually.");
+      const nextCached: CachedRoster = {
+        classes: result.classes,
+        subjects: result.subjects,
+        importedAt: new Date().toISOString(),
+      };
+      setCachedRoster(nextCached);
+      await saveRoster(ownerKey, nextCached).catch(() => undefined);
+      const largest = Math.max(1, ...result.classes.map((cls) => cls.students.length));
+      const patch: Partial<Settings> = {
+        classes: result.classes.map((cls) => cls.className).join("\n"),
+        rowsPerClass: Math.min(200, largest),
+      };
+      // Populate school subjects from ParaLearn Core when the user hasn't customised them yet
+      if (result.subjects.length && (subjectsAreDefault || !subjects.length)) {
+        patch.subjects = result.subjects.join("\n");
+      }
+      update(patch);
+      const total = result.classes.reduce((count, cls) => count + cls.students.length, 0);
+      if (total) {
+        toast.success(`Imported ${plural(total, "student")} across ${plural(result.classes.length, "class", "classes")} from ParaLearn.`);
+      } else {
+        toast.error("Classes were imported, but no enrolled students were found yet. You can still add student names manually.");
+      }
     } catch (err) {
       if (err instanceof K12Error && err.needsSignIn) onSignInNeeded();
       toast.error(err instanceof Error ? err.message : "Couldn't import the ParaLearn student roster.");
@@ -130,7 +172,7 @@ export default function TemplatePage({
       includeTeacherColumns: s.includeTeacherColumns,
       roster: roster || undefined,
     });
-    const name = `${safeFileName(schoolName || "School")} result sheet template`;
+    const name = `${safeFileName(schoolName || subdomain || "School")} result sheet template`;
     if (format === "csv") {
       downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${name}.csv`);
       toast.success("Template downloaded. Fill it in, save it, then open it from Result batches.");
@@ -142,13 +184,16 @@ export default function TemplatePage({
       const XLSX = await import("xlsx");
       const book = XLSX.read(csv.replace(/^﻿/, ""), { type: "string", raw: true });
       const sheet = book.Sheets[book.SheetNames[0]];
-      const header = csv.replace(/^﻿/, "").split("\r\n")[0].split(",");
+      const parsedRows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: "" });
+      const header = (parsedRows[0] || []).map(String);
       // Admission numbers like 0012 or KC/001 must stay text, or Excel rewrites them.
       // Preserve values imported from ParaLearn while forcing text formatting.
       const range = XLSX.utils.decode_range(sheet["!ref"] || "A1");
       for (let r = 1; r <= range.e.r; r++) {
         const ref = XLSX.utils.encode_cell({ r, c: 3 });
-        sheet[ref] = { ...(sheet[ref] || {}), t: "s", z: "@" };
+        const existing = sheet[ref];
+        const value = existing?.v != null ? String(existing.v) : "";
+        sheet[ref] = { t: "s", v: value, z: "@" };
       }
       sheet["!cols"] = header.map((h, i) => ({ wch: i === 2 ? 28 : i < 2 ? 8 : Math.max(10, Math.min(24, h.length + 2)) }));
       const first = book.SheetNames[0];
@@ -168,13 +213,14 @@ export default function TemplatePage({
   const previewSubjects = subjects.slice(0, PREVIEW_SUBJECTS);
   const hiddenColumns = Math.max(0, subjects.length - PREVIEW_SUBJECTS) * labels.length + (s.includeTeacherColumns ? 3 : 0);
   const sampleClass = classes[0] || "JSS 1A";
-  const sampleRoster = roster?.find((cls) => cls.className.toLowerCase() === sampleClass.toLowerCase())?.students || [];
+  const sampleRoster = rosterByClass.get(normalizeClassKey(sampleClass)) || [];
   const previewRows = (sampleRoster.length ? sampleRoster.slice(0, 3) : [null, null, null]).map((student, index) => ({
     number: index + 1,
     student,
   }));
+  const matchedRosterStudents = classes.reduce((count, cls) => count + (rosterByClass.get(normalizeClassKey(cls))?.length || 0), 0);
   const totalRows = classes.reduce((count, cls) => {
-    const students = roster?.find((entry) => entry.className.toLowerCase() === cls.toLowerCase())?.students;
+    const students = rosterByClass.get(normalizeClassKey(cls));
     return count + (students?.length || rows);
   }, 0);
 
@@ -186,12 +232,20 @@ export default function TemplatePage({
       </button>
       <div className="rms-page-heading rms-tpl-heading">
         <div>
-          <span className="rms-eyebrow">For schools without their own result sheet</span>
+          <span className="rms-eyebrow">Export a ready-to-fill sheet</span>
           <h1>Result sheet template</h1>
-          <p className="rms-tpl-lede">Set your classes and subjects, download the sheet, and have teachers fill in one row per student.</p>
+          <p className="rms-tpl-lede">
+            Import your enrolled students from ParaLearn so names and IDs are already attached, or set your classes and subjects manually.
+          </p>
         </div>
         <div className="rms-page-actions">
-          <button type="button" className="rms-button" onClick={importRoster} disabled={!!busy}>
+          <button
+            type="button"
+            className="rms-button"
+            onClick={importRoster}
+            disabled={!!busy || !online}
+            title={!online ? "Connect to the internet to import student names from ParaLearn." : undefined}
+          >
             {busy === "roster" ? <Loader2 size={16} className="animate-spin" /> : <Users size={16} />}
             {busy === "roster" ? "Importing students" : roster ? "Refresh student roster" : "Import students from ParaLearn"}
           </button>
@@ -205,6 +259,28 @@ export default function TemplatePage({
           </button>
         </div>
       </div>
+
+      {cachedRoster && (
+        <div className="rms-pf-intro" role="status" style={{ marginBottom: 20 }}>
+          <Users size={16} aria-hidden />
+          <span style={{ flex: 1 }}>
+            {matchedRosterStudents > 0 ? (
+              <>
+                <strong>{plural(matchedRosterStudents, "student name")}</strong> from ParaLearn Core will be pre-filled in your exported sheet (saved
+                for offline use · imported {timeAgo(cachedRoster.importedAt)}).
+              </>
+            ) : (
+              <>
+                Roster imported from ParaLearn Core ({timeAgo(cachedRoster.importedAt)}), with no matched students for the listed classes. Downloads
+                will use blank rows.
+              </>
+            )}{" "}
+            <button type="button" className="rms-link" onClick={clearImportedRoster}>
+              Use blank rows instead
+            </button>
+          </span>
+        </div>
+      )}
 
       <div className="rms-pf rms-tpl">
         <div className="rms-pf-form">
@@ -235,14 +311,20 @@ export default function TemplatePage({
               </label>
               {classes.length > 0 && (
                 <ul className="rms-tpl-chips" aria-label={`${plural(classes.length, "class", "classes")} in the template`}>
-                  {classes.map((c) => (
-                    <li key={c}>
-                      {c}
-                      <button type="button" onClick={() => removeClass(c)} aria-label={`Remove ${c}`}>
-                        <X size={13} />
-                      </button>
-                    </li>
-                  ))}
+                  {classes.map((c) => {
+                    const count = rosterByClass.get(normalizeClassKey(c))?.length;
+                    return (
+                      <li key={c}>
+                        <span>
+                          {c}
+                          {count ? ` · ${count}` : ""}
+                        </span>
+                        <button type="button" onClick={() => removeClass(c)} aria-label={`Remove ${c}`}>
+                          <X size={13} />
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

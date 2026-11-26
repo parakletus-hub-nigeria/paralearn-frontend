@@ -51,6 +51,8 @@ export function cleanList(input: string): string[] {
     });
 }
 
+const classKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
+
 export function buildCsvTemplate(opts: TemplateOptions): string {
   const labels = SCORE_COLUMNS.filter((c) => opts.scoreColumns.includes(c.key)).map((c) => c.label);
   const header = [
@@ -64,11 +66,9 @@ export function buildCsvTemplate(opts: TemplateOptions): string {
   const blanks = header.length - 2;
   const rows: (string | number)[][] = [header];
   const classes = opts.classes.length ? opts.classes : ["JSS 1A"];
-  const rosterByClass = new Map(
-    (opts.roster || []).map((cls) => [cls.className.trim().toLowerCase(), cls.students])
-  );
+  const rosterByClass = new Map((opts.roster || []).map((cls) => [classKey(cls.className), cls.students]));
   for (const cls of classes) {
-    const students = rosterByClass.get(cls.trim().toLowerCase());
+    const students = rosterByClass.get(classKey(cls));
     if (students?.length) {
       for (const [index, student] of students.entries()) {
         rows.push([cls, index + 1, student.name, student.admissionNo || "", ...Array(header.length - 4).fill("")]);

@@ -27,6 +27,15 @@ export interface RosterClass {
   students: RosterStudent[];
 }
 
+export interface ImportedRoster {
+  classes: RosterClass[];
+  subjects: string[];
+}
+
+export function normalizeClassKey(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 /** "kings", "kings.pln.ng" or "https://kings.pln.ng/login" -> "kings" */
 export function normalizeSubdomain(input: string): string {
   const host = input.trim().toLowerCase().replace(/^https?:\/\//, "").split(/[/?#]/)[0];
@@ -41,16 +50,34 @@ async function errorMessage(res: Response, fallback: string): Promise<string> {
   return fallback;
 }
 
+function extractRoles(user: Record<string, unknown>): string[] {
+  const roles = new Set<string>();
+  const add = (val: unknown) => {
+    if (typeof val === "string" && val.trim()) roles.add(val.trim().toLowerCase());
+  };
+  add(user.role);
+  if (Array.isArray(user.roles)) {
+    for (const r of user.roles) {
+      if (typeof r === "string") add(r);
+      else if (isRecord(r)) {
+        add(r.name);
+        if (isRecord(r.role)) add(r.role.name);
+      }
+    }
+  }
+  return [...roles];
+}
+
 export async function signIn(input: { subdomain: string; email: string; password: string }): Promise<K12Session> {
-  const subdomain = normalizeSubdomain(input.subdomain);
-  if (!subdomain) throw new K12Error("Enter your school's ParaLearn address, e.g. kings.pln.ng.");
+  const requestedSubdomain = normalizeSubdomain(input.subdomain);
+  if (!requestedSubdomain) throw new K12Error("Enter your school's ParaLearn address, e.g. kings.pln.ng.");
   let res: Response;
   try {
     res = await fetch(`${K12}/auth/login`, {
       method: "POST",
       credentials: "same-origin",
-      headers: { "content-type": "application/json", "x-tenant-subdomain": subdomain },
-      body: JSON.stringify({ email: input.email.trim().toLowerCase(), password: input.password, subdomain }),
+      headers: { "content-type": "application/json", "x-tenant-subdomain": requestedSubdomain },
+      body: JSON.stringify({ email: input.email.trim().toLowerCase(), password: input.password, subdomain: requestedSubdomain }),
     });
   } catch {
     throw new K12Error("You're offline. Connect to the internet once to sign in; after that the app works offline.");
@@ -60,17 +87,44 @@ export async function signIn(input: { subdomain: string; email: string; password
     throw new K12Error(await errorMessage(res, fallback), res.status);
   }
   const body = await res.json();
-  const accessToken: string | undefined = body?.accessToken || body?.data?.accessToken;
-  const user = body?.user || body?.data?.user;
-  if (!accessToken || !user?.id) throw new K12Error("ParaLearn didn't return a session. Please try again.");
-  const session: K12Session = { accessToken, subdomain, user, signedInAt: new Date().toISOString() };
+  const accessToken: string | undefined = body?.accessToken || body?.token || body?.data?.accessToken || body?.data?.token;
+  const rawUser = body?.user || body?.data?.user;
+  if (!accessToken || !isRecord(rawUser) || typeof rawUser.id !== "string" || !rawUser.id) {
+    throw new K12Error("ParaLearn didn't return a session. Please try again.");
+  }
+  const school = isRecord(body?.data?.school) ? body.data.school : isRecord(body?.school) ? body.school : null;
+  const serverSubdomain = typeof school?.subdomain === "string" ? normalizeSubdomain(school.subdomain) : "";
+  const subdomain = serverSubdomain || requestedSubdomain;
+  const schoolName = typeof school?.name === "string" && school.name.trim() ? school.name.trim() : undefined;
+  const roles = extractRoles(rawUser);
+  const user: K12Session["user"] = {
+    id: rawUser.id,
+    email: typeof rawUser.email === "string" ? rawUser.email : input.email.trim().toLowerCase(),
+    firstName: typeof rawUser.firstName === "string" ? rawUser.firstName : undefined,
+    lastName: typeof rawUser.lastName === "string" ? rawUser.lastName : undefined,
+    role: typeof rawUser.role === "string" ? rawUser.role : roles[0],
+    roles,
+    schoolId: typeof rawUser.schoolId === "string" ? rawUser.schoolId : typeof school?.id === "string" ? school.id : undefined,
+  };
+  const session: K12Session = { accessToken, subdomain, schoolName, user, signedInAt: new Date().toISOString() };
   await setSession(session);
   return session;
 }
 
 export async function signOut() {
-  await setSession(null);
-  await fetch(`${K12}/auth/logout`, { method: "POST", credentials: "same-origin" }).catch(() => undefined);
+  const current = await getSession();
+  const headers: Record<string, string> = {};
+  if (current?.subdomain) headers["x-tenant-subdomain"] = current.subdomain;
+  if (current?.accessToken) headers.authorization = `Bearer ${current.accessToken}`;
+  try {
+    // K12 backend exposes GET /auth/logout to clear the refresh cookie; fall back to POST if needed
+    const res = await fetch(`${K12}/auth/logout`, { method: "GET", credentials: "same-origin", headers }).catch(() => null);
+    if (res && (res.status === 404 || res.status === 405)) {
+      await fetch(`${K12}/auth/logout`, { method: "POST", credentials: "same-origin", headers }).catch(() => undefined);
+    }
+  } finally {
+    await setSession(null);
+  }
 }
 
 function tokenExpired(token: string): boolean {
@@ -82,75 +136,196 @@ function tokenExpired(token: string): boolean {
   }
 }
 
+let refreshInFlight: Promise<K12Session> | null = null;
+
 /** Access tokens last an hour; renew with the 7-day refresh cookie before giving up */
-async function freshSession(): Promise<K12Session> {
+async function freshSession(forceRefresh = false): Promise<K12Session> {
   const session = await getSession();
-  if (!session) throw new K12Error("Sign in to sync scores to ParaLearn.", 401, true);
-  if (!tokenExpired(session.accessToken)) return session;
-  const res = await fetch(`${K12}/auth/refresh-token`, {
-    credentials: "same-origin",
-    headers: { "x-tenant-subdomain": session.subdomain },
-  }).catch(() => null);
-  const body = res?.ok ? await res.json().catch(() => null) : null;
-  const accessToken = body?.data?.accessToken || body?.accessToken;
-  if (!accessToken) throw new K12Error("Your ParaLearn sign-in has expired. Sign in again to sync.", 401, true);
-  const renewed = { ...session, accessToken };
-  await setSession(renewed);
-  return renewed;
+  if (!session) throw new K12Error("Sign in to connect with ParaLearn.", 401, true);
+  if (!forceRefresh && !tokenExpired(session.accessToken)) return session;
+  if (refreshInFlight) return refreshInFlight;
+
+  const owner = accountKey(session);
+  refreshInFlight = (async () => {
+    const res = await fetch(`${K12}/auth/refresh-token`, {
+      credentials: "same-origin",
+      headers: { "x-tenant-subdomain": session.subdomain },
+    }).catch(() => null);
+    const body = res?.ok ? await res.json().catch(() => null) : null;
+    const accessToken = body?.data?.accessToken || body?.accessToken || body?.data?.token || body?.token;
+    if (!accessToken) throw new K12Error("Your ParaLearn sign-in has expired. Sign in again to continue.", 401, true);
+    const latest = await getSession();
+    if (!latest || accountKey(latest) !== owner) {
+      throw new K12Error("Your ParaLearn account changed. Sign in again to continue.", 401, true);
+    }
+    const renewed = { ...latest, accessToken };
+    await setSession(renewed, false);
+    return renewed;
+  })().finally(() => {
+    refreshInFlight = null;
+  });
+
+  return refreshInFlight;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-function responseList(body: unknown, label: string): unknown[] {
-  const data = isRecord(body) ? body.data : undefined;
-  const nested = isRecord(data) ? data.data : undefined;
-  const candidates: unknown[] = [body, data, nested];
-  const list = candidates.find(Array.isArray);
-  if (!Array.isArray(list)) throw new K12Error(`ParaLearn returned an unexpected ${label} list. Please try again.`);
-  return list;
+function unwrapData(body: unknown): unknown {
+  return isRecord(body) && "data" in body ? body.data : body;
 }
 
-async function getCoreList(path: string, session: K12Session, label: string): Promise<unknown[]> {
-  let res: Response;
-  try {
-    res = await fetch(`${K12}${path}`, {
-      credentials: "same-origin",
-      headers: {
-        authorization: `Bearer ${session.accessToken}`,
-        "x-tenant-subdomain": session.subdomain,
-      },
-    });
-  } catch {
-    throw new K12Error("Lost the connection while loading students. Try again when you're online.");
+function extractArray(body: unknown): unknown[] | null {
+  const data = unwrapData(body);
+  const nested = isRecord(data) ? data.data ?? data.items ?? data.users ?? data.students : undefined;
+  const candidates: unknown[] = [body, data, nested];
+  const list = candidates.find(Array.isArray);
+  return Array.isArray(list) ? list : null;
+}
+
+async function fetchAuthed(path: string, session: K12Session): Promise<{ res: Response; session: K12Session }> {
+  const run = async (s: K12Session) => {
+    try {
+      return await fetch(`${K12}${path}`, {
+        credentials: "same-origin",
+        headers: {
+          authorization: `Bearer ${s.accessToken}`,
+          "x-tenant-subdomain": s.subdomain,
+        },
+      });
+    } catch {
+      throw new K12Error("Lost the connection while loading data from ParaLearn. Try again when you're online.");
+    }
+  };
+  let active = session;
+  let res = await run(active);
+  if (res.status === 401) {
+    active = await freshSession(true);
+    res = await run(active);
   }
+  return { res, session: active };
+}
+
+async function getCoreJson(path: string, session: K12Session, label: string): Promise<{ body: unknown; session: K12Session }> {
+  const { res, session: active } = await fetchAuthed(path, session);
   if (res.status === 401 || res.status === 403) {
     throw new K12Error(
-      res.status === 401 ? "Your ParaLearn sign-in has expired. Sign in again to import students." : "This account isn't allowed to view the school's student roster.",
+      res.status === 401
+        ? "Your ParaLearn sign-in has expired. Sign in again to import students."
+        : "This account isn't allowed to view the school's student roster.",
       res.status,
       res.status === 401
     );
   }
   if (!res.ok) throw new K12Error(await errorMessage(res, `ParaLearn couldn't load ${label} (error ${res.status}).`), res.status);
-  return responseList(await res.json(), label);
+  return { body: await res.json(), session: active };
 }
 
-/** Loads active class rosters using the same authenticated Core APIs used by the main RMS. */
-export async function fetchStudentRoster(): Promise<RosterClass[]> {
-  if (typeof navigator !== "undefined" && !navigator.onLine) {
+function parseStudentEntry(entry: unknown): (RosterStudent & { id?: string }) | null {
+  if (!isRecord(entry)) return null;
+  const student = isRecord(entry.student) ? entry.student : isRecord(entry.user) ? entry.user : entry;
+  // Filter out non-student users if roles are attached and exclude student
+  const roles = extractRoles(student);
+  if (roles.length > 0 && !roles.includes("student") && (roles.includes("teacher") || roles.includes("admin") || roles.includes("principal"))) {
+    return null;
+  }
+  const firstName = typeof student.firstName === "string" ? student.firstName.trim() : "";
+  const middleName = typeof student.middleName === "string" ? student.middleName.trim() : "";
+  const lastName = typeof student.lastName === "string" ? student.lastName.trim() : "";
+  const joined = [firstName, middleName, lastName].filter(Boolean).join(" ");
+  const fallbackName = [student.studentName, student.fullName, student.name].find(
+    (value): value is string => typeof value === "string" && !!value.trim()
+  );
+  const name = (joined || fallbackName?.trim() || "").replace(/\s+/g, " ");
+  if (!name) return null;
+  const admissionNo = [student.studentId, student.studentIdNumber, student.admissionNo, student.admissionNumber, student.code].find(
+    (value): value is string => typeof value === "string" && !!value.trim()
+  );
+  const id = typeof student.id === "string" && student.id ? student.id : undefined;
+  return { id, name, admissionNo: admissionNo?.trim() || null };
+}
+
+function dedupeAndSortStudents(entries: unknown[]): RosterStudent[] {
+  const seen = new Set<string>();
+  const out: RosterStudent[] = [];
+  for (const raw of entries) {
+    const parsed = parseStudentEntry(raw);
+    if (!parsed) continue;
+    const key = parsed.id || `${parsed.name.toLowerCase()}|${(parsed.admissionNo || "").toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ name: parsed.name, admissionNo: parsed.admissionNo });
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+async function fetchClassStudentsFallback(classId: string, className: string, session: K12Session): Promise<RosterStudent[]> {
+  const all: unknown[] = [];
+  const limit = 200;
+  for (let page = 1; page <= 25; page++) {
+    const { body } = await getCoreJson(
+      `/users?classId=${encodeURIComponent(classId)}&role=student&page=${page}&limit=${limit}`,
+      session,
+      `student roster for ${className}`
+    );
+    const list = extractArray(body);
+    if (!list) throw new K12Error(`ParaLearn returned an unexpected student roster for ${className}.`);
+    all.push(...list);
+    const meta = isRecord(body) ? (isRecord(body.meta) ? body.meta : isRecord(body.data) && isRecord(body.data.meta) ? body.data.meta : body) : null;
+    const totalPages = meta && typeof meta.totalPages === "number" ? meta.totalPages : undefined;
+    if ((totalPages && page >= totalPages) || list.length < limit) break;
+  }
+  return dedupeAndSortStudents(all);
+}
+
+/** Loads active class rosters (and subjects when available) from ParaLearn Core. */
+export async function fetchStudentRoster(): Promise<ImportedRoster> {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
     throw new K12Error("Connect to the internet to import student names from ParaLearn.");
   }
-  const session = await freshSession();
-  const classes = await getCoreList("/classes?isActive=true", session, "class");
-  const validClasses = classes.flatMap((entry) => {
-    if (!isRecord(entry) || typeof entry.id !== "string" || !entry.id || typeof entry.name !== "string" || !entry.name.trim()) return [];
-    return [{ id: entry.id, name: entry.name.trim() }];
+  let session = await freshSession();
+
+  // 1. Load active classes (fall back to all classes, or teacher's assigned classes on 403)
+  let rawClasses: unknown[] = [];
+  try {
+    const res = await getCoreJson("/classes?isActive=true", session, "class list");
+    session = res.session;
+    rawClasses = extractArray(res.body) ?? [];
+    if (!rawClasses.length) {
+      const allRes = await getCoreJson("/classes", session, "class list");
+      session = allRes.session;
+      rawClasses = extractArray(allRes.body) ?? [];
+    }
+  } catch (err) {
+    if (err instanceof K12Error && err.status === 403) {
+      const teacherRes = await getCoreJson(`/classes/teacher/${encodeURIComponent(session.user.id)}`, session, "assigned classes");
+      session = teacherRes.session;
+      rawClasses = extractArray(teacherRes.body) ?? [];
+    } else {
+      throw err;
+    }
+  }
+
+  const seenIds = new Set<string>();
+  const validClasses = rawClasses.flatMap((entry) => {
+    if (!isRecord(entry)) return [];
+    const cls = isRecord(entry.class) ? entry.class : entry;
+    if (typeof cls.id !== "string" || !cls.id || typeof cls.name !== "string" || !cls.name.trim()) return [];
+    if (seenIds.has(cls.id)) return [];
+    seenIds.add(cls.id);
+    const expectedCount =
+      typeof cls.enrollmentCount === "number"
+        ? cls.enrollmentCount
+        : typeof cls.studentCount === "number"
+        ? cls.studentCount
+        : undefined;
+    return [{ id: cls.id, name: cls.name.trim().replace(/\s+/g, " "), expectedCount }];
   });
   if (!validClasses.length) throw new K12Error("No active classes were found in this ParaLearn school.");
 
   const names = new Set<string>();
   const duplicate = validClasses.find((cls) => {
-    const key = cls.name.trim().toLowerCase().replace(/\s+/g, " ");
+    const key = normalizeClassKey(cls.name);
     if (names.has(key)) return true;
     names.add(key);
     return false;
@@ -159,30 +334,54 @@ export async function fetchStudentRoster(): Promise<RosterClass[]> {
     throw new K12Error(`ParaLearn has more than one active class named "${duplicate.name}". Rename the duplicate class before importing its roster.`);
   }
 
-  return Promise.all(
-    validClasses.map(async (cls) => {
-      const students = await getCoreList(
-        `/users?classId=${encodeURIComponent(cls.id)}&role=student`,
-        session,
-        `student roster for ${cls.name}`
-      );
-      return {
-        className: cls.name.trim(),
-        students: students.flatMap((entry): RosterStudent[] => {
-          if (!isRecord(entry)) return [];
-          const student = isRecord(entry.student) ? entry.student : isRecord(entry.user) ? entry.user : entry;
-          const firstName = typeof student.firstName === "string" ? student.firstName.trim() : "";
-          const lastName = typeof student.lastName === "string" ? student.lastName.trim() : "";
-          const name = [firstName, lastName].filter(Boolean).join(" ") || (typeof student.name === "string" ? student.name.trim() : "");
-          if (!name) return [];
-          const admissionNo = [student.studentId, student.studentIdNumber].find(
-            (value): value is string => typeof value === "string" && !!value.trim()
-          );
-          return [{ name, admissionNo: admissionNo?.trim() || null }];
-        }),
-      };
+  // 2. Load each class's enrolled students via GET /classes/:classId (complete list, works for admins and teachers),
+  //    falling back to paginated GET /users?classId=...&role=student if enrollments aren't returned.
+  const subjectSet = new Map<string, string>();
+  const classes = await Promise.all(
+    validClasses.map(async (cls): Promise<RosterClass> => {
+      try {
+        const { body } = await getCoreJson(`/classes/${encodeURIComponent(cls.id)}`, session, `class details for ${cls.name}`);
+        const detail = unwrapData(body);
+        if (isRecord(detail)) {
+          if (Array.isArray(detail.subjects)) {
+            for (const sub of detail.subjects) {
+              const name = isRecord(sub) && typeof sub.name === "string" ? sub.name.trim().replace(/\s+/g, " ") : "";
+              if (name && !subjectSet.has(name.toLowerCase())) subjectSet.set(name.toLowerCase(), name);
+            }
+          }
+          const rawStudents = Array.isArray(detail.students)
+            ? detail.students
+            : Array.isArray(detail.enrollments)
+            ? detail.enrollments
+            : null;
+          if (rawStudents && (rawStudents.length > 0 || !cls.expectedCount)) {
+            return { className: cls.name, students: dedupeAndSortStudents(rawStudents) };
+          }
+        }
+      } catch (err) {
+        if (err instanceof K12Error && err.needsSignIn) throw err;
+        // Fall through to /users?classId=... fallback
+      }
+      const students = await fetchClassStudentsFallback(cls.id, cls.name, session);
+      return { className: cls.name, students };
     })
   );
+
+  // 3. Best-effort school subjects lookup if class details didn't include subjects
+  if (!subjectSet.size) {
+    try {
+      const { body } = await getCoreJson("/subjects", session, "subjects");
+      const list = extractArray(body) ?? [];
+      for (const sub of list) {
+        const name = isRecord(sub) && typeof sub.name === "string" ? sub.name.trim().replace(/\s+/g, " ") : "";
+        if (name && !subjectSet.has(name.toLowerCase())) subjectSet.set(name.toLowerCase(), name);
+      }
+    } catch {
+      /* optional: school can still edit subjects manually */
+    }
+  }
+
+  return { classes, subjects: [...subjectSet.values()] };
 }
 
 async function setSync(batchId: string, ownerKey: string, sync: BatchRecord["sync"]) {
@@ -212,8 +411,8 @@ export function syncBatch(batchId: string): Promise<void> {
 }
 
 async function sendBatch(batchId: string): Promise<void> {
-  if (typeof navigator !== "undefined" && !navigator.onLine) throw new K12Error("You're offline. Scores will sync when you reconnect.");
-  const session = await freshSession();
+  if (typeof navigator !== "undefined" && navigator.onLine === false) throw new K12Error("You're offline. Scores will sync when you reconnect.");
+  let session = await freshSession();
   const ownerKey = accountKey(session);
   const batch = await getAccountBatch(batchId, ownerKey);
   if (!batch) throw new K12Error("This batch belongs to a different ParaLearn account. Sign in with the account that created it.");
@@ -222,21 +421,27 @@ async function sendBatch(batchId: string): Promise<void> {
     const classes = await getClassResults(batchId, ownerKey);
     const { bytes, droppedColumns } = await buildK12WorkbookFile(classes);
 
-    const form = new FormData();
     const fileName = batch.fileName.replace(/\.(xlsx|xls)$/i, "") + " (ParaLearn sync).xlsx";
-    form.append("file", new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), fileName);
-    form.append("id", session.user.id);
+    const upload = async (active: K12Session) => {
+      const form = new FormData();
+      form.append("file", new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), fileName);
+      form.append("id", active.user.id);
+      try {
+        return await fetch(`${K12}/result_up/process-result-sheets`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { authorization: `Bearer ${active.accessToken}`, "x-tenant-subdomain": active.subdomain },
+          body: form,
+        });
+      } catch {
+        throw new K12Error("Lost the connection while syncing. It will retry when you're back online.");
+      }
+    };
 
-    let res: Response;
-    try {
-      res = await fetch(`${K12}/result_up/process-result-sheets`, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { authorization: `Bearer ${session.accessToken}`, "x-tenant-subdomain": session.subdomain },
-        body: form,
-      });
-    } catch {
-      throw new K12Error("Lost the connection while syncing. It will retry when you're back online.");
+    let res = await upload(session);
+    if (res.status === 401) {
+      session = await freshSession(true);
+      res = await upload(session);
     }
     if (res.status === 401 || res.status === 403) {
       throw new K12Error(
@@ -260,7 +465,7 @@ async function sendBatch(batchId: string): Promise<void> {
 /** Syncs every batch that hasn't synced yet; used when the laptop comes back online */
 export async function syncPending(): Promise<{ synced: number; failed: number }> {
   const session = await getSession();
-  if (!session || !navigator.onLine) return { synced: 0, failed: 0 };
+  if (!session || (typeof navigator !== "undefined" && navigator.onLine === false)) return { synced: 0, failed: 0 };
   const ownerKey = accountKey(session);
   const batches = await getAccountBatches(ownerKey);
   let synced = 0;

@@ -8,7 +8,7 @@
  * The page sends a "precache" message with the assets it loaded, so everything needed to
  * reopen is saved on the first online visit.
  */
-const CACHE = "paralearn-results-offline-v2";
+const CACHE = "paralearn-results-offline-v3";
 const APP_SHELL = "/";
 
 self.addEventListener("install", (event) => {

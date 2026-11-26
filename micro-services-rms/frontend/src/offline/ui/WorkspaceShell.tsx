@@ -18,7 +18,7 @@ import {
   Upload,
   WifiOff,
 } from "lucide-react";
-import { db, type K12Session } from "../storage/db";
+import { accountKey, db, type K12Session } from "../storage/db";
 import type { OfflineReadiness } from "./serviceWorker";
 import { plural, useOnline } from "./util";
 import { Brand } from "./Brand";
@@ -61,12 +61,16 @@ function useInstallPrompt() {
   return event ? install : null;
 }
 
-/** Batches whose scores haven't reached ParaLearn yet (waiting, sending or failed), and whether a sign-in is blocking them */
-export function useWaitingToSend(): { count: number; needsSignIn: boolean } | undefined {
+/** Batches for this account whose scores haven't reached ParaLearn yet (waiting, sending or failed) */
+export function useWaitingToSend(ownerKey: string): { count: number; needsSignIn: boolean } | undefined {
   return useLiveQuery(async () => {
-    const waiting = await db.batches.filter((b) => b.sync.status !== "synced").toArray();
+    const waiting = await db.batches
+      .where("ownerKey")
+      .equals(ownerKey)
+      .filter((b) => b.sync.status !== "synced")
+      .toArray();
     return { count: waiting.length, needsSignIn: waiting.some((b) => b.sync.status === "failed" && !!b.sync.needsSignIn) };
-  }, []);
+  }, [ownerKey]);
 }
 
 /** What "works without internet" means right now, in words a school can act on */
@@ -174,7 +178,7 @@ export default function WorkspaceShell({
   children: React.ReactNode;
 }) {
   const online = useOnline();
-  const pending = useWaitingToSend();
+  const pending = useWaitingToSend(accountKey(session));
   const waiting = pending?.count ?? 0;
   const install = useInstallPrompt();
   const [menuOpen, setMenuOpen] = useState(false);

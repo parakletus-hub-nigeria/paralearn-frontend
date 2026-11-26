@@ -24,18 +24,30 @@ const HEADINGS: Record<Mode, { title: string; subtitle: string }> = {
 export default function SignIn({
   onSignedIn,
   initialMode = "signin",
+  initialSubdomain = "",
+  initialEmail = "",
   onBack,
 }: {
-  onSignedIn: (s: K12Session) => void;
+  onSignedIn: (s: K12Session) => Promise<void> | void;
   /** Which tab to open on: the landing page links straight to "create" */
   initialMode?: Mode;
+  initialSubdomain?: string;
+  initialEmail?: string;
   /** Back to the landing page; absent when signing in again to send scores, or in the installed app */
   onBack?: () => void;
 }) {
   const online = useOnline();
   const [mode, setMode] = useState<Mode>(initialMode);
-  const [form, setForm] = useState({ subdomain: "", email: "", password: "", schoolName: "", firstName: "", lastName: "", phone: "" });
-  const [addressEdited, setAddressEdited] = useState(false);
+  const [form, setForm] = useState({
+    subdomain: initialSubdomain,
+    email: initialEmail,
+    password: "",
+    schoolName: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+  });
+  const [addressEdited, setAddressEdited] = useState(!!initialSubdomain);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -56,7 +68,7 @@ export default function SignIn({
     setBusy(true);
     try {
       if (mode === "signin") {
-        onSignedIn(await signIn(form));
+        await onSignedIn(await signIn(form));
       } else {
         const { session, subdomain, changed } = await registerSchool(form);
         toast.success(
@@ -64,7 +76,7 @@ export default function SignIn({
             ? `School account created. That address was taken, so yours is ${subdomain}.pln.ng.`
             : `School account created: ${subdomain}.pln.ng.`
         );
-        onSignedIn(session);
+        await onSignedIn(session);
       }
     } catch (err) {
       setError(err instanceof K12Error ? err.message : mode === "signin" ? "Couldn't sign in. Please try again." : "Couldn't create the account.");

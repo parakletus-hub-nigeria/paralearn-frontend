@@ -4,7 +4,20 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExtern
 import { useLiveQuery } from "dexie-react-hooks";
 import { AlertTriangle, CheckCircle2, CloudOff, CloudUpload, FileText, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { accountKey, db, deleteBatch, getAccountBatch, getAccountBatches, getProfile, getSession, requestPersistentStorage, type BatchRecord, type K12Session, type SchoolProfile } from "../storage/db";
+import {
+  DEFAULT_PROFILE,
+  accountKey,
+  deleteBatch,
+  getAccountBatch,
+  getAccountBatches,
+  getProfile,
+  getSession,
+  requestPersistentStorage,
+  resetNeedsSignInBatches,
+  type BatchRecord,
+  type K12Session,
+  type SchoolProfile,
+} from "../storage/db";
 import { K12Error, fetchSchoolBranding, signOut, syncBatch, syncPending } from "../storage/k12";
 import { fetchLogo } from "./logo";
 import { setUpOffline, type OfflineReadiness } from "./serviceWorker";
@@ -398,6 +411,24 @@ function Home({
   );
 }
 
+async function prefillSchoolProfile(s: K12Session, current: SchoolProfile): Promise<SchoolProfile> {
+  const lookup = (async () => {
+    const branding = await fetchSchoolBranding(s.subdomain);
+    const logoBytes = branding?.logoUrl ? await fetchLogo(branding.logoUrl) : null;
+    return { branding, logoBytes };
+  })();
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+  const found = await Promise.race([lookup, timeout]);
+  return {
+    ...current,
+    subdomain: s.subdomain,
+    schoolName: found?.branding?.name || s.schoolName || "",
+    color: found?.branding?.color || current.color,
+    email: current.email || s.user.email || "",
+    logo: found?.logoBytes ? { bytes: found.logoBytes, type: "png" } : current.logo,
+  };
+}
+
 export default function OfflineResultsApp() {
   const [loaded, setLoaded] = useState(false);
   const [session, setSessionState] = useState<K12Session | null>(null);
@@ -421,9 +452,12 @@ export default function OfflineResultsApp() {
     getSession().then(async (s) => {
       const p = await getProfile(s?.subdomain);
       if (revision !== sessionRevision.current) return;
+      const needsPrefill = !!s && !p.schoolName;
+      const resolved = needsPrefill ? await prefillSchoolProfile(s, p) : p;
+      if (revision !== sessionRevision.current) return;
       setSessionState(s);
-      setProfile(p);
-      setProfileSetup(!p.schoolName);
+      setProfile(resolved);
+      setProfileSetup(!!s && !p.schoolName);
       setLoaded(true);
     });
     requestPersistentStorage();
@@ -436,15 +470,17 @@ export default function OfflineResultsApp() {
     channel.onmessage = async () => {
       const revision = ++sessionRevision.current;
       const next = await getSession();
-      const nextProfile = await getProfile(next?.subdomain);
+      const stored = await getProfile(next?.subdomain);
       if (revision !== sessionRevision.current) return;
       const accountChanged = !next || !session || accountKey(next) !== accountKey(session);
       if (accountChanged) {
         cancelGeneration();
       }
+      const resolved = next && !stored.schoolName ? await prefillSchoolProfile(next, stored) : stored;
+      if (revision !== sessionRevision.current) return;
       setSessionState(next);
-      setProfile(nextProfile);
-      setProfileSetup(!!next && !nextProfile.schoolName);
+      setProfile(resolved);
+      setProfileSetup(!!next && !stored.schoolName);
       setReSignIn(false);
       setLoaded(true);
       if (accountChanged && view.kind === "batch") go("#/");
@@ -470,45 +506,37 @@ export default function OfflineResultsApp() {
   }, [session]);
 
   const onSignedIn = async (s: K12Session) => {
-    // Leave #/signin or #/create behind so the workspace opens on its home screen
-    if (/^#\/(signin|create)$/.test(window.location.hash)) go("#/");
+    const revision = ++sessionRevision.current;
+    const accountChanged = !session || accountKey(session) !== accountKey(s);
+    if (accountChanged) {
+      cancelGeneration();
+    }
+    await resetNeedsSignInBatches(accountKey(s));
     const current = await getProfile(s.subdomain);
     const active = await getSession();
-    if (!active || active.accessToken !== s.accessToken) return;
-    sessionRevision.current++;
-    setSessionState(s);
-    setProfile(current);
+    if (revision !== sessionRevision.current || !active || active.accessToken !== s.accessToken) return;
+
+    const resolved = !current.schoolName ? await prefillSchoolProfile(s, current) : current;
+    if (revision !== sessionRevision.current) return;
+
+    setProfile(resolved);
     setProfileSetup(!current.schoolName);
-    if (!current.schoolName) {
-      // Prefill the card header from the school's ParaLearn details before showing the form,
-      // so a late answer can't overwrite what the user has started typing
-      const lookup = (async () => {
-        const branding = await fetchSchoolBranding(s.subdomain);
-        const logoBytes = branding?.logoUrl ? await fetchLogo(branding.logoUrl) : null;
-        return { branding, logoBytes };
-      })();
-      const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
-      const found = await Promise.race([lookup, timeout]);
-      setProfile({
-        ...current,
-        schoolName: found?.branding?.name || "",
-        color: found?.branding?.color || current.color,
-        email: current.email || s.user.email || "",
-        logo: found?.logoBytes ? { bytes: found.logoBytes, type: "png" } : current.logo,
-      });
-      setProfileSetup(true);
-    } else {
-      setProfile(current);
-      setProfileSetup(false);
-    }
-    setReSignIn(false);
     setSessionState(s);
+    setReSignIn(false);
+    // Leave #/signin, #/create, or another account's #/batch behind so the workspace opens cleanly
+    if (/^#\/(signin|create)$/.test(window.location.hash) || (accountChanged && /^#\/batch\//.test(window.location.hash))) {
+      go("#/");
+    }
   };
 
   const doSignOut = async () => {
+    sessionRevision.current++;
     cancelGeneration();
     await signOut();
     setSessionState(null);
+    setProfile({ ...DEFAULT_PROFILE });
+    setProfileSetup(false);
+    setReSignIn(false);
     // Back to the sign-in form on this laptop, not the public landing page
     go("#/signin");
   };
@@ -525,7 +553,16 @@ export default function OfflineResultsApp() {
     );
   }
 
-  if (reSignIn) return <SignIn onSignedIn={onSignedIn} />;
+  if (reSignIn)
+    return (
+      <SignIn
+        key={`resignin:${session?.subdomain || ""}:${session?.user.email || ""}`}
+        initialSubdomain={session?.subdomain || ""}
+        initialEmail={session?.user.email || ""}
+        onSignedIn={onSignedIn}
+        onBack={() => setReSignIn(false)}
+      />
+    );
   if (!session) {
     // Signed-out visitors see the landing page; the installed app goes straight to the form
     const installed = typeof window !== "undefined" && window.matchMedia?.("(display-mode: standalone)").matches;

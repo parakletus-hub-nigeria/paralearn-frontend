@@ -9,11 +9,14 @@ import type { ClassResult, SheetIssue } from "../engine/types";
 export interface K12Session {
   accessToken: string;
   subdomain: string;
-  user: { id: string; email: string; firstName?: string; lastName?: string; role?: string; schoolId?: string };
+  schoolName?: string;
+  user: { id: string; email: string; firstName?: string; lastName?: string; role?: string; roles?: string[]; schoolId?: string };
   signedInAt: string;
 }
 
 export interface SchoolProfile {
+  /** Subdomain this profile was explicitly saved or fetched for; guards against stale cross-tenant data */
+  subdomain?: string;
   schoolName: string;
   motto: string;
   address: string;
@@ -23,6 +26,12 @@ export interface SchoolProfile {
   logo: { bytes: Uint8Array; type: "png" | "jpg" } | null;
   /** Printed on every card as "Next term begins: ...", e.g. "Monday, 12 January 2027". Optional; empty hides the line */
   nextTermBegins?: string;
+}
+
+export interface CachedRoster {
+  classes: Array<{ className: string; students: Array<{ name: string; admissionNo: string | null }> }>;
+  subjects?: string[];
+  importedAt: string;
 }
 
 export type SyncState =
@@ -98,12 +107,11 @@ class RmsOfflineDB extends Dexie {
         booklets: "id, batchId",
       })
       .upgrade(async (tx) => {
-        const saved = await tx.table("kv").get("session");
-        const session = saved?.value as K12Session | undefined;
-        const ownerKey = session?.user?.id && session.subdomain ? accountKey(session) : "legacy-unassigned";
+        // Never auto-claim unowned v1 batches for whichever user happens to be signed in
         await tx.table("batches").toCollection().modify((batch) => {
-          batch.ownerKey = ownerKey;
+          if (!batch.ownerKey) batch.ownerKey = "legacy-unassigned";
         });
+        await tx.table("kv").delete("profile");
       });
   }
 }
@@ -126,22 +134,16 @@ export async function getSession(): Promise<K12Session | null> {
   return ((await db.kv.get("session"))?.value as K12Session | undefined) ?? null;
 }
 
-const profileKey = (subdomain: string) => `profile:${subdomain}`;
+const cleanSubdomain = (subdomain: string) => subdomain.trim().toLowerCase();
+const profileKey = (subdomain: string) => `profile:${cleanSubdomain(subdomain)}`;
+const rosterKey = (ownerKey: string) => `roster:${ownerKey}`;
 
-async function moveLegacyProfile(subdomain: string) {
-  const legacy = await db.kv.get("profile");
-  if (!legacy) return;
-  const key = profileKey(subdomain);
-  if (!(await db.kv.get(key))) await db.kv.put({ ...legacy, key });
-  await db.kv.delete("profile");
-}
-
-export async function setSession(session: K12Session | null) {
-  const current = await getSession();
-  if (current?.subdomain) await moveLegacyProfile(current.subdomain);
+export async function setSession(session: K12Session | null, broadcast = true) {
+  // Drop any leftover un-scoped legacy profile rather than attributing it to the wrong school
+  await db.kv.delete("profile").catch(() => undefined);
   if (session) await db.kv.put({ key: "session", value: session });
   else await db.kv.delete("session");
-  if (typeof BroadcastChannel !== "undefined") {
+  if (broadcast && typeof BroadcastChannel !== "undefined") {
     const channel = new BroadcastChannel("rms-session");
     channel.postMessage("changed");
     channel.close();
@@ -149,14 +151,40 @@ export async function setSession(session: K12Session | null) {
 }
 
 export async function getProfile(subdomain?: string): Promise<SchoolProfile> {
-  const stored = subdomain
-    ? ((await db.kv.get(profileKey(subdomain)))?.value as Partial<SchoolProfile> | undefined)
-    : undefined;
-  return { ...DEFAULT_PROFILE, ...(stored || {}) };
+  if (!subdomain) return { ...DEFAULT_PROFILE };
+  const scope = cleanSubdomain(subdomain);
+  const stored = (await db.kv.get(profileKey(scope)))?.value as Partial<SchoolProfile> | undefined;
+  // Ignore profiles without an explicit matching subdomain (heals profiles copied from legacy key)
+  if (!stored || stored.subdomain !== scope) return { ...DEFAULT_PROFILE };
+  return { ...DEFAULT_PROFILE, ...stored, subdomain: scope };
 }
 
 export async function saveProfile(profile: SchoolProfile, subdomain: string) {
-  await db.kv.put({ key: profileKey(subdomain), value: profile });
+  const scope = cleanSubdomain(subdomain);
+  await db.kv.put({ key: profileKey(scope), value: { ...profile, subdomain: scope } });
+}
+
+export async function getRoster(ownerKey: string): Promise<CachedRoster | null> {
+  return ((await db.kv.get(rosterKey(ownerKey)))?.value as CachedRoster | undefined) ?? null;
+}
+
+export async function saveRoster(ownerKey: string, roster: CachedRoster) {
+  await db.kv.put({ key: rosterKey(ownerKey), value: roster });
+}
+
+export async function clearRoster(ownerKey: string) {
+  await db.kv.delete(rosterKey(ownerKey));
+}
+
+export async function resetNeedsSignInBatches(ownerKey: string) {
+  await db.batches
+    .where("ownerKey")
+    .equals(ownerKey)
+    .modify((batch) => {
+      if (batch.sync.status === "failed" && batch.sync.needsSignIn) {
+        batch.sync = { status: "pending" };
+      }
+    });
 }
 
 export async function saveBatch(batch: Omit<BatchRecord, "ownerKey">, classes: ClassResult[], session: K12Session) {
