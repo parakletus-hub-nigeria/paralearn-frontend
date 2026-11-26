@@ -223,7 +223,9 @@ async function getCoreJson(path: string, session: K12Session, label: string): Pr
 
 function parseStudentEntry(entry: unknown): (RosterStudent & { id?: string }) | null {
   if (!isRecord(entry)) return null;
+  if (entry.isActive === false || entry.deletedAt != null) return null;
   const student = isRecord(entry.student) ? entry.student : isRecord(entry.user) ? entry.user : entry;
+  if (student.isActive === false || student.deletedAt != null) return null;
   // Filter out non-student users if roles are attached and exclude student
   const roles = extractRoles(student);
   if (roles.length > 0 && !roles.includes("student") && (roles.includes("teacher") || roles.includes("admin") || roles.includes("principal"))) {
