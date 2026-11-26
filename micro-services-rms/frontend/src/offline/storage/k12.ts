@@ -499,14 +499,19 @@ export interface K12Branding {
 
 /** Public school details used to prefill the card header (GET tenant/by-subdomain/:subdomain) */
 export async function fetchSchoolBranding(subdomain: string): Promise<K12Branding | null> {
+  const clean = normalizeSubdomain(subdomain);
+  if (!clean) return null;
   try {
-    const res = await fetch(`${K12}/tenant/by-subdomain/${encodeURIComponent(subdomain)}`, { credentials: "same-origin" });
+    const res = await fetch(`${K12}/tenant/by-subdomain/${encodeURIComponent(clean)}`, {
+      credentials: "same-origin",
+      headers: { "x-tenant-subdomain": clean },
+    });
     if (!res.ok) return null;
     const body = await res.json();
     const t = body?.data;
     if (!t) return null;
     return {
-      name: typeof t.name === "string" ? t.name : null,
+      name: typeof t.name === "string" && t.name.trim() ? t.name.trim() : null,
       color: typeof t.primaryColor === "string" && /^#[0-9a-f]{6}$/i.test(t.primaryColor) ? t.primaryColor : null,
       logoUrl: typeof t.logoUrl === "string" && t.logoUrl ? t.logoUrl : null,
     };
