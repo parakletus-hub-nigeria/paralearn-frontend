@@ -133,9 +133,12 @@ export default function TemplatePage({
       };
       setCachedRoster(nextCached);
       await saveRoster(ownerKey, nextCached).catch(() => undefined);
-      const largest = Math.max(1, ...result.classes.map((cls) => cls.students.length));
+      const populated = result.classes.filter((cls) => cls.students.length > 0);
+      const selectedClasses = populated.length ? populated : result.classes;
+      const skippedEmpty = populated.length ? result.classes.length - populated.length : 0;
+      const largest = Math.max(1, ...selectedClasses.map((cls) => cls.students.length));
       const patch: Partial<Settings> = {
-        classes: result.classes.map((cls) => cls.className).join("\n"),
+        classes: selectedClasses.map((cls) => cls.className).join("\n"),
         rowsPerClass: Math.min(200, largest),
       };
       // Populate school subjects from ParaLearn Core when the user hasn't customised them yet
@@ -143,9 +146,10 @@ export default function TemplatePage({
         patch.subjects = result.subjects.join("\n");
       }
       update(patch);
-      const total = result.classes.reduce((count, cls) => count + cls.students.length, 0);
+      const total = selectedClasses.reduce((count, cls) => count + cls.students.length, 0);
       if (total) {
-        toast.success(`Imported ${plural(total, "student")} across ${plural(result.classes.length, "class", "classes")} from ParaLearn.`);
+        const skippedNote = skippedEmpty ? ` (${plural(skippedEmpty, "empty class", "empty classes")} skipped)` : "";
+        toast.success(`Imported ${plural(total, "student")} across ${plural(selectedClasses.length, "class", "classes")} from ParaLearn${skippedNote}.`);
       } else {
         toast.error("Classes were imported, but no enrolled students were found yet. You can still add student names manually.");
       }

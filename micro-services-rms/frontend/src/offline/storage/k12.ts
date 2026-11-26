@@ -345,13 +345,13 @@ export async function fetchStudentRoster(): Promise<ImportedRoster> {
               if (name && !subjectSet.has(name.toLowerCase())) subjectSet.set(name.toLowerCase(), name);
             }
           }
-          const rawStudents = Array.isArray(detail.students)
-            ? detail.students
-            : Array.isArray(detail.enrollments)
-            ? detail.enrollments
-            : null;
-          if (rawStudents && (rawStudents.length > 0 || !cls.expectedCount)) {
-            return { className: cls.name, students: dedupeAndSortStudents(rawStudents) };
+          const fromDetail = [
+            ...(Array.isArray(detail.enrollments) ? detail.enrollments : []),
+            ...(Array.isArray(detail.students) ? detail.students : []),
+          ];
+          const parsedFromDetail = dedupeAndSortStudents(fromDetail);
+          if (parsedFromDetail.length > 0) {
+            return { className: cls.name, students: parsedFromDetail };
           }
         }
       } catch (err) {
