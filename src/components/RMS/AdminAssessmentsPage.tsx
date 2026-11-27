@@ -5,12 +5,14 @@ import { createPortal } from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
 import { toast } from "sonner";
+import { assessmentLifecycle, LIFECYCLE_STYLE, publishErrorMessage, publishPrompt } from "@/lib/assessmentLifecycle";
 import { AppDispatch, RootState } from "@/reduxToolKit/store";
 import {
   fetchClasses,
   fetchAssessments,
   fetchSubjects,
   deleteAssessment,
+  publishAssessmentAdmin,
   createAssessment,
   fetchAssessmentCategoriesMap,
 } from "@/reduxToolKit/admin/adminThunks";
@@ -50,6 +52,8 @@ import {
   Settings,
   Trash2,
   Plus,
+  Send,
+  EyeOff,
   X,
 } from "lucide-react";
 import { ManageCategoriesDialog } from "./ManageCategoriesDialog";
@@ -92,18 +96,6 @@ const getAssessmentIcon = (subjectName: string) => {
   return FileText;
 };
 
-const getStatusStyle = (status?: string) => {
-  if (status === "started" || status === "active") {
-    return { background: "var(--emerald-tint)", color: "var(--emerald-signal)", label: "Active" };
-  }
-  if (status === "ended") {
-    return { background: "var(--surface-muted)", color: "var(--foreground-muted)", label: "Ended" };
-  }
-  if (status === "pending" || status === "not_started") {
-    return { background: "var(--amber-tint)", color: "var(--amber-signal)", label: "Pending" };
-  }
-  return { background: "var(--violet-tint)", color: "var(--violet-ink)", label: "Draft" };
-};
 
 const getIconBg = (subjectName: string) => {
   const name = (subjectName || "").toLowerCase();
@@ -126,6 +118,19 @@ export function AdminAssessmentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [classFilter, setClassFilter] = useState<string>("all");
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+
+  // One view of each assessment: lifecycle from isPublished + dates, and a classId even
+  // when the payload only links the class through its subject.
+  const rows = useMemo(
+    () =>
+      assessments.map((a: any) => ({
+        ...a,
+        classId: a.classId ?? a.subject?.classId ?? a.subject?.classSubjects?.[0]?.classId,
+        lifecycle: assessmentLifecycle(a),
+      })),
+    [assessments],
+  );
 
   // Create modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -177,17 +182,10 @@ export function AdminAssessmentsPage() {
   }, [subjects]);
 
   const filtered = useMemo(() => {
-    let result = assessments;
+    let result = rows;
 
     if (statusFilter !== "all") {
-      result = result.filter((a) => {
-        if (statusFilter === "active")
-          return a.status === "started" || a.status === "active";
-        if (statusFilter === "draft")
-          return a.status === "not_started" || !a.status;
-        if (statusFilter === "ended") return a.status === "ended";
-        return true;
-      });
+      result = result.filter((a) => a.lifecycle === statusFilter);
     }
 
     if (typeFilter !== "all") {
@@ -212,7 +210,7 @@ export function AdminAssessmentsPage() {
     }
 
     return result;
-  }, [assessments, statusFilter, typeFilter, classFilter, q, subjectNameById]);
+  }, [rows, statusFilter, typeFilter, classFilter, q, subjectNameById]);
 
   // New model: subjects have classSubjects[] instead of classId
   // Build flat list of { subjectId, subjectName, classId, classSubjectId } for selected classes
@@ -361,6 +359,26 @@ export function AdminAssessmentsPage() {
     }
   };
 
+  const handlePublish = async (a: { id: string; title: string; isPublished?: boolean; startsAt?: string | null }) => {
+    const publish = !a.isPublished;
+    const prompt = publishPrompt(a);
+    if ("blocked" in prompt) {
+      toast.error(prompt.blocked);
+      return;
+    }
+    if (!window.confirm(prompt.question)) return;
+
+    setPublishingId(a.id);
+    try {
+      await dispatch(publishAssessmentAdmin({ assessmentId: a.id, publish })).unwrap();
+      toast.success(publish ? `"${a.title}" is published` : `"${a.title}" is unpublished`);
+    } catch (err) {
+      toast.error(publishErrorMessage(err));
+    } finally {
+      setPublishingId(null);
+    }
+  };
+
   return (
     <div className="w-full">
       <ProductTour tourKey="admin_assessments" steps={assessmentTourSteps} />
@@ -449,8 +467,9 @@ export function AdminAssessmentsPage() {
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="draft">Draft (unpublished)</SelectItem>
+              <SelectItem value="scheduled">Scheduled</SelectItem>
               <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
               <SelectItem value="ended">Ended</SelectItem>
             </SelectContent>
           </Select>
@@ -489,22 +508,15 @@ export function AdminAssessmentsPage() {
             Active
           </p>
           <p className="text-2xl font-bold mt-1" style={{ color: "var(--emerald-signal)" }}>
-            {
-              assessments.filter(
-                (a) => a.status === "started" || a.status === "active",
-              ).length
-            }
+            {rows.filter((a) => a.lifecycle === "active").length}
           </p>
         </div>
         <div className="bg-white rounded-xl p-4" style={{ border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
           <p className="text-xs uppercase tracking-wide font-semibold" style={{ color: "var(--foreground-muted)" }}>
-            Pending
+            Unpublished
           </p>
           <p className="text-2xl font-bold mt-1" style={{ color: "var(--amber-signal)" }}>
-            {
-              assessments.filter((a) => a.status === "not_started" || !a.status)
-                .length
-            }
+            {rows.filter((a) => a.lifecycle === "draft").length}
           </p>
         </div>
         <div className="bg-white rounded-xl p-4" style={{ border: "1px solid var(--border-fine)", boxShadow: "var(--shadow-card)" }}>
@@ -512,7 +524,7 @@ export function AdminAssessmentsPage() {
             Completed
           </p>
           <p className="text-2xl font-bold mt-1" style={{ color: "var(--foreground-muted)" }}>
-            {assessments.filter((a) => a.status === "ended").length}
+            {rows.filter((a) => a.lifecycle === "ended").length}
           </p>
         </div>
       </div>
@@ -532,10 +544,11 @@ export function AdminAssessmentsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((assessment) => {
             const subjectName =
-              subjectNameById.get(assessment.subjectId || "") || "Subject";
+              subjectNameById.get(assessment.subjectId || "") || (assessment as any).subject?.name || "Subject";
             const className =
               classNameById.get(assessment.classId || "") || "Class";
-            const statusStyle = getStatusStyle(assessment.status);
+            const statusStyle = LIFECYCLE_STYLE[assessment.lifecycle];
+            const isPublishing = publishingId === assessment.id;
             const Icon = getAssessmentIcon(subjectName);
             const iconBg = getIconBg(subjectName);
 
@@ -574,6 +587,14 @@ export function AdminAssessmentsPage() {
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="rounded-xl">
+                      <DropdownMenuItem
+                        onClick={() => handlePublish(assessment)}
+                        disabled={isPublishing}
+                        className="cursor-pointer"
+                      >
+                        {assessment.isPublished ? <EyeOff className="w-4 h-4 mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                        {isPublishing ? "Updating…" : assessment.isPublished ? "Unpublish" : "Publish"}
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleDelete(assessment.id)}
                         className="cursor-pointer"
@@ -639,21 +660,32 @@ export function AdminAssessmentsPage() {
                   </div>
                 </div>
 
-                {/* View Details Button */}
-                <Link
-                  href={`/RMS/assessments/${assessment.id}`}
-                  className="block"
-                >
-                  <button
-                    className="w-full h-10 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
-                    style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", color: "var(--foreground)", background: "transparent" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-muted)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                  >
-                    <Eye className="w-4 h-4" />
-                    View Details
-                  </button>
-                </Link>
+                {/* View details, plus Publish for drafts */}
+                <div className="flex gap-2">
+                  <Link href={`/RMS/assessments/${assessment.id}`} className="block flex-1">
+                    <button
+                      className="w-full h-10 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+                      style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-fine)", color: "var(--foreground)", background: "transparent" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-muted)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <Eye className="w-4 h-4" />
+                      {assessment.isPublished ? "View Details" : "View"}
+                    </button>
+                  </Link>
+                  {!assessment.isPublished && (
+                    <button
+                      type="button"
+                      onClick={() => handlePublish(assessment)}
+                      disabled={isPublishing}
+                      className="flex-1 h-10 text-sm font-semibold flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
+                      style={{ borderRadius: "var(--radius-md)", background: "var(--violet-ink)", color: "white" }}
+                    >
+                      <Send className="w-4 h-4" />
+                      {isPublishing ? "Publishing…" : "Publish"}
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}

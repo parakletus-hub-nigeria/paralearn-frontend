@@ -326,20 +326,21 @@ const adminSlice = createSlice({
       .addCase(deleteAssessment.rejected, (state, action) => rejected(state, action, "Failed to delete assessment"));
 
     builder
-      .addCase(publishAssessmentAdmin.pending, pending)
+      // No global loading flag here: publishing one card shouldn't blank the whole list.
+      // Callers show their own progress and toasts (they unwrap the result).
       .addCase(publishAssessmentAdmin.fulfilled, (state, action) => {
-        state.loading = false;
-        state.success = "Publish status updated";
-        const payload = action.payload as any;
-        if (payload?.id) {
-          state.assessments = state.assessments.map((a: any) =>
-            a.id === payload.id
-              ? { ...a, status: payload.isPublished ? "started" : "not_started", isPublished: payload.isPublished }
-              : a
-          );
+        const p = action.payload as any;
+        if (!p?.id) return;
+        // Status is derived from isPublished + dates (see lib/assessmentLifecycle), so only
+        // those change. The backend may fill in endsAt from the duration when publishing.
+        const patch: any = { isPublished: p.isPublished };
+        if (p.startsAt !== undefined) patch.startsAt = p.startsAt;
+        if (p.endsAt !== undefined) patch.endsAt = p.endsAt;
+        state.assessments = state.assessments.map((a: any) => (a.id === p.id ? { ...a, ...patch } : a));
+        if ((state as any).selectedAssessment?.id === p.id) {
+          (state as any).selectedAssessment = { ...(state as any).selectedAssessment, ...patch };
         }
-      })
-      .addCase(publishAssessmentAdmin.rejected, (state, action) => rejected(state, action, "Failed to publish assessment"));
+      });
 
     builder
       .addCase(bulkUploadQuestions.pending, pending)
