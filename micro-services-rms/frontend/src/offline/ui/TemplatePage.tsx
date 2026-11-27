@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Download, FileSpreadsheet, FolderArchive, Loader2, Users, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Download, FileSpreadsheet, FolderArchive, Loader2, Share2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_SUBJECTS, SCORE_COLUMNS, buildCsvTemplate, cleanList, type ScoreColumnKey } from "../engine/csvTemplate";
 import { buildClassWorkbook, buildSchoolPackZip, buildSingleSubjectWorkbook, buildSubjectWorkbook } from "../engine/subjectSheets";
 import { clearRoster, getRoster, saveRoster, type CachedRoster } from "../storage/db";
 import { fetchStudentRoster, K12Error, normalizeClassKey } from "../storage/k12";
-import { downloadBlob, plural, safeFileName, timeAgo, useOnline } from "./util";
+import { canShareFiles, downloadBlob, plural, safeFileName, shareFile, timeAgo, useOnline } from "./util";
 import "./rms-forms.css";
 
 const STORAGE_KEY = "rms-csv-template-settings";
@@ -54,6 +54,7 @@ export default function TemplatePage({
   onSignInNeeded: () => void;
 }) {
   const online = useOnline();
+  const [canShare, setCanShare] = useState(false);
   const [s, setS] = useState<Settings>(DEFAULTS);
   const [busy, setBusy] = useState<BusyKind | null>(null);
   const [cachedRoster, setCachedRoster] = useState<CachedRoster | null>(null);
@@ -61,6 +62,10 @@ export default function TemplatePage({
   const [pickedSubject, setPickedSubject] = useState<string | null>(null);
   const roster = cachedRoster?.classes ?? null;
   const settingsKey = `${STORAGE_KEY}:${ownerKey}`;
+
+  useEffect(() => {
+    setCanShare(canShareFiles());
+  }, []);
 
   useEffect(() => {
     try {
@@ -175,6 +180,37 @@ export default function TemplatePage({
   };
   const schoolSlug = safeFileName(schoolName || subdomain || "School");
 
+  const buildSelectedFile = (): { blob: Blob; fileName: string; successMsg: string } | null => {
+    if (activeClass && activeSubject) {
+      const bytes = buildSingleSubjectWorkbook(activeClass, activeSubject, sheetOpts);
+      const fileName = `${safeFileName(`${activeClass} - ${activeSubject}`)}.xlsx`;
+      return {
+        blob: new Blob([bytes as BlobPart], { type: XLSX_MIME }),
+        fileName,
+        successMsg: `Downloaded ${fileName}. Send it to the ${activeSubject} teacher.`,
+      };
+    }
+    if (activeClass) {
+      const bytes = buildClassWorkbook(activeClass, sheetOpts);
+      const fileName = `${safeFileName(`${activeClass} - All Subjects`)}.xlsx`;
+      return {
+        blob: new Blob([bytes as BlobPart], { type: XLSX_MIME }),
+        fileName,
+        successMsg: `Downloaded ${fileName} (1 tab per subject).`,
+      };
+    }
+    if (activeSubject) {
+      const bytes = buildSubjectWorkbook(activeSubject, sheetOpts);
+      const fileName = `${safeFileName(`${activeSubject} - All Classes`)}.xlsx`;
+      return {
+        blob: new Blob([bytes as BlobPart], { type: XLSX_MIME }),
+        fileName,
+        successMsg: `Downloaded ${fileName} (1 tab per class). Send this one file to the ${activeSubject} teacher.`,
+      };
+    }
+    return null;
+  };
+
   const downloadSelection = () => {
     if (!canDownload) {
       toast.error("Load students from ParaLearn (or add at least one class and subject below) first.");
@@ -182,24 +218,30 @@ export default function TemplatePage({
     }
     setBusy("xlsx");
     try {
-      if (activeClass && activeSubject) {
-        const bytes = buildSingleSubjectWorkbook(activeClass, activeSubject, sheetOpts);
-        const fileName = `${safeFileName(`${activeClass} - ${activeSubject}`)}.xlsx`;
-        downloadBlob(new Blob([bytes as BlobPart], { type: XLSX_MIME }), fileName);
-        toast.success(`Downloaded ${fileName}. Send it to the ${activeSubject} teacher.`);
-      } else if (activeClass) {
-        const bytes = buildClassWorkbook(activeClass, sheetOpts);
-        const fileName = `${safeFileName(`${activeClass} - All Subjects`)}.xlsx`;
-        downloadBlob(new Blob([bytes as BlobPart], { type: XLSX_MIME }), fileName);
-        toast.success(`Downloaded ${fileName} (1 tab per subject).`);
-      } else if (activeSubject) {
-        const bytes = buildSubjectWorkbook(activeSubject, sheetOpts);
-        const fileName = `${safeFileName(`${activeSubject} - All Classes`)}.xlsx`;
-        downloadBlob(new Blob([bytes as BlobPart], { type: XLSX_MIME }), fileName);
-        toast.success(`Downloaded ${fileName} (1 tab per class). Send this one file to the ${activeSubject} teacher.`);
-      }
+      const built = buildSelectedFile();
+      if (!built) return;
+      downloadBlob(built.blob, built.fileName);
+      toast.success(built.successMsg);
     } catch {
       toast.error("Couldn't create the Excel file. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const shareSelection = async () => {
+    if (!canDownload) {
+      toast.error("Load students from ParaLearn (or add at least one class and subject below) first.");
+      return;
+    }
+    setBusy("xlsx");
+    try {
+      const built = buildSelectedFile();
+      if (!built) return;
+      const shared = await shareFile(built.blob, built.fileName, built.fileName.replace(/\.xlsx$/i, ""));
+      if (shared) toast.success(`Ready to send ${built.fileName}.`);
+    } catch {
+      toast.error("Couldn't share the Excel file. Tap Download instead.");
     } finally {
       setBusy(null);
     }
@@ -383,7 +425,18 @@ export default function TemplatePage({
                       : 1 small Excel file ({plural(activeClassCount, "student")}, {3 + labels.length} columns). Ready to send on WhatsApp.
                     </p>
                     <div className="rms-tpl-action-btns">
-                      <button type="button" className="rms-button primary" onClick={downloadSelection} disabled={!canDownload || !!busy}>
+                      {canShare && (
+                        <button type="button" className="rms-button primary" onClick={shareSelection} disabled={!canDownload || !!busy}>
+                          {busy === "xlsx" ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />}
+                          Share to WhatsApp
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={`rms-button ${canShare ? "" : "primary"}`}
+                        onClick={downloadSelection}
+                        disabled={!canDownload || !!busy}
+                      >
                         {busy === "xlsx" ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                         Download {activeClass} – {activeSubject}
                       </button>
@@ -395,7 +448,18 @@ export default function TemplatePage({
                       <strong>{activeClass} (all {subjects.length} subjects)</strong>: 1 Excel file with a separate tab for each subject. No unzipping needed.
                     </p>
                     <div className="rms-tpl-action-btns">
-                      <button type="button" className="rms-button primary" onClick={downloadSelection} disabled={!canDownload || !!busy}>
+                      {canShare && (
+                        <button type="button" className="rms-button primary" onClick={shareSelection} disabled={!canDownload || !!busy}>
+                          {busy === "xlsx" ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />}
+                          Share to WhatsApp
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={`rms-button ${canShare ? "" : "primary"}`}
+                        onClick={downloadSelection}
+                        disabled={!canDownload || !!busy}
+                      >
                         {busy === "xlsx" ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
                         Download {activeClass} – All Subjects
                       </button>
@@ -407,7 +471,18 @@ export default function TemplatePage({
                       <strong>{activeSubject} (all {classes.length} classes)</strong>: 1 Excel file with a separate tab for each class. Send this one file to the {activeSubject} teacher.
                     </p>
                     <div className="rms-tpl-action-btns">
-                      <button type="button" className="rms-button primary" onClick={downloadSelection} disabled={!canDownload || !!busy}>
+                      {canShare && (
+                        <button type="button" className="rms-button primary" onClick={shareSelection} disabled={!canDownload || !!busy}>
+                          {busy === "xlsx" ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />}
+                          Share to WhatsApp
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={`rms-button ${canShare ? "" : "primary"}`}
+                        onClick={downloadSelection}
+                        disabled={!canDownload || !!busy}
+                      >
                         {busy === "xlsx" ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
                         Download {activeSubject} – All Classes
                       </button>
@@ -416,7 +491,8 @@ export default function TemplatePage({
                 ) : (
                   <>
                     <p>
-                      To download for the whole school at once, choose how you want the Excel files grouped (1 file per class, or 1 file per subject teacher):
+                      <strong>On a phone?</strong> Tap one class or subject above to send a single Excel file straight to WhatsApp. To download the
+                      whole school at once (best on a laptop):
                     </p>
                     <div className="rms-tpl-action-btns">
                       <button
@@ -598,6 +674,44 @@ export default function TemplatePage({
           </ol>
         </aside>
       </div>
+
+      {/* Sticky bottom bar on phones so Download / Share to WhatsApp is always reachable without scrolling past 26 subject pills */}
+      {canDownload && (
+        <div className="rms-mobile-sticky-bar" role="region" aria-label="Download or share selected sheet">
+          <div className="rms-mobile-sticky-label">
+            <strong>
+              {activeClass && activeSubject
+                ? `${activeClass} – ${activeSubject}`
+                : activeClass
+                ? `${activeClass} · all subjects`
+                : activeSubject
+                ? `${activeSubject} · all classes`
+                : "Whole school"}
+            </strong>
+          </div>
+          <div className="rms-mobile-sticky-actions">
+            {activeClass || activeSubject ? (
+              <>
+                {canShare && (
+                  <button type="button" className="rms-button primary" onClick={shareSelection} disabled={!!busy}>
+                    <Share2 size={16} />
+                    Share
+                  </button>
+                )}
+                <button type="button" className={`rms-button ${canShare ? "" : "primary"}`} onClick={downloadSelection} disabled={!!busy}>
+                  <Download size={16} />
+                  Download
+                </button>
+              </>
+            ) : (
+              <button type="button" className="rms-button primary" onClick={() => downloadPack("by-subject")} disabled={!!busy}>
+                <FolderArchive size={16} />
+                All ({subjects.length} files)
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

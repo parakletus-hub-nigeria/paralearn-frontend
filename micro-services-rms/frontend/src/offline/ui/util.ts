@@ -28,6 +28,31 @@ export function downloadBlob(blob: Blob, fileName: string) {
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
+/** True on Android Chrome / mobile browsers that can hand an Excel file straight to WhatsApp */
+export function canShareFiles(): boolean {
+  if (typeof navigator === "undefined" || typeof File === "undefined" || typeof navigator.canShare !== "function") return false;
+  try {
+    return navigator.canShare({
+      files: [new File(["x"], "sheet.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })],
+    });
+  } catch {
+    return false;
+  }
+}
+
+/** Opens the phone's native Share sheet (e.g. WhatsApp); returns false if user cancelled */
+export async function shareFile(blob: Blob, fileName: string, title?: string): Promise<boolean> {
+  const file = new File([blob], fileName, { type: blob.type || "application/octet-stream" });
+  try {
+    await navigator.share({ files: [file], title: title || fileName });
+    return true;
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") return false;
+    downloadBlob(blob, fileName);
+    return true;
+  }
+}
+
 export const safeFileName = (s: string) => s.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
 
 export const ordinal = (n: number) => {
