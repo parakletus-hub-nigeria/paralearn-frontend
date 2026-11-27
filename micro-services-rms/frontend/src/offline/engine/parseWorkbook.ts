@@ -269,6 +269,122 @@ function parseTeacherSheet(sheet: SheetRows, issues: SheetIssue[]): TeacherRecor
   return records;
 }
 
+/**
+ * Reads a teacher's single-subject score sheet tab:
+ *   Row 1: Class | <ClassName> | Subject | <SubjectName>
+ *   Row 2: S/N   | Student Name | Admission No | 1st CA | 2nd CA | Exam
+ *   Row 3+: 1    | Ada Obi      | STU-001      | 15     | 18     | 55
+ */
+function parseSubjectSheet(sheet: SheetRows, issues: SheetIssue[]): ParsedClass | null {
+  const rows = sheet.rows;
+  if (rows.length < 2) return null;
+  const meta = rows[0] || [];
+  if (!/^class$/i.test(cellText(meta[0])) || !/^subject$/i.test(cellText(meta[2]))) return null;
+  const className = cellText(meta[1]).replace(/\s+/g, " ");
+  const subjectName = cellText(meta[3]).replace(/\s+/g, " ");
+  if (!className || !subjectName) return null;
+
+  const header = (rows[1] || []).map(cellText);
+  const nameCol = header.findIndex((h) => /^(student'?s?\s*)?(full\s*)?names?$/i.test(h));
+  if (nameCol < 0) return null;
+  const serialCol = header.findIndex((h) => /^(s\/?n|no\.?|serial|#)$/i.test(h));
+  const admissionCol = header.findIndex((h) => ADMISSION_HEADER.test(h));
+
+  const components: ScoreComponent[] = [];
+  const scoreCols: Array<{ col: number; key: string }> = [];
+  header.forEach((h, c) => {
+    if (c === nameCol || c === serialCol || c === admissionCol || !h) return;
+    const key = componentKey(h);
+    if (!key) return;
+    if (components.some((comp) => comp.key === key)) return;
+    components.push({ key, label: h });
+    scoreCols.push({ col: c, key });
+  });
+  if (!scoreCols.length) return null;
+
+  const label = `${className} (${subjectName})`;
+  const students: ParsedStudent[] = [];
+  for (let r = 2; r < rows.length; r++) {
+    const row = rows[r] || [];
+    const name = cellText(row[nameCol]).replace(/\s+/g, " ");
+    const excelRow = sheet.rowNumbers?.[r] ?? r + 1;
+    if (!name) {
+      if (scoreCols.some(({ col }) => !isBlank(row[col]))) {
+        issues.push({ level: "warning", sheet: label, row: excelRow, message: "Scores without a student name; row skipped." });
+      }
+      continue;
+    }
+
+    const parts: Record<string, number> = {};
+    for (const { col, key } of scoreCols) {
+      const { value, invalid } = parseScore(row[col]);
+      if (invalid) {
+        issues.push({ level: "warning", sheet: label, row: excelRow, message: `${name}: "${cellText(row[col])}" in ${subjectName} isn't a number; treated as blank.` });
+        continue;
+      }
+      if (value === null) continue;
+      let v = value;
+      if (v < 0) {
+        issues.push({ level: "warning", sheet: label, row: excelRow, message: `${name}: negative score ${v} in ${subjectName}; treated as 0.` });
+        v = 0;
+      }
+      parts[key] = v;
+    }
+    const total = Object.values(parts).reduce((a, b) => a + b, 0);
+    if (total > SUBJECT_MAX) {
+      issues.push({ level: "warning", sheet: label, row: excelRow, message: `${name}: ${subjectName} adds up to ${total}, over ${SUBJECT_MAX}. Check the scores.` });
+    }
+
+    const serialText = serialCol >= 0 ? cellText(row[serialCol]) : "";
+    const serialNum = Number(serialText);
+    students.push({
+      row: excelRow,
+      serial: Number.isFinite(serialNum) && serialText ? serialNum : null,
+      name,
+      admissionNo: admissionCol >= 0 ? cellText(row[admissionCol]) || null : null,
+      scores: Object.keys(parts).length ? { [subjectName]: parts } : {},
+    });
+  }
+
+  if (!students.length) return null;
+  return { name: className, subjects: [{ name: subjectName, components }], students };
+}
+
+/** Combines multiple subject sheets (or files) belonging to the same class into one ParsedClass */
+function mergeIntoClasses(classes: ParsedClass[], incoming: ParsedClass) {
+  const key = incoming.name.trim().toLowerCase().replace(/\s+/g, " ");
+  const existing = classes.find((c) => c.name.trim().toLowerCase().replace(/\s+/g, " ") === key);
+  if (!existing) {
+    classes.push(incoming);
+    return;
+  }
+  for (const sub of incoming.subjects) {
+    const match = existing.subjects.find((s) => s.name.toLowerCase() === sub.name.toLowerCase());
+    if (!match) {
+      existing.subjects.push(sub);
+    } else {
+      for (const comp of sub.components) {
+        if (!match.components.some((c) => c.key === comp.key)) match.components.push(comp);
+      }
+    }
+  }
+  const byName = new Map(existing.students.map((st) => [normalizeName(st.name), st]));
+  for (const st of incoming.students) {
+    const norm = normalizeName(st.name);
+    const target = byName.get(norm);
+    if (!target) {
+      existing.students.push(st);
+      byName.set(norm, st);
+    } else {
+      if (!target.admissionNo && st.admissionNo) target.admissionNo = st.admissionNo;
+      for (const [subName, parts] of Object.entries(st.scores)) {
+        const canonical = existing.subjects.find((s) => s.name.toLowerCase() === subName.toLowerCase())?.name || subName;
+        target.scores[canonical] = { ...(target.scores[canonical] || {}), ...parts };
+      }
+    }
+  }
+}
+
 export function parseWorkbookRows(sheets: SheetRows[]): ParsedWorkbook {
   const issues: SheetIssue[] = [];
   const classes: ParsedClass[] = [];
@@ -280,23 +396,25 @@ export function parseWorkbookRows(sheets: SheetRows[]): ParsedWorkbook {
       continue;
     }
     if (!sheet.rows.some((r) => (r || []).some((c) => !isBlank(c)))) continue; // empty tab
+    // Teacher subject score sheet (Row 1: Class | <Class> | Subject | <Subject>)
+    const subjectSheet = parseSubjectSheet(sheet, issues);
+    if (subjectSheet) {
+      mergeIntoClasses(classes, subjectSheet);
+      continue;
+    }
     // The CSV template (one table, Class column) becomes one class sheet per class
     const flat = expandFlatSheet(sheet);
     if (flat) {
       issues.push(...flat.issues);
       teacherRecords = teacherRecords.concat(flat.teacherRecords);
       for (const classSheet of flat.sheets) {
-        if (classes.some((c) => c.name.toLowerCase() === classSheet.name.toLowerCase())) {
-          issues.push({ level: "error", sheet: classSheet.name, message: `Class "${classSheet.name}" appears in more than one tab.` });
-          continue;
-        }
         const parsed = parseClassSheet(classSheet, issues);
-        if (parsed) classes.push(parsed);
+        if (parsed) mergeIntoClasses(classes, parsed);
       }
       continue;
     }
     const parsed = parseClassSheet(sheet, issues);
-    if (parsed) classes.push(parsed);
+    if (parsed) mergeIntoClasses(classes, parsed);
   }
 
   if (!classes.length && !issues.some((i) => i.level === "error")) {

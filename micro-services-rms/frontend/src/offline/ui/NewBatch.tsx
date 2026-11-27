@@ -2,10 +2,10 @@
 
 import React, { useRef, useState } from "react";
 import { AlertTriangle, ChevronDown, FileSpreadsheet, Loader2, UploadCloud, X } from "lucide-react";
-import { processWorkbook } from "../workers/client";
+import { processWorkbookFiles } from "../workers/client";
 import { saveBatch, type BatchRecord, type K12Session } from "../storage/db";
 import type { SheetIssue } from "../engine/types";
-import { TERMS, currentSession } from "./util";
+import { TERMS, currentSession, plural } from "./util";
 import IssueList from "./IssueList";
 
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -70,7 +70,7 @@ export default function NewBatch({
   session: K12Session;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const [term, setTerm] = useState<string>(TERMS[0]);
   const [session, setSession] = useState(currentSession());
@@ -79,18 +79,29 @@ export default function NewBatch({
   const [blocking, setBlocking] = useState<SheetIssue[] | null>(null);
   const sessionValid = /^\d{4}\/\d{4}$/.test(session.trim());
 
-  const pick = (f?: File | null) => {
-    if (!f) return;
+  const pickMany = (picked?: FileList | File[] | null) => {
+    const list = picked ? Array.from(picked) : [];
+    if (!list.length) return;
     setError(null);
     setBlocking(null);
-    if (!/\.(xlsx|xls|csv)$/i.test(f.name)) return setError("Choose an Excel file (.xlsx or .xls) or a CSV file.");
-    if (f.size > MAX_BYTES) return setError("That file is over 25 MB. Remove pictures or unused tabs and try again.");
-    setFile(f);
+    const bad = list.find((f) => !/\.(xlsx|xls|csv)$/i.test(f.name));
+    if (bad) return setError(`"${bad.name}" is not an Excel (.xlsx, .xls) or CSV file.`);
+    const tooBig = list.find((f) => f.size > MAX_BYTES);
+    if (tooBig) return setError(`"${tooBig.name}" is over 25 MB. Remove pictures or unused tabs and try again.`);
+    setFiles((prev) => {
+      const next = [...prev];
+      for (const f of list) {
+        if (!next.some((existing) => existing.name === f.name && existing.size === f.size)) next.push(f);
+      }
+      return next;
+    });
   };
+
+  const totalBytes = files.reduce((a, f) => a + f.size, 0);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) {
+    if (!files.length) {
       setError("Choose your result sheet first: drop it in the box above, or click the box to pick it.");
       document.getElementById("rms-drop")?.focus();
       return;
@@ -100,14 +111,17 @@ export default function NewBatch({
     setError(null);
     setBlocking(null);
     try {
-      const results = await processWorkbook(await file.arrayBuffer(), file.name);
+      const payloads = await Promise.all(files.map(async (f) => ({ file: await f.arrayBuffer(), fileName: f.name })));
+      const results = await processWorkbookFiles(payloads);
       if (results.issues.some((i) => i.level === "error")) {
         setBlocking(results.issues);
         return;
       }
+      const batchName =
+        files.length === 1 ? files[0].name : `${files[0].name.replace(/\.(xlsx|xls|csv)$/i, "")} + ${plural(files.length - 1, "more sheet")}`;
       const batch: Omit<BatchRecord, "ownerKey"> = {
         id: crypto.randomUUID(),
-        fileName: file.name,
+        fileName: batchName,
         createdAt: new Date().toISOString(),
         term,
         session: session.trim(),
@@ -118,7 +132,7 @@ export default function NewBatch({
         sync: { status: "pending" },
       };
       await saveBatch(batch, results.classes, activeSession);
-      setFile(null);
+      setFiles([]);
       onCreated(batch.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't read this file.");
@@ -132,9 +146,9 @@ export default function NewBatch({
       <div className="rms-section-head">
         <div>
           <h2 id="open-sheet" className="rms-section-title">
-            Open a result sheet
+            Open result sheets
           </h2>
-          <p className="rms-section-sub">Worked out on this laptop. No internet needed.</p>
+          <p className="rms-section-sub">Drop one file, or drop several teachers&apos; subject sheets together — we combine them automatically.</p>
         </div>
       </div>
 
@@ -143,7 +157,7 @@ export default function NewBatch({
           id="rms-drop"
           role="button"
           tabIndex={0}
-          aria-label={file ? `Chosen: ${file.name}. Choose another file` : "Choose result sheet"}
+          aria-label={files.length ? `Chosen: ${plural(files.length, "file")}. Add more files` : "Choose result sheets"}
           aria-describedby="rms-drop-hint"
           onClick={() => !busy && inputRef.current?.click()}
           onKeyDown={(e) => {
@@ -159,38 +173,41 @@ export default function NewBatch({
           onDrop={(e) => {
             e.preventDefault();
             setDragging(false);
-            if (!busy) pick(e.dataTransfer.files?.[0]);
+            if (!busy) pickMany(e.dataTransfer.files);
           }}
-          className={`rms-drop ${dragging ? "is-dragging" : ""} ${file ? "has-file" : ""}`}
+          className={`rms-drop ${dragging ? "is-dragging" : ""} ${files.length ? "has-file" : ""}`}
         >
           <input
             ref={inputRef}
             type="file"
+            multiple
             accept=".xlsx,.xls,.csv"
             className="hidden"
             tabIndex={-1}
             onChange={(e) => {
-              pick(e.target.files?.[0]);
+              pickMany(e.target.files);
               e.target.value = "";
             }}
           />
-          {file ? (
+          {files.length ? (
             <>
               <span className="rms-drop-icon">
                 <FileSpreadsheet size={22} aria-hidden />
               </span>
               <span className="rms-drop-text">
-                <strong>{file.name}</strong>
-                <small id="rms-drop-hint">{sizeLabel(file.size)} · click to choose another</small>
+                <strong>{files.length === 1 ? files[0].name : `${plural(files.length, "result sheet")} selected`}</strong>
+                <small id="rms-drop-hint">
+                  {sizeLabel(totalBytes)} · click to add more sheets
+                </small>
               </span>
               {!busy && (
                 <button
                   type="button"
                   className="rms-icon"
-                  aria-label="Remove file"
+                  aria-label="Clear selected files"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setFile(null);
+                    setFiles([]);
                     setBlocking(null);
                     setError(null);
                   }}
@@ -206,9 +223,9 @@ export default function NewBatch({
               </span>
               <span className="rms-drop-text">
                 <strong>
-                  Drop your result sheet here, or <u>choose a file</u>
+                  Drop your result sheets here, or <u>choose files</u>
                 </strong>
-                <small id="rms-drop-hint">Excel (.xlsx, .xls) or CSV, up to 25 MB</small>
+                <small id="rms-drop-hint">Excel (.xlsx, .xls) or CSV · pick one file or many subject sheets at once</small>
               </span>
             </>
           )}

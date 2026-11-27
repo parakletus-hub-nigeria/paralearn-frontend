@@ -73,6 +73,14 @@ export function processWorkbook(file: ArrayBuffer, fileName?: string): Promise<C
   return resultsClient.call<ComputedResults>({ type: "process", file, fileName }, [file]);
 }
 
+export function processWorkbookFiles(files: Array<{ file: ArrayBuffer; fileName?: string }>): Promise<ComputedResults> {
+  if (files.length === 1) return processWorkbook(files[0].file, files[0].fileName);
+  return resultsClient.call<ComputedResults>(
+    { type: "processMany", files },
+    files.map((f) => f.file)
+  );
+}
+
 export function buildK12WorkbookFile(classes: ClassResult[]): Promise<{ bytes: ArrayBuffer; droppedColumns: string[] }> {
   return resultsClient.call({ type: "k12Workbook", classes });
 }
