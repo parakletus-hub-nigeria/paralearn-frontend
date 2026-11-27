@@ -550,7 +550,19 @@
   font-weight: 600;
 }
 
-/* 2-row pill selector for non-technical staff */
+/* 2-row pill selector for non-technical staff ("The Clear Register") */
+.rms-step-num {
+  display: inline-block;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--rms-accent);
+}
+.rms-subject-filter {
+  max-width: 360px;
+}
 .rms-pill-group {
   display: flex;
   flex-wrap: wrap;
@@ -562,14 +574,14 @@
   gap: 7px;
   min-height: 44px;
   padding: 0 14px;
-  border: 1.5px solid var(--rms-line);
-  border-radius: 10px;
+  border: 1px solid var(--rms-line);
+  border-radius: 8px;
   background: #fdfdff;
   color: var(--rms-ink);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 120ms ease-out, background 120ms ease-out, color 120ms ease-out;
+  transition: border-color 150ms ease-out, background 150ms ease-out, color 150ms ease-out;
 }
 .rms-pill:hover {
   border-color: var(--rms-accent);
@@ -588,16 +600,19 @@
 }
 .rms-tpl-action-card {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   padding: 18px 20px;
-  border: 1.5px solid var(--rms-accent);
+  border: 1px solid var(--rms-line);
   border-radius: 10px;
-  background: var(--rms-accent-wash);
+  background: var(--rms-wash);
 }
 .rms-tpl-action-card p {
   font-size: 13px;
-  line-height: 1.5;
-  color: var(--rms-accent-press);
+  line-height: 1.55;
+  color: var(--pf-ink-soft);
+}
+.rms-tpl-action-card strong {
+  color: var(--rms-ink);
 }
 .rms-tpl-action-btns {
   display: flex;

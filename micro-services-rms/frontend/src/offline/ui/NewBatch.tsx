@@ -148,7 +148,7 @@ export default function NewBatch({
           <h2 id="open-sheet" className="rms-section-title">
             Open result sheets
           </h2>
-          <p className="rms-section-sub">Drop one file, or drop several teachers&apos; subject sheets together — we combine them automatically.</p>
+          <p className="rms-section-sub">Drop one file, or select several teachers&apos; subject sheets together. We combine them automatically.</p>
         </div>
       </div>
 

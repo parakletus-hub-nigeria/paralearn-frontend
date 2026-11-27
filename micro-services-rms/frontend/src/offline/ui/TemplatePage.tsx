@@ -60,6 +60,7 @@ export default function TemplatePage({
   const [cachedRoster, setCachedRoster] = useState<CachedRoster | null>(null);
   const [pickedClass, setPickedClass] = useState<string | null>(null);
   const [pickedSubject, setPickedSubject] = useState<string | null>(null);
+  const [subjectQuery, setSubjectQuery] = useState("");
   const roster = cachedRoster?.classes ?? null;
   const settingsKey = `${STORAGE_KEY}:${ownerKey}`;
 
@@ -118,6 +119,10 @@ export default function TemplatePage({
   // Keep selections valid if classes or subjects change
   const activeClass = pickedClass && classes.includes(pickedClass) ? pickedClass : null;
   const activeSubject = pickedSubject && subjects.includes(pickedSubject) ? pickedSubject : null;
+  const filteredSubjects = useMemo(() => {
+    const q = subjectQuery.trim().toLowerCase();
+    return q ? subjects.filter((sub) => sub.toLowerCase().includes(q)) : subjects;
+  }, [subjects, subjectQuery]);
 
   const removeClass = (name: string) => {
     if (pickedClass === name) setPickedClass(null);
@@ -339,8 +344,9 @@ export default function TemplatePage({
           {/* Step 1: Pick a Class (big clickable pills, no dropdown) */}
           <section className="rms-pf-section" aria-labelledby="tpl-pick-class">
             <header>
-              <h2 id="tpl-pick-class">1. Pick a class</h2>
-              <p>Tap one class, or leave it on All classes.</p>
+              <span className="rms-step-num" aria-hidden>01</span>
+              <h2 id="tpl-pick-class">Pick a class</h2>
+              <p>Tap one class, or keep All classes selected.</p>
             </header>
             <div className="rms-pf-fields">
               {classes.length > 0 ? (
@@ -376,20 +382,35 @@ export default function TemplatePage({
             </div>
           </section>
 
-          {/* Step 2: Pick a Subject (big clickable pills, no dropdown) */}
+          {/* Step 2: Pick a Subject (big clickable pills + quick filter for long lists) */}
           <section className="rms-pf-section" aria-labelledby="tpl-pick-subject">
             <header>
-              <h2 id="tpl-pick-subject">2. Pick a subject</h2>
-              <p>Tap one subject for a subject teacher, or leave it on All subjects.</p>
+              <span className="rms-step-num" aria-hidden>02</span>
+              <h2 id="tpl-pick-subject">Pick a subject</h2>
+              <p>Tap one subject for a subject teacher, or keep All subjects.</p>
             </header>
             <div className="rms-pf-fields">
+              {subjects.length > 10 && (
+                <label className="rms-field rms-subject-filter">
+                  <span className="sr-only">Find a subject</span>
+                  <input
+                    type="search"
+                    className="rms-input"
+                    value={subjectQuery}
+                    onChange={(e) => setSubjectQuery(e.target.value)}
+                    placeholder="Find a subject (e.g. English, Mathematics)..."
+                  />
+                </label>
+              )}
               <div className="rms-pill-group" role="group" aria-label="Choose a subject">
-                <button type="button" className="rms-pill" aria-pressed={activeSubject === null} onClick={() => setPickedSubject(null)}>
-                  {activeSubject === null && <Check size={15} aria-hidden />}
-                  All subjects
-                  <small>{subjects.length}</small>
-                </button>
-                {subjects.map((sub) => {
+                {!subjectQuery.trim() && (
+                  <button type="button" className="rms-pill" aria-pressed={activeSubject === null} onClick={() => setPickedSubject(null)}>
+                    {activeSubject === null && <Check size={15} aria-hidden />}
+                    All subjects
+                    <small>{subjects.length}</small>
+                  </button>
+                )}
+                {filteredSubjects.map((sub) => {
                   const selected = activeSubject === sub;
                   return (
                     <button
@@ -404,6 +425,9 @@ export default function TemplatePage({
                     </button>
                   );
                 })}
+                {subjectQuery.trim() && !filteredSubjects.length && (
+                  <p className="rms-pf-note">No subject matches &ldquo;{subjectQuery}&rdquo;.</p>
+                )}
               </div>
             </div>
           </section>
@@ -411,8 +435,9 @@ export default function TemplatePage({
           {/* Step 3: Download */}
           <section className="rms-pf-section" aria-labelledby="tpl-download-step">
             <header>
-              <h2 id="tpl-download-step">3. Download sheet</h2>
-              <p>Send the downloaded Excel file to the teacher on WhatsApp or flash drive.</p>
+              <span className="rms-step-num" aria-hidden>03</span>
+              <h2 id="tpl-download-step">Send or download</h2>
+              <p>Share straight to WhatsApp on Android, or save the Excel file.</p>
             </header>
             <div className="rms-pf-fields">
               <div className="rms-tpl-action-card">
@@ -420,9 +445,9 @@ export default function TemplatePage({
                   <>
                     <p>
                       <strong>
-                        {activeClass} – {activeSubject}
-                      </strong>
-                      : 1 small Excel file ({plural(activeClassCount, "student")}, {3 + labels.length} columns). Ready to send on WhatsApp.
+                        {activeClass}: {activeSubject}
+                      </strong>{" "}
+                      ({plural(activeClassCount, "student")}, {3 + labels.length} columns). One clean Excel file ready for WhatsApp.
                     </p>
                     <div className="rms-tpl-action-btns">
                       {canShare && (
@@ -438,14 +463,17 @@ export default function TemplatePage({
                         disabled={!canDownload || !!busy}
                       >
                         {busy === "xlsx" ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                        Download {activeClass} – {activeSubject}
+                        Download {activeClass} ({activeSubject})
                       </button>
                     </div>
                   </>
                 ) : activeClass ? (
                   <>
                     <p>
-                      <strong>{activeClass} (all {subjects.length} subjects)</strong>: 1 Excel file with a separate tab for each subject. No unzipping needed.
+                      <strong>
+                        {activeClass}: all {subjects.length} subjects
+                      </strong>
+                      . One Excel file with a tab for each subject. No unzipping needed.
                     </p>
                     <div className="rms-tpl-action-btns">
                       {canShare && (
@@ -461,14 +489,17 @@ export default function TemplatePage({
                         disabled={!canDownload || !!busy}
                       >
                         {busy === "xlsx" ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
-                        Download {activeClass} – All Subjects
+                        Download {activeClass} (all subjects)
                       </button>
                     </div>
                   </>
                 ) : activeSubject ? (
                   <>
                     <p>
-                      <strong>{activeSubject} (all {classes.length} classes)</strong>: 1 Excel file with a separate tab for each class. Send this one file to the {activeSubject} teacher.
+                      <strong>
+                        {activeSubject}: all {classes.length} classes
+                      </strong>
+                      . One Excel file with a tab for each class. Send this single file to the {activeSubject} teacher.
                     </p>
                     <div className="rms-tpl-action-btns">
                       {canShare && (
@@ -484,7 +515,7 @@ export default function TemplatePage({
                         disabled={!canDownload || !!busy}
                       >
                         {busy === "xlsx" ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
-                        Download {activeSubject} – All Classes
+                        Download {activeSubject} (all classes)
                       </button>
                     </div>
                   </>
